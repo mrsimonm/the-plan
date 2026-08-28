@@ -20,6 +20,7 @@
   --accent:#15803D; --accent-2:#22C55E; --accent-soft:#DCF4E4; --on-accent:#FFFFFF;
   --amber:#A9640C; --amber-soft:#F7E9D2;
   --orange:#EA580C;
+  --track-bg:#E4E7EA; --track-line:rgba(12,20,16,.14); --track-ink:#5B6B63;
   --ok:#15803D; --crit:#BE3B30; --crit-soft:#F8E2DF;
   --glass:rgba(255,255,255,.72); --glass-2:rgba(255,255,255,.88);
   --hair:rgba(255,255,255,.95);
@@ -37,6 +38,7 @@
     --accent:#4ADE80; --accent-2:#86EFAC; --accent-soft:#0F2C19; --on-accent:#04180B;
     --amber:#F1B24C; --amber-soft:#2C2210;
     --orange:#FB923C;
+    --track-bg:#242B26; --track-line:rgba(233,241,234,.14); --track-ink:#B7C2BB;
     --ok:#4ADE80; --crit:#F08276; --crit-soft:#33191A;
     --glass:rgba(16,23,17,.66); --glass-2:rgba(19,28,21,.82);
     --hair:rgba(255,255,255,.06);
@@ -53,6 +55,7 @@
   --accent:#4ADE80; --accent-2:#86EFAC; --accent-soft:#0F2C19; --on-accent:#04180B;
   --amber:#F1B24C; --amber-soft:#2C2210;
   --orange:#FB923C;
+  --track-bg:#242B26; --track-line:rgba(233,241,234,.14); --track-ink:#B7C2BB;
   --ok:#4ADE80; --crit:#F08276; --crit-soft:#33191A;
   --glass:rgba(16,23,17,.66); --glass-2:rgba(19,28,21,.82);
   --hair:rgba(255,255,255,.06);
@@ -638,12 +641,22 @@ input[type="time"].mono-input{width:88px}
 /* ---- the moving timeline ---- */
 .hribbon{position:relative; margin:16px 0 2px; height:62px}
 .hrb-win{position:absolute; inset:0; overflow:hidden; border-radius:8px;
-  background:var(--sunk); border:1px solid var(--line-soft);
+  background:var(--track-bg); border:1px solid var(--line-soft);
   -webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
   mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
 .hrb-track{position:absolute; top:0; bottom:0; will-change:transform}
 @media (prefers-reduced-motion: no-preference){ .hrb-track{transition:transform .95s linear} }
-.hrb-b{position:absolute; top:10px; bottom:10px; border-radius:6px; overflow:hidden;
+/* hour markers shared by both timelines (the routine's scrolling track and
+   the projects row's static one) — a thin rule plus a clock label, same
+   idea as the day view's .ptl-hour but turned sideways for a left-to-right
+   timeline instead of a top-to-bottom one */
+.hrb-tick{position:absolute; top:0; bottom:0; width:1px; background:var(--track-line)}
+.hrb-tick i{position:absolute; left:3px; bottom:2px; font-style:normal;
+  font-family:"JetBrains Mono",ui-monospace,monospace; font-size:9px;
+  color:var(--track-ink); white-space:nowrap}
+/* bottom is pinned well above the tick labels in every block state (below,
+   `.live` only grows upward) so a block can never paint over an hour label */
+.hrb-b{position:absolute; top:10px; bottom:16px; border-radius:6px; overflow:hidden;
   display:flex; align-items:center; justify-content:center;
   background:color-mix(in srgb,var(--accent) 22%,var(--surface));
   border:1px solid color-mix(in srgb,var(--accent) 34%,transparent)}
@@ -656,7 +669,7 @@ input[type="time"].mono-input{width:88px}
 .hrb-long{background:color-mix(in srgb,var(--amber) 18%,var(--surface));
   border-color:color-mix(in srgb,var(--amber) 30%,transparent)}
 .hrb-b.past{opacity:.32}
-.hrb-b.live{background:var(--accent); border-color:var(--accent); top:6px; bottom:6px;
+.hrb-b.live{background:var(--accent); border-color:var(--accent); top:6px; bottom:16px;
   box-shadow:0 0 0 1px var(--accent)}
 .hrb-b.live i{color:var(--on-accent)}
 .hrb-short.live{background:var(--orange); border-color:var(--orange)}
@@ -696,10 +709,11 @@ input[type="time"].mono-input{width:88px}
 .hproj-nav .btn{min-height:28px; padding:0 10px; font-size:13px}
 .hproj-day-label{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:12px;
   color:var(--ink-2); min-width:104px; text-align:center}
-.hproj-track-wrap{position:relative; height:44px; border-radius:8px; overflow:hidden;
-  background:var(--sunk); border:1px solid var(--line-soft)}
+.hproj-track-wrap{position:relative; height:54px; border-radius:8px; overflow:hidden;
+  background:var(--track-bg); border:1px solid var(--line-soft)}
 .hproj-track{position:relative; height:100%}
-.hrb-proj{position:absolute; top:8px; bottom:8px; border-radius:6px; overflow:hidden;
+/* bottom stays clear of the tick labels below, same idea as .hrb-b above */
+.hrb-proj{position:absolute; top:6px; bottom:16px; border-radius:6px; overflow:hidden;
   display:flex; align-items:center; justify-content:center;
   background:color-mix(in srgb,var(--pc,var(--accent)) 24%,var(--surface));
   border:1px solid color-mix(in srgb,var(--pc,var(--accent)) 38%,transparent)}
@@ -5144,9 +5158,22 @@ function hRibbonHtml(){
     return `<span class="hrb-b hrb-${b.kind}" data-min="${b.min}" style="left:${left}px; width:${Math.max(3,w-2)}px"
       title="${esc(label)} · ${b.min}m"><i>${w>44?esc(label):""}</i></span>`;
   }).join("");
+  /* an hour marker at every clock hour the visible window can reach — same
+     coordinate space as the blocks, so it pans along with them for free */
+  const winStart=P.t0+(nowMin-SPANMIN)*60000, winEnd=P.t0+(nowMin+SPANMIN)*60000;
+  const cursor=new Date(winStart); cursor.setMinutes(0,0,0);
+  if(+cursor<winStart) cursor.setHours(cursor.getHours()+1);
+  /* step by wall-clock hour (setHours), not a flat 3,600,000ms — a DST day
+     doesn't divide evenly into 60-minute chunks, and this window is wide
+     enough to straddle the spring-forward/fall-back moment twice a year */
+  const ticks=[]; while(+cursor<=winEnd){
+    const left=(+cursor-P.t0)/60000*HR_PXMIN;
+    ticks.push(`<span class="hrb-tick" style="left:${left}px"><i>${String(cursor.getHours()).padStart(2,"0")}:00</i></span>`);
+    cursor.setHours(cursor.getHours()+1);
+  }
   return `<div class="hribbon${hPaused(S.hours&&S.hours.running)?" paused":""}" aria-hidden="true">
     <div class="hrb-win"><div class="hrb-track" data-t0="${P.t0}"
-      style="width:${total*HR_PXMIN}px">${body}</div></div>
+      style="width:${total*HR_PXMIN}px">${ticks.join("")}${body}</div></div>
     <span class="hrb-now"></span>
   </div>`;
 }
@@ -5225,7 +5252,16 @@ function hProjRowHtml(){
       title="${esc(p.name)} · ${pFmtH(p.hours)}h">
       <i>${esc(p.name)}</i></span>`;
   }).join("");
-  const body=blocks?`<div class="hproj-track-wrap"><div class="hproj-track">${blocks}</div></div>`
+  /* the day has no live "now" to pan around, so the hour markers sit at
+     fixed points on the same scale the blocks use — a line every hour, a
+     clock label every third, so it reads as a real day even though nothing
+     on it is actually moving. Goes past 24 on an overbooked day (`scale`
+     grows to fit), same as the blocks that share this coordinate space. */
+  const ticks=[]; for(let h=0;h<scale;h++){
+    ticks.push(`<span class="hrb-tick" style="left:${h/scale*100}%">${
+      h%3===0?`<i>${String(h%24).padStart(2,"0")}:00</i>`:""}</span>`);
+  }
+  const body=blocks?`<div class="hproj-track-wrap"><div class="hproj-track">${ticks.join("")}${blocks}</div></div>`
     :`<div class="hproj-empty">${esc(t("No projects scheduled for this day."))}</div>`;
   return `<span class="eyebrow" style="display:block; margin-top:14px">${esc(t("Projects"))}</span>
     <div class="hproj-nav">
