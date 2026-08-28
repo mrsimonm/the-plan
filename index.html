@@ -70,8 +70,8 @@ body{
   font-size:15px; line-height:1.5; display:flex; flex-direction:column; min-height:100vh;
   -webkit-text-size-adjust:100%;
 }
-h1,h2,h3{margin:0; font-family:"Barlow Condensed",Impact,sans-serif; text-wrap:balance; font-weight:600}
-.num{font-family:"IBM Plex Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums}
+h1,h2,h3{margin:0; font-family:"Bricolage Grotesque",Impact,sans-serif; text-wrap:balance; font-weight:600}
+.num{font-family:"JetBrains Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums}
 .eyebrow{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
   letter-spacing:.1em; font-size:13px; color:var(--ink-3)}
 
@@ -214,7 +214,7 @@ h1,h2,h3{margin:0; font-family:"Barlow Condensed",Impact,sans-serif; text-wrap:b
 .stat b.bad{color:var(--crit)}
 .segsm button{padding:6px 11px; font-size:12px}
 .chart-head{display:flex; justify-content:flex-end; margin-top:13px}
-.spark{width:100%; height:64px; display:block; overflow:visible}
+.spark-chart{width:100%; height:64px; display:block; overflow:visible}
 .spark-l{fill:none; stroke:var(--accent); stroke-width:2; vector-effect:non-scaling-stroke;
   stroke-linejoin:round; stroke-linecap:round}
 .spark-a{fill:var(--accent); opacity:.13; stroke:none}
@@ -2911,14 +2911,11 @@ $("#askDlg").addEventListener("cancel",e=>{ e.preventDefault(); askDone(false); 
 /* ---------------- sync ---------------- */
 let ART=null, saveTimer=null, pushing=false;
 function setSync(s,msg){ $("#syncTag").dataset.s=s; $("#syncText").textContent=msg||s; }
-async function initSync(){
-  try{
-    if(!window.claude||typeof window.claude.use!=="function"){ setSync("local","this device"); return; }
-    const a=await window.claude.use("artifact");
-    if(!a){ setSync("local","this device"); return; }
-    ART=a; setSync("saved","shared");
-  }catch(e){ setSync("local","this device"); }
-}
+/* Single-user app now — shared/multi-device sync is disabled on purpose.
+   Never setting ART keeps touch()/push() from running at all (both are
+   gated on `if(!ART)`), so this is a full, safe no-op rather than a stub
+   that still risks hitting the sync code paths. */
+async function initSync(){ setSync("local","this device"); }
 async function loadShared(){
   try{
     const r=await fetch("data/state.json",{cache:"no-store"});
@@ -7566,7 +7563,7 @@ function sparkPath(days,peak,{cum}={}){
 function chartFor(days,peak){
   if(L.chart==="col") return columns(days,peak);
   const cum=L.chart==="cum", g=sparkPath(days,peak,{cum});
-  return `<svg class="spark" viewBox="0 0 300 64" preserveAspectRatio="none" role="img"
+  return `<svg class="spark-chart" viewBox="0 0 300 64" preserveAspectRatio="none" role="img"
       aria-label="${esc(t(cum?"Cumulative care events over the last 30 days":"Care events per day over the last 30 days"))}">
     <path class="spark-a" d="${g.area}"/><path class="spark-l" d="${g.d}"/>
   </svg>
