@@ -706,7 +706,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
   outline:2px solid var(--accent); outline-offset:2px}
 .wb-blk:hover{filter:brightness(1.06)}
 .wb-traychip:hover{border-style:solid}
-#view-projplan .ppsw:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.ppsw:focus-visible{outline:2px solid var(--accent); outline-offset:3px}
 @media (hover:none){ .wb-rsz{height:14px} }
 .plink-row{display:flex; align-items:center; gap:9px; padding:5px 0; font-size:13.5px; cursor:pointer}
 .plink-row input[type="checkbox"]{width:auto; accent-color:var(--accent)}
@@ -1719,9 +1719,24 @@ html{overscroll-behavior-y:none}
 #view-projplan .f input{ width: 100%; }
 #view-projplan .duo{ display: flex; gap: .7rem; }
 #view-projplan .duo .f{ flex: 1; }
-#view-projplan .swatch{ display: flex; gap: .4rem; flex-wrap: wrap; }
-#view-projplan .ppsw{ width: 27px; height: 27px; border-radius: 3px; border: 2px solid transparent; padding: 0; cursor: pointer; }
-#view-projplan .ppsw[aria-pressed="true"]{ border-color: var(--ink); }
+/* NOT scoped to #view-projplan: the project dialog is deliberately body-level
+   (a <dialog> inside a display:none ancestor opens invisible), so every rule
+   written as "#view-projplan .ppsw" silently missed it. The swatches were
+   getting no width or height at all and collapsed to 16x6px, which is why the
+   colours could not be told apart. */
+.swatch{ display:flex; gap:8px; flex-wrap:wrap; }
+.ppsw{ width:38px; height:38px; border-radius:9px; padding:0; cursor:pointer;
+  border:2px solid color-mix(in srgb, var(--ink) 22%, transparent);
+  position:relative; transition:transform .08s ease, box-shadow .12s ease; }
+.ppsw:hover{ transform:translateY(-1px); box-shadow:0 2px 6px rgba(0,0,0,.28); }
+/* the chosen one reads at a glance: a ring that is not the colour itself,
+   plus a tick, so it survives whatever the swatch colour happens to be */
+.ppsw[aria-pressed="true"]{ border-color:var(--ink);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--ink) 20%, transparent); }
+.ppsw[aria-pressed="true"]::after{ content:"✓"; position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:17px; line-height:1; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.65); }
+@media (hover:none){ .ppsw{ width:44px; height:44px; } }
 #view-projplan .info{ font-size: var(--fs-small); line-height: 1.55; color: var(--ink-2); background: var(--surface-2);
           border-left: 2px solid var(--accent); padding: .55rem .7rem; border-radius: 0 3px 3px 0; }
 #view-projplan .info.warn{ border-left-color: var(--amber); color: var(--amber); }
@@ -12356,14 +12371,18 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
   var ed = null, col = PAL[0];
 
   document.getElementById("ppSwatch").innerHTML = PAL.map(function (c, i) {
-    return '<button type="button" class="ppsw" data-c="' + c + '" style="background:' + c + '" aria-label="Color: ' + PALN[i] + '"></button>';
+    return '<button type="button" class="ppsw" data-c="' + c + '" style="background:' + c +
+      '" title="' + PALN[i] + '" aria-label="Color: ' + PALN[i] + '"></button>';
   }).join("");
   document.getElementById("ppSwatch").addEventListener("click", function (e) {
     var b = e.target.closest(".ppsw"); if (!b) return;
     col = b.getAttribute("data-c"); markCol();
   });
   function markCol() {
-    ppRoot.querySelectorAll(".ppsw").forEach(function (b) {
+    /* query the swatch container, not ppRoot: the dialog holding these lives
+       at body level, outside the view, so scoping to the view found nothing
+       and the chosen colour was never marked — the same mistake the CSS made */
+    document.getElementById("ppSwatch").querySelectorAll(".ppsw").forEach(function (b) {
       b.setAttribute("aria-pressed", b.getAttribute("data-c") === col ? "true" : "false");
     });
   }
