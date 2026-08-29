@@ -5194,9 +5194,26 @@ function pWireBoard(){
            visible reason. */
         const grp=tk.groupId?pGroupOf(tk):null;
         if(grp&&grp.length>1){
-          const rest=grp.filter(m=>m!==tk);
           tk.groupId=null;
-          if(rest.length===1) rest[0].groupId=null;
+          /* What is left has to stay CONTIGUOUS. pSetGroupSpan fills every day
+             between a run's first and last, so a run with a hole in it would
+             mint a fresh record on the very day just detached the next time
+             anyone dragged its W/E handle — the day you pulled out reappearing
+             beside the one you moved. Split the remainder at the gap instead:
+             each contiguous stretch becomes its own run, and a stretch of one
+             is not a run at all. */
+          const rest=grp.filter(m=>m!==tk)
+            .sort((a,b)=>String(a.due).localeCompare(String(b.due)));
+          let seg=[];
+          const flush=()=>{ if(!seg.length) return;
+            const id=seg.length>1?("g"+uid()):null;
+            seg.forEach(m=>{ m.groupId=id; });
+            seg=[]; };
+          rest.forEach(m=>{
+            if(seg.length&&ymd(pNextDay(fromYmd(seg[seg.length-1].due)))!==m.due) flush();
+            seg.push(m);
+          });
+          flush();
         }
         tk.due=day; tk.time=fmtT(t2);
         if(!(+tk.hours>0)) tk.hours=1;       // a slot implies a duration
