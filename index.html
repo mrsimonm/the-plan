@@ -482,6 +482,19 @@ input[type="time"].mono-input{width:88px}
 .pslot-when{margin:0 0 10px; font-family:"JetBrains Mono",ui-monospace,monospace;
   font-size:12px; color:var(--ink-3)}
 .pslot-row{display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:10px}
+/* focus mode: the schedule card fills the screen for a second monitor.
+   position:fixed rather than the Fullscreen API so it still works when the
+   app is an installed PWA and so Escape can leave without a permission
+   dance; the app chrome is hidden rather than unmounted so leaving is a
+   class toggle and nothing has to re-render. */
+html.pfocus, html.pfocus body{overflow:hidden}
+html.pfocus .top,html.pfocus .navwrap,html.pfocus #view-planner > .stack > .card:not(.pfocus-card),
+html.pfocus #view-planner .sec-head{display:none}
+.pfocus-card{position:fixed; inset:0; z-index:60; margin:0; border-radius:0;
+  overflow:auto; background:var(--surface); padding:14px 16px 20px;
+  padding-top:max(14px,env(safe-area-inset-top))}
+.pfocus-btn{flex:0 0 auto}
+html.pfocus .pfocus-btn{position:sticky; right:0}
 .qadd-kind{align-self:flex-start}
 .pproj-count{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11px;
   color:var(--accent); flex:0 0 auto}
@@ -2083,6 +2096,8 @@ html{overscroll-behavior-y:none}
           <span class="pcal-month" id="pBoardLabel"></span>
           <button type="button" class="btn mini" id="pBoardNext" aria-label="Next">›</button>
         </span>
+        <button type="button" class="btn mini pfocus-btn" id="pFocusBtn"
+          title="Fill the screen" aria-pressed="false">⛶</button>
         <span class="pcal-nav" id="pTimelineZoom" style="display:none">
           <div class="seg segsm" id="ppZoomSeg">
             <button type="button" data-ppzoom="month" aria-pressed="false">Month</button>
@@ -5075,6 +5090,28 @@ $("#pGridPrev").addEventListener("click",()=>{
 });
 $("#pGridNext").addEventListener("click",()=>{
   ppGridISO=ppGridStepIso(L.ppZoom,ppGridISO||ymd(monthStart(Date.now())),1); renderSchedule();
+});
+/* focus mode lives on <html> so the whole page can be re-dressed from one
+   class; the card marks itself so the "hide every other card" rule can spare
+   it. Escape leaves, which is the exit people try first. */
+function pSetFocus(on){
+  const card=$("#pScheduleBody").closest(".card");
+  document.documentElement.classList.toggle("pfocus",!!on);
+  if(card) card.classList.toggle("pfocus-card",!!on);
+  const b=$("#pFocusBtn");
+  if(b){ b.setAttribute("aria-pressed",String(!!on)); b.textContent=on?"✕":"⛶"; }
+  /* the board sizes itself from its container, so it has to be redrawn once
+     the card has actually changed shape */
+  if(curView==="planner") renderSchedule();
+}
+$("#pFocusBtn").addEventListener("click",()=>
+  pSetFocus(!document.documentElement.classList.contains("pfocus")));
+window.addEventListener("keydown",e=>{
+  if(e.key==="Escape"&&document.documentElement.classList.contains("pfocus")){
+    /* a dialog open on top of the board owns Escape first */
+    if(document.querySelector("dialog[open]")) return;
+    pSetFocus(false);
+  }
 });
 $("#pScopeSeg").addEventListener("click",e=>{
   const b=e.target.closest("[data-pscope]"); if(!b) return;
