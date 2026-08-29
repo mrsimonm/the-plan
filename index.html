@@ -513,10 +513,13 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
   transform:translate(-50%,-50%); width:22px; height:3px; border-radius:2px; background:var(--accent)}
 .wb-h-w::after,.wb-h-e::after{content:""; position:absolute; left:50%; top:50%;
   transform:translate(-50%,-50%); width:3px; height:22px; border-radius:2px; background:var(--accent)}
+/* Touch needs a bigger target than a mouse, but not so big that the grips eat
+   the block: at 13px each, n+s covered 26px of the 30px minimum and left
+   nothing to drag. 9px keeps a usable middle at every size we render. */
 @media (hover:none){
   .wb-h{opacity:.9}
-  .wb-h-n,.wb-h-s{height:13px} .wb-h-w,.wb-h-e{width:13px}
-  .wb-h-nw,.wb-h-ne,.wb-h-sw,.wb-h-se{width:15px; height:15px}
+  .wb-h-n,.wb-h-s{height:9px} .wb-h-w,.wb-h-e{width:9px}
+  .wb-h-nw,.wb-h-ne,.wb-h-sw,.wb-h-se{width:11px; height:11px}
 }
 /* while a resize is live, say what it will become */
 .wb-blk.rz{z-index:7; box-shadow:var(--shadow-lift)}
@@ -4313,6 +4316,8 @@ let pSlotDay=null, pSlotEditId=null;
    verbs. Reusing it keeps one place that knows what an Event is made of. */
 function pOpenEditDialog(id){
   const tk=pFindTask(id); if(!tk) return;
+  /* this dialog writes a time and a duration, which only an Event may carry */
+  if(tk.kind!=="event") return;
   const sp=pGroupSpan(tk);
   pOpenSlotDialog(tk.due,0,tk.hours);
   pSlotEditId=id;
@@ -4359,7 +4364,7 @@ function pSlotCreate(kind){
     done:false,kind:isEvent?"event":"task",steps:[],
     projectId:$("#pSlotProject").value||null});
   $("#pSlotDlg").close();
-  pSelISO=pSlotDay; touch(); renderPlanner();
+  pSelISO=pSlotDay; pWinShift=0; touch(); renderPlanner();
 }
 $("#pSlotSave").addEventListener("click",()=>{
   const tk=pFindTask(pSlotEditId); if(!tk){ $("#pSlotDlg").close(); return; }
@@ -4731,7 +4736,24 @@ function pWireBoard(){
       let days=null;
       if(E.indexOf("w")>=0||E.indexOf("e")>=0){
         const at=geom(e.clientX,e.clientY).day;
-        if(at) days=E.indexOf("w")>=0?pDayRange(at,G2.last0):pDayRange(G2.first0,at);
+        /* a DELTA in days, measured against the column the block sits in —
+           an absolute target could only ever name a visible day, so a run
+           reaching outside the board was silently truncated (in Day view,
+           every day but one). The edge also cannot cross its opposite: the
+           run collapses to a single day instead of inverting. */
+        if(at){
+          const cols=[...board.querySelectorAll(".wb-col")].map(c=>c.dataset.wbday);
+          const dl=cols.indexOf(at)-cols.indexOf(G2.day0);
+          if(!isNaN(dl)&&cols.indexOf(at)>=0&&cols.indexOf(G2.day0)>=0){
+            if(E.indexOf("w")>=0){
+              const nf=ymd(fromYmd(G2.first0)+dl*DAY);
+              days=pDayRange(nf>G2.last0?G2.last0:nf,G2.last0);
+            }else{
+              const nl=ymd(fromYmd(G2.last0)+dl*DAY);
+              days=pDayRange(G2.first0,nl<G2.first0?G2.first0:nl);
+            }
+          }
+        }
       }
       G2.liveDays=days;
       board.querySelectorAll(".wb-col.rz-target").forEach(c=>c.classList.remove("rz-target"));
@@ -4860,7 +4882,7 @@ function pWireBoard(){
       g.el.style.transform=""; g.el.classList.remove("sizing"); delete g.el.dataset.live;
       /* a plain tap opens the thing itself: a project its editor, a task its day */
       if(g.mode==="projmove"||g.mode==="projday"){ window.ppOpenProject&&ppOpenProject(g.id); }
-      else if(g.mode==="move"){ const d=g.day0; if(d){ pSelISO=d; pScope="day"; pDayPanel(); renderSchedule(); } }
+      else if(g.mode==="move"){ const d=g.day0; if(d){ pSelISO=d; pScope="day"; pWinShift=0; pDayPanel(); renderSchedule(); } }
       return;
     }
     if(g.mode==="projmove"){
@@ -4896,12 +4918,24 @@ function pWireBoard(){
       : snap(time);
     if(g.kind==="task"||g.kind==="tray"){
       const tk=pFindTask(g.id);
-      if(tk&&day){ tk.due=day; tk.time=fmtT(t2);
-        if(!(+tk.hours>0)) tk.hours=1;     // a slot implies a duration
-        /* under the v7 model a clock slot IS what makes something an Event —
-           dropping a dateless task onto an hour promotes it rather than
-           leaving a Task that contradicts its own definition */
-        tk.kind="event";
+      if(tk&&day){
+        /* a run moves as one: dropping any member shifts every day of it by
+           the same delta and gives them all the new time. Moving one member
+           alone would land two records on the same day and leave the run
+           disagreeing with itself about when it happens. */
+        const grp=tk.groupId?pGroupOf(tk):null;
+        if(grp&&grp.length>1){
+          const shift=Math.round((fromYmd(day)-fromYmd(tk.due))/DAY);
+          const nt=fmtT(t2);
+          grp.forEach(m=>{ m.due=ymd(fromYmd(m.due)+shift*DAY); m.time=nt; });
+        }else{
+          tk.due=day; tk.time=fmtT(t2);
+          if(!(+tk.hours>0)) tk.hours=1;     // a slot implies a duration
+          /* under the v7 model a clock slot IS what makes something an Event —
+             dropping a dateless task onto an hour promotes it rather than
+             leaving a Task that contradicts its own definition */
+          tk.kind="event";
+        }
         done(); return; }
     }
     if(g.kind==="block"){                  /* recurring: time moves, the weekday set stays */
@@ -4937,13 +4971,14 @@ function pWireBoard(){
     const maxS=Math.max(0,+board.dataset.maxshift||0);
     const next=Math.max(0,Math.min(pWinShift+dir,maxS));
     if(next===pWinShift) return;                    // at either end: let the page have it
+    if(pBoardBusy) return;      // never re-render mid-gesture
     pWinShift=next; e.preventDefault();
     clearTimeout(pWheelT);
     pWheelT=setTimeout(()=>{ renderSchedule(); },60);
   },{passive:false});
   board.addEventListener("click",e=>{
     const h=e.target.closest("[data-wbgo]");
-    if(h){ pSelISO=h.dataset.wbgo; pScope="day"; pDayPanel(); renderSchedule(); }
+    if(h){ pSelISO=h.dataset.wbgo; pScope="day"; pWinShift=0; pDayPanel(); renderSchedule(); }
   });
 }
 
@@ -5022,7 +5057,7 @@ function ppGridBodyHtml(zoom,iso){
 }
 function pWireProjGrid(){
   $("#pScheduleBody").querySelectorAll("[data-pgcell]").forEach(el=>el.addEventListener("click",()=>{
-    pScope="day"; pSelISO=el.dataset.pgcell; pDayPanel(); renderSchedule();
+    pScope="day"; pSelISO=el.dataset.pgcell; pWinShift=0; pDayPanel(); renderSchedule();
   }));
 }
 function renderSchedule(){
@@ -5325,7 +5360,7 @@ $("#pAddForm").addEventListener("submit",e=>{
     done:false,kind:isEvent?"event":"task",steps:[],
     projectId:$("#pAddProject").value||null});
   $("#pAddTitle").value=""; $("#pAddTitle").focus();
-  if(due) pSelISO=due;
+  if(due){ pSelISO=due; pWinShift=0; }
   touch(); renderPlanner();
 });
 ["pAddDue","pAddHours","pAddTime"].forEach(id=>
@@ -5444,6 +5479,11 @@ document.querySelector("#view-planner").addEventListener("click",async e=>{
     touch(); renderPlanner(); return; }
 
   if(del){ const tk=pFindTask(del.dataset.pdel); if(!tk) return;
+    /* same rule as the dialog's Delete: the survivors stay linked, but a lone
+       survivor stops claiming to be a span */
+    if(tk.groupId){ const gid0=tk.groupId;
+      setTimeout(()=>{ const left=(S.planner.tasks||[]).filter(x=>x.groupId===gid0);
+        if(left.length<2){ left.forEach(x=>{ x.groupId=null; }); touch(); } },0); }
     if(!await ask(t("Delete \"{t}\"?").replace("{t}",tk.title||t("this task")))) return;
     S.planner.tasks=S.planner.tasks.filter(x=>x.id!==tk.id);
     touch(); renderPlanner(); return; }
