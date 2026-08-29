@@ -433,6 +433,20 @@ input[type="time"].mono-input{width:88px}
   cursor:pointer; appearance:none}
 .pcal-mini-cell.out{visibility:hidden; cursor:default}
 .pcal-mini-cell.today{box-shadow:inset 0 0 0 1.5px var(--ink)}
+/* the dateless-task strip above the Day board */
+.pquick-strip{display:flex; flex-wrap:wrap; align-items:center; gap:6px;
+  padding:0 0 10px; border-bottom:1px solid var(--line-soft); margin-bottom:2px}
+.pquick-strip .eyebrow{flex:0 0 auto; margin-right:2px}
+.pqchip{display:inline-flex; align-items:center; gap:6px; padding:5px 10px 5px 7px;
+  border:1px solid var(--line); border-radius:999px; background:var(--surface-2);
+  font-size:12.5px; color:var(--ink); cursor:grab; touch-action:none; user-select:none;
+  max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.pqchip:hover{border-color:var(--accent)}
+.pqchip.lift{box-shadow:var(--shadow-lift); opacity:.9; cursor:grabbing; z-index:6; position:relative}
+.pqbox{width:15px; height:15px; flex:0 0 auto; border-radius:4px; cursor:pointer;
+  border:1.5px solid var(--line-strong); background:var(--surface)}
+.pqbox:hover{border-color:var(--accent)}
+.pqbox:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
 .qadd-kind{align-self:flex-start}
 .pproj-count{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11px;
   color:var(--accent); flex:0 0 auto}
@@ -1991,17 +2005,19 @@ html{overscroll-behavior-y:none}
     <form class="card pad qadd" id="pAddForm">
       <div class="seg segsm qadd-kind" id="pAddKind">
         <button type="button" data-pkind="task" aria-pressed="true">Task</button>
-        <button type="button" data-pkind="project" aria-pressed="false">Project</button>
+        <button type="button" data-pkind="event" aria-pressed="false">Event</button>
       </div>
       <input type="text" id="pAddTitle" placeholder="What needs doing?" autocomplete="off">
       <div class="qadd-row2">
         <span class="field-label">on</span>
         <input type="date" id="pAddDue" class="mono-input">
-        <span class="field-label">at</span>
-        <input type="time" id="pAddTime" class="mono-input" aria-label="Start time, optional">
+        <span class="field-label pev-only">at</span>
+        <input type="time" id="pAddTime" class="mono-input pev-only" aria-label="Start time">
         <span class="field-label">takes</span>
         <input type="number" id="pAddHours" class="mono-input hrs" value="1" min="0" max="24" step="0.5">
         <span class="field-label">h</span>
+        <span class="field-label">for</span>
+        <select id="pAddProject" class="mono-input" aria-label="Link to a project"></select>
         <button class="btn primary mini" type="submit">Add</button>
       </div>
       <p class="pwarn" id="pAddWarn" hidden></p>
@@ -4136,7 +4152,33 @@ function pPlaceProjects(items){
                                              :{time:placed.get(it).time})
     : it);
 }
-function pBoardHtml(days){
+/* Tasks with no day at all — the "ring the dentist" kind. They belong to no
+   square on the grid, so they ride above it as a tick-off strip: tap the box
+   to finish one, or drag it down onto an hour to turn it into a real slot.
+   Day view only; on a week or a month they would compete with 7-31 columns
+   for the same glance. */
+function pDatelessStripHtml(){
+  const list=(S.planner.tasks||[]).filter(tk=>tk.kind!=="event"&&!tk.due&&!tk.done);
+  const done=(S.planner.tasks||[]).filter(tk=>tk.kind!=="event"&&!tk.due&&tk.done).length;
+  if(!list.length&&!done) return "";
+  return `<div class="pquick-strip">
+    <span class="eyebrow">${esc(t("Anytime"))}</span>
+    ${list.map(tk=>`<span class="pqchip" data-wb="tray:${tk.id}" data-pqid="${tk.id}">
+      <i class="pqbox" data-pqtick="${tk.id}" role="button" tabindex="0"
+        aria-label="${esc(t("Mark done"))}"></i>${esc(tk.title||t("Untitled task"))}</span>`).join("")}
+    ${done?`<small class="hint">${done} ${esc(t("done"))}</small>`:""}
+  </div>`;
+}
+function pWireDatelessStrip(){
+  const host=$("#pScheduleBody").querySelector(".pquick-strip"); if(!host) return;
+  host.addEventListener("click",e=>{
+    const box=e.target.closest("[data-pqtick]"); if(!box) return;
+    const tk=pFindTask(box.dataset.pqtick); if(!tk) return;
+    tk.done=true; tk.doneAt=new Date().toISOString();
+    touch(); renderPlanner();
+  });
+}
+function pBoardHtml(days,topStrip){
   const byDay=days.map(d=>pPlaceProjects(pBudgetOf(d).items));
   /* window: wide enough for everything timed, but a lone day starts from a
      plainer waking-hours default than a multi-day board would need */
@@ -4258,7 +4300,11 @@ function pBoardHtml(days){
     <small class="hint" style="flex-basis:100%; margin:2px 0 0">${esc(t("Drag a task onto the board to give it a time."))}</small>
   </div>`:"";
 
+  /* the dateless strip sits INSIDE the board: its chips carry data-wb, and
+     pWireBoard's pointer handling is bound to this element, so a chip dragged
+     from here onto an hour lands through the same commit path as the tray */
   return `<div class="wb" id="pWeekBoard" data-starth="${startH}">
+    ${topStrip||""}
     <div class="wb-scroll"><div class="wb-grid">${gutter}${cols}</div></div>${tray}</div>`;
 }
 
@@ -4440,6 +4486,10 @@ function pWireBoard(){
       const tk=pFindTask(g.id);
       if(tk&&day){ tk.due=day; tk.time=fmtT(t2);
         if(!(+tk.hours>0)) tk.hours=1;     // a slot implies a duration
+        /* under the v7 model a clock slot IS what makes something an Event —
+           dropping a dateless task onto an hour promotes it rather than
+           leaving a Task that contradicts its own definition */
+        tk.kind="event";
         done(); return; }
     }
     if(g.kind==="block"){                  /* recurring: time moves, the weekday set stays */
@@ -4579,14 +4629,15 @@ function renderSchedule(){
   $("#pBoardNav").style.display="";
   const days=pDaysFor(pScope,pSelISO);
   $("#pBoardLabel").textContent=pBoardLabel(pScope,days);
-  $("#pScheduleBody").innerHTML=pBoardHtml(days);
-  pWireBoard();
+  $("#pScheduleBody").innerHTML=pBoardHtml(days,pScope==="day"?pDatelessStripHtml():"");
+  pWireBoard(); pWireDatelessStrip();
   /* only a range that includes today moves; anything else is a static
      picture — nothing in the board holds focus, so a full repaint is safe */
   if(days.includes(pToday())) pTick=setInterval(()=>{
     if(curView!=="planner"||pScope==="timeline"){ pStopTick(); return; }
-    $("#pScheduleBody").innerHTML=pBoardHtml(pDaysFor(pScope,pSelISO));
-    pWireBoard();
+    $("#pScheduleBody").innerHTML=pBoardHtml(pDaysFor(pScope,pSelISO),
+      pScope==="day"?pDatelessStripHtml():"");
+    pWireBoard(); pWireDatelessStrip();
   },30000);
 }
 /* ---- overbooking warning, shown while you are still typing ----
@@ -4643,12 +4694,12 @@ function pTaskRow(tk,{inDone}={}){
   const overdue=tk.due&&tk.due<pToday();
   const badge=tk.due?`<span class="pill ${overdue?"over":"due"}">${esc(pDueLabel(tk.due))}</span>`:"";
   const open=pOpenTasks.has(tk.id);
-  const isProject=tk.kind==="project";
+  const isEvent=tk.kind==="event";
   const st=tk.steps||[], stDone=st.filter(x=>x.done).length;
-  /* Subtasks belong to projects only — a plain task with a "+ step" button on it
-     was clutter on every row. The trailing input adds one on Enter rather than
-     spawning a blank row you then have to find and fill. */
-  const steps=isProject?`<ul class="psteps">
+  /* Subtasks belong to Tasks — an Event is a slot in the day and does not
+     nest. The trailing input adds one on Enter rather than spawning a blank
+     row you then have to find and fill. */
+  const steps=!isEvent?`<ul class="psteps">
     ${st.map(sp=>`<li class="pstep${sp.done?" done":""}">
       <button type="button" class="tbox" data-ptog-step="${tk.id}:${sp.id}" aria-label="${sp.done?t("Mark not done"):t("Mark done")}">${sp.done?"✓":""}</button>
       <input type="text" class="ptask-title" data-pstep-title="${tk.id}:${sp.id}" value="${esc(sp.text)}" placeholder="${esc(t("Subtask…"))}">
@@ -4664,7 +4715,7 @@ function pTaskRow(tk,{inDone}={}){
       <button type="button" class="tbox" data-ptog="${tk.id}" aria-label="${esc(t("Mark done"))}"></button>
       <input type="text" class="ptask-title" data-ptitle="${tk.id}" value="${esc(tk.title)}" placeholder="${esc(t("Untitled task"))}">
       ${badge}
-      ${isProject&&st.length?`<span class="pproj-count">${stDone}/${st.length}</span>`:""}
+      ${!isEvent&&st.length?`<span class="pproj-count">${stDone}/${st.length}</span>`:""}
       ${tk.due?`<span class="ptask-hrs-ro">${pFmtH(tk.hours)}h</span>`:""}
       <span class="ptask-caret" aria-hidden="true">${open?"−":"+"}</span>
     </div>
@@ -4672,8 +4723,8 @@ function pTaskRow(tk,{inDone}={}){
       <div class="ptask-detail-row">
         <input type="number" class="mono-input hrs" data-phours="${tk.id}" value="${tk.hours}" min="0" max="24" step="0.5" aria-label="${esc(t("Hours"))}">
         <input type="date" class="mono-input" data-pdue="${tk.id}" value="${tk.due||""}" aria-label="${esc(t("Due date"))}">
-        <input type="time" class="mono-input" data-ptime="${tk.id}" value="${tk.time||""}" aria-label="${esc(t("Start time"))}">
-        <button type="button" class="btn mini" data-pconvert="${tk.id}">${esc(t(isProject?"Make a task":"Make a project"))}</button>
+        ${isEvent?`<input type="time" class="mono-input" data-ptime="${tk.id}" value="${tk.time||""}" aria-label="${esc(t("Start time"))}">`:""}
+        <button type="button" class="btn mini" data-pconvert="${tk.id}">${esc(t(isEvent?"Make a task":"Make an event"))}</button>
         <button type="button" class="tdel" data-pdel="${tk.id}" aria-label="${esc(t("Delete task"))}">×</button>
       </div>
       ${steps}
@@ -4698,9 +4749,20 @@ function pBlockRow(b){
     </div>
   </div>`;
 }
+/* the add form's project picker — the same projects the Timeline schedules,
+   so a task filed under one shows up against it in the All Projects overview */
+function pFillProjectSelect(){
+  const sel=$("#pAddProject"); if(!sel) return;
+  const keep=sel.value;
+  const projs=((S.projplan&&S.projplan.projects)||[]);
+  sel.innerHTML=`<option value="">${esc(t("no project"))}</option>`+
+    projs.map(p=>`<option value="${esc(p.id)}">${esc(p.name||t("Untitled project"))}</option>`).join("");
+  if(keep&&projs.some(p=>p.id===keep)) sel.value=keep;
+}
 function renderPlanner(){
   pEnsureView();
   pCareCache={};
+  pFillProjectSelect(); pSyncAddKind();
   $("#pSleepInput").value=S.planner.sleep;
   $("#pLinkCare").checked=S.planner.linkCare!==false;
   $("#pLinkHours").checked=S.planner.linkHours!==false;
@@ -4734,19 +4796,34 @@ function renderPlanner(){
 $("#pAddForm").addEventListener("submit",e=>{
   e.preventDefault();
   const title=$("#pAddTitle").value.trim(); if(!title) return;
-  const due=$("#pAddDue").value||pToday();
-  S.planner.tasks.push({id:uid(),title,due,time:$("#pAddTime").value||"",
-    hours:+$("#pAddHours").value||1,done:false,kind:pAddKindVal,steps:[]});
+  const isEvent=pAddKindVal==="event";
+  /* a Task's day is optional — leaving the date empty files it in the
+     dateless strip rather than silently landing it on today. An Event has to
+     sit somewhere, so it falls back to the selected day and needs a time. */
+  const due=$("#pAddDue").value||(isEvent?pToday():"");
+  const time=isEvent?($("#pAddTime").value||"09:00"):"";
+  S.planner.tasks.push({id:uid(),title,due,time,
+    hours:isEvent?(+$("#pAddHours").value||1):(+$("#pAddHours").value||0),
+    done:false,kind:isEvent?"event":"task",steps:[],
+    projectId:$("#pAddProject").value||null});
   $("#pAddTitle").value=""; $("#pAddTitle").focus();
-  pSelISO=due; touch(); renderPlanner();
+  if(due) pSelISO=due;
+  touch(); renderPlanner();
 });
 ["pAddDue","pAddHours","pAddTime"].forEach(id=>
   $("#"+id).addEventListener("input",pAddWarn));
-$("#pAddKind").addEventListener("click",e=>{
-  const b=e.target.closest("[data-pkind]"); if(!b) return;
-  pAddKindVal=b.dataset.pkind;
+/* the time field only means anything for an Event; hiding it for a Task is
+   what makes "a Task never has a clock slot" visible rather than a rule
+   the user has to remember */
+function pSyncAddKind(){
   document.querySelectorAll("#pAddKind [data-pkind]").forEach(x=>
     x.setAttribute("aria-pressed",String(x.dataset.pkind===pAddKindVal)));
+  document.querySelectorAll("#pAddForm .pev-only").forEach(el=>{
+    el.style.display=pAddKindVal==="event"?"":"none"; });
+}
+$("#pAddKind").addEventListener("click",e=>{
+  const b=e.target.closest("[data-pkind]"); if(!b) return;
+  pAddKindVal=b.dataset.pkind; pSyncAddKind();
 });
 $("#pQuickForm").addEventListener("submit",e=>{
   e.preventDefault();
@@ -4817,9 +4894,13 @@ document.querySelector("#view-planner").addEventListener("click",async e=>{
 
   const conv=e.target.closest("[data-pconvert]");
   if(conv){ const tk=pFindTask(conv.dataset.pconvert); if(!tk) return;
-    /* the one-way door opens: kind flips freely. Demoting keeps the steps in
-       the data — nothing is destroyed, they simply hide until promoted again */
-    tk.kind=tk.kind==="project"?"task":"project";
+    /* kind flips freely, and nothing is destroyed either way: becoming an
+       Event keeps any subtasks in the record (they simply hide, since an
+       Event does not nest), and becoming a Task keeps the hours but drops
+       the clock slot that is the whole difference between the two. */
+    if(tk.kind==="event"){ tk.kind="task"; tk.time=""; }
+    else { tk.kind="event"; tk.due=tk.due||pToday(); tk.time=tk.time||"09:00";
+           if(!(+tk.hours>0)) tk.hours=1; }
     touch(); renderPlanner(); return; }
 
   if(del){ const tk=pFindTask(del.dataset.pdel); if(!tk) return;
@@ -9715,6 +9796,7 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "Start fresh":"Začít znovu","Undo":"Zpět","Redo":"Znovu","+ New project":"+ Nový projekt",
 "Move projects":"Přesouvat projekty","Paint days":"Malovat dny","Quarter":"Čtvrtletí","6 months":"6 měsíců","Year":"Rok",
 "Timeline":"Časová osa","Half":"Půl roku","Linear":"Lineární","Grid":"Mřížka",
+"Anytime":"Kdykoliv","Mark done":"Označit hotové","no project":"bez projektu","Event":"Událost",
 "I don’t work weekends":"O víkendech nepracuji","Daily limit":"Denní limit",
 "Brush — drag across days":"Štětec — táhni přes dny","Esc to stop painting":"Esc ukončí malování",
 "Light — up to 60%":"Volno — do 60 %","Busy — 60–100%":"Vytíženo — 60–100 %","Over limit":"Přes limit",
@@ -9764,7 +9846,7 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "My day":"Můj den",
 "Plant care":"Péče o rostliny","Tracked work":"Měřená práce","jobs":"úkonů","running":"běží",
 "⚠ {h}h double-booked.":"⚠ {h}h se překrývá.","Over":"Přes","Overlaps another block":"Překrývá se s jiným blokem",
-"Make a project":"Změnit na projekt","Make a task":"Změnit na úkol",
+"Make an event":"Změnit na událost","Make a task":"Změnit na úkol",
 "Linked time":"Propojený čas","Plant care counts here":"Péče o rostliny se počítá sem",
 "Tracked hours count here":"Měřené hodiny se počítají sem",
 "Projects count here":"Projekty se počítají sem",
