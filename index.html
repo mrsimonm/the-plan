@@ -507,14 +507,16 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
    grip offered 4 grabbable rows, and the 3 it lost were the outer ones, which
    is exactly where you aim at an edge. Held fully inside, the whole grip is
    live. */
-.wb-h-n{top:0; left:8px; right:8px; height:8px; cursor:ns-resize}
-.wb-h-s{bottom:0; left:8px; right:8px; height:8px; cursor:ns-resize}
-.wb-h-w{left:0; top:8px; bottom:8px; width:8px; cursor:ew-resize}
-.wb-h-e{right:0; top:8px; bottom:8px; width:8px; cursor:ew-resize}
-.wb-h-nw{top:0; left:0; width:10px; height:10px; cursor:nwse-resize}
-.wb-h-ne{top:0; right:0; width:10px; height:10px; cursor:nesw-resize}
-.wb-h-sw{bottom:0; left:0; width:10px; height:10px; cursor:nesw-resize}
-.wb-h-se{bottom:0; right:0; width:10px; height:10px; cursor:nwse-resize}
+/* --grip is set per block from its rendered height (see pBoardHtml): the grips
+   have to stay a minority of a small block or the body is not grabbable. */
+.wb-h-n{top:0; left:14px; right:14px; height:var(--grip,8px); cursor:ns-resize}
+.wb-h-s{bottom:0; left:14px; right:14px; height:var(--grip,8px); cursor:ns-resize}
+.wb-h-w{left:0; top:var(--grip,8px); bottom:var(--grip,8px); width:6px; cursor:ew-resize}
+.wb-h-e{right:0; top:var(--grip,8px); bottom:var(--grip,8px); width:6px; cursor:ew-resize}
+.wb-h-nw{top:0; left:0; width:12px; height:var(--grip,8px); cursor:nwse-resize}
+.wb-h-ne{top:0; right:0; width:12px; height:var(--grip,8px); cursor:nesw-resize}
+.wb-h-sw{bottom:0; left:0; width:12px; height:var(--grip,8px); cursor:nesw-resize}
+.wb-h-se{bottom:0; right:0; width:12px; height:var(--grip,8px); cursor:nwse-resize}
 .wb-h-nw::after,.wb-h-ne::after,.wb-h-sw::after,.wb-h-se::after{content:"";
   position:absolute; inset:2px; border-radius:2px; background:var(--accent)}
 .wb-h-n::after,.wb-h-s::after{content:""; position:absolute; left:50%; top:50%;
@@ -526,8 +528,10 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
    nothing to drag. 9px keeps a usable middle at every size we render. */
 @media (hover:none){
   .wb-h{opacity:.9}
-  .wb-h-n,.wb-h-s{height:9px} .wb-h-w,.wb-h-e{width:9px}
-  .wb-h-nw,.wb-h-ne,.wb-h-sw,.wb-h-se{width:11px; height:11px}
+  /* a couple of px more than the mouse grip, still scaled to the block */
+  .wb-h-n,.wb-h-s{height:calc(var(--grip,8px) + 2px)}
+  .wb-h-w,.wb-h-e{width:8px; top:calc(var(--grip,8px) + 2px); bottom:calc(var(--grip,8px) + 2px)}
+  .wb-h-nw,.wb-h-ne,.wb-h-sw,.wb-h-se{width:14px; height:calc(var(--grip,8px) + 2px)}
 }
 /* while a resize is live, say what it will become */
 .wb-blk.rz{z-index:7; box-shadow:var(--shadow-lift)}
@@ -4729,7 +4733,14 @@ function pBoardHtml(days,topStrip,opts){
           leftMin>=60?t("{h}h left").replace("{h}",pFmtH(leftMin/60))
                      :t("{m}m left").replace("{m}",leftMin))}</em>`:""}`;
       const warn=it.clash?'<i class="clash" title="'+esc(t("Overlaps another block"))+'">⚠</i> ':"";
-      return `<div class="wb-blk wb-${kind}${live?" live":""}${compact?" compact":""}"${drag} style="top:${top}px; height:${hpx}px;${tint} ${lane}">
+      /* Grip thickness scales with the block, so the body stays the biggest
+         target on it. A flat 8px grip took nearly half the height of a one-hour
+         block (34px) top and bottom, so a grab meant for the body landed on a
+         handle: dragging down resized instead of moving, and a grab near a side
+         hit W/E and stretched the run across days. Held to a fifth of the
+         height, the middle is always at least ~60% of the block. */
+      const grip=Math.max(3,Math.min(8,Math.round(hpx*0.2)));
+      return `<div class="wb-blk wb-${kind}${live?" live":""}${compact?" compact":""}"${drag} style="top:${top}px; height:${hpx}px; --grip:${grip}px;${tint} ${lane}">
         ${compact
           ? `<b>${warn}${it.kind==="block"?"↻ ":""}${esc(it.time)} ${esc(it.name)}</b>`
           : `<b>${warn}${it.kind==="block"?"↻ ":""}${esc(it.name)}</b><span>${meta}</span>`}
