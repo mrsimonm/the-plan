@@ -557,6 +557,17 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .wb-adtick{width:11px; height:11px; flex:0 0 auto; border-radius:3px; cursor:pointer;
   border:1.5px solid var(--line-strong); background:var(--surface)}
 .wb-adtick:hover{border-color:var(--accent)}
+/* a ticked Quick Task: filled box, and the chip recedes without leaving the
+   day — the point is to read back what you did, not to make it vanish */
+.wb-adtick.on{background:var(--accent); border-color:var(--accent); position:relative}
+.wb-adtick.on::after{content:"✓"; position:absolute; inset:0; display:flex;
+  align-items:center; justify-content:center; font-size:8px; line-height:1; color:#fff}
+/* A Quick Task has no clock slot, so it is never picked up. touch-action goes
+   back to auto with it: the drag-only value would otherwise swallow a scroll
+   started on the chip, on a chip that cannot be dragged. */
+.wb-adtask.quick{cursor:default; touch-action:auto}
+.wb-adtask.done{opacity:.5}
+.wb-adtask.done:not(:hover){text-decoration:line-through; text-decoration-thickness:1px}
 /* Plachta: columns are a fixed width so the canvas scrolls rather than
    squeezing, and so the scroll maths can trust a known column pitch */
 /* max-content, not 0: a sticky box is clamped to its containing block, so a
@@ -2129,21 +2140,25 @@ html{overscroll-behavior-y:none}
     <div class="stack pstack">
 
     <form class="card pad qadd" id="pAddForm">
+      <!-- all four kinds are created from one place; Project opens its own
+           dialog because it is budgeted in hours, not placed on a clock -->
       <div class="seg segsm qadd-kind" id="pAddKind">
+        <button type="button" data-pkind="quick" aria-pressed="false">Quick</button>
         <button type="button" data-pkind="task" aria-pressed="true">Task</button>
         <button type="button" data-pkind="event" aria-pressed="false">Event</button>
+        <button type="button" data-pnew="project">Project</button>
       </div>
       <input type="text" id="pAddTitle" placeholder="What needs doing?" autocomplete="off">
       <div class="qadd-row2">
         <span class="field-label">on</span>
         <input type="date" id="pAddDue" class="mono-input">
-        <span class="field-label pev-only">at</span>
-        <input type="time" id="pAddTime" class="mono-input pev-only" aria-label="Start time">
-        <span class="field-label">takes</span>
-        <input type="number" id="pAddHours" class="mono-input hrs" value="1" min="0" max="24" step="0.5">
-        <span class="field-label">h</span>
-        <span class="field-label">for</span>
-        <select id="pAddProject" class="mono-input" aria-label="Link to a project"></select>
+        <span class="field-label pk-time">at</span>
+        <input type="time" id="pAddTime" class="mono-input pk-time" aria-label="Start time">
+        <span class="field-label pk-detail">takes</span>
+        <input type="number" id="pAddHours" class="mono-input hrs pk-detail" value="1" min="0" max="24" step="0.5">
+        <span class="field-label pk-detail">h</span>
+        <span class="field-label pk-detail">for</span>
+        <select id="pAddProject" class="mono-input pk-detail" aria-label="Link to a project"></select>
         <button class="btn primary mini" type="submit">Add</button>
       </div>
       <p class="pwarn" id="pAddWarn" hidden></p>
@@ -2961,7 +2976,15 @@ function migrate(d){
        the day IS the order, so no sequence field is needed. A group of one is
        not a group, so a stale single-member groupId is cleared on load. */
     if(tk.groupId===undefined) tk.groupId=null;
-    if(tk.kind!=="event"&&tk.kind!=="task") tk.kind="task";
+    /* The whitelist rejects junk from a hand-edited import, so every kind the
+       app can actually create has to be in it. "quick" was not, and this line
+       runs on EVERY load rather than behind the version gate — so a Quick Task
+       was quietly demoted to a Task the next time the app opened, and the
+       distinction never survived a reload. */
+    if(tk.kind!=="event"&&tk.kind!=="task"&&tk.kind!=="quick") tk.kind="task";
+    /* a Quick Task is a whole day with no clock slot and no duration; carrying
+       either would let it draw as a block */
+    if(tk.kind==="quick"){ tk.time=""; tk.hours=0; }
   });
   /* drop groupIds that ended up with a single member (a delete, or a hand
      edited import) — otherwise a lone record keeps claiming to be a span */
@@ -4091,8 +4114,12 @@ function pItemsFor(iso){
       time:b.time||"",overdue:false});
   });
   (S.planner.tasks||[]).forEach(tk=>{
-    if(tk.done) return;
-    if(!tk.due) return;                 // quick tasks have no day and no duration
+    const isQuick=tk.kind==="quick";
+    /* Everything else disappears once it is done. A Quick Task stays put and
+       greys out: ticking it off is the whole interaction, and a list that
+       empties itself as you tick it gives you nothing to read back. */
+    if(tk.done&&!isQuick) return;
+    if(!tk.due) return;                 // dateless items live in the tray below
     /* Only a TASK can be overdue. A task is a thing still to be done, so once
        its day passes it is pulled onto today and loses its slot — yesterday's
        09:00 means nothing now, and drawing it there would be a lie.
@@ -4101,7 +4128,9 @@ function pItemsFor(iso){
        overdue stripped their time on their own day too, so every past day of
        the calendar rendered empty and anything created on one vanished. */
     const isEvent=tk.kind==="event";
-    const overdue=!isEvent&&tk.due<pToday();
+    /* a Quick Task belongs to its day the way an Event does — it is what that
+       day held, so it is never dragged forward onto today */
+    const overdue=!isEvent&&!isQuick&&tk.due<pToday();
     if(!(tk.due===iso||(isToday&&overdue))) return;
     out.push({kind:"task",ref:tk,name:tk.title||t("Untitled task"),hours:+tk.hours||0,
       time:overdue?"":(tk.time||""),overdue});
@@ -4793,12 +4822,21 @@ function pBoardHtml(days,topStrip,opts){
        fold and read as lost — it belongs in its own day, in the lane that
        means "today, no particular time". Chips keep data-wb so they can still
        be dragged down onto an hour, which promotes them to Events. */
-    const adTasks=items.filter(it=>it.ref&&it.ref.kind==="task"&&!it.time&&it.ref.due===d);
+    /* Quick Tasks share this lane with untimed Tasks, but not its gestures: a
+       Quick Task has no clock slot to be dragged to, so it carries no data-wb
+       and cannot be picked up. Ticking it is the whole of it. */
+    const adTasks=items.filter(it=>it.ref&&(it.ref.kind==="task"||it.ref.kind==="quick")
+      &&!it.time&&it.ref.due===d);
     const allday=(adTasks.length||care)?`<div class="wb-allday">${
-      adTasks.map(it=>`<span class="wb-adtask" data-wb="tray:${it.ref.id}" data-day="${d}"
-        title="${esc(it.name)}${+it.hours>0?" · "+pFmtH(it.hours)+"h":""} — ${esc(t("drag onto an hour to give it a time"))}">
-        <i class="wb-adtick" data-adtick="${it.ref.id}" role="button" tabindex="0"
-          aria-label="${esc(t("Mark done"))}"></i>${esc(it.name)}</span>`).join("")}${
+      adTasks.map(it=>{
+        const q=it.ref.kind==="quick", dn=q&&it.ref.done;
+        return `<span class="wb-adtask${q?" quick":""}${dn?" done":""}"${
+          q?"":` data-wb="tray:${it.ref.id}" data-day="${d}"`}
+          title="${esc(it.name)}${+it.hours>0?" · "+pFmtH(it.hours)+"h":""}${
+            q?"":" — "+esc(t("drag onto an hour to give it a time"))}">
+          <i class="wb-adtick${dn?" on":""}" data-adtick="${it.ref.id}" role="button" tabindex="0"
+            aria-label="${esc(dn?t("Mark not done"):t("Mark done"))}"></i>${esc(it.name)}</span>`;
+      }).join("")}${
       care?`<span class="wb-adcare" title="${esc(care.name)} · ${pFmtH(care.hours)}h">🌿</span>`:""}</div>`
       :'<div class="wb-allday"></div>';
     return `<div class="wb-col${d===pToday()?" today":""}${d.slice(8)==="01"?" mstart":""}" data-wbday="${d}">
@@ -5260,7 +5298,12 @@ function pWireBoard(){
     const tick=e.target.closest("[data-adtick]"); if(!tick) return;
     const tk=pFindTask(tick.dataset.adtick); if(!tk) return;
     e.stopPropagation();
-    tk.done=true; tk.doneAt=new Date().toISOString();
+    /* A Quick Task stays on its day after it is ticked, so the tick has to
+       work both ways — otherwise one mis-tap greys it for good with nothing
+       to undo it. Everything else leaves the board when done, so there is no
+       tick left to press and one-way is right. */
+    if(tk.kind==="quick"&&tk.done){ tk.done=false; delete tk.doneAt; }
+    else { tk.done=true; tk.doneAt=new Date().toISOString(); }
     touch(); renderPlanner();
   });
   board.addEventListener("dblclick",e=>{
@@ -5679,16 +5722,22 @@ function renderPlanner(){
 $("#pAddForm").addEventListener("submit",e=>{
   e.preventDefault();
   const title=$("#pAddTitle").value.trim(); if(!title) return;
-  const isEvent=pAddKindVal==="event";
-  /* a Task's day is optional — leaving the date empty files it in the
-     dateless strip rather than silently landing it on today. An Event has to
-     sit somewhere, so it falls back to the selected day and needs a time. */
-  const due=$("#pAddDue").value||(isEvent?pToday():"");
-  const time=isEvent?($("#pAddTime").value||"09:00"):"";
+  const kind=pAddKindVal;
+  const isEvent=kind==="event", isQuick=kind==="quick";
+  /* A Task's day is optional — leaving the date empty files it in the dateless
+     strip rather than silently landing it on today. An Event has to sit
+     somewhere, so it falls back to the selected day and needs a time. A Quick
+     Task IS a day — it belongs to one whole day and never to an hour — so a
+     blank date means the day you are looking at, not "no day". */
+  const due=$("#pAddDue").value||(isEvent?pToday():isQuick?(pSelISO||pToday()):"");
+  /* a Task may carry a time; blank simply means it has not been given one */
+  const time=isEvent?($("#pAddTime").value||"09:00")
+            :isQuick?""
+            :($("#pAddTime").value||"");
   S.planner.tasks.push({id:uid(),title,due,time,
-    hours:isEvent?(+$("#pAddHours").value||1):(+$("#pAddHours").value||0),
-    done:false,kind:isEvent?"event":"task",steps:[],
-    projectId:$("#pAddProject").value||null});
+    hours:isQuick?0:isEvent?(+$("#pAddHours").value||1):(+$("#pAddHours").value||0),
+    done:false,kind,steps:[],
+    projectId:isQuick?null:($("#pAddProject").value||null)});
   $("#pAddTitle").value=""; $("#pAddTitle").focus();
   if(due){ pSelISO=due; pWinShift=0; }
   touch(); renderPlanner();
@@ -5701,10 +5750,27 @@ $("#pAddForm").addEventListener("submit",e=>{
 function pSyncAddKind(){
   document.querySelectorAll("#pAddKind [data-pkind]").forEach(x=>
     x.setAttribute("aria-pressed",String(x.dataset.pkind===pAddKindVal)));
-  document.querySelectorAll("#pAddForm .pev-only").forEach(el=>{
-    el.style.display=pAddKindVal==="event"?"":"none"; });
+  /* A Quick Task is the whole day and nothing else: no clock, no duration, no
+     project. A Task MAY carry a time but does not have to, so it keeps the
+     field and leaves it blank. An Event has to have one. */
+  const quick=pAddKindVal==="quick";
+  document.querySelectorAll("#pAddForm .pk-time").forEach(el=>{
+    el.style.display=quick?"none":""; });
+  document.querySelectorAll("#pAddForm .pk-detail").forEach(el=>{
+    el.style.display=quick?"none":""; });
+  const ti=$("#pAddTime");
+  if(ti) ti.placeholder=pAddKindVal==="task"?"optional":"";
+  const title=$("#pAddTitle");
+  if(title) title.placeholder=quick?t("Something to do that day"):t("What needs doing?");
 }
 $("#pAddKind").addEventListener("click",e=>{
+  /* Project is budgeted in hours over a span, not placed on a clock, so it
+     cannot share this row's fields — it opens its own dialog instead. The
+     selected kind is left alone so the form stays where you left it. */
+  if(e.target.closest('[data-pnew="project"]')){
+    if(window.ppNewProject) ppNewProject();
+    return;
+  }
   const b=e.target.closest("[data-pkind]"); if(!b) return;
   pAddKindVal=b.dataset.pkind; pSyncAddKind();
 });
@@ -12416,6 +12482,9 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
     return true;
   };
   window.ppOpenProject = function (id) { PS = S.projplan; var p = byId(id); if (p) openP(p); };
+  /* Lets the planner's Add row create a Project without leaving the planner.
+     The dialog is body-level, so it opens fine while this view is hidden. */
+  window.ppNewProject = function () { PS = S.projplan; openP(null); };
   window.ppUndo = undo;
   /* Read-only feed for the Daily Planner's linked time: which projects want
      hours on a given day, per the same schedule engine that draws the bars.
