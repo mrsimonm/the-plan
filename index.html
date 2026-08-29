@@ -4538,9 +4538,15 @@ function pBoardHtml(days,topStrip){
         ${it.kind==="proj"?`<i class="wb-phandle" data-wbph="${it.id}" data-day="${d}"></i>`
           :(it.ref&&it.ref.kind==="event")&&drag
             /* Events get the full eight: N/S change duration on the day, E/W
-               stretch the run across days, corners do both. */
-            ?["n","s","w","e","nw","ne","sw","se"].map(h=>
-              `<i class="wb-h wb-h-${h}" data-wbrz="${h}"></i>`).join("")
+               stretch the run across days, corners do both — but only once the
+               block is tall enough to keep a grabbable middle. On a quarter-hour
+               block (17px) the N and S grips alone left 3px of body and the
+               thing could not be dragged at all, so a short Event keeps just the
+               bottom edge and stays movable. */
+            ?(hpx>=30
+              ?["n","s","w","e","nw","ne","sw","se"].map(h=>
+                `<i class="wb-h wb-h-${h}" data-wbrz="${h}"></i>`).join("")
+              :`<i class="wb-h wb-h-s" data-wbrz="s"></i>`)
           :drag&&hpx>=26?`<i class="wb-rsz" data-wbr="${it.kind}:${it.ref.id}" data-day="${d}"></i>`:""}
       </div>`; }).join("");
     let lines=""; for(let h=1;h<endH-startH;h++) lines+=`<i class="wb-hl" style="top:${h*WB_PXH}px"></i>`;
