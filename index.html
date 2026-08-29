@@ -482,6 +482,9 @@ input[type="time"].mono-input{width:88px}
 .pslot-when{margin:0 0 10px; font-family:"JetBrains Mono",ui-monospace,monospace;
   font-size:12px; color:var(--ink-3)}
 .pslot-row{display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:10px}
+/* the footer is a flex row, and display:flex beats the hidden attribute — New
+   mode was still showing Delete and Save */
+.dlg-foot [hidden]{display:none}
 /* focus mode: the schedule card fills the screen for a second monitor.
    position:fixed rather than the Fullscreen API so it still works when the
    app is an installed PWA and so Escape can leave without a permission
@@ -4063,10 +4066,16 @@ function pItemsFor(iso){
   (S.planner.tasks||[]).forEach(tk=>{
     if(tk.done) return;
     if(!tk.due) return;                 // quick tasks have no day and no duration
-    const overdue=tk.due<pToday();
+    /* Only a TASK can be overdue. A task is a thing still to be done, so once
+       its day passes it is pulled onto today and loses its slot — yesterday's
+       09:00 means nothing now, and drawing it there would be a lie.
+       An EVENT is a record of when something was scheduled: 12:30 on the 5th
+       is still 12:30 on the 5th after the 5th has passed. Treating events as
+       overdue stripped their time on their own day too, so every past day of
+       the calendar rendered empty and anything created on one vanished. */
+    const isEvent=tk.kind==="event";
+    const overdue=!isEvent&&tk.due<pToday();
     if(!(tk.due===iso||(isToday&&overdue))) return;
-    /* an overdue task pulled onto today keeps its hours but loses its slot —
-       yesterday's 09:00 means nothing now, and drawing it there would be a lie */
     out.push({kind:"task",ref:tk,name:tk.title||t("Untitled task"),hours:+tk.hours||0,
       time:overdue?"":(tk.time||""),overdue});
   });
@@ -4580,7 +4589,7 @@ function pBoardHtml(days,topStrip){
        fold and read as lost — it belongs in its own day, in the lane that
        means "today, no particular time". Chips keep data-wb so they can still
        be dragged down onto an hour, which promotes them to Events. */
-    const adTasks=items.filter(it=>it.ref&&it.ref.kind==="task"&&!it.time&&!it.overdue);
+    const adTasks=items.filter(it=>it.ref&&it.ref.kind==="task"&&!it.time&&it.ref.due===d);
     const allday=(adTasks.length||care)?`<div class="wb-allday">${
       adTasks.map(it=>`<span class="wb-adtask" data-wb="tray:${it.ref.id}" data-day="${d}"
         title="${esc(it.name)}${+it.hours>0?" · "+pFmtH(it.hours)+"h":""} — ${esc(t("drag onto an hour to give it a time"))}">
@@ -4598,10 +4607,13 @@ function pBoardHtml(days,topStrip){
   /* the tray: tasks with no time yet, plus a non-draggable line for any day
      with unscheduled plant care — two kinds of homeless task, this range's
      untimed ones and anything overdue, whose old slot is gone either way */
-  /* dated untimed Tasks now show in their own day's all-day lane, so the tray
-     is left with the only thing that has nowhere else to be: overdue items,
-     whose original day is gone and which need re-planning */
-  const trayTasks=(S.planner.tasks||[]).filter(tk=>!tk.done&&tk.due&&tk.due<pToday());
+  /* dated untimed Tasks show in their own day's all-day lane, and past Events
+     stay on the day they happened, so the tray is left with the one thing that
+     genuinely has nowhere else to be: an overdue TASK, still to be done, whose
+     day has gone. A past Event is a record, not a to-do, and listing it here
+     as well would double it on screen. */
+  const trayTasks=(S.planner.tasks||[]).filter(tk=>
+    !tk.done&&tk.due&&tk.kind!=="event"&&tk.due<pToday()&&!days.includes(tk.due));
   const careTray=days.map((d,di)=>{
     const c=byDay[di].find(it=>it.kind==="care"); if(!c) return "";
     const x=pParseISO(d);
@@ -5138,15 +5150,17 @@ function renderSchedule(){
   $("#pBoardNav").style.display="";
   const days=pDaysFor(pScope,pSelISO);
   $("#pBoardLabel").textContent=pBoardLabel(pScope,days);
-  $("#pScheduleBody").innerHTML=pBoardHtml(days,pScope==="day"?pDatelessStripHtml():"");
+  /* the Anytime strip rides above every board width, not just Day: a dateless
+     task was invisible in Week and Month, which is the same "I made it and it
+     is not on the calendar" complaint in a different scope */
+  $("#pScheduleBody").innerHTML=pBoardHtml(days,pDatelessStripHtml());
   pWireBoard(); pWireDatelessStrip();
   /* only a range that includes today moves; anything else is a static
      picture — nothing in the board holds focus, so a full repaint is safe */
   if(days.includes(pToday())) pTick=setInterval(()=>{
     if(curView!=="planner"||pScope==="timeline"){ pStopTick(); return; }
     if(pBoardBusy) return;                 // never repaint mid-gesture
-    $("#pScheduleBody").innerHTML=pBoardHtml(pDaysFor(pScope,pSelISO),
-      pScope==="day"?pDatelessStripHtml():"");
+    $("#pScheduleBody").innerHTML=pBoardHtml(pDaysFor(pScope,pSelISO),pDatelessStripHtml());
     pWireBoard(); pWireDatelessStrip();
   },30000);
 }
