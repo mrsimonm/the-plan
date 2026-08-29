@@ -4631,13 +4631,16 @@ $("#pSlotSave").addEventListener("click",()=>{
   const pid=$("#pSlotProject").value||null;
   const done=$("#pSlotDone").checked;
   const newDue=$("#pSlotDate").value||tk.due;
-  /* Moving the day from here moves THIS day, exactly as dragging its body
-     does since Wave 1 — so it leaves the run rather than dragging its
-     neighbours with it. Reuse the same splitter so a remainder can never be
-     left with a hole in it. */
-  if(newDue!==tk.due) pDetachFromRun(tk);
-  /* title, time, duration and project describe the whole run; the day, the
-     kind and the done-state are this record's own */
+  /* A run is a multi-day EVENT. Moving this day out of it, or making it stop
+     being an Event at all, both take it out of the run — otherwise a Task was
+     left holding a groupId and the run mixed kinds, after which pApplyToGroup
+     would push Event edits onto the Task and pSetGroupSpan would mint Events
+     back over it. Same splitter as the body-drag, so no remainder keeps a
+     hole. */
+  const leavesRun = newDue!==tk.due || (tk.kind==="event"&&!isEvent);
+  if(leavesRun) pDetachFromRun(tk);
+  /* title, time, duration and project describe the whole run — but once this
+     record has left, the "group" is just itself, which is what we want */
   pApplyToGroup(tk,m=>{ m.title=title; m.time=time; m.hours=hours; m.projectId=pid; });
   tk.due=newDue;
   tk.kind=isEvent?"event":"task";
