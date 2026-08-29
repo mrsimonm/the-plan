@@ -509,14 +509,18 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
    live. */
 /* --grip is set per block from its rendered height (see pBoardHtml): the grips
    have to stay a minority of a small block or the body is not grabbable. */
-.wb-h-n{top:0; left:14px; right:14px; height:var(--grip,8px); cursor:ns-resize}
-.wb-h-s{bottom:0; left:14px; right:14px; height:var(--grip,8px); cursor:ns-resize}
-.wb-h-w{left:0; top:var(--grip,8px); bottom:var(--grip,8px); width:6px; cursor:ew-resize}
-.wb-h-e{right:0; top:var(--grip,8px); bottom:var(--grip,8px); width:6px; cursor:ew-resize}
-.wb-h-nw{top:0; left:0; width:12px; height:var(--grip,8px); cursor:nwse-resize}
-.wb-h-ne{top:0; right:0; width:12px; height:var(--grip,8px); cursor:nesw-resize}
-.wb-h-sw{bottom:0; left:0; width:12px; height:var(--grip,8px); cursor:nesw-resize}
-.wb-h-se{bottom:0; right:0; width:12px; height:var(--grip,8px); cursor:nwse-resize}
+/* Widths are capped as a PERCENTAGE as well as in px: a Month or Plachta column
+   is ~40px wide, where flat 12px corners plus the side grips left only half the
+   block grabbable. min() keeps the same comfortable target on a wide Day column
+   and shrinks it on a narrow one. */
+.wb-h-n{top:0; left:min(14px,22%); right:min(14px,22%); height:var(--grip,8px); cursor:ns-resize}
+.wb-h-s{bottom:0; left:min(14px,22%); right:min(14px,22%); height:var(--grip,8px); cursor:ns-resize}
+.wb-h-w{left:0; top:var(--grip,8px); bottom:var(--grip,8px); width:min(6px,10%); cursor:ew-resize}
+.wb-h-e{right:0; top:var(--grip,8px); bottom:var(--grip,8px); width:min(6px,10%); cursor:ew-resize}
+.wb-h-nw{top:0; left:0; width:min(12px,20%); height:var(--grip,8px); cursor:nwse-resize}
+.wb-h-ne{top:0; right:0; width:min(12px,20%); height:var(--grip,8px); cursor:nesw-resize}
+.wb-h-sw{bottom:0; left:0; width:min(12px,20%); height:var(--grip,8px); cursor:nesw-resize}
+.wb-h-se{bottom:0; right:0; width:min(12px,20%); height:var(--grip,8px); cursor:nwse-resize}
 .wb-h-nw::after,.wb-h-ne::after,.wb-h-sw::after,.wb-h-se::after{content:"";
   position:absolute; inset:2px; border-radius:2px; background:var(--accent)}
 .wb-h-n::after,.wb-h-s::after{content:""; position:absolute; left:50%; top:50%;
@@ -530,8 +534,8 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
   .wb-h{opacity:.9}
   /* a couple of px more than the mouse grip, still scaled to the block */
   .wb-h-n,.wb-h-s{height:calc(var(--grip,8px) + 2px)}
-  .wb-h-w,.wb-h-e{width:8px; top:calc(var(--grip,8px) + 2px); bottom:calc(var(--grip,8px) + 2px)}
-  .wb-h-nw,.wb-h-ne,.wb-h-sw,.wb-h-se{width:14px; height:calc(var(--grip,8px) + 2px)}
+  .wb-h-w,.wb-h-e{width:min(8px,12%); top:calc(var(--grip,8px) + 2px); bottom:calc(var(--grip,8px) + 2px)}
+  .wb-h-nw,.wb-h-ne,.wb-h-sw,.wb-h-se{width:min(14px,22%); height:calc(var(--grip,8px) + 2px)}
 }
 /* while a resize is live, say what it will become */
 .wb-blk.rz{z-index:7; box-shadow:var(--shadow-lift)}
