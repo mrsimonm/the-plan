@@ -5011,8 +5011,10 @@ function pBoardHtml(days,topStrip,opts){
      chip pushed its hour track down and its grid no longer lined up with its
      neighbours. Every column reserves the same number of rows — that of the
      busiest day — so the board stays on one baseline whatever is in it. */
+  /* must match what the lane actually draws, Quick Tasks included, or a day
+     full of them reserves too few rows and clips its own contents */
   const adCount=days.map((d,di)=>byDay[di].filter(it=>
-      it.ref&&it.ref.kind==="task"&&!it.time&&it.ref.due===d).length
+      it.ref&&(it.ref.kind==="task"||it.ref.kind==="quick")&&!it.time&&it.ref.due===d).length
     + (byDay[di].some(it=>it.kind==="care")?1:0));
   const adRows=Math.min(3,Math.max(1,...adCount));
   const cols=days.map((d,di)=>{
@@ -5134,8 +5136,14 @@ function pBoardHtml(days,topStrip,opts){
      genuinely has nowhere else to be: an overdue TASK, still to be done, whose
      day has gone. A past Event is a record, not a to-do, and listing it here
      as well would double it on screen. */
+  /* "not an Event" used to be the same thing as "a Task", and a Quick Task
+     slipped through it: once its day had passed and fallen outside the board's
+     window it appeared here as a draggable chip, and dropping it on an hour
+     promoted it to a timed Event — the one thing a Quick Task must never
+     become. It belongs to its day and is never carried forward. */
   const trayTasks=(S.planner.tasks||[]).filter(tk=>
-    !tk.done&&tk.due&&tk.kind!=="event"&&tk.due<pToday()&&!days.includes(tk.due));
+    !tk.done&&tk.due&&tk.kind!=="event"&&tk.kind!=="quick"
+    &&tk.due<pToday()&&!days.includes(tk.due));
   const careTray=days.map((d,di)=>{
     const c=byDay[di].find(it=>it.kind==="care"); if(!c) return "";
     const x=pParseISO(d);
@@ -5507,7 +5515,11 @@ function pWireBoard(){
       if(g.kind==="block"){ const b=pFindBlock(g.id);
         if(b){ const day=g.day0||pSelISO;
           const oc=pBlockOn(b,day)||{time:b.time||""};
-          b.ex=b.ex||{}; b.ex[day]={time:oc.time,hours:hrs};
+          /* clamp to a real day: the drag height is never capped, so pulling
+             the handle past the bottom of the column produced more than 24
+             hours. Every other writer of ex — the day dialog and migrate's
+             own sanitiser — already bounds it; this one did not. */
+          b.ex=b.ex||{}; b.ex[day]={time:oc.time,hours:Math.max(0,Math.min(24,hrs))};
           done(); return; } }
       renderSchedule(); return;
     }
@@ -5531,6 +5543,11 @@ function pWireBoard(){
       : snap(time);
     if(g.kind==="task"||g.kind==="tray"){
       const tk=pFindTask(g.id);
+      /* second lock on the same door: a Quick Task has no clock slot, so no
+         drop can give it one. The chip should never be draggable in the first
+         place, but this is the path that would rewrite the record, so it
+         refuses here too rather than trusting every future caller. */
+      if(tk&&tk.kind==="quick"){ g.el.style.transform=""; renderSchedule(); return; }
       if(tk&&day){
         /* Dragging the BODY moves exactly the day you dragged, never its
            neighbours. A run used to move as one, so pulling a single day
