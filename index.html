@@ -507,14 +507,20 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
    grip offered 4 grabbable rows, and the 3 it lost were the outer ones, which
    is exactly where you aim at an edge. Held fully inside, the whole grip is
    live. */
-.wb-h-n{top:0; left:8px; right:8px; height:8px; cursor:ns-resize}
-.wb-h-s{bottom:0; left:8px; right:8px; height:8px; cursor:ns-resize}
-.wb-h-w{left:0; top:8px; bottom:8px; width:8px; cursor:ew-resize}
-.wb-h-e{right:0; top:8px; bottom:8px; width:8px; cursor:ew-resize}
-.wb-h-nw{top:0; left:0; width:10px; height:10px; cursor:nwse-resize}
-.wb-h-ne{top:0; right:0; width:10px; height:10px; cursor:nesw-resize}
-.wb-h-sw{bottom:0; left:0; width:10px; height:10px; cursor:nesw-resize}
-.wb-h-se{bottom:0; right:0; width:10px; height:10px; cursor:nwse-resize}
+/* --grip is set per block from its rendered height (see pBoardHtml): the grips
+   have to stay a minority of a small block or the body is not grabbable. */
+/* Widths are capped as a PERCENTAGE as well as in px: a Month or Plachta column
+   is ~40px wide, where flat 12px corners plus the side grips left only half the
+   block grabbable. min() keeps the same comfortable target on a wide Day column
+   and shrinks it on a narrow one. */
+.wb-h-n{top:0; left:min(14px,22%); right:min(14px,22%); height:var(--grip,8px); cursor:ns-resize}
+.wb-h-s{bottom:0; left:min(14px,22%); right:min(14px,22%); height:var(--grip,8px); cursor:ns-resize}
+.wb-h-w{left:0; top:var(--grip,8px); bottom:var(--grip,8px); width:min(6px,10%); cursor:ew-resize}
+.wb-h-e{right:0; top:var(--grip,8px); bottom:var(--grip,8px); width:min(6px,10%); cursor:ew-resize}
+.wb-h-nw{top:0; left:0; width:min(12px,20%); height:var(--grip,8px); cursor:nwse-resize}
+.wb-h-ne{top:0; right:0; width:min(12px,20%); height:var(--grip,8px); cursor:nesw-resize}
+.wb-h-sw{bottom:0; left:0; width:min(12px,20%); height:var(--grip,8px); cursor:nesw-resize}
+.wb-h-se{bottom:0; right:0; width:min(12px,20%); height:var(--grip,8px); cursor:nwse-resize}
 .wb-h-nw::after,.wb-h-ne::after,.wb-h-sw::after,.wb-h-se::after{content:"";
   position:absolute; inset:2px; border-radius:2px; background:var(--accent)}
 .wb-h-n::after,.wb-h-s::after{content:""; position:absolute; left:50%; top:50%;
@@ -526,8 +532,10 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
    nothing to drag. 9px keeps a usable middle at every size we render. */
 @media (hover:none){
   .wb-h{opacity:.9}
-  .wb-h-n,.wb-h-s{height:9px} .wb-h-w,.wb-h-e{width:9px}
-  .wb-h-nw,.wb-h-ne,.wb-h-sw,.wb-h-se{width:11px; height:11px}
+  /* a couple of px more than the mouse grip, still scaled to the block */
+  .wb-h-n,.wb-h-s{height:calc(var(--grip,8px) + 2px)}
+  .wb-h-w,.wb-h-e{width:min(8px,12%); top:calc(var(--grip,8px) + 2px); bottom:calc(var(--grip,8px) + 2px)}
+  .wb-h-nw,.wb-h-ne,.wb-h-sw,.wb-h-se{width:min(14px,22%); height:calc(var(--grip,8px) + 2px)}
 }
 /* while a resize is live, say what it will become */
 .wb-blk.rz{z-index:7; box-shadow:var(--shadow-lift)}
@@ -4478,8 +4486,22 @@ function pWireDatelessStrip(){
 function pGroupOf(tk){
   if(!tk) return [];
   if(!tk.groupId) return [tk];
-  return (S.planner.tasks||[]).filter(x=>x.groupId===tk.groupId)
+  const all=(S.planner.tasks||[]).filter(x=>x.groupId===tk.groupId)
     .sort((a,b)=>String(a.due).localeCompare(String(b.due)));
+  /* Only the CONTIGUOUS stretch around tk is the run. A group gains a hole
+     whenever a member leaves it — dragged out, deleted from the edit dialog,
+     or deleted from the day list — and every caller treats this list as a span
+     from its first day to its last. pSetGroupSpan then FILLS that span, so a
+     single resize afterwards minted a fresh record on the missing day: the day
+     you just deleted reappearing by itself. Cutting at the gap here fixes that
+     for every caller at once, rather than each place a member can leave. */
+  const i=all.indexOf(tk);
+  if(i<0) return [tk];
+  const adj=(a,b)=>ymd(pNextDay(fromYmd(a)))===b;
+  let lo=i, hi=i;
+  while(lo>0&&adj(all[lo-1].due,all[lo].due)) lo--;
+  while(hi<all.length-1&&adj(all[hi].due,all[hi+1].due)) hi++;
+  return all.slice(lo,hi+1);
 }
 function pGroupSpan(tk){
   const g=pGroupOf(tk);
@@ -4729,7 +4751,14 @@ function pBoardHtml(days,topStrip,opts){
           leftMin>=60?t("{h}h left").replace("{h}",pFmtH(leftMin/60))
                      :t("{m}m left").replace("{m}",leftMin))}</em>`:""}`;
       const warn=it.clash?'<i class="clash" title="'+esc(t("Overlaps another block"))+'">⚠</i> ':"";
-      return `<div class="wb-blk wb-${kind}${live?" live":""}${compact?" compact":""}"${drag} style="top:${top}px; height:${hpx}px;${tint} ${lane}">
+      /* Grip thickness scales with the block, so the body stays the biggest
+         target on it. A flat 8px grip took nearly half the height of a one-hour
+         block (34px) top and bottom, so a grab meant for the body landed on a
+         handle: dragging down resized instead of moving, and a grab near a side
+         hit W/E and stretched the run across days. Held to a fifth of the
+         height, the middle is always at least ~60% of the block. */
+      const grip=Math.max(3,Math.min(8,Math.round(hpx*0.2)));
+      return `<div class="wb-blk wb-${kind}${live?" live":""}${compact?" compact":""}"${drag} style="top:${top}px; height:${hpx}px; --grip:${grip}px;${tint} ${lane}">
         ${compact
           ? `<b>${warn}${it.kind==="block"?"↻ ":""}${esc(it.time)} ${esc(it.name)}</b>`
           : `<b>${warn}${it.kind==="block"?"↻ ":""}${esc(it.name)}</b><span>${meta}</span>`}
@@ -5111,9 +5140,20 @@ function pWireBoard(){
     }
     if(!g.moved){
       g.el.style.transform=""; g.el.classList.remove("sizing"); delete g.el.dataset.live;
-      /* a plain tap opens the thing itself: a project its editor, a task its day */
+      /* A plain tap opens the THING you tapped; it does not navigate. Going to
+         a day is what the day label is for (data-wbgo), so tapping a block no
+         longer jumps the whole board to that day and loses your place.
+         Only an Event carries a time and a duration, so only an Event has an
+         edit dialog under the v7 model. A timed Task, a recurring block and a
+         project day have nothing to open yet — giving them editors is Wave 2 —
+         so they keep the old jump-to-day rather than making the tap do nothing
+         at all. */
       if(g.mode==="projmove"||g.mode==="projday"){ window.ppOpenProject&&ppOpenProject(g.id); }
-      else if(g.mode==="move"){ const d=g.day0; if(d){ pSelISO=d; pScope="day"; pWinShift=0; pDayPanel(); renderSchedule(); } }
+      else if(g.mode==="move"){
+        const tk=(g.kind==="task"||g.kind==="tray")?pFindTask(g.id):null;
+        if(tk&&tk.kind==="event"){ pOpenEditDialog(g.id); }
+        else { const d=g.day0; if(d){ pSelISO=d; pScope="day"; pWinShift=0; pDayPanel(); renderSchedule(); } }
+      }
       return;
     }
     if(g.mode==="projmove"){
@@ -5160,23 +5200,45 @@ function pWireBoard(){
     if(g.kind==="task"||g.kind==="tray"){
       const tk=pFindTask(g.id);
       if(tk&&day){
-        /* a run moves as one: dropping any member shifts every day of it by
-           the same delta and gives them all the new time. Moving one member
-           alone would land two records on the same day and leave the run
-           disagreeing with itself about when it happens. */
+        /* Dragging the BODY moves exactly the day you dragged, never its
+           neighbours. A run used to move as one, so pulling a single day
+           carried the whole thing across the calendar — indistinguishable, to
+           the person doing it, from the app ignoring which block they grabbed.
+           The two behaviours are now cleanly split: the body moves one day, and
+           reshaping a run stays with the W/E handles, the only place a
+           multi-day span is edited. Leaving the run detaches this day from it;
+           a remainder of one is not a run either, so its group is cleared too,
+           or the next drag of THAT block would behave as grouped for no
+           visible reason. */
         const grp=tk.groupId?pGroupOf(tk):null;
         if(grp&&grp.length>1){
-          const shift=Math.round((fromYmd(day)-fromYmd(tk.due))/DAY);
-          const nt=fmtT(t2);
-          grp.forEach(m=>{ m.due=ymd(fromYmd(m.due)+shift*DAY); m.time=nt; });
-        }else{
-          tk.due=day; tk.time=fmtT(t2);
-          if(!(+tk.hours>0)) tk.hours=1;     // a slot implies a duration
-          /* under the v7 model a clock slot IS what makes something an Event —
-             dropping a dateless task onto an hour promotes it rather than
-             leaving a Task that contradicts its own definition */
-          tk.kind="event";
+          tk.groupId=null;
+          /* What is left has to stay CONTIGUOUS. pSetGroupSpan fills every day
+             between a run's first and last, so a run with a hole in it would
+             mint a fresh record on the very day just detached the next time
+             anyone dragged its W/E handle — the day you pulled out reappearing
+             beside the one you moved. Split the remainder at the gap instead:
+             each contiguous stretch becomes its own run, and a stretch of one
+             is not a run at all. */
+          const rest=grp.filter(m=>m!==tk)
+            .sort((a,b)=>String(a.due).localeCompare(String(b.due)));
+          let seg=[];
+          const flush=()=>{ if(!seg.length) return;
+            const id=seg.length>1?("g"+uid()):null;
+            seg.forEach(m=>{ m.groupId=id; });
+            seg=[]; };
+          rest.forEach(m=>{
+            if(seg.length&&ymd(pNextDay(fromYmd(seg[seg.length-1].due)))!==m.due) flush();
+            seg.push(m);
+          });
+          flush();
         }
+        tk.due=day; tk.time=fmtT(t2);
+        if(!(+tk.hours>0)) tk.hours=1;       // a slot implies a duration
+        /* under the v7 model a clock slot IS what makes something an Event —
+           dropping a dateless task onto an hour promotes it rather than
+           leaving a Task that contradicts its own definition */
+        tk.kind="event";
         done(); return; }
     }
     if(g.kind==="block"){                  /* recurring: time moves, the weekday set stays */
