@@ -5140,9 +5140,19 @@ function pWireBoard(){
       renderSchedule(); return;
     }
     const {day,time}=geom(e.clientX,e.clientY);
-    /* the past is a record, not a plan — a drop there snaps back */
+    /* the past is a record, not a plan — a drop there snaps back.
+       Except onto the day the record ALREADY belongs to: saying when that day's
+       work happened is not planning the past. Without this, a record carried
+       over from before the Task/Event split — an old planner "project", which
+       never had a clock time — was stranded. It drew as an all-day chip with no
+       handles, dragging it refused because its own day had passed, and the edit
+       dialog only opens for Events, so there was no way to make it a block at
+       all short of recreating it. */
     if((g.kind==="task"||g.kind==="tray")&&day&&day<pToday()){
-      g.el.style.transform=""; renderSchedule(); return;
+      const tkPast=pFindTask(g.id);
+      if(!(tkPast&&tkPast.due===day&&!tkPast.time)){
+        g.el.style.transform=""; renderSchedule(); return;
+      }
     }
     const t2=g.time0!=null
       ? Math.max(0,Math.min(23.75,snap(g.time0+(e.clientY-g.y0)/WB_PXH)))
