@@ -476,6 +476,12 @@ input[type="time"].mono-input{width:88px}
 .povw-tasks li.done{color:var(--ink-3); text-decoration:line-through}
 .povw-tasks small{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:10px; color:var(--ink-3)}
 .povw-tick{color:var(--accent); flex:0 0 auto; width:10px; text-align:center}
+.wb-newsel{position:absolute; left:1px; right:2px; border-radius:6px; z-index:2;
+  background:color-mix(in srgb,var(--accent) 22%,transparent);
+  border:1px dashed color-mix(in srgb,var(--accent) 70%,transparent); pointer-events:none}
+.pslot-when{margin:0 0 10px; font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:12px; color:var(--ink-3)}
+.pslot-row{display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:10px}
 .qadd-kind{align-self:flex-start}
 .pproj-count{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11px;
   color:var(--accent); flex:0 0 auto}
@@ -2608,6 +2614,28 @@ html{overscroll-behavior-y:none}
 </form></dialog>
 
 <!-- confirmations: the sandbox swallows window.confirm, so we ask properly -->
+<dialog id="pSlotDlg">
+  <h3 class="dlg-head" id="pSlotTitle">New</h3>
+  <div class="dlg-body">
+    <p class="pslot-when" id="pSlotWhen"></p>
+    <input type="text" id="pSlotText" placeholder="What is it?" autocomplete="off" style="width:100%">
+    <div class="pslot-row">
+      <span class="field-label">at</span>
+      <input type="time" id="pSlotTime" class="mono-input">
+      <span class="field-label">takes</span>
+      <input type="number" id="pSlotHours" class="mono-input hrs" min="0.25" max="24" step="0.25" value="1">
+      <span class="field-label">h</span>
+      <span class="field-label">for</span>
+      <select id="pSlotProject" class="mono-input"></select>
+    </div>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn" type="button" id="pSlotCancel">Cancel</button>
+    <button class="btn" type="button" id="pSlotAddTask">Add task</button>
+    <button class="btn primary" type="button" id="pSlotAddEvent">Add event</button>
+  </div>
+</dialog>
+
 <dialog id="askDlg">
   <h3 class="dlg-head" id="askTitle">Are you sure?</h3>
   <div class="dlg-body"><p id="askMsg" style="margin:0; font-size:14px; line-height:1.6"></p></div>
@@ -4204,6 +4232,43 @@ function pDatelessStripHtml(){
     ${done?`<small class="hint">${done} ${esc(t("done"))}</small>`:""}
   </div>`;
 }
+/* the empty-slot dialog: one place that turns "there is nothing here" into
+   either kind of record, with the slot you pointed at already filled in.
+   Adding a Task deliberately keeps the day but drops the time — a Task has
+   no clock slot, so offering one here would contradict the model. */
+let pSlotDay=null;
+function pOpenSlotDialog(day,fromH,hours){
+  pSlotDay=day||pToday();
+  const hhmm=v=>{ const m=Math.round(Math.max(0,Math.min(v,24))*60);
+    return String(Math.floor(m/60)%24).padStart(2,"0")+":"+String(m%60).padStart(2,"0"); };
+  $("#pSlotTime").value=hhmm(fromH);
+  $("#pSlotHours").value=Math.round(Math.max(0.25,hours)*100)/100;
+  $("#pSlotText").value="";
+  const d=pParseISO(pSlotDay);
+  $("#pSlotWhen").textContent=dowName(d.getDay())+" "+d.getDate()+" "+pMonthGen(d.getMonth());
+  const sel=$("#pSlotProject");
+  const projs=((S.projplan&&S.projplan.projects)||[]);
+  sel.innerHTML=`<option value="">${esc(t("no project"))}</option>`+
+    projs.map(p=>`<option value="${esc(p.id)}">${esc(p.name||t("Untitled project"))}</option>`).join("");
+  $("#pSlotDlg").showModal();
+  setTimeout(()=>$("#pSlotText").focus(),30);
+}
+function pSlotCreate(kind){
+  const title=$("#pSlotText").value.trim()||t("Untitled task");
+  const isEvent=kind==="event";
+  S.planner.tasks.push({id:uid(),title,due:pSlotDay,
+    time:isEvent?$("#pSlotTime").value||"09:00":"",
+    hours:Math.max(0,+$("#pSlotHours").value||1),
+    done:false,kind:isEvent?"event":"task",steps:[],
+    projectId:$("#pSlotProject").value||null});
+  $("#pSlotDlg").close();
+  pSelISO=pSlotDay; touch(); renderPlanner();
+}
+$("#pSlotCancel").addEventListener("click",()=>$("#pSlotDlg").close());
+$("#pSlotAddTask").addEventListener("click",()=>pSlotCreate("task"));
+$("#pSlotAddEvent").addEventListener("click",()=>pSlotCreate("event"));
+$("#pSlotText").addEventListener("keydown",e=>{
+  if(e.key==="Enter"){ e.preventDefault(); pSlotCreate("event"); } });
 function pWireDatelessStrip(){
   const host=$("#pScheduleBody").querySelector(".pquick-strip"); if(!host) return;
   host.addEventListener("click",e=>{
@@ -4369,7 +4434,23 @@ function pWireBoard(){
     const ph=e.target.closest("[data-wbph]");        // project day-hours handle
     const pchip=e.target.closest("[data-wbp]");      // project chip
     const blk=e.target.closest("[data-wb]");
-    if(!rsz&&!blk&&!pchip&&!ph) return;
+    if(!rsz&&!blk&&!pchip&&!ph){
+      /* empty grid: a click or a drag down the column proposes something new.
+         Touch is deliberately left alone here — the track is also how you
+         scroll the board on a phone, and stealing that to draw a selection
+         would trade a gesture people rely on for one they can reach from the
+         add form anyway. A touch TAP still opens the dialog on pointerup. */
+      const trk=e.target.closest(".wb-track");
+      const col=trk&&trk.closest(".wb-col");
+      if(!trk||!col) return;
+      const top=trk.getBoundingClientRect().top;
+      G2={mode:"newslot", pid:e.pointerId, x0:e.clientX, y0:e.clientY,
+          day0:col.dataset.wbday, armed:false, moved:false,
+          touch:e.pointerType==="touch", timer:null, el:null, trk,
+          t0:startH+(e.clientY-top)/WB_PXH};
+      try{ board.setPointerCapture(e.pointerId); }catch(err){}
+      return;
+    }
     const kind = ph?"projday" : pchip?"proj" : null;
     const id = ph?ph.dataset.wbph : pchip?pchip.dataset.wbp : null;
     if(kind){
@@ -4407,6 +4488,18 @@ function pWireBoard(){
   board.addEventListener("pointermove",e=>{
     if(!G2||e.pointerId!==G2.pid) return;
     const dx=e.clientX-G2.x0, dy=e.clientY-G2.y0;
+    if(G2.mode==="newslot"){
+      if(G2.touch) return;                       // let the finger scroll
+      if(!G2.armed){ if(Math.abs(dy)<5) return; G2.armed=true; }
+      G2.moved=true;
+      if(!G2.el){ G2.el=document.createElement("div");
+        G2.el.className="wb-newsel"; G2.trk.appendChild(G2.el); }
+      const a=Math.min(G2.y0,e.clientY)-G2.trk.getBoundingClientRect().top;
+      G2.el.style.top=Math.max(0,a)+"px";
+      G2.el.style.height=Math.max(6,Math.abs(dy))+"px";
+      e.preventDefault();
+      return;
+    }
     if(!G2.armed){
       if(G2.mode==="projday"){
         if(Math.abs(dx)<(G2.touch?8:3)) return;      // horizontal = hours for this day
@@ -4464,6 +4557,17 @@ function pWireBoard(){
   const commit=e=>{
     if(!G2||e.pointerId!==G2.pid) return;
     const g=G2; G2=null; clearTimeout(g.timer);
+    if(g.mode==="newslot"){
+      if(g.el) g.el.remove();
+      const snapQ=v=>Math.round(v/WB_SNAP)*WB_SNAP;
+      const a=snapQ(Math.max(0,Math.min(g.t0,23.75)));
+      const b=g.moved
+        ? snapQ(Math.max(0,Math.min(startH+(e.clientY-g.trk.getBoundingClientRect().top)/WB_PXH,24)))
+        : a+1;
+      const from=Math.min(a,b), to=Math.max(a,b);
+      pOpenSlotDialog(g.day0,from,Math.max(0.25,to-from));
+      return;
+    }
     g.el.classList.remove("lift");
     if(g.mode==="pan") return;
     /* a mutation must reach every reader before the finger lifts twice:
@@ -4534,7 +4638,9 @@ function pWireBoard(){
     renderSchedule();
   };
   board.addEventListener("pointerup",commit);
-  const abort=()=>{ if(G2){ clearTimeout(G2.timer); G2.el.classList.remove("lift"); G2.el.style.transform=""; G2=null; renderSchedule(); } };
+  const abort=()=>{ if(G2){ clearTimeout(G2.timer);
+    if(G2.mode==="newslot"){ if(G2.el) G2.el.remove(); G2=null; return; }
+    G2.el.classList.remove("lift"); G2.el.style.transform=""; G2=null; renderSchedule(); } };
   board.addEventListener("pointercancel",abort);
   /* the board element is replaced on every render so its own listeners die with
      it — window's do NOT. One module-level hook, overwritten per wiring pass,
