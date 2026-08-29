@@ -482,6 +482,29 @@ input[type="time"].mono-input{width:88px}
 .pslot-when{margin:0 0 10px; font-family:"JetBrains Mono",ui-monospace,monospace;
   font-size:12px; color:var(--ink-3)}
 .pslot-row{display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:10px}
+/* the kind toggle sits above the title, so switching Task/Event reads as
+   changing what this thing IS rather than as another field */
+#pSlotKind{margin-bottom:10px}
+#pSlotKind[hidden]{display:none}
+.pslot-done{display:inline-flex; align-items:center; gap:7px; margin-top:12px;
+  font-size:13px; color:var(--ink-2); cursor:pointer}
+.pslot-done input{width:15px; height:15px; accent-color:var(--accent); cursor:pointer}
+/* subtasks: one level, so the list is flat by construction */
+.pslot-steps{margin-top:14px; border-top:1px solid var(--line); padding-top:10px}
+.pslot-steps[hidden]{display:none}
+.pslot-step{display:flex; align-items:center; gap:7px; margin:5px 0}
+.pslot-step input[type=checkbox]{width:14px; height:14px; flex:0 0 auto;
+  accent-color:var(--accent); cursor:pointer}
+.pslot-steptext{flex:1 1 auto; min-width:0; background:transparent; color:var(--ink);
+  border:1px solid transparent; border-radius:5px; padding:3px 5px; font:inherit; font-size:13px}
+.pslot-steptext:hover{border-color:var(--line)}
+.pslot-steptext:focus{border-color:var(--accent); outline:none; background:var(--sunk)}
+.pslot-step.done .pslot-steptext{color:var(--ink-2); text-decoration:line-through}
+.pslot-stepdel{flex:0 0 auto; background:none; border:0; color:var(--ink-2);
+  cursor:pointer; font-size:13px; line-height:1; padding:3px 5px; border-radius:5px}
+.pslot-stepdel:hover{color:var(--crit); background:var(--sunk)}
+.pslot-addstep{display:flex; gap:6px; margin-top:8px}
+.pslot-addstep input{flex:1 1 auto; min-width:0}
 /* the footer is a flex row, and display:flex beats the hidden attribute — New
    mode was still showing Delete and Save */
 .dlg-foot [hidden]{display:none}
@@ -2727,15 +2750,36 @@ html{overscroll-behavior-y:none}
   <h3 class="dlg-head" id="pSlotTitle">New</h3>
   <div class="dlg-body">
     <p class="pslot-when" id="pSlotWhen"></p>
+    <!-- editing only: a Task and an Event hold the same fields, so the kind is
+         a property you can change rather than something fixed at creation -->
+    <div class="seg segsm" id="pSlotKind" hidden>
+      <button type="button" data-skind="task" aria-pressed="true">Task</button>
+      <button type="button" data-skind="event" aria-pressed="false">Event</button>
+    </div>
     <input type="text" id="pSlotText" placeholder="What is it?" autocomplete="off" style="width:100%">
     <div class="pslot-row">
+      <span class="field-label pslot-edit-only">on</span>
+      <input type="date" id="pSlotDate" class="mono-input pslot-edit-only">
       <span class="field-label">at</span>
       <input type="time" id="pSlotTime" class="mono-input">
       <span class="field-label">takes</span>
-      <input type="number" id="pSlotHours" class="mono-input hrs" min="0.25" max="24" step="0.25" value="1">
+      <input type="number" id="pSlotHours" class="mono-input hrs" min="0" max="24" step="0.25" value="1">
       <span class="field-label">h</span>
       <span class="field-label">for</span>
       <select id="pSlotProject" class="mono-input"></select>
+    </div>
+    <label class="pslot-done pslot-edit-only" id="pSlotDoneWrap">
+      <input type="checkbox" id="pSlotDone"> <span>Done</span>
+    </label>
+    <!-- one level of subtasks, Tasks only: an Event is a slot in the day, not
+         a thing with parts -->
+    <div class="pslot-steps" id="pSlotSteps" hidden>
+      <span class="eyebrow">Subtasks</span>
+      <div id="pSlotStepList"></div>
+      <div class="pslot-addstep">
+        <input type="text" id="pSlotStepNew" placeholder="Add a subtask" autocomplete="off">
+        <button class="btn mini" type="button" id="pSlotStepAdd">Add</button>
+      </div>
     </div>
   </div>
   <div class="dlg-foot">
@@ -4418,28 +4462,75 @@ function pDatelessStripHtml(){
 let pSlotDay=null, pSlotEditId=null;
 /* double-click opens the same dialog in edit mode: same fields, different
    verbs. Reusing it keeps one place that knows what an Event is made of. */
+/* Which kind the open dialog is editing. Kept apart from the record so the
+   fields can follow the toggle before anything is saved. */
+let pSlotKindVal="task";
+/* Draw the subtask list for the record being edited. One level, no nesting:
+   a subtask is a step, not another task. */
+function pSlotRenderSteps(){
+  const tk=pFindTask(pSlotEditId);
+  const box=$("#pSlotStepList"); if(!box) return;
+  const steps=(tk&&Array.isArray(tk.steps))?tk.steps:[];
+  box.innerHTML=steps.length?steps.map(s=>`<label class="pslot-step${s.done?" done":""}">
+      <input type="checkbox" data-stog="${esc(s.id)}"${s.done?" checked":""}>
+      <input type="text" class="pslot-steptext" data-stext="${esc(s.id)}" value="${esc(s.text||"")}">
+      <button type="button" class="pslot-stepdel" data-sdel="${esc(s.id)}"
+        aria-label="${esc(t("Remove"))}">✕</button>
+    </label>`).join("")
+    :`<p class="empty" style="margin:2px 0 6px">${esc(t("No subtasks yet."))}</p>`;
+}
+/* Show the fields that mean something for this kind. An Event must sit at a
+   time; a Task may carry one and may hold subtasks. Nothing is hidden to make
+   a Task feel smaller — only what genuinely does not apply. */
+function pSlotSyncKind(){
+  const isEvent=pSlotKindVal==="event";
+  document.querySelectorAll("#pSlotKind [data-skind]").forEach(b=>
+    b.setAttribute("aria-pressed",String(b.dataset.skind===pSlotKindVal)));
+  const steps=$("#pSlotSteps"); if(steps) steps.hidden=isEvent||!pSlotEditId;
+  const ti=$("#pSlotTime");
+  if(ti) ti.placeholder=isEvent?"":t("optional");
+}
 function pOpenEditDialog(id){
   const tk=pFindTask(id); if(!tk) return;
-  /* this dialog writes a time and a duration, which only an Event may carry */
-  if(tk.kind!=="event") return;
+  /* A Quick Task is deliberately the one thing with no editor: it is a whole
+     day and a tick, and giving it fields would make it a Task. */
+  if(tk.kind==="quick") return;
   const sp=pGroupSpan(tk);
-  pOpenSlotDialog(tk.due,0,tk.hours);
+  pOpenSlotDialog(tk.due,0,tk.hours||1);
   pSlotEditId=id;
+  pSlotKindVal=tk.kind==="event"?"event":"task";
+  $("#pSlotKind").hidden=false;
   $("#pSlotText").value=tk.title||"";
-  $("#pSlotTime").value=tk.time||"09:00";
-  $("#pSlotHours").value=Math.round(Math.max(0.25,+tk.hours||1)*100)/100;
+  $("#pSlotDate").value=tk.due||"";
+  $("#pSlotTime").value=tk.time||"";
+  $("#pSlotHours").value=Math.round(Math.max(0,+tk.hours||0)*100)/100;
   $("#pSlotProject").value=tk.projectId||"";
+  $("#pSlotDone").checked=!!tk.done;
   $("#pSlotTitle").textContent=t("Edit");
   const span=sp.members.length>1?" · "+sp.members.length+" "+t("days"):"";
   $("#pSlotWhen").textContent=$("#pSlotWhen").textContent+span;
   $("#pSlotAddTask").hidden=true; $("#pSlotAddEvent").hidden=true;
   $("#pSlotSave").hidden=false; $("#pSlotDelete").hidden=false;
+  document.querySelectorAll("#pSlotDlg .pslot-edit-only").forEach(el=>{ el.style.display=""; });
+  /* "Close", not "Cancel": ticking or adding a subtask writes straight to the
+     record — which is what you want from a checklist — so this button cannot
+     honestly promise to undo everything. The fields above it still need Save. */
+  $("#pSlotCancel").textContent=t("Close");
+  pSlotSyncKind(); pSlotRenderSteps();
 }
 function pOpenSlotDialog(day,fromH,hours){
   pSlotEditId=null;
   $("#pSlotTitle").textContent=t("New");
   $("#pSlotAddTask").hidden=false; $("#pSlotAddEvent").hidden=false;
   $("#pSlotSave").hidden=true; $("#pSlotDelete").hidden=true;
+  /* creating, not editing: the edit-only controls stay out of the way, and
+     none of them may carry a value over from the last record opened */
+  $("#pSlotKind").hidden=true;
+  $("#pSlotSteps").hidden=true;
+  $("#pSlotDone").checked=false;
+  $("#pSlotStepNew").value="";
+  $("#pSlotCancel").textContent=t("Cancel");   // nothing written yet, so it really does cancel
+  document.querySelectorAll("#pSlotDlg .pslot-edit-only").forEach(el=>{ el.style.display="none"; });
   pSlotDay=day||pToday();
   const hhmm=v=>{ const m=Math.round(Math.max(0,Math.min(v,24))*60);
     return String(Math.floor(m/60)%24).padStart(2,"0")+":"+String(m%60).padStart(2,"0"); };
@@ -4472,14 +4563,50 @@ function pSlotCreate(kind){
 }
 $("#pSlotSave").addEventListener("click",()=>{
   const tk=pFindTask(pSlotEditId); if(!tk){ $("#pSlotDlg").close(); return; }
+  const isEvent=pSlotKindVal==="event";
   const title=$("#pSlotText").value.trim()||t("Untitled task");
-  const time=$("#pSlotTime").value||tk.time||"09:00";
-  const hours=Math.max(0.25,+$("#pSlotHours").value||1);
+  /* An Event has to sit at a time, so it keeps a fallback. A Task may have
+     none, and clearing the field is how you take one away. */
+  const time=isEvent?($("#pSlotTime").value||tk.time||"09:00"):($("#pSlotTime").value||"");
+  const hours=isEvent?Math.max(0.25,+$("#pSlotHours").value||1)
+                     :Math.max(0,+$("#pSlotHours").value||0);
   const pid=$("#pSlotProject").value||null;
-  /* everything except done-state belongs to the whole run */
+  const done=$("#pSlotDone").checked;
+  const newDue=$("#pSlotDate").value||tk.due;
+  /* Moving the day from here moves THIS day, exactly as dragging its body
+     does since Wave 1 — so it leaves the run rather than dragging its
+     neighbours with it. Reuse the same splitter so a remainder can never be
+     left with a hole in it. */
+  if(newDue!==tk.due) pDetachFromRun(tk);
+  /* title, time, duration and project describe the whole run; the day, the
+     kind and the done-state are this record's own */
   pApplyToGroup(tk,m=>{ m.title=title; m.time=time; m.hours=hours; m.projectId=pid; });
+  tk.due=newDue;
+  tk.kind=isEvent?"event":"task";
+  tk.done=done;
+  if(done&&!tk.doneAt) tk.doneAt=new Date().toISOString();
+  if(!done) delete tk.doneAt;
   $("#pSlotDlg").close(); touch(); renderPlanner();
 });
+/* Take a record out of its run, leaving every remaining stretch contiguous.
+   Shared by the body-drag commit and the edit dialog: a run that keeps a hole
+   gets that day minted back the next time anyone resizes it. */
+function pDetachFromRun(tk){
+  const grp=tk.groupId?pGroupOf(tk):null;
+  if(!grp||grp.length<2) { tk.groupId=null; return; }
+  tk.groupId=null;
+  const rest=grp.filter(m=>m!==tk)
+    .sort((a,b)=>String(a.due).localeCompare(String(b.due)));
+  let seg=[];
+  const flush=()=>{ if(!seg.length) return;
+    const id=seg.length>1?("g"+uid()):null;
+    seg.forEach(m=>{ m.groupId=id; }); seg=[]; };
+  rest.forEach(m=>{
+    if(seg.length&&ymd(pNextDay(fromYmd(seg[seg.length-1].due)))!==m.due) flush();
+    seg.push(m);
+  });
+  flush();
+}
 $("#pSlotDelete").addEventListener("click",()=>{
   const tk=pFindTask(pSlotEditId); if(!tk){ $("#pSlotDlg").close(); return; }
   /* only this day goes; the survivors stay linked, and a lone survivor stops
@@ -4489,6 +4616,45 @@ $("#pSlotDelete").addEventListener("click",()=>{
   if(gid){ const left=(S.planner.tasks||[]).filter(x=>x.groupId===gid);
     if(left.length<2) left.forEach(x=>{ x.groupId=null; }); }
   $("#pSlotDlg").close(); touch(); renderPlanner();
+});
+$("#pSlotKind").addEventListener("click",e=>{
+  const b=e.target.closest("[data-skind]"); if(!b) return;
+  pSlotKindVal=b.dataset.skind;
+  /* an Event has to sit somewhere, so switching to one fills a blank time
+     rather than saving a record that contradicts its own kind */
+  if(pSlotKindVal==="event"){
+    if(!$("#pSlotTime").value) $("#pSlotTime").value="09:00";
+    if(!(+$("#pSlotHours").value>0)) $("#pSlotHours").value=1;
+  }
+  pSlotSyncKind();
+});
+/* Subtasks are written straight to the record: the dialog is already editing
+   a live object, and keeping a separate draft list would just be a second
+   thing to get out of step with it. */
+$("#pSlotStepAdd").addEventListener("click",()=>{
+  const tk=pFindTask(pSlotEditId); if(!tk) return;
+  const text=$("#pSlotStepNew").value.trim(); if(!text) return;
+  if(!Array.isArray(tk.steps)) tk.steps=[];
+  tk.steps.push({id:uid(),text,done:false});
+  $("#pSlotStepNew").value="";
+  touch(); pSlotRenderSteps(); $("#pSlotStepNew").focus();
+});
+$("#pSlotStepNew").addEventListener("keydown",e=>{
+  if(e.key==="Enter"){ e.preventDefault(); $("#pSlotStepAdd").click(); } });
+$("#pSlotStepList").addEventListener("click",e=>{
+  const tk=pFindTask(pSlotEditId); if(!tk||!Array.isArray(tk.steps)) return;
+  const del=e.target.closest("[data-sdel]");
+  if(del){ tk.steps=tk.steps.filter(s=>s.id!==del.dataset.sdel);
+    touch(); pSlotRenderSteps(); return; }
+  const tog=e.target.closest("[data-stog]");
+  if(tog){ const s=tk.steps.find(x=>x.id===tog.dataset.stog);
+    if(s){ s.done=tog.checked; touch(); pSlotRenderSteps(); } }
+});
+$("#pSlotStepList").addEventListener("input",e=>{
+  const tk=pFindTask(pSlotEditId); if(!tk||!Array.isArray(tk.steps)) return;
+  const txt=e.target.closest("[data-stext]"); if(!txt) return;
+  const s=tk.steps.find(x=>x.id===txt.dataset.stext);
+  if(s){ s.text=txt.value; touch(); }        // no re-render: it would steal focus
 });
 $("#pSlotCancel").addEventListener("click",()=>$("#pSlotDlg").close());
 $("#pSlotAddTask").addEventListener("click",()=>pSlotCreate("task"));
@@ -5189,7 +5355,11 @@ function pWireBoard(){
       if(g.mode==="projmove"||g.mode==="projday"){ window.ppOpenProject&&ppOpenProject(g.id); }
       else if(g.mode==="move"){
         const tk=(g.kind==="task"||g.kind==="tray")?pFindTask(g.id):null;
-        if(tk&&tk.kind==="event"){ pOpenEditDialog(g.id); }
+        /* Tasks and Events both open now — the editor holds the same fields
+           for either. A Quick Task has no editor by design, and a recurring
+           block still has none, so those keep the jump-to-day fallback rather
+           than a tap that does nothing. */
+        if(tk&&tk.kind!=="quick"){ pOpenEditDialog(g.id); }
         else { const d=g.day0; if(d){ pSelISO=d; pScope="day"; pWinShift=0; pDayPanel(); renderSchedule(); } }
       }
       return;
@@ -5248,29 +5418,9 @@ function pWireBoard(){
            a remainder of one is not a run either, so its group is cleared too,
            or the next drag of THAT block would behave as grouped for no
            visible reason. */
-        const grp=tk.groupId?pGroupOf(tk):null;
-        if(grp&&grp.length>1){
-          tk.groupId=null;
-          /* What is left has to stay CONTIGUOUS. pSetGroupSpan fills every day
-             between a run's first and last, so a run with a hole in it would
-             mint a fresh record on the very day just detached the next time
-             anyone dragged its W/E handle — the day you pulled out reappearing
-             beside the one you moved. Split the remainder at the gap instead:
-             each contiguous stretch becomes its own run, and a stretch of one
-             is not a run at all. */
-          const rest=grp.filter(m=>m!==tk)
-            .sort((a,b)=>String(a.due).localeCompare(String(b.due)));
-          let seg=[];
-          const flush=()=>{ if(!seg.length) return;
-            const id=seg.length>1?("g"+uid()):null;
-            seg.forEach(m=>{ m.groupId=id; });
-            seg=[]; };
-          rest.forEach(m=>{
-            if(seg.length&&ymd(pNextDay(fromYmd(seg[seg.length-1].due)))!==m.due) flush();
-            seg.push(m);
-          });
-          flush();
-        }
+        /* leaving the run splits whatever is left at the gap — see
+           pDetachFromRun, shared with the edit dialog's day change */
+        pDetachFromRun(tk);
         tk.due=day; tk.time=fmtT(t2);
         if(!(+tk.hours>0)) tk.hours=1;       // a slot implies a duration
         /* under the v7 model a clock slot IS what makes something an Event —
