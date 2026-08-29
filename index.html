@@ -580,7 +580,9 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
   text-transform:uppercase; letter-spacing:.05em; font-size:10.5px; margin-right:3px}
 .wb-col.today .wb-head{color:var(--accent); font-weight:700}
 .wb-head:hover{background:var(--sunk)}
-.wb-allday{display:flex; align-items:center; justify-content:center; gap:3px; min-height:14px; padding:0 2px 3px}
+.wb-allday{display:flex; flex-direction:column; align-items:stretch; justify-content:flex-start;
+  gap:2px; padding:0 2px 3px; box-sizing:content-box;
+  height:calc(var(--adrows,1) * 17px); overflow-y:auto; overflow-x:hidden}
 /* a project on the board: draggable sideways, edge-draggable for that day's
    hours, tappable to edit — so it reads as an object, not a legend swatch */
 .wb-pchip{position:relative; display:flex; align-items:center; gap:4px; min-width:0;
@@ -603,7 +605,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
   width:2px; height:9px; border-radius:2px; background:var(--pc); opacity:.75}
 .wb-pchip:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
 @media (hover:none){ .wb-phandle{width:14px; right:-5px} }
-.wb-allday{flex-wrap:wrap; gap:2px}
+.wb-allday{gap:2px}
 .wb-adcare{font-size:9px; line-height:1}
 .wb-track{position:relative}
 .wb-hl{position:absolute; left:0; right:0; height:0; border-top:1px solid var(--grid-line)}
@@ -4512,6 +4514,14 @@ function pBoardHtml(days,topStrip){
     Array.from({length:endH-startH},(_,i)=>`<span style="top:${i*WB_PXH}px">${String((startH+i)%24).padStart(2,"0")}</span>`).join("")}</div>`;
 
   const nowH=nowFrac;          // one clock read for the whole board
+  /* The all-day row used to size itself to its own contents, so a day with a
+     chip pushed its hour track down and its grid no longer lined up with its
+     neighbours. Every column reserves the same number of rows — that of the
+     busiest day — so the board stays on one baseline whatever is in it. */
+  const adCount=days.map((d,di)=>byDay[di].filter(it=>
+      it.ref&&it.ref.kind==="task"&&!it.time&&it.ref.due===d).length
+    + (byDay[di].some(it=>it.kind==="care")?1:0));
+  const adRows=Math.min(3,Math.max(1,...adCount));
   const cols=days.map((d,di)=>{
     const items=byDay[di];
     const care=items.find(it=>it.kind==="care");
@@ -4633,7 +4643,7 @@ function pBoardHtml(days,topStrip){
   /* the dateless strip sits INSIDE the board: its chips carry data-wb, and
      pWireBoard's pointer handling is bound to this element, so a chip dragged
      from here onto an hour lands through the same commit path as the tray */
-  return `<div class="wb" id="pWeekBoard" data-starth="${startH}" data-maxshift="${maxShift}">
+  return `<div class="wb" id="pWeekBoard" data-starth="${startH}" data-maxshift="${maxShift}" style="--adrows:${adRows}">
     ${topStrip||""}
     <div class="wb-scroll"><div class="wb-grid">${gutter}${cols}</div></div>${tray}</div>`;
 }
