@@ -5160,23 +5160,28 @@ function pWireBoard(){
     if(g.kind==="task"||g.kind==="tray"){
       const tk=pFindTask(g.id);
       if(tk&&day){
-        /* a run moves as one: dropping any member shifts every day of it by
-           the same delta and gives them all the new time. Moving one member
-           alone would land two records on the same day and leave the run
-           disagreeing with itself about when it happens. */
+        /* Dragging the BODY moves exactly the day you dragged, never its
+           neighbours. A run used to move as one, so pulling a single day
+           carried the whole thing across the calendar — indistinguishable, to
+           the person doing it, from the app ignoring which block they grabbed.
+           The two behaviours are now cleanly split: the body moves one day, and
+           reshaping a run stays with the W/E handles, the only place a
+           multi-day span is edited. Leaving the run detaches this day from it;
+           a remainder of one is not a run either, so its group is cleared too,
+           or the next drag of THAT block would behave as grouped for no
+           visible reason. */
         const grp=tk.groupId?pGroupOf(tk):null;
         if(grp&&grp.length>1){
-          const shift=Math.round((fromYmd(day)-fromYmd(tk.due))/DAY);
-          const nt=fmtT(t2);
-          grp.forEach(m=>{ m.due=ymd(fromYmd(m.due)+shift*DAY); m.time=nt; });
-        }else{
-          tk.due=day; tk.time=fmtT(t2);
-          if(!(+tk.hours>0)) tk.hours=1;     // a slot implies a duration
-          /* under the v7 model a clock slot IS what makes something an Event —
-             dropping a dateless task onto an hour promotes it rather than
-             leaving a Task that contradicts its own definition */
-          tk.kind="event";
+          const rest=grp.filter(m=>m!==tk);
+          tk.groupId=null;
+          if(rest.length===1) rest[0].groupId=null;
         }
+        tk.due=day; tk.time=fmtT(t2);
+        if(!(+tk.hours>0)) tk.hours=1;       // a slot implies a duration
+        /* under the v7 model a clock slot IS what makes something an Event —
+           dropping a dateless task onto an hour promotes it rather than
+           leaving a Task that contradicts its own definition */
+        tk.kind="event";
         done(); return; }
     }
     if(g.kind==="block"){                  /* recurring: time moves, the weekday set stays */
