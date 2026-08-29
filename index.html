@@ -8304,6 +8304,13 @@ function show(v){
 }
 function showNow(v){
   if(v!==curView){ scrollMem[curView]=window.scrollY; curView=v; }
+  /* Focus mode hides the app header AND the tab strip, and its own exit button
+     lives inside the planner's schedule card. Carrying it onto another view
+     would therefore stand the user on a screen with no chrome and no visible
+     way back — Escape still worked, but nothing said so. Leaving the planner
+     leaves focus mode. curView is already the new view here, so pSetFocus's
+     own re-render is a no-op rather than a recursion. */
+  if(v!=="planner"&&document.documentElement.classList.contains("pfocus")) pSetFocus(false);
   document.querySelectorAll(".nav button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.view===v)));
   BENCH_VIEWS.concat(["planner","hours","hproject"]).forEach(x=>{ $("#view-"+x).hidden=(x!==v); });
   /* editor sub-views (product/formula/plant/batch/…) are populated by their
