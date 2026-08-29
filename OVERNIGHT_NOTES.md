@@ -6,6 +6,7 @@ Nothing pushed, nothing force-pushed, no branches deleted.
 Review in the order below; every commit stands on its own.
 
 ```
+4026d3a  Planner: fix three defects found reviewing the overnight work  (review)
 f9e8b92  Planner: fullscreen focus mode for the calendar                (Task 6)
 61efba1  Add OVERNIGHT_NOTES.md
 5ec452f  Planner: click or drag empty grid to add a task or event      (Task 5a/5b)
@@ -37,6 +38,35 @@ a4702e9  Planner: make the board's grid lines and day separators legible (Task 1
 | 5e double-click detail / wheel scroll | **Not built** | |
 | 6 fullscreen focus mode | **Done, tested** | fullscreen button + Escape to exit |
 | 7 "Plachta" year canvas | **Not built** | plan sketched below |
+
+---
+
+## Review outcome
+
+Both review passes are finished and everything they found is **fixed and
+verified**, not left outstanding.
+
+The first pass (Task 1) found four defects, fixed in `b5e8f9c`: a clamp that
+pushed long project stacks back into the slot it had just cleared and let
+blocks paint past midnight; a now-line drawn frozen across future weeks; a
+`"12:60"` clock string; and a live countdown on slots the app itself invented.
+
+The second pass (Tasks 3–5) found three, fixed in `4026d3a`:
+
+- **The 30s board repaint did not check for an in-flight gesture.** Holding a
+  drag across the tick detached the node the selection measures against — the
+  marquee vanished, and in engines that keep delivering to a removed captured
+  node it would have opened the dialog with a range computed from a zeroed
+  rect (a ~15h event from a 3h drag). A `pBoardBusy` flag now suppresses the
+  repaint for the life of any gesture, cleared on both commit and cancel.
+- **An Event could be created with 0 hours** and then render nowhere at all —
+  excluded from the board for having no duration and from the tray for having
+  a time. Events now clamp to a quarter hour.
+- **The tray labelled a 0-hour task "1h"** while the budget counted it as 0.
+
+Seven items were checked and came back clean, including the null-`el` paths
+through the new gesture, project id plumbing, the overview's window math, and
+whether a task could appear in both the dateless strip and the tray at once.
 
 ---
 
