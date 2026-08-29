@@ -78,11 +78,33 @@ whether a task could appear in both the dateless strip and the tray at once.
    so I never got a clean screenshot of that card laid out at full size. The
    values are right; I have not *seen* it.
 
-2. **The migration has already run against your real data** the first time the
-   app booted from this branch. A snapshot of the pre-migration state is in
-   `localStorage` under `pottingbench.backup.pre-v7`. To pull it out as a file,
-   open the console and run `pDownloadBackup()`. It is written once and never
-   overwritten, so it still holds the original v6 state.
+2. **BACK UP YOUR REAL DATA BEFORE YOU OPEN THIS BRANCH.** An earlier draft of
+   this file claimed the migration had already run against your data. That was
+   wrong, and I have corrected it.
+
+   The migration has only ever run against synthetic fixtures on my test
+   server (`localhost:8934`). Your real data lives in the `localStorage` of
+   whatever origin you actually use the app from — the Netlify URL — and
+   `localStorage` is per-origin, so nothing I did here touched it. **The
+   migration will run for the first time the moment you load this branch with
+   your real data, and it rewrites every planner record in place.**
+
+   The automatic backup does work — verified: it fires before any record is
+   touched, writes once, is never overwritten, and excludes photos. But belt
+   and braces on a one-way rewrite of real data:
+
+   1. On your **current** app (before loading this branch), open the console
+      and save a copy yourself:
+      ```js
+      copy(localStorage.getItem("pottingbench.v2"))   // then paste into a file
+      ```
+      or use the app's own export if you prefer.
+   2. Then load this branch. The migration runs and writes
+      `pottingbench.backup.pre-v7` automatically.
+   3. `pDownloadBackup()` in the console hands that snapshot back as a file.
+
+   Step 1 is the one that matters — it is the copy that exists independently
+   of anything this branch does.
 
 3. **`hours` on a Task is kept but no longer prominent.** The day budget is
    computed from it, so dropping it would have silently emptied your planned
