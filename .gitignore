@@ -1,0 +1,9 @@
+# Deploy bundles are generated from the tracked sources by zipping
+# index.html, sw.js, manifest.webmanifest, the icons and _headers.
+# They are rebuilt for every release, so keeping them in history would
+# add a few hundred KB of binary per deploy for nothing recoverable.
+potting-bench-netlify.zip
+*.zip
+
+# macOS
+.DS_Store
