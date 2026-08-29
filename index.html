@@ -344,16 +344,6 @@ input[type="time"].mono-input{width:88px}
 .pday-verdict{margin:12px 0 0; font-size:13.5px; color:var(--ink-2)}
 .pday-verdict.over{color:var(--crit); font-weight:600}
 
-.pdi{display:flex; align-items:baseline; gap:10px; padding:6px 0; font-size:13.5px;
-  border-top:1px solid var(--line-soft)}
-.pdi:first-child{border-top:1px solid var(--line); margin-top:11px; padding-top:11px}
-.pdi-time{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11px;
-  color:var(--ink-3); min-width:38px; flex:0 0 auto; font-variant-numeric:tabular-nums}
-.pdi-name{flex:1; min-width:0; overflow-wrap:anywhere}
-.pdi-name.over{color:var(--crit)}
-.pdi-hours{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11.5px;
-  color:var(--ink-2); flex:0 0 auto; font-variant-numeric:tabular-nums}
-
 /* the scope switcher and the month arrows both want the same row; let them
    wrap onto two lines on a narrow phone rather than clipping "MONTH" */
 .pcal-head{display:flex; align-items:center; justify-content:space-between; gap:10px;
@@ -362,29 +352,6 @@ input[type="time"].mono-input{width:88px}
 .pcal-nav{display:flex; align-items:center; gap:2px}
 .pcal-month{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:12.5px;
   color:var(--ink-2); min-width:92px; text-align:center; font-variant-numeric:tabular-nums}
-.pcal-dow{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:5px}
-.pcal-dow span{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:10px;
-  color:var(--ink-3); text-align:center; text-transform:uppercase}
-.pcal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:4px}
-.pcal-blank{aspect-ratio:1}
-.pcal-cell{appearance:none; border:1.5px solid transparent; background:var(--sunk); color:var(--ink);
-  border-radius:var(--r-xs); aspect-ratio:1; padding:4px 2px 5px; display:flex; flex-direction:column;
-  align-items:center; justify-content:space-between; cursor:pointer; font:inherit;
-  transition:border-color .12s, background .12s}
-.pcal-cell:hover{border-color:var(--line-strong)}
-/* adjacent-month days, same treatment as the diary's own .mcell.out */
-.pcal-cell.out{opacity:.25; pointer-events:none}
-.pcal-cell[aria-pressed="true"]{border-color:var(--accent); background:var(--accent-soft)}
-.pcal-cell[data-today="1"] .pcal-day{background:var(--ink); color:var(--bg); border-radius:5px; padding:0 4px}
-.pcal-day{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11.5px; font-weight:600;
-  font-variant-numeric:tabular-nums}
-.pcal-load{width:68%; height:3px; border-radius:99px; background:var(--line); overflow:hidden}
-.pcal-load i{display:block; height:100%; background:var(--accent)}
-.pcal-cell[data-over="1"] .pcal-load i{background:var(--crit)}
-.pcal-free{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:9px; color:var(--ink-3);
-  font-variant-numeric:tabular-nums; line-height:1}
-.pcal-cell[data-over="1"] .pcal-free{color:var(--crit); font-weight:700}
-
 .ptask{padding:0; border-bottom:1px solid var(--line-soft)}
 .ptask:last-child{border-bottom:0}
 .ptask.done{display:flex; align-items:center; gap:8px; padding:10px 14px}
@@ -428,56 +395,6 @@ input[type="time"].mono-input{width:88px}
 .pblock-row2{display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-left:24px}
 .dowchips{display:flex; gap:3px; flex-wrap:wrap}
 
-/* ---- schedule: timeline (day) ---- */
-.ptimeline{position:relative; margin:14px 2px 0 0}
-.ptl-hour{position:absolute; left:0; right:0; border-top:1px solid var(--line-soft)}
-.ptl-hour span{position:relative; top:-7px; left:2px; background:var(--surface);
-  padding-right:5px; font-family:"JetBrains Mono",ui-monospace,monospace; font-size:10px; color:var(--ink-3)}
-.ptl-block{position:absolute; left:46px; right:2px; border-radius:8px; overflow:hidden;
-  background:var(--accent-soft); border-left:3px solid var(--accent); padding:4px 9px;
-  display:flex; flex-direction:column; justify-content:center; gap:1px}
-.ptl-block b{font-size:12.5px; color:var(--ink); font-weight:600; line-height:1.2;
-  overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical}
-.ptl-block span{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:10.5px; color:var(--ink-2)}
-.ptl-block.live{border-left-color:var(--crit); background:var(--crit-soft)}
-/* too short for two lines — one line, non-negotiable, or it clips silently */
-.ptl-block.compact{padding:2px 9px}
-.ptl-block.compact b{-webkit-line-clamp:1; white-space:nowrap}
-.ptl-block em{font-style:normal; color:var(--crit); font-weight:600}
-.pcal-dots{display:flex; gap:2px; justify-content:center; min-height:4px}
-.pcal-dots i{width:4px; height:4px; border-radius:50%; display:block}
-.pcal-dots .d-blk{background:var(--accent)}
-.pcal-dots .d-tsk{background:var(--ink-3)}
-.pcal-cell[data-over="1"] .pcal-dots i{background:var(--crit)}
-.pcal-sum{margin-top:14px; border-top:1px solid var(--line); padding-top:12px}
-.pcal-sum-head{display:flex; align-items:baseline; justify-content:space-between; gap:10px;
-  flex-wrap:wrap; margin-bottom:9px}
-.pcal-sum-head b{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-size:14.5px}
-.pcal-sum-head span{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11.5px;
-  color:var(--ink-3); font-variant-numeric:tabular-nums}
-.pcal-sum-head span.over{color:var(--crit); font-weight:600}
-.pcal-sum-row{display:flex; align-items:baseline; gap:10px; padding:5px 0; font-size:13.5px;
-  border-top:1px solid var(--line-soft)}
-.pcal-sum-time{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11px;
-  color:var(--ink-3); min-width:38px; flex:0 0 auto}
-.pcal-sum-name{flex:1; min-width:0; overflow-wrap:anywhere}
-.pcal-sum-name.over{color:var(--crit)}
-.pcal-sum-hrs{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11.5px;
-  color:var(--ink-2); flex:0 0 auto; font-variant-numeric:tabular-nums}
-/* the projects grid: same .pcal-* cell language as the month view above,
-   reused three-up for a quarter and twelve-up (miniaturised) for a year */
-.pcal-quarter{display:flex; flex-direction:column; gap:22px}
-@media (min-width:760px){ .pcal-quarter{display:grid; grid-template-columns:repeat(3,1fr); gap:16px} }
-.pcal-qmonth-title{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600;
-  font-size:13.5px; margin:0 0 7px}
-.pcal-year{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:16px}
-.pcal-mini-title{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600;
-  font-size:12px; margin:0 0 5px; text-align:center}
-.pcal-mini-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:2px}
-.pcal-mini-cell{aspect-ratio:1; border-radius:2px; background:var(--sunk); border:0; padding:0;
-  cursor:pointer; appearance:none}
-.pcal-mini-cell.out{visibility:hidden; cursor:default}
-.pcal-mini-cell.today{box-shadow:inset 0 0 0 1.5px var(--ink)}
 .qadd-kind{align-self:flex-start}
 .pproj-count{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11px;
   color:var(--accent); flex:0 0 auto}
@@ -493,39 +410,6 @@ input[type="time"].mono-input{width:88px}
 .budget-bar{position:relative}
 .budget-bar.stretched::after{content:""; position:absolute; top:-3px; bottom:-3px;
   left:var(--daymark,100%); width:2px; background:var(--ink); opacity:.55}
-/* was a 14% tint next to plain task cards — nearly the same colour at a
-   glance, so telling tracked work from a task meant reading the words. Twice
-   the tint plus a solid border reads as its own lane of things at a scan. */
-.ptl-block.hrs{border-left-color:var(--hours-hue); border-left-width:4px;
-  background:color-mix(in srgb,var(--hours-hue) 26%,var(--surface))}
-.ptl-block .clash{font-style:normal; color:var(--crit); margin-right:2px}
-.ptl-block.grab{cursor:grab; touch-action:none; user-select:none}
-.ptl-block.grab:hover{filter:brightness(1.06)}
-.ptl-block.lift{z-index:6; box-shadow:var(--shadow-lift); opacity:.92; cursor:grabbing}
-.ptl-block:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
-.ptl-rsz{position:absolute; left:0; right:0; bottom:0; height:9px; cursor:ns-resize}
-.ptl-rsz::after{content:""; position:absolute; left:50%; bottom:2px; transform:translateX(-50%);
-  width:18px; height:2px; border-radius:2px; background:var(--ink-3); opacity:.5}
-@media (hover:none){ .ptl-rsz{height:14px} }
-.pdi.draggy{cursor:grab; touch-action:none; user-select:none; border-radius:8px}
-.pdi.draggy .pdi-time{color:var(--ink-3); letter-spacing:-1px}
-.pdi.draggy:hover{background:var(--sunk)}
-.pdi.draggy.lift{background:var(--accent-soft); box-shadow:var(--shadow-lift); opacity:.9; z-index:6; position:relative}
-.ptl-adchip.tap{cursor:pointer}
-.ptl-adchip.tap:hover{filter:brightness(1.06)}
-.ptl-adchip:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
-.pdi.care .pdi-name{color:var(--accent)}
-.pdi.care small{color:var(--ink-3); font-size:11px}
-.pdi-dot{display:inline-block; width:9px; height:9px; border-radius:3px; vertical-align:baseline}
-.pdi.proj .pdi-name{font-weight:500}
-/* projects as all-day bars above the hour grid — same items the timeline draws */
-.ptl-allday{display:flex; flex-direction:column; gap:5px; margin:12px 0 4px}
-.ptl-adchip{display:flex; align-items:center; gap:8px; padding:6px 11px; border-radius:8px;
-  background:color-mix(in srgb, var(--pc) 16%, var(--surface));
-  border-left:3px solid var(--pc); font-size:12.5px; font-weight:600; color:var(--ink); min-width:0}
-.ptl-adchip i{width:8px; height:8px; border-radius:2px; background:var(--pc); flex:0 0 auto}
-.ptl-adchip b{margin-left:auto; font-family:"JetBrains Mono",ui-monospace,monospace;
-  font-size:11px; font-weight:500; color:var(--ink-2); font-variant-numeric:tabular-nums}
 .pweek-projs{display:flex; align-items:center; gap:3px; flex:0 0 auto}
 .pweek-pdot{width:8px; height:8px; border-radius:2px; display:block}
 .pweek-pmore{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:9.5px; color:var(--ink-3)}
@@ -611,11 +495,6 @@ input[type="time"].mono-input{width:88px}
 .proll{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 14px 10px;
   padding:9px 12px; border-radius:var(--r-sm); background:var(--crit-soft); font-size:13px}
 .proll span{flex:1; min-width:0; color:var(--ink-2)}
-.ptl-now{position:absolute; left:46px; right:2px; height:0; border-top:2px solid var(--crit); z-index:2}
-.ptl-now::before{content:""; position:absolute; left:-5px; top:-4px; width:8px; height:8px;
-  border-radius:50%; background:var(--crit)}
-.ptl-flex .pdi:first-child{border-top:1px solid var(--line); padding-top:11px}
-.ptl-flex{margin-top:6px}
 
 /* ---- schedule: week ---- */
 .pweek{display:flex; flex-direction:column; gap:6px}
@@ -664,8 +543,8 @@ input[type="time"].mono-input{width:88px}
 @media (prefers-reduced-motion: no-preference){ .hrb-track{transition:transform .95s linear} }
 /* hour markers shared by both timelines (the routine's scrolling track and
    the projects row's static one) — a thin rule plus a clock label, same
-   idea as the day view's .ptl-hour but turned sideways for a left-to-right
-   timeline instead of a top-to-bottom one */
+   idea as the planner board's own hour gutter but turned sideways for a
+   left-to-right timeline instead of a top-to-bottom one */
 .hrb-tick{position:absolute; top:0; bottom:0; width:1px; background:var(--track-line)}
 .hrb-tick i{position:absolute; left:3px; bottom:2px; font-style:normal;
   font-family:"JetBrains Mono",ui-monospace,monospace; font-size:9px;
@@ -2095,25 +1974,21 @@ html{overscroll-behavior-y:none}
         <div class="seg segsm" id="pScopeSeg">
           <button type="button" data-pscope="day" aria-pressed="true">Day</button>
           <button type="button" data-pscope="week" aria-pressed="false">Week</button>
-          <button type="button" data-pscope="proj-month" aria-pressed="false">Month</button>
-          <button type="button" data-pscope="proj-quarter" aria-pressed="false">Quarter</button>
-          <button type="button" data-pscope="proj-year" aria-pressed="false">Year</button>
+          <button type="button" data-pscope="month" aria-pressed="false">Month</button>
+          <button type="button" data-pscope="timeline" aria-pressed="false">Timeline</button>
         </div>
-        <span class="pcal-nav" id="pWeekNav" style="display:none">
-          <button type="button" class="btn mini" id="pWkPrev" aria-label="Previous week">‹</button>
-          <span class="pcal-month" id="pWkLabel"></span>
-          <button type="button" class="btn mini" id="pWkNext" aria-label="Next week">›</button>
+        <span class="pcal-nav" id="pBoardNav" style="display:none">
+          <button type="button" class="btn mini" id="pBoardPrev" aria-label="Previous">‹</button>
+          <span class="pcal-month" id="pBoardLabel"></span>
+          <button type="button" class="btn mini" id="pBoardNext" aria-label="Next">›</button>
         </span>
-        <span class="pcal-nav" id="pViewToggle" style="display:none">
-          <div class="seg segsm" id="ppViewSeg">
-            <button type="button" data-ppview="linear" aria-pressed="true">Linear</button>
-            <button type="button" data-ppview="grid" aria-pressed="false">Grid</button>
+        <span class="pcal-nav" id="pTimelineZoom" style="display:none">
+          <div class="seg segsm" id="ppZoomSeg">
+            <button type="button" data-ppzoom="month" aria-pressed="false">Month</button>
+            <button type="button" data-ppzoom="quarter" aria-pressed="false">Quarter</button>
+            <button type="button" data-ppzoom="half" aria-pressed="false">Half</button>
+            <button type="button" data-ppzoom="year" aria-pressed="false">Year</button>
           </div>
-        </span>
-        <span class="pcal-nav" id="pGridNav" style="display:none">
-          <button type="button" class="btn mini" id="pGridPrev" aria-label="Previous">‹</button>
-          <span class="pcal-month" id="pGridLabel"></span>
-          <button type="button" class="btn mini" id="pGridNext" aria-label="Next">›</button>
         </span>
       </div>
       <div id="pScheduleBody"></div>
@@ -4040,111 +3915,8 @@ function pDayPanel(){
 function pMonthGen(m){ return (L.lang==="cs"?MONTH_CS_GEN:MONTH_EN)[m]; }
 
 /* ---- schedule: day / week / month, one switcher, one body ---- */
-const PX_PER_HOUR=42;
-function pTimelineWindow(iso){
-  /* default to a plain waking day, stretched to fit anything scheduled outside
-     it — an early class or a late shift is never clipped off the top or bottom */
-  let startH=6, endH=24;
-  pItemsFor(iso).forEach(it=>{
-    if(!it.time) return;
-    const [h,m]=it.time.split(":").map(Number), s=h+m/60, e=s+(+it.hours||0);
-    if(s<startH) startH=Math.floor(s);
-    if(e>endH) endH=Math.ceil(e);
-  });
-  return {startH,endH};
-}
-function pTimelineHtml(iso){
-  const {startH,endH}=pTimelineWindow(iso);
-  const totalPx=(endH-startH)*PX_PER_HOUR;
-  const items=pBudgetOf(iso).items;      // clash flags ride along
-  const timed=items.filter(it=>it.time);
-  /* exactly the inverse of `timed` — anything with a time is drawn on the
-     grid, everything else falls through to the untimed list below it */
-  const flex=items.filter(it=>!it.time);
-
-  /* clashing blocks share the lane side by side instead of drawing on top of
-     each other — greedy column assignment over the sorted intervals, with each
-     overlap cluster split evenly across its widest moment */
-  const iv=timed.map(it=>{ const [h,m]=it.time.split(":").map(Number);
-    return {it, s:h+m/60, e:h+m/60+(+it.hours||0), col:0, n:1}; })
-    .sort((a,b)=>a.s-b.s||b.e-a.e);
-  let cluster=[], clusterEnd=-1;
-  const closeCluster=()=>{ const n=Math.max(...cluster.map(x=>x.col))+1;
-    cluster.forEach(x=>x.n=n); cluster=[]; };
-  iv.forEach(x=>{
-    if(cluster.length&&x.s>=clusterEnd) closeCluster();
-    if(!cluster.length){ cluster=[x]; clusterEnd=x.e; x.col=0; return; }
-    const used=cluster.filter(y=>y.e>x.s).map(y=>y.col);
-    let c=0; while(used.includes(c)) c++;
-    x.col=c; cluster.push(x); clusterEnd=Math.max(clusterEnd,x.e);
-  });
-  if(cluster.length) closeCluster();
-
-  let lines=""; for(let h=startH;h<=endH;h++){
-    lines+=`<div class="ptl-hour" style="top:${(h-startH)*PX_PER_HOUR}px">
-      <span>${String(h%24).padStart(2,"0")}:00</span></div>`;
-  }
-  const nowH=(()=>{ const n=new Date(); return n.getHours()+n.getMinutes()/60; })();
-  const blocks=iv.map(x=>{
-    const it=x.it, start=x.s, end=x.e;
-    const top=(start-startH)*PX_PER_HOUR, height=Math.max(24,it.hours*PX_PER_HOUR);
-    /* what you are in the middle of right now gets a live countdown — the
-       now-line says where you are, this says how much of it is left */
-    const live=(it.live||(iso===pToday()&&nowH>=start&&nowH<end));
-    const leftMin=Math.ceil((end-nowH)*60);
-    const lane=`left:calc(46px + (100% - 48px)*${(x.col/x.n).toFixed(4)});
-      width:calc((100% - 48px)*${(1/x.n).toFixed(4)} - ${x.n>1?4:0}px)`;
-    /* below ~38px there's no room for a title line plus a meta line — the
-       meta line was silently clipping by the block's own overflow:hidden,
-       which happened to any block under about 50 minutes: a standup, a call,
-       any quick task. Fold time+name onto one line and drop the rest rather
-       than lose the fight against overflow. */
-    const compact=height<38;
-    const meta=`${esc(it.time)} · ${pFmtH(it.hours)}h${it.kind==="hours"&&it.live?` · <em>${esc(t("running"))}</em>`
-        :live&&it.kind!=="hours"?` · <em>${esc(
-        leftMin>=60?t("{h}h left").replace("{h}",pFmtH(leftMin/60))
-                   :t("{m}m left").replace("{m}",leftMin))}</em>`:""}`;
-    const warn=it.clash?'<i class="clash" title="'+esc(t("Overlaps another block"))+'">⚠</i> ':"";
-    /* tasks and recurring blocks are grabbable here exactly as on the week
-       board — same kinds, same commit path, so a move made in either view is
-       the same edit to the same record */
-    const drag=it.kind==="task"?` data-dtl="task:${it.ref.id}"`
-             : it.kind==="block"?` data-dtl="block:${it.ref.id}"`:"";
-    return `<div class="ptl-block${live?" live":""}${it.kind==="hours"?" hrs":""}${compact?" compact":""}${drag?" grab":""}"${drag}
-      style="top:${top}px; height:${height}px; ${lane}">
-      ${compact
-        ? `<b>${warn}${esc(it.time)} ${esc(it.name)}</b>`
-        : `<b>${warn}${esc(it.name)}</b><span>${meta}</span>`}${
-        drag&&height>=34?`<i class="ptl-rsz" data-dtlr="${it.kind}:${it.ref.id}"></i>`:""}</div>`;
-  }).join("");
-  let now="";
-  if(iso===pToday()){
-    const n=new Date(), nh=n.getHours()+n.getMinutes()/60;
-    if(nh>=startH&&nh<=endH) now=`<div class="ptl-now" style="top:${(nh-startH)*PX_PER_HOUR}px"></div>`;
-  }
-  /* projects ride ABOVE the grid as all-day bars — they claim the day, not a
-     slot, and burying them under 24 hours of grid made them invisible. Same
-     items, same numbers as the Projects timeline: one dataset, two drawings. */
-  const projs=flex.filter(it=>it.kind==="proj");
-  const rest=flex.filter(it=>it.kind!=="proj");
-  const alldayHtml=projs.length?`<div class="ptl-allday">${projs.map(it=>
-    `<span class="ptl-adchip${it.id?" tap":""}"${it.id?` data-dtlp="${it.id}" tabindex="0"`:""}
-      style="--pc:${ppSafeColor(it.color)}">
-      <i></i>${esc(it.name)}<b>${pFmtH(it.hours)}h</b></span>`).join("")}</div>`:"";
-  const flexHtml=rest.length?`<div class="ptl-flex">
-    <span class="eyebrow" style="display:block; margin:14px 0 8px">${esc(t("No fixed time"))}
-      <small style="text-transform:none; letter-spacing:0; font-weight:400; color:var(--ink-3)"> — ${esc(t("drag one onto the hours above to schedule it"))}</small></span>
-    ${rest.map(it=>`<div class="pdi${it.kind==="care"?" care":""}${it.kind==="task"?" draggy":""}"${
-      it.kind==="task"?` data-dtlf="${it.ref.id}"`:""}>
-      <span class="pdi-time">${it.kind==="care"?"🌿":it.kind==="task"?"⠿":""}</span>
-      <span class="pdi-name${it.overdue?" over":""}">${esc(it.name)}${
-        it.kind==="care"?` <small>· ${it.jobs} ${esc(t("jobs"))}</small>`:""}${
-        it.overdue?" ("+esc(t("overdue"))+")":""}</span>
-      <span class="pdi-hours">${pFmtH(it.hours)}h</span>
-    </div>`).join("")}
-  </div>`:"";
-  return alldayHtml+`<div class="ptimeline" style="height:${totalPx}px">${lines}${blocks}${now}</div>${flexHtml}`;
-}
+/* Day, Week and Month are the same board (hours down, days across) at
+   different widths — see pBoardHtml below. */
 /* ================= the week board =================
    Seven day columns, time running down, everything the day owns as colored
    blocks — the same pItemsFor dataset the day view and budget read, drawn as a
@@ -4163,11 +3935,37 @@ function pWeekDays(iso){
   const monday=new Date(d); monday.setDate(d.getDate()-off);
   return Array.from({length:7},(_,i)=>{ const x=new Date(monday); x.setDate(monday.getDate()+i); return ymd(+x); });
 }
-function pWeekBoardHtml(iso){
-  const days=pWeekDays(iso);
+function pMonthDays(iso){
+  const m=monthStart(fromYmd(iso)), next=addMonths(m,1);
+  const days=[]; for(let d=m;d<next;d+=DAY) days.push(ymd(d));
+  return days;
+}
+function pDaysFor(scope,iso){
+  if(scope==="week") return pWeekDays(iso);
+  if(scope==="month") return pMonthDays(iso);
+  return [iso];
+}
+function pBoardStepIso(scope,iso,dir){
+  if(scope==="week") return ymd(+pParseISO(iso)+dir*7*DAY);
+  if(scope==="month") return ymd(addMonths(fromYmd(iso),dir));
+  return ymd(+pParseISO(iso)+dir*DAY);
+}
+function pBoardLabel(scope,days){
+  if(scope==="month") return pParseISO(days[0]).toLocaleDateString(locale(),{month:"long",year:"numeric"});
+  const a=pParseISO(days[0]), b=pParseISO(days[days.length-1]);
+  if(scope==="day") return dowName(a.getDay()).slice(0,3)+" "+a.getDate()+" "+pMonthGen(a.getMonth());
+  return a.getDate()+" "+pMonthGen(a.getMonth())+" – "+b.getDate()+" "+pMonthGen(b.getMonth());
+}
+/* Day, Week and Month are one board — hours down, days across — that just
+   gets more day-columns; the day-count-1 case IS the day view, not a
+   separate implementation, so it carries every feature the old day
+   timeline had (auto-fit hour window, live countdown, clash warnings,
+   untimed care jobs) rather than losing them when folded in. */
+function pBoardHtml(days){
   const byDay=days.map(d=>pBudgetOf(d).items);
-  /* window: wide enough for everything timed this week, never tighter than 7–21 */
-  let startH=7, endH=21;
+  /* window: wide enough for everything timed, but a lone day starts from a
+     plainer waking-hours default than a multi-day board would need */
+  let startH=days.length===1?6:7, endH=days.length===1?24:21;
   byDay.forEach(items=>items.forEach(it=>{
     if(!(it.time&&it.hours>0)) return;
     const [h,m]=it.time.split(":").map(Number);
@@ -4178,18 +3976,18 @@ function pWeekBoardHtml(iso){
   const H=(endH-startH)*WB_PXH;
   const label=d=>{ const x=pParseISO(d);
     return `<b>${esc((L.lang==="cs"?DOW_CS:DOW_LONG)[x.getDay()].slice(0,3))}</b> ${x.getDate()}`; };
-  $("#pWkLabel").textContent=(()=>{ const a=pParseISO(days[0]), b=pParseISO(days[6]);
-    return a.getDate()+" "+pMonthGen(a.getMonth())+" – "+b.getDate()+" "+pMonthGen(b.getMonth()); })();
 
   const gutter=`<div class="wb-gutter" style="height:${H}px">${
     Array.from({length:endH-startH},(_,i)=>`<span style="top:${i*WB_PXH}px">${String((startH+i)%24).padStart(2,"0")}</span>`).join("")}</div>`;
 
+  const nowH=(()=>{ const n=new Date(); return n.getHours()+n.getMinutes()/60; })();
   const cols=days.map((d,di)=>{
     const items=byDay[di];
     const projs=items.filter(it=>it.kind==="proj");
     const care=items.find(it=>it.kind==="care");
     const timed=items.filter(it=>it.time&&it.hours>0&&!(it.kind==="care"));
-    /* lane packing inside the column, same greedy clusters as the day view */
+    /* lane packing inside the column: clashing blocks share the width side by
+       side instead of drawing on top of each other */
     const iv=timed.map(it=>{ const [h,m]=it.time.split(":").map(Number);
       return {it,s:h+m/60,e:h+m/60+it.hours,col:0,n:1}; }).sort((a,b)=>a.s-b.s||b.e-a.e);
     let cl=[], clEnd=-1;
@@ -4202,21 +4000,36 @@ function pWeekBoardHtml(iso){
       x.col=c; cl.push(x); clEnd=Math.max(clEnd,x.e);
     });
     if(cl.length) closeCl();
+    /* clash flags come pre-computed on the items — pBudgetOf() already marks
+       every interval that overlaps another; reused below for the warning icon */
     const blocks=iv.map(x=>{
       const it=x.it, top=(x.s-startH)*WB_PXH, hpx=Math.max(17,it.hours*WB_PXH);
       const lane=`left:calc(${(x.col/x.n)*100}% + 1px); width:calc(${(1/x.n)*100}% - 3px)`;
       const kind=it.kind==="hours"?"hrs":it.kind==="block"?"blk":"task";
       const drag=it.kind==="task"?` data-wb="task:${it.ref.id}" data-day="${d}"`
                : it.kind==="block"?` data-wb="block:${it.ref.id}" data-day="${d}"`:"";
-      return `<div class="wb-blk wb-${kind}"${drag} style="top:${top}px; height:${hpx}px; ${lane}">
-        <b>${it.kind==="block"?"↻ ":""}${esc(it.name)}</b>
-        <span>${esc(it.time)} · ${pFmtH(it.hours)}h</span>
+      /* what you are in the middle of right now gets a live countdown — the
+         now-line says where you are, this says how much of it is left */
+      const live=(it.live||(d===pToday()&&nowH>=x.s&&nowH<x.e));
+      const leftMin=Math.ceil((x.e-nowH)*60);
+      /* below ~38px there's no room for a title line plus a meta line — fold
+         time+name onto one line rather than lose the fight against overflow */
+      const compact=hpx<38;
+      const meta=`${esc(it.time)} · ${pFmtH(it.hours)}h${it.kind==="hours"&&it.live?` · <em>${esc(t("running"))}</em>`
+          :live&&it.kind!=="hours"?` · <em>${esc(
+          leftMin>=60?t("{h}h left").replace("{h}",pFmtH(leftMin/60))
+                     :t("{m}m left").replace("{m}",leftMin))}</em>`:""}`;
+      const warn=it.clash?'<i class="clash" title="'+esc(t("Overlaps another block"))+'">⚠</i> ':"";
+      return `<div class="wb-blk wb-${kind}${live?" live":""}${compact?" compact":""}"${drag} style="top:${top}px; height:${hpx}px; ${lane}">
+        ${compact
+          ? `<b>${warn}${it.kind==="block"?"↻ ":""}${esc(it.time)} ${esc(it.name)}</b>`
+          : `<b>${warn}${it.kind==="block"?"↻ ":""}${esc(it.name)}</b><span>${meta}</span>`}
         ${drag&&hpx>=26?`<i class="wb-rsz" data-wbr="${it.kind}:${it.ref.id}" data-day="${d}"></i>`:""}
       </div>`; }).join("");
     let lines=""; for(let h=1;h<endH-startH;h++) lines+=`<i class="wb-hl" style="top:${h*WB_PXH}px"></i>`;
     let now="";
-    if(d===pToday()){ const n=new Date(), nh=n.getHours()+n.getMinutes()/60;
-      if(nh>=startH&&nh<=endH) now=`<i class="wb-now" style="top:${(nh-startH)*WB_PXH}px"></i>`; }
+    if(d===pToday()){
+      if(nowH>=startH&&nowH<=endH) now=`<i class="wb-now" style="top:${(nowH-startH)*WB_PXH}px"></i>`; }
     /* projects are draggable here too: sideways moves the whole project,
        the handle changes just this day's hours, a tap opens its editor */
     const allday=(projs.length||care)?`<div class="wb-allday">${
@@ -4233,17 +4046,25 @@ function pWeekBoardHtml(iso){
     </div>`;
   }).join("");
 
-  /* the tray: this week's tasks that have no time yet — drag them onto a slot */
-  /* two kinds of homeless task: this week's without a time yet, and anything
-     overdue — its old slot is gone, so the board offers it for re-planning */
+  /* the tray: tasks with no time yet, plus a non-draggable line for any day
+     with unscheduled plant care — two kinds of homeless task, this range's
+     untimed ones and anything overdue, whose old slot is gone either way */
   const trayTasks=(S.planner.tasks||[]).filter(tk=>!tk.done&&tk.due&&
     ((!tk.time&&days.includes(tk.due))||tk.due<pToday()));
-  const tray=trayTasks.length?`<div class="wb-tray">
+  const careTray=days.map((d,di)=>{
+    const c=byDay[di].find(it=>it.kind==="care"); if(!c) return "";
+    const x=pParseISO(d);
+    const when=days.length>1?esc(dowName(x.getDay()).slice(0,3))+" "+x.getDate()+" ":"";
+    return `<span class="wb-traychip">🌿 ${when}
+      <small>${c.jobs} ${esc(t("jobs"))}</small></span>`;
+  }).join("");
+  const tray=(trayTasks.length||careTray)?`<div class="wb-tray">
     <span class="eyebrow">${esc(t("Unscheduled"))}</span>
     ${trayTasks.map(tk=>`<span class="wb-traychip${tk.due<pToday()?" late":""}" data-wb="tray:${tk.id}">${
       esc(tk.title||t("Untitled task"))}
       <small>${tk.due<pToday()?esc(t("overdue")):pFmtH(+tk.hours||1)+"h"}</small></span>`).join("")}
-    <small class="hint" style="flex-basis:100%; margin:2px 0 0">${esc(t("Drag a task onto the week to give it a time."))}</small>
+    ${careTray}
+    <small class="hint" style="flex-basis:100%; margin:2px 0 0">${esc(t("Drag a task onto the board to give it a time."))}</small>
   </div>`:"";
 
   return `<div class="wb" id="pWeekBoard" data-starth="${startH}">
@@ -4251,7 +4072,7 @@ function pWeekBoardHtml(iso){
 }
 
 /* ---- the board's gesture engine ---- */
-function pWireWeekBoard(){
+function pWireBoard(){
   const board=document.getElementById("pWeekBoard");
   if(!board) return;
   const scrollEl=board.querySelector(".wb-scroll");
@@ -4446,266 +4267,45 @@ function pWireWeekBoard(){
   });
 }
 
-/* ---- day timeline: the same gestures as the week board ----
-   Drag a block up or down to change its time, drag its bottom edge to change
-   how long it takes, tap to open it. Same slop/long-press arming, same ghost
-   transform, same commit-once-then-render as the board — and the same records,
-   so an edit here is the edit the week and the budget already know about. */
-let pDayAbort=null;
-window.addEventListener("keydown",e=>{ if(e.key==="Escape"&&pDayAbort) pDayAbort(); });
-function pWireDayTimeline(){
-  const host=document.getElementById("pScheduleBody");
-  const tl=host&&host.querySelector(".ptimeline");
-  if(!tl){ pDayAbort=null; return; }
-  const {startH}=pTimelineWindow(pSelISO);
-  let D=null;
-  const snapH=v=>Math.round(v/WB_SNAP)*WB_SNAP;
-  const fmt=v=>String(Math.floor(v)).padStart(2,"0")+":"+String(Math.round((v%1)*60)).padStart(2,"0");
-  const abort=()=>{ if(D){ clearTimeout(D.timer); D.el.classList.remove("lift");
-    D.el.style.transform=""; if(D.h0!=null) D.el.style.height=D.h0+"px"; D=null; renderSchedule(); } };
-  pDayAbort=abort;
-
-  tl.addEventListener("pointerdown",e=>{
-    if(e.button!==undefined&&e.button!==0) return;
-    if(D) return;
-    const rz=e.target.closest("[data-dtlr]"), bk=e.target.closest("[data-dtl]");
-    if(!rz&&!bk) return;
-    const [kind,id]=(rz?rz.dataset.dtlr:bk.dataset.dtl).split(":");
-    const el=rz?rz.closest(".ptl-block"):bk;
-    D={mode:rz?"resize":"move", kind, id, pid:e.pointerId, x0:e.clientX, y0:e.clientY,
-       el, armed:false, moved:false, touch:e.pointerType==="touch", timer:null,
-       top0:parseFloat(el.style.top)||0, h0:null};
-    try{ tl.setPointerCapture(e.pointerId); }catch(err){}
-    if(rz) e.preventDefault();
-    else if(D.touch){ D.timer=setTimeout(()=>{ if(D){ D.armed=true; D.el.classList.add("lift"); } },300); }
-    else e.preventDefault();
-  });
-
-  tl.addEventListener("pointermove",e=>{
-    if(!D||e.pointerId!==D.pid) return;
-    const dx=e.clientX-D.x0, dy=e.clientY-D.y0;
-    if(!D.armed){
-      if(D.mode==="resize"){ if(Math.abs(dy)<(D.touch?8:3)) return; D.armed=true; }
-      else if(D.touch){ if(Math.abs(dx)>10||Math.abs(dy)>10){ clearTimeout(D.timer); D=null; } return; }
-      else { if(Math.abs(dy)<6&&Math.abs(dx)<6) return; D.armed=true; D.el.classList.add("lift"); }
-    }
-    D.moved=true;
-    if(D.mode==="resize"){
-      if(D.h0==null) D.h0=parseFloat(D.el.style.height)||24;
-      D.el.style.height=Math.max(18,D.h0+dy)+"px";
-    } else D.el.style.transform=`translateY(${dy}px)`;
-    e.preventDefault();
-  });
-
-  const finish=e=>{
-    if(!D||e.pointerId!==D.pid) return;
-    const d=D; D=null; clearTimeout(d.timer);
-    d.el.classList.remove("lift");
-    const done=()=>{ touch(); pCareCache={}; if(window.ppClearExt) ppClearExt(); renderPlanner(); };
-    if(!d.moved){
-      d.el.style.transform="";
-      /* a tap opens the record itself — the task row expands in the list, a
-         recurring block scrolls to its editor */
-      if(d.kind==="task"){ pOpenTasks.add(d.id); renderPlanner();
-        const row=document.querySelector(`[data-ptog="${d.id}"]`);
-        row&&row.scrollIntoView({block:"center"}); }
-      return;
-    }
-    if(d.mode==="resize"){
-      const px=parseFloat(d.el.style.height)||24;
-      const hrs=Math.max(0.25,snapH(px/PX_PER_HOUR));
-      if(d.kind==="task"){ const tk=pFindTask(d.id); if(tk){ tk.hours=hrs; done(); return; } }
-      if(d.kind==="block"){ const b=pFindBlock(d.id); if(b){ b.hours=hrs; done(); return; } }
-      renderSchedule(); return;
-    }
-    const newTop=d.top0+(e.clientY-d.y0);
-    const time=Math.max(0,Math.min(23.75,snapH(startH+newTop/PX_PER_HOUR)));
-    if(d.kind==="task"){ const tk=pFindTask(d.id); if(tk){ tk.time=fmt(time); done(); return; } }
-    if(d.kind==="block"){ const b=pFindBlock(d.id); if(b){ b.time=fmt(time); done(); return; } }
-    renderSchedule();
-  };
-  tl.addEventListener("pointerup",finish);
-  tl.addEventListener("pointercancel",abort);
-
-  /* the untimed list: drag a task up onto the hour grid to schedule it — the
-     same gesture the week board's tray uses. An overdue task dropped here is
-     also pulled onto THIS day, which is what rescuing it means. */
-  const flex=host.querySelector(".ptl-flex");
-  if(flex){
-    let F=null;
-    flex.addEventListener("pointerdown",e=>{
-      if(e.button!==undefined&&e.button!==0) return;
-      const row=e.target.closest("[data-dtlf]"); if(!row) return;
-      F={id:row.dataset.dtlf, pid:e.pointerId, x0:e.clientX, y0:e.clientY,
-         el:row, armed:false, touch:e.pointerType==="touch", timer:null};
-      try{ flex.setPointerCapture(e.pointerId); }catch(err){}
-      if(F.touch){ F.timer=setTimeout(()=>{ if(F){ F.armed=true; F.el.classList.add("lift"); } },300); }
-      else e.preventDefault();
-    });
-    flex.addEventListener("pointermove",e=>{
-      if(!F||e.pointerId!==F.pid) return;
-      const dx=e.clientX-F.x0, dy=e.clientY-F.y0;
-      if(!F.armed){
-        if(F.touch){ if(Math.abs(dx)>10||Math.abs(dy)>10){ clearTimeout(F.timer); F=null; } return; }
-        if(Math.abs(dx)<6&&Math.abs(dy)<6) return;
-        F.armed=true; F.el.classList.add("lift");
-      }
-      F.el.style.transform=`translate(${dx}px,${dy}px)`;
-      e.preventDefault();
-    });
-    const fin=e=>{
-      if(!F||e.pointerId!==F.pid) return;
-      const f=F; F=null; clearTimeout(f.timer);
-      f.el.classList.remove("lift"); f.el.style.transform="";
-      if(!f.armed) return;
-      const tr=tl.getBoundingClientRect();
-      if(e.clientY>=tr.top-10&&e.clientY<=tr.bottom+10){
-        const time=Math.max(0,Math.min(23.75,snapH(startH+(e.clientY-tr.top)/PX_PER_HOUR)));
-        const tk=pFindTask(f.id);
-        if(tk){ tk.time=fmt(time); tk.due=pSelISO;
-          if(!(+tk.hours>0)) tk.hours=1;
-          touch(); pCareCache={}; if(window.ppClearExt) ppClearExt(); renderPlanner(); return; }
-      }
-      renderSchedule();
-    };
-    flex.addEventListener("pointerup",fin);
-    flex.addEventListener("pointercancel",()=>{ if(F){ clearTimeout(F.timer);
-      F.el.classList.remove("lift"); F.el.style.transform=""; F=null; } });
-  }
-
-  /* all-day project chips: tap opens the project editor. Attached to the
-     recreated strip, not the persistent host — host listeners would stack
-     one per render. */
-  const ad=host.querySelector(".ptl-allday");
-  if(ad) ad.addEventListener("click",e=>{
-    const p=e.target.closest("[data-dtlp]");
-    if(p&&window.ppOpenProject) ppOpenProject(p.dataset.dtlp);
-  });
-}
 let pTick=null;
 function pStopTick(){ clearInterval(pTick); pTick=null; }
-const PP_SCOPES={"proj-month":"month","proj-quarter":"quarter","proj-year":"year"};
-/* Which month/quarter/year the grid view is showing — ephemeral like pSelISO,
-   always normalised to the 1st of its month. Independent of the linear
-   timeline's own scroll position; the two views don't share a nav model. */
-let ppGridISO=null;
-function ppGridStepIso(zoom,iso,dir){
-  const n=zoom==="year"?12:zoom==="quarter"?3:1;
-  return ymd(addMonths(fromYmd(iso),n*dir));
-}
-function ppGridLabel(zoom,iso){
-  const d=pParseISO(iso);
-  if(zoom==="year") return String(d.getFullYear());
-  if(zoom==="quarter") return "Q"+(Math.floor(d.getMonth()/3)+1)+" "+d.getFullYear();
-  return d.toLocaleDateString(locale(),{month:"long",year:"numeric"});
-}
 const ppSafeColor=c=>/^#[0-9A-Fa-f]{3,8}$/.test(c||"")?c:"var(--accent)";
-const ppDowHtml=()=>`<div class="pcal-dow">${Array.from({length:7},(_,i)=>
-  `<span>${esc(dowName((i+1)%7).slice(0,L.lang==="cs"?2:3))}</span>`).join("")}</div>`;
-/* one month's worth of day cells — full-size (day number + up to four project
-   dots) for the month/quarter grids, or a single-tone miniature square per
-   day for the year grid, where twelve full months won't fit legibly */
-function ppMonthCellsHtml(monthIso,{mini}={}){
-  const m=monthStart(fromYmd(monthIso)), first=weekStart(m), next=addMonths(m,1);
-  const cells=Math.ceil((next-first)/DAY/7)*7, today=sod(Date.now());
-  let html="";
-  for(let i=0;i<cells;i++){
-    const d=first+i*DAY, iso=ymd(d), out=d<m||d>=next;
-    const list=out?[]:((window.ppProjectsOn?ppProjectsOn(iso):[]).filter(p=>p.hours>0));
-    if(mini){
-      html+=`<button type="button" class="pcal-mini-cell${out?" out":""}${d===today?" today":""}"
-        data-pgcell="${iso}"${out?" tabindex=-1":""}
-        style="${list.length?`background:${ppSafeColor(list[0].color)}`:""}"
-        title="${esc(new Date(d).toDateString())}${list.length?" · "+list.length+" "+esc(t("projects")):""}"></button>`;
-    }else{
-      const dots=list.slice(0,4).map(p=>`<i style="background:${ppSafeColor(p.color)}"></i>`).join("");
-      html+=`<button type="button" class="pcal-cell${out?" out":""}" data-pgcell="${iso}"
-        ${d===today?'data-today="1"':""}${out?" tabindex=-1":""}>
-        <span class="pcal-day">${new Date(d).getDate()}</span>
-        <span class="pcal-dots">${dots}</span>
-      </button>`;
-    }
-  }
-  return html;
-}
-function ppGridBodyHtml(zoom,iso){
-  if(zoom==="month") return ppDowHtml()+`<div class="pcal-grid">${ppMonthCellsHtml(iso)}</div>`;
-  if(zoom==="quarter"){
-    const qStart=ymd(addMonths(fromYmd(iso),-(pParseISO(iso).getMonth()%3)));
-    return `<div class="pcal-quarter">${[0,1,2].map(i=>{
-      const mi=ymd(addMonths(fromYmd(qStart),i));
-      const title=pParseISO(mi).toLocaleDateString(locale(),{month:"long"});
-      return `<div><p class="pcal-qmonth-title">${esc(title)}</p>${ppDowHtml()}
-        <div class="pcal-grid">${ppMonthCellsHtml(mi)}</div></div>`;
-    }).join("")}</div>`;
-  }
-  const yStart=ymd(monthStart(+new Date(pParseISO(iso).getFullYear(),0,1)));
-  return `<div class="pcal-year">${Array.from({length:12},(_,i)=>{
-    const mi=ymd(addMonths(fromYmd(yStart),i));
-    const title=pParseISO(mi).toLocaleDateString(locale(),{month:"short"});
-    return `<div><p class="pcal-mini-title">${esc(title)}</p>
-      <div class="pcal-mini-grid">${ppMonthCellsHtml(mi,{mini:true})}</div></div>`;
-  }).join("")}</div>`;
-}
-function pWireProjGrid(){
-  $("#pScheduleBody").querySelectorAll("[data-pgcell]").forEach(el=>el.addEventListener("click",()=>{
-    pScope="day"; pSelISO=el.dataset.pgcell; renderSchedule();
-  }));
-}
 function renderSchedule(){
   pEnsureView();
   pCareCache={};
   if(window.ppClearExt) ppClearExt();   // planner data may have changed — the band re-reads it
   pStopTick();
-  /* the projects timeline is a scope of this card, not a place — the pill
-     just swaps what the window shows, exactly like day/week/month do */
   const ppWrap=$("#view-projplan");
-  /* five lenses, one pill: day and week draw the schedule body, the other
-     three swap in the projects timeline at that zoom */
   document.querySelectorAll("#pScopeSeg [data-pscope]").forEach(b=>
     b.setAttribute("aria-pressed",String(b.dataset.pscope===pScope)));
-  if(PP_SCOPES[pScope]){
-    const z=PP_SCOPES[pScope];
-    $("#pWeekNav").style.display="none";
-    $("#pViewToggle").style.display="";
-    document.querySelectorAll("#ppViewSeg [data-ppview]").forEach(b=>
-      b.setAttribute("aria-pressed",String(b.dataset.ppview===(L.ppViewMode||"linear"))));
-    if(L.ppViewMode==="grid"){
-      ppWrap.hidden=true;
-      $("#pGridNav").style.display="";
-      $("#pScheduleBody").hidden=false;
-      if(!ppGridISO) ppGridISO=ymd(monthStart(Date.now()));
-      $("#pGridLabel").textContent=ppGridLabel(z,ppGridISO);
-      $("#pScheduleBody").innerHTML=ppGridBodyHtml(z,ppGridISO);
-      pWireProjGrid();
-      return;
-    }
-    $("#pGridNav").style.display="none";
-    $("#pScheduleBody").hidden=true;
+  /* Timeline is the one lens that isn't a width of the same hours×days board —
+     it's the separate projects Gantt, kept exactly as it was, just reached
+     through this pill instead of Month/Quarter/Year buttons of its own. */
+  if(pScope==="timeline"){
     ppWrap.hidden=false;
-    /* through ppSetZoom, not a bare assignment — it rescales scrollLeft so the
-       timeline stays anchored on the same dates when the zoom changes */
-    if(L.ppZoom!==z&&window.ppSetZoom){ if(window.ppEnter) ppEnter(); ppSetZoom(z); }
-    else { L.ppZoom=z; saveLocal(); if(window.ppEnter) ppEnter(); }
+    $("#pScheduleBody").hidden=true;
+    $("#pBoardNav").style.display="none";
+    $("#pTimelineZoom").style.display="";
+    if(window.ppEnter) ppEnter();          // normalises L.ppZoom if it's ever invalid
+    document.querySelectorAll("#ppZoomSeg [data-ppzoom]").forEach(b=>
+      b.setAttribute("aria-pressed",String(b.dataset.ppzoom===L.ppZoom)));
     return;
   }
   ppWrap.hidden=true;
-  $("#pViewToggle").style.display="none";
-  $("#pGridNav").style.display="none";
+  $("#pTimelineZoom").style.display="none";
   $("#pScheduleBody").hidden=false;
-  $("#pWeekNav").style.display=pScope==="week"?"":"none";
-  if(pScope==="day"){
-    $("#pScheduleBody").innerHTML=pTimelineHtml(pSelISO);
-    pWireDayTimeline();
-    /* only today moves; any other day is a static picture. Nothing in the
-       timeline holds focus, so a full repaint is safe here. */
-    if(pSelISO===pToday()) pTick=setInterval(()=>{
-      if(curView!=="planner"||pScope!=="day"){ pStopTick(); return; }
-      $("#pScheduleBody").innerHTML=pTimelineHtml(pSelISO);
-      pWireDayTimeline();
-    },30000);
-  }
-  else if(pScope==="week"){ $("#pScheduleBody").innerHTML=pWeekBoardHtml(pSelISO); pWireWeekBoard(); }
+  $("#pBoardNav").style.display="";
+  const days=pDaysFor(pScope,pSelISO);
+  $("#pBoardLabel").textContent=pBoardLabel(pScope,days);
+  $("#pScheduleBody").innerHTML=pBoardHtml(days);
+  pWireBoard();
+  /* only a range that includes today moves; anything else is a static
+     picture — nothing in the board holds focus, so a full repaint is safe */
+  if(days.includes(pToday())) pTick=setInterval(()=>{
+    if(curView!=="planner"||pScope==="timeline"){ pStopTick(); return; }
+    $("#pScheduleBody").innerHTML=pBoardHtml(pDaysFor(pScope,pSelISO));
+    pWireBoard();
+  },30000);
 }
 /* ---- overbooking warning, shown while you are still typing ----
    Reporting an overloaded day after the fact is too late to change anything.
@@ -4882,19 +4482,16 @@ $("#pJumpToday").addEventListener("click",()=>{
   pSelISO=pToday();
   $("#pAddDue").value=pSelISO; renderPlanner();
 });
-$("#pWkPrev").addEventListener("click",()=>{ pSelISO=ymd(+pParseISO(pSelISO)-7*864e5); renderSchedule(); });
-$("#pWkNext").addEventListener("click",()=>{ pSelISO=ymd(+pParseISO(pSelISO)+7*864e5); renderSchedule(); });
-$("#ppViewSeg").addEventListener("click",e=>{
-  const b=e.target.closest("[data-ppview]"); if(!b) return;
-  L.ppViewMode=b.dataset.ppview; saveLocal(); renderSchedule();
-});
-$("#pGridPrev").addEventListener("click",()=>{
-  const z=PP_SCOPES[pScope]; if(!z) return;
-  ppGridISO=ppGridStepIso(z,ppGridISO,-1); renderSchedule();
-});
-$("#pGridNext").addEventListener("click",()=>{
-  const z=PP_SCOPES[pScope]; if(!z) return;
-  ppGridISO=ppGridStepIso(z,ppGridISO,1); renderSchedule();
+$("#pBoardPrev").addEventListener("click",()=>{ pSelISO=pBoardStepIso(pScope,pSelISO,-1); renderSchedule(); });
+$("#pBoardNext").addEventListener("click",()=>{ pSelISO=pBoardStepIso(pScope,pSelISO,1); renderSchedule(); });
+$("#ppZoomSeg").addEventListener("click",e=>{
+  const b=e.target.closest("[data-ppzoom]"); if(!b) return;
+  const z=b.dataset.ppzoom;
+  /* through ppSetZoom, not a bare assignment — it rescales scrollLeft so the
+     timeline stays anchored on the same dates when the zoom changes */
+  if(L.ppZoom!==z&&window.ppSetZoom) ppSetZoom(z);
+  else { L.ppZoom=z; saveLocal(); }
+  renderSchedule();
 });
 $("#pScopeSeg").addEventListener("click",e=>{
   const b=e.target.closest("[data-pscope]"); if(!b) return;
@@ -9825,7 +9422,7 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 /* ---- projects timeline (ported Project Planner) ---- */
 "Start fresh":"Začít znovu","Undo":"Zpět","Redo":"Znovu","+ New project":"+ Nový projekt",
 "Move projects":"Přesouvat projekty","Paint days":"Malovat dny","Quarter":"Čtvrtletí","6 months":"6 měsíců","Year":"Rok",
-"Linear":"Lineární","Grid":"Mřížka",
+"Timeline":"Časová osa","Half":"Půl roku",
 "I don’t work weekends":"O víkendech nepracuji","Daily limit":"Denní limit",
 "Brush — drag across days":"Štětec — táhni přes dny","Esc to stop painting":"Esc ukončí malování",
 "Light — up to 60%":"Volno — do 60 %","Busy — 60–100%":"Vytíženo — 60–100 %","Over limit":"Přes limit",
@@ -9881,7 +9478,7 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "Projects count here":"Projekty se počítají sem",
 "Unscheduled":"Nenaplánované","planned lc":"v plánu","Routine":"Rutina","drag one onto the hours above to schedule it":"přetáhni na hodiny výš a naplánuje se","Pause":"Pauza","Resume":"Pokračovat","Paused":"Pozastaveno","Skip":"Přeskočit","End this phase and start the next":"Ukončit tuto fázi a začít další","drag to move, edge to resize":"tažením přesuneš, okrajem změníš hodiny","Previous week":"Předchozí týden","Next week":"Další týden",
 "Previous day":"Předchozí den","Next day":"Další den","Yesterday":"Včera",
-"No projects scheduled for this day.":"Na tento den nejsou naplánované žádné projekty.","Drag a task onto the week to give it a time.":"Přetáhni úkol do týdne a dostane čas.",
+"No projects scheduled for this day.":"Na tento den nejsou naplánované žádné projekty.","Drag a task onto the board to give it a time.":"Přetáhni úkol do tabulky a dostane čas.",
 "What the garden and the timer already claim from the same 24 hours.":"Co si zahrada a stopky už berou ze stejných 24 hodin.",
 "Quick tasks":"Rychlé úkoly","Task":"Úkol","Project":"Projekt",
 "Nothing on":"Nic naplánováno","{h}h over":"o {h}h přes","{h}h free":"{h}h volno",
@@ -10748,7 +10345,7 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
 
   function draw() {
     if (typeof curView !== "undefined" &&
-        !(curView === "planner" && String(typeof pScope !== "undefined" ? pScope : "").indexOf("proj-") === 0)) return;
+        !(curView === "planner" && (typeof pScope !== "undefined" ? pScope : "") === "timeline")) return;
     buildLoad();
     var dw = DW(), n = SPAN(), vs = L.ppView, W = n * dw, t = today();
     ppRoot.style.setProperty("--dw", dw + "px");
@@ -11443,7 +11040,7 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
 
   window.addEventListener("keydown", function (e) {
     if (typeof curView === "undefined" || curView !== "planner" ||
-        String(typeof pScope !== "undefined" ? pScope : "").indexOf("proj-") !== 0) return;
+        (typeof pScope !== "undefined" ? pScope : "") !== "timeline") return;
     var anyOpen = pd.open || dd.open || cd.open || rd.open;
     if (e.key === "Escape" && !anyOpen && mode === "paint") {
       if (G && G.kind === "paint") { if (G.painted) persist(); clearTimeout(G.timer); G = null; }
@@ -11460,10 +11057,10 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
 
   document.addEventListener("visibilitychange", function () {
     if (!document.hidden && PS && typeof curView!=="undefined" && curView==="planner" &&
-        String(typeof pScope!=="undefined" ? pScope : "").indexOf("proj-") === 0) draw();
+        (typeof pScope!=="undefined" ? pScope : "") === "timeline") draw();
   });
 
-  /* ---------- module entry: called by renderSchedule for the proj-* scopes ---------- */
+  /* ---------- module entry: called by renderSchedule for the Timeline scope ---------- */
   var ppInited = false, ppScrolled = false, ppLastPS = null;
   window.ppEnter = function () {
     PS = S.projplan;                       // re-grab: imports can replace S wholesale
