@@ -21,6 +21,9 @@
   --amber:#A9640C; --amber-soft:#F7E9D2;
   --orange:#EA580C;
   --track-bg:#E4E7EA; --track-line:rgba(12,20,16,.14); --track-ink:#5B6B63;
+  /* the planner board's own rules: --line-soft vanished against the card, so
+     the hour grid and the day separators get their own readable tokens */
+  --grid-line:#CBD5C8; --grid-sep:#AEBCAA;
   --ok:#15803D; --crit:#BE3B30; --crit-soft:#F8E2DF;
   --glass:rgba(255,255,255,.72); --glass-2:rgba(255,255,255,.88);
   --hair:rgba(255,255,255,.95);
@@ -39,6 +42,7 @@
     --amber:#F1B24C; --amber-soft:#2C2210;
     --orange:#FB923C;
     --track-bg:#242B26; --track-line:rgba(233,241,234,.14); --track-ink:#B7C2BB;
+    --grid-line:#33422F; --grid-sep:#485C41;
     --ok:#4ADE80; --crit:#F08276; --crit-soft:#33191A;
     --glass:rgba(16,23,17,.66); --glass-2:rgba(19,28,21,.82);
     --hair:rgba(255,255,255,.06);
@@ -56,6 +60,7 @@
   --amber:#F1B24C; --amber-soft:#2C2210;
   --orange:#FB923C;
   --track-bg:#242B26; --track-line:rgba(233,241,234,.14); --track-ink:#B7C2BB;
+  --grid-line:#33422F; --grid-sep:#485C41;
   --ok:#4ADE80; --crit:#F08276; --crit-soft:#33191A;
   --glass:rgba(16,23,17,.66); --glass-2:rgba(19,28,21,.82);
   --hair:rgba(255,255,255,.06);
@@ -419,8 +424,8 @@ input[type="time"].mono-input{width:88px}
 /* sticky so the hour labels stay readable while the week scrolls sideways */
 .wb-gutter{flex:0 0 34px; position:sticky; left:0; z-index:4; background:var(--surface)}
 .wb-gutter span{position:absolute; right:6px; transform:translateY(-6px);
-  font-family:"JetBrains Mono",ui-monospace,monospace; font-size:9.5px; color:var(--ink-3)}
-.wb-col{flex:1 1 0; min-width:86px; border-left:1px solid var(--line-soft); display:flex; flex-direction:column}
+  font-family:"JetBrains Mono",ui-monospace,monospace; font-size:9.5px; color:var(--ink-2)}
+.wb-col{flex:1 1 0; min-width:86px; border-left:1px solid var(--grid-sep); display:flex; flex-direction:column}
 .wb-col.today{background:color-mix(in srgb, var(--accent) 4%, transparent)}
 .wb-head{appearance:none; border:0; background:none; cursor:pointer; font:inherit; color:var(--ink-2);
   font-size:11px; padding:4px 2px 3px; text-align:center; border-radius:6px}
@@ -454,7 +459,7 @@ input[type="time"].mono-input{width:88px}
 .wb-allday{flex-wrap:wrap; gap:2px}
 .wb-adcare{font-size:9px; line-height:1}
 .wb-track{position:relative}
-.wb-hl{position:absolute; left:0; right:0; height:0; border-top:1px solid var(--line-soft)}
+.wb-hl{position:absolute; left:0; right:0; height:0; border-top:1px solid var(--grid-line)}
 .wb-now{position:absolute; left:0; right:0; height:0; border-top:2px solid var(--crit); z-index:3}
 .wb-blk{position:absolute; border-radius:6px; overflow:hidden; padding:2px 6px; z-index:1;
   background:var(--accent-soft); border-left:3px solid var(--accent); cursor:grab;
