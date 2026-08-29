@@ -2640,6 +2640,39 @@ function seed(){return{
 
 /* v2 lineups became schedule weeks; in v4 the doses move out into named formulas
    and a week just points at one, so mixing and planning stop being the same thing. */
+/* A snapshot taken immediately before a migration rewrites records in place.
+   Photos are left out on purpose: they are megabytes of base64, no migration
+   has ever touched them, and including them is the one thing likely to blow
+   the storage quota and cost us the backup we came here to make.
+
+   Only the FIRST call for a given tag writes — a later boot must not overwrite
+   the original pre-migration state with an already-migrated one. Never throws:
+   a failed backup must not take the whole boot down with it, but it does leave
+   a breadcrumb so a silent failure is still discoverable.
+   Retrieve with pDownloadBackup() from the console. */
+function pBackupBeforeMigrate(d,tag){
+  const key="pottingbench.backup."+tag;
+  try{
+    if(localStorage.getItem(key)) return;
+    const {photos,...rest}=d;
+    localStorage.setItem(key,JSON.stringify({at:new Date().toISOString(),tag,state:rest}));
+    console.info("[potting-bench] pre-migration backup saved to localStorage:",key);
+  }catch(e){ console.warn("[potting-bench] pre-migration backup FAILED for",key,e); }
+}
+/* console escape hatch: hand the raw pre-migration JSON back as a file */
+window.pDownloadBackup=function(tag){
+  const keys=tag?["pottingbench.backup."+tag]
+    :Object.keys(localStorage).filter(k=>k.indexOf("pottingbench.backup.")===0);
+  if(!keys.length){ console.warn("no backups stored"); return; }
+  keys.forEach(k=>{
+    const blob=new Blob([localStorage.getItem(k)],{type:"application/json"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob); a.download=k+".json";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  });
+  return keys;
+};
 function migrate(d){
   if(!d) return seed();
   if(Array.isArray(d.recipes)&&!Array.isArray(d.schedules)){
@@ -2712,6 +2745,44 @@ function migrate(d){
     if(tk.time===undefined) tk.time="";
     /* anything already carrying steps was a project in all but name */
     if(tk.kind===undefined) tk.kind=(tk.steps&&tk.steps.length)?"project":"task";
+  });
+  /* ---- v7: one list, two shapes ----
+     A planner entry used to be a single fuzzy thing that might or might not
+     have a time. It is now explicitly either a TASK (a day at most, never a
+     clock slot, may carry one level of subtasks) or an EVENT (a real start
+     time and duration, no nesting). The split is decided by what the record
+     already says: a genuine time range makes it an Event, anything else a
+     Task. The old "project" kind folds into Task — every Task can hold
+     subtasks now, so it no longer needs a kind of its own.
+
+     `hours` is kept on Tasks even though the shape does not feature it: the
+     day budget is computed from it, and dropping it would silently empty
+     everyone's planned totals. `steps` is likewise kept on any record that
+     had it, including the few that become Events, so nothing the user typed
+     is destroyed by a rule that could not have known about it. */
+  if(+d.planner.modelV!==7){
+    pBackupBeforeMigrate(d,"pre-v7");
+    d.planner.tasks=d.planner.tasks.map(tk=>{
+      const timed=!!(tk.time&&+tk.hours>0);
+      return Object.assign({},tk,{
+        kind: timed?"event":"task",
+        time: timed?tk.time:"",
+        hours: Number.isFinite(+tk.hours)?Math.max(0,+tk.hours):(timed?1:0),
+        steps: Array.isArray(tk.steps)?tk.steps:[],
+        projectId: tk.projectId||null,
+        done: !!tk.done
+      });
+    });
+    d.planner.modelV=7;
+  }
+  d.planner.tasks.forEach(tk=>{
+    if(!Array.isArray(tk.steps)) tk.steps=[];
+    /* subtasks are one level deep, full stop — anything nested deeper came
+       from a hand-edited import and is flattened rather than trusted */
+    tk.steps=tk.steps.filter(s=>s&&typeof s==="object").map(s=>({
+      id:s.id||uid(), text:String(s.text==null?"":s.text), done:!!s.done }));
+    if(tk.projectId===undefined) tk.projectId=null;
+    if(tk.kind!=="event"&&tk.kind!=="task") tk.kind="task";
   });
   if(typeof d.planner.sleep!=="number") d.planner.sleep=8;
   if(d.planner.linkCare===undefined) d.planner.linkCare=true;
@@ -4032,7 +4103,10 @@ const PROJ_ANCHOR=9;
 function pPlaceProjects(items){
   const projs=items.filter(it=>it.kind==="proj"&&it.hours>0);
   if(!projs.length) return items;
-  const hhmm=v=>String(Math.floor(v)).padStart(2,"0")+":"+String(Math.round((v%1)*60)).padStart(2,"0");
+  /* round to the minute BEFORE splitting: a tracked session ending at
+     12.99444h would otherwise render as the nonexistent "12:60" */
+  const hhmm=v=>{ const mins=Math.round(Math.max(0,Math.min(v,24))*60);
+    return String(Math.floor(mins/60)%24).padStart(2,"0")+":"+String(mins%60).padStart(2,"0"); };
   const busy=items.filter(it=>it.time&&it.hours>0&&it.kind!=="care")
     .map(it=>{ const [h,m]=it.time.split(":").map(Number); return {s:h+m/60,e:h+m/60+it.hours}; });
   const placed=new Map();
@@ -4046,12 +4120,21 @@ function pPlaceProjects(items){
       if(!hit) break;
       s=hit.e;
     }
-    s=Math.max(0,Math.min(s,23.75));
-    placed.set(p,hhmm(s));
+    /* keep the block inside the day rather than clamping its START — clamping
+       to a fixed 23:75 pushed long stacks back into the very interval the walk
+       above had just cleared, and let the tail paint past the bottom of the
+       track. A day with more booked than it holds genuinely overlaps; say so
+       with the same clash flag a double-booked hour gets. */
+    s=Math.max(0,Math.min(s,24-Math.min(p.hours,24)));
+    const clash=busy.some(b=>b.e>s&&b.s<s+p.hours);
+    placed.set(p,{time:hhmm(s),clash});
     busy.push({s,e:s+p.hours});
     cursor=s+p.hours;
   });
-  return items.map(it=>placed.has(it)?Object.assign({},it,{time:placed.get(it)}):it);
+  return items.map(it=>placed.has(it)
+    ? Object.assign({},it,placed.get(it).clash?{time:placed.get(it).time,clash:true}
+                                             :{time:placed.get(it).time})
+    : it);
 }
 function pBoardHtml(days){
   const byDay=days.map(d=>pPlaceProjects(pBudgetOf(d).items));
@@ -4068,7 +4151,8 @@ function pBoardHtml(days){
      early-morning or late-night "now" outside the default 7–21 range would
      otherwise leave the now-line with nowhere to draw */
   const nowFrac=(()=>{ const n=new Date(); return n.getHours()+n.getMinutes()/60; })();
-  if(days.includes(pToday())){
+  const hasToday=days.includes(pToday());
+  if(hasToday){
     startH=Math.min(startH,Math.floor(nowFrac));
     endH=Math.max(endH,Math.ceil(nowFrac));
   }
@@ -4113,7 +4197,10 @@ function pBoardHtml(days){
       const tint=it.kind==="proj"?` --pc:${ppSafeColor(it.color)};`:"";
       /* what you are in the middle of right now gets a live countdown — the
          now-line says where you are, this says how much of it is left */
-      const live=(it.live||(d===pToday()&&nowH>=x.s&&nowH<x.e));
+      /* a project's slot is invented by pPlaceProjects, so "2h left" on one
+         would be a countdown against a time the user never set — only things
+         with a real slot get to claim they are running */
+      const live=(it.live||(it.kind!=="proj"&&d===pToday()&&nowH>=x.s&&nowH<x.e));
       const leftMin=Math.ceil((x.e-nowH)*60);
       /* below ~38px there's no room for a title line plus a meta line — fold
          time+name onto one line rather than lose the fight against overflow */
@@ -4136,7 +4223,7 @@ function pBoardHtml(days){
        the whole board and the hour reads at a glance from any day. Today's
        segment is the solid one, and carries the dot. */
     let now="";
-    if(nowH>=startH&&nowH<=endH)
+    if(hasToday&&nowH>=startH&&nowH<=endH)
       now=`<i class="wb-now${d===pToday()?" today":""}" style="top:${(nowH-startH)*WB_PXH}px"></i>`;
     /* projects now draw on the grid itself, so the strip above it is left to
        plant care — the one claim on the day that genuinely has no clock slot */
