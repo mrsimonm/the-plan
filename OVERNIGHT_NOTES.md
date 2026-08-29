@@ -35,7 +35,7 @@ a4702e9  Planner: make the board's grid lines and day separators legible (Task 1
 | 5c drag to move | **Already worked; verified not regressed** | copy/duplicate **not** built |
 | 5d resize handles | **Partial (pre-existing)** | bottom-edge only; sides/corners not built |
 | 5e double-click detail / wheel scroll | **Not built** | |
-| 6 fullscreen focus mode | **Done, tested** | ⌘ button + Escape to exit |
+| 6 fullscreen focus mode | **Done, tested** | fullscreen button + Escape to exit |
 | 7 "Plachta" year canvas | **Not built** | plan sketched below |
 
 ---
