@@ -505,6 +505,7 @@ input[type="time"].mono-input{width:88px}
 .pslot-stepdel:hover{color:var(--crit); background:var(--sunk)}
 .pslot-addstep{display:flex; gap:6px; margin-top:8px}
 .pslot-addstep input{flex:1 1 auto; min-width:0}
+.pdaydlg-note{margin:0 0 10px; font-size:12px; line-height:1.5; color:var(--ink-2)}
 /* the footer is a flex row, and display:flex beats the hidden attribute — New
    mode was still showing Delete and Save */
 .dlg-foot [hidden]{display:none}
@@ -2791,6 +2792,30 @@ html{overscroll-behavior-y:none}
   </div>
 </dialog>
 
+<!-- One day of a repeating thing. A Project and a recurring block are each a
+     single record spread over many days, so an edit has to say which it means:
+     this day, or the whole series. -->
+<dialog id="pDayDlg">
+  <h3 class="dlg-head" id="pDayDlgTitle">This day</h3>
+  <div class="dlg-body">
+    <p class="pslot-when" id="pDayDlgWhen"></p>
+    <p class="pdaydlg-note" id="pDayDlgNote"></p>
+    <div class="pslot-row" id="pDayDlgRow">
+      <span class="field-label">at</span>
+      <input type="time" id="pDayDlgTime" class="mono-input">
+      <span class="field-label">takes</span>
+      <input type="number" id="pDayDlgHours" class="mono-input hrs" min="0" max="24" step="0.25">
+      <span class="field-label">h</span>
+    </div>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn" type="button" id="pDayDlgCancel">Cancel</button>
+    <button class="btn" type="button" id="pDayDlgSeries">Whole series…</button>
+    <button class="btn danger" type="button" id="pDayDlgRemove">Remove this day</button>
+    <button class="btn primary" type="button" id="pDayDlgSave">Save this day</button>
+  </div>
+</dialog>
+
 <dialog id="askDlg">
   <h3 class="dlg-head" id="askTitle">Are you sure?</h3>
   <div class="dlg-body"><p id="askMsg" style="margin:0; font-size:14px; line-height:1.6"></p></div>
@@ -2975,6 +3000,24 @@ function migrate(d){
      itself — taking the whole boot down with it. Array.isArray or nothing. */
   if(!Array.isArray(d.planner.tasks)) d.planner.tasks=[];
   if(!Array.isArray(d.planner.blocks)) d.planner.blocks=[];
+  /* a recurring block's per-day exceptions: null means that occurrence is
+     gone, an object means it exists with its own time and duration. Anything
+     else came from a hand-edited import and is dropped rather than trusted. */
+  d.planner.blocks.forEach(b=>{
+    if(!b||typeof b!=="object") return;
+    if(!b.ex||typeof b.ex!=="object"||Array.isArray(b.ex)){ b.ex={}; return; }
+    const clean={};
+    Object.keys(b.ex).forEach(k=>{
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(k)) return;
+      const v=b.ex[k];
+      if(v===null){ clean[k]=null; return; }
+      if(v&&typeof v==="object"){
+        clean[k]={time:typeof v.time==="string"?v.time:(b.time||""),
+                  hours:Math.max(0,Math.min(24,+v.hours||0))};
+      }
+    });
+    b.ex=clean;
+  });
   d.planner.tasks.forEach(tk=>{
     if(tk.time===undefined) tk.time="";
     /* anything already carrying steps was a project in all but name */
@@ -4153,9 +4196,9 @@ function pDueLabel(due){
 function pItemsFor(iso){
   const out=[], isToday=iso===pToday();
   (S.planner.blocks||[]).forEach(b=>{
-    if(!(b.dow||[]).includes(pParseISO(iso).getDay())) return;
-    out.push({kind:"block",ref:b,name:b.title||t("Untitled block"),hours:+b.hours||0,
-      time:b.time||"",overdue:false});
+    const oc=pBlockOn(b,iso); if(!oc) return;
+    out.push({kind:"block",ref:b,name:b.title||t("Untitled block"),hours:+oc.hours||0,
+      time:oc.time||"",overdue:false});
   });
   (S.planner.tasks||[]).forEach(tk=>{
     const isQuick=tk.kind==="quick";
@@ -4616,6 +4659,59 @@ $("#pSlotDelete").addEventListener("click",()=>{
   if(gid){ const left=(S.planner.tasks||[]).filter(x=>x.groupId===gid);
     if(left.length<2) left.forEach(x=>{ x.groupId=null; }); }
   $("#pSlotDlg").close(); touch(); renderPlanner();
+});
+/* ---- the one-day editor for Projects and recurring blocks ---- */
+let pDayCtx=null;                       // {type:"proj"|"block", id, iso}
+function pOpenDayDialog(type,id,iso){
+  const day=iso||pSelISO||pToday();
+  let name="", time="", hours=0;
+  if(type==="proj"){
+    const p=((S.projplan&&S.projplan.projects)||[]).find(x=>x.id===id); if(!p) return;
+    name=p.name||t("Untitled project");
+    hours=window.ppDayTarget?(ppDayTarget(id,day)||0):0;
+  } else {
+    const b=pFindBlock(id); if(!b) return;
+    const oc=pBlockOn(b,day); if(!oc) return;
+    name=b.title||t("Untitled block"); time=oc.time||""; hours=oc.hours||0;
+  }
+  pDayCtx={type,id,iso:day};
+  const d=pParseISO(day);
+  $("#pDayDlgTitle").textContent=name;
+  $("#pDayDlgWhen").textContent=dowName(d.getDay())+" "+d.getDate()+" "+pMonthGen(d.getMonth());
+  /* say what removing a day does, because for a Project it is not a deletion:
+     the hours are a budget, so they move into the days that follow */
+  $("#pDayDlgNote").textContent=type==="proj"
+    ? t("Removing this day moves its hours into the following days — the project finishes later, and its total is unchanged.")
+    : t("This changes only this day. The repeat pattern itself stays as it is.");
+  $("#pDayDlgTime").value=time;
+  $("#pDayDlgHours").value=Math.round(Math.max(0,+hours||0)*100)/100;
+  /* a Project's day has hours but no clock slot of its own — the board invents
+     one to draw it, and offering to edit an invented time would be a lie */
+  document.querySelectorAll("#pDayDlgRow .field-label").forEach((el,i)=>{
+    if(i<1) el.style.display=type==="proj"?"none":""; });
+  $("#pDayDlgTime").style.display=type==="proj"?"none":"";
+  $("#pDayDlg").showModal();
+}
+$("#pDayDlgCancel").addEventListener("click",()=>$("#pDayDlg").close());
+$("#pDayDlgSeries").addEventListener("click",()=>{
+  const c=pDayCtx; $("#pDayDlg").close(); if(!c) return;
+  if(c.type==="proj") window.ppOpenProject&&ppOpenProject(c.id);
+  else { show("planner"); const el=document.querySelector(`[data-pblock-title="${c.id}"]`);
+    if(el){ el.scrollIntoView({block:"center"}); el.focus&&el.focus(); } }
+});
+$("#pDayDlgRemove").addEventListener("click",()=>{
+  const c=pDayCtx; if(!c){ $("#pDayDlg").close(); return; }
+  if(c.type==="proj"){ window.ppClearDay&&ppClearDay(c.id,c.iso); }
+  else { const b=pFindBlock(c.id); if(b) pBlockSkip(b,c.iso); }
+  $("#pDayDlg").close(); touch(); renderPlanner();
+});
+$("#pDayDlgSave").addEventListener("click",()=>{
+  const c=pDayCtx; if(!c){ $("#pDayDlg").close(); return; }
+  const hours=Math.max(0,Math.min(24,+$("#pDayDlgHours").value||0));
+  if(c.type==="proj"){ window.ppSetDayHours&&ppSetDayHours(c.id,c.iso,hours); }
+  else { const b=pFindBlock(c.id); if(b){ b.ex=b.ex||{};
+    b.ex[c.iso]={time:$("#pDayDlgTime").value||"",hours}; } }
+  $("#pDayDlg").close(); touch(); renderPlanner();
 });
 $("#pSlotKind").addEventListener("click",e=>{
   const b=e.target.closest("[data-skind]"); if(!b) return;
@@ -5352,13 +5448,15 @@ function pWireBoard(){
          project day have nothing to open yet — giving them editors is Wave 2 —
          so they keep the old jump-to-day rather than making the tap do nothing
          at all. */
-      if(g.mode==="projmove"||g.mode==="projday"){ window.ppOpenProject&&ppOpenProject(g.id); }
+      /* Everything that repeats opens on the DAY you tapped, with the whole
+         series one button away — tapping straight into the series editor made
+         a single day feel uneditable, which is the report this wave answers. */
+      if(g.mode==="projmove"||g.mode==="projday"){ pOpenDayDialog("proj",g.id,g.day0); }
+      else if(g.kind==="block"){ pOpenDayDialog("block",g.id,g.day0); }
       else if(g.mode==="move"){
         const tk=(g.kind==="task"||g.kind==="tray")?pFindTask(g.id):null;
-        /* Tasks and Events both open now — the editor holds the same fields
-           for either. A Quick Task has no editor by design, and a recurring
-           block still has none, so those keep the jump-to-day fallback rather
-           than a tap that does nothing. */
+        /* Tasks and Events both open the same editor. A Quick Task has none by
+           design, so it keeps the jump-to-day fallback rather than a dead tap. */
         if(tk&&tk.kind!=="quick"){ pOpenEditDialog(g.id); }
         else { const d=g.day0; if(d){ pSelISO=d; pScope="day"; pWinShift=0; pDayPanel(); renderSchedule(); } }
       }
@@ -5367,8 +5465,11 @@ function pWireBoard(){
     if(g.mode==="projmove"){
       g.el.style.transform="";
       const {day}=geom(e.clientX,e.clientY);
-      const delta=day?Math.round((+pParseISO(day)-+pParseISO(g.day0))/864e5):0;
-      if(delta&&window.ppShiftProject&&ppShiftProject(g.id,delta)) done();
+      /* Dragging ONE day of a project moves that day's work, not the whole
+         project — the same rule Events got in Wave 1. A project's span is
+         derived from its start and budget, so this is expressed as moving the
+         day's hours: the old day empties and the new one gains them. */
+      if(day&&day!==g.day0&&window.ppMoveDay&&ppMoveDay(g.id,g.day0,day)) done();
       else renderSchedule();
       return;
     }
@@ -5384,7 +5485,12 @@ function pWireBoard(){
       const px=+g.el.style.height.replace("px","");
       const hrs=Math.max(0.5,snap(px/WB_PXH));   // below 0.5h a block can't hold its text
       if(g.kind==="task"){ const tk=pFindTask(g.id); if(tk){ tk.hours=hrs; done(); return; } }
-      if(g.kind==="block"){ const b=pFindBlock(g.id); if(b){ b.hours=hrs; done(); return; } }
+      /* resizing one occurrence changes that day only, same rule as moving it */
+      if(g.kind==="block"){ const b=pFindBlock(g.id);
+        if(b){ const day=g.day0||pSelISO;
+          const oc=pBlockOn(b,day)||{time:b.time||""};
+          b.ex=b.ex||{}; b.ex[day]={time:oc.time,hours:hrs};
+          done(); return; } }
       renderSchedule(); return;
     }
     const {day,time}=geom(e.clientX,e.clientY);
@@ -5429,9 +5535,19 @@ function pWireBoard(){
         tk.kind="event";
         done(); return; }
     }
-    if(g.kind==="block"){                  /* recurring: time moves, the weekday set stays */
+    if(g.kind==="block"){
+      /* One occurrence moves, not the whole series. Before this, dragging a
+         recurring block on one day rewrote the shared record and moved it on
+         every weekday it appears — the reported bug. The weekday pattern is
+         left alone; this day becomes an exception. */
       const b=pFindBlock(g.id);
-      if(b){ b.time=fmtT(t2); done(); return; }
+      if(b&&day){
+        if(day===g.day0){ b.ex=b.ex||{};
+          const oc=pBlockOn(b,day)||{hours:+b.hours||0};
+          b.ex[day]={time:fmtT(t2),hours:oc.hours}; }
+        else pBlockMoveDay(b,g.day0,day,fmtT(t2));
+        done(); return;
+      }
     }
     renderSchedule();
   };
@@ -6009,6 +6125,36 @@ $("#pAddBlock").addEventListener("click",()=>{
 
 function pFindTask(id){ return (S.planner.tasks||[]).find(x=>x.id===id); }
 function pFindBlock(id){ return (S.planner.blocks||[]).find(x=>x.id===id); }
+/* ---- per-day identity for a recurring block ----
+   A recurring block is one record drawn on every matching weekday, so before
+   this there was no way to touch a single day: editing one edited all of them.
+   `ex` is the exception map every calendar keeps beside a repeat rule —
+     ex[iso] === null        this occurrence is gone
+     ex[iso] === {time,hours} this occurrence exists with its OWN values,
+                             even on a weekday the pattern does not include
+   The weekday pattern itself is untouched, so the series still means what it
+   said; the exceptions are the days you have since disagreed with. */
+function pBlockOn(b,iso){
+  const ex=b.ex&&Object.prototype.hasOwnProperty.call(b.ex,iso)?b.ex[iso]:undefined;
+  if(ex===null) return null;                       // deleted occurrence
+  if(ex&&typeof ex==="object")                     // moved or reshaped one
+    return {time:ex.time!==undefined?ex.time:(b.time||""),
+            hours:ex.hours!==undefined?+ex.hours:(+b.hours||0)};
+  if(!(b.dow||[]).includes(pParseISO(iso).getDay())) return null;
+  return {time:b.time||"",hours:+b.hours||0};
+}
+function pBlockSkip(b,iso){ if(!b) return false; b.ex=b.ex||{}; b.ex[iso]=null; return true; }
+/* Move one occurrence to another day: the old day becomes an explicit gap and
+   the new day an explicit occurrence, so it lands even on a weekday the
+   pattern never included. */
+function pBlockMoveDay(b,fromIso,toIso,time){
+  if(!b||fromIso===toIso) return false;
+  const oc=pBlockOn(b,fromIso); if(!oc) return false;
+  b.ex=b.ex||{};
+  b.ex[fromIso]=null;
+  b.ex[toIso]={time:time!==undefined?time:oc.time,hours:oc.hours};
+  return true;
+}
 
 document.querySelector("#view-planner").addEventListener("click",async e=>{
   const tog=e.target.closest("[data-ptog]"),
@@ -12628,6 +12774,46 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
     var def = defFor(p, iso);
     snap(tr("day change on") + " " + p.name);
     if (Math.abs(v - def) < 1e-6) delete p.days[iso]; else p.days[iso] = v;
+    touchP(p); persist(); invalAll();
+    return true;
+  };
+  /* ---- per-day identity for a Project ----
+     A Project stores no days: build() walks forward from start, spending
+     hours(day) until total runs out, so its span is derived. That is why a
+     single day is expressed as an OVERRIDE rather than a record — days[iso]=0
+     is already how weekendsOff skips a Saturday. Removing a day therefore
+     defers its hours into the following days and pushes the end date out; the
+     budget you set is preserved, and undoing it restores the original end. */
+  /* What this day ACTUALLY carries, straight from the schedule. want() cannot
+     answer this: it returns the default for any day after start, including
+     days past the end where the budget already ran out — so a move that read
+     want() believed there were hours on a day the project never reaches, and
+     wrote a phantom entry into days{} out beyond its own span. */
+  function dayUse(p, iso) {
+    var i = dif(p.start, iso); if (i < 0) return 0;
+    var sc = sch(p); if (i >= sc.cells.length) return 0;
+    return sc.cells[i].u;
+  }
+  window.ppClearDay = function (id, iso) {
+    PS = S.projplan; var p = byId(id); if (!p) return false;
+    if (!(dayUse(p, iso) > 0)) return false;         // nothing there to remove
+    snap(tr("day change on") + " " + p.name);
+    p.days[iso] = 0;
+    touchP(p); persist(); invalAll();
+    return true;
+  };
+  /* Move one day's work to another day, leaving the rest of the project where
+     it is — the per-day equivalent of dragging one Event out of a run. */
+  window.ppMoveDay = function (id, fromIso, toIso) {
+    PS = S.projplan; var p = byId(id); if (!p || fromIso === toIso) return false;
+    /* a project cannot hold work before it starts; moving its first day
+       earlier is a change of start date, which is a series edit */
+    if (dif(p.start, toIso) < 0) return false;
+    var moved = dayUse(p, fromIso);
+    if (!(moved > 0)) return false;                  // that day carries nothing
+    snap(tr("moving") + " " + p.name);
+    p.days[fromIso] = 0;
+    p.days[toIso] = Math.min(24, want(p, toIso) + moved);
     touchP(p); persist(); invalAll();
     return true;
   };
