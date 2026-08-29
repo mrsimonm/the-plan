@@ -544,6 +544,14 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .wb-adtick{width:11px; height:11px; flex:0 0 auto; border-radius:3px; cursor:pointer;
   border:1.5px solid var(--line-strong); background:var(--surface)}
 .wb-adtick:hover{border-color:var(--accent)}
+/* Plachta: columns are a fixed width so the canvas scrolls rather than
+   squeezing, and so the scroll maths can trust a known column pitch */
+.wb-plachta .wb-grid{min-width:0}
+.wb-plachta .wb-col{flex:0 0 var(--plachta-colw,86px); min-width:0}
+.wb-plachta .wb-head{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+/* the first column of each month gets a heavier separator, so months read as
+   bands on a long scroll instead of one undifferentiated ribbon */
+.wb-plachta .wb-col.mstart{border-left:2px solid var(--grid-sep)}
 .qadd-kind{align-self:flex-start}
 .pproj-count{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11px;
   color:var(--accent); flex:0 0 auto}
@@ -2143,6 +2151,7 @@ html{overscroll-behavior-y:none}
           <button type="button" data-pscope="day" aria-pressed="true">Day</button>
           <button type="button" data-pscope="week" aria-pressed="false">Week</button>
           <button type="button" data-pscope="month" aria-pressed="false">Month</button>
+          <button type="button" data-pscope="plachta" aria-pressed="false">Plachta</button>
           <button type="button" data-pscope="timeline" aria-pressed="false">Timeline</button>
         </div>
         <span class="pcal-nav" id="pBoardNav" style="display:none">
@@ -4476,23 +4485,104 @@ function pSetGroupSpan(tk,firstIso,lastIso,keepIso){
   if(drop.size) S.planner.tasks=S.planner.tasks.filter(x=>!drop.has(x.id));
   return keep.find(r=>r.due===keepIso)||keep[0];
 }
-function pBoardHtml(days,topStrip){
+/* ---- Plachta: one continuous canvas of days ----
+   The same board Day/Week draw, just many columns wide and always showing the
+   whole 24 hours. Rendering a year at once measured ~19k nodes and ~130ms on a
+   desktop — survivable, but that cost is paid again on every edit and every
+   repaint tick, and a phone is several times slower. So a window of days slides
+   with the scroll instead: enough runway that you never see an edge, little
+   enough that a re-render stays cheap. */
+const PLACHTA_HALF=60;     // days rendered either side of the anchor
+const PLACHTA_EDGE=25;     // shift the window when this close to an end
+const PLACHTA_COLW=86;
+const days_includes_today_plachta=ds=>ds.indexOf(pToday())>=0;     // must match --plachta-colw in the stylesheet
+let pPlachtaAnchor=null, pPlachtaBusy=false, pPlachtaT=null;
+function pPlachtaDays(anchorIso){
+  const a=fromYmd(anchorIso||pToday());
+  const out=[]; let d=a-0;
+  /* step by calendar day both ways so a DST boundary cannot duplicate or skip */
+  let back=a; for(let i=0;i<PLACHTA_HALF;i++){ back=pPrevDay(back); }
+  d=back;
+  for(let i=0;i<PLACHTA_HALF*2+1;i++){ out.push(ymd(d)); d=pNextDay(d); }
+  return out;
+}
+const pPrevDay=t=>{ const d=new Date(t); d.setDate(d.getDate()-1); return sod(+d); };
+/* Which day sits under the left edge, and how far into it — the pair we have to
+   preserve when the window slides, or the canvas jumps under the user. */
+function pPlachtaAt(scrollEl,days){
+  const i=Math.floor(scrollEl.scrollLeft/PLACHTA_COLW);
+  return {day:days[Math.max(0,Math.min(i,days.length-1))],
+          offset:scrollEl.scrollLeft-i*PLACHTA_COLW};
+}
+function pWirePlachta(){
+  const board=document.getElementById("pWeekBoard"); if(!board) return;
+  const scrollEl=board.querySelector(".wb-scroll"); if(!scrollEl) return;
+  const days=pPlachtaDays(pPlachtaAnchor);
+  scrollEl.addEventListener("scroll",()=>{
+    if(pPlachtaBusy||pBoardBusy) return;          // never move ground mid-gesture
+    const idx=Math.floor(scrollEl.scrollLeft/PLACHTA_COLW);
+    const near=idx<PLACHTA_EDGE||idx>days.length-PLACHTA_EDGE-
+      Math.ceil(scrollEl.clientWidth/PLACHTA_COLW);
+    if(!near) return;
+    /* Slide once the scroll settles, not on every scroll event: the rebuild
+       costs a few hundred milliseconds and doing it under an active flick is
+       exactly where it is felt. There are PLACHTA_EDGE days of runway past the
+       trigger, so the canvas never runs out of content while we wait. */
+    clearTimeout(pPlachtaT);
+    pPlachtaT=setTimeout(()=>{
+      if(pPlachtaBusy||pBoardBusy||pScope!=="plachta") return;
+      const el=document.querySelector("#pWeekBoard .wb-scroll"); if(!el) return;
+      /* remember the exact day under the left edge, re-anchor, then restore
+         that day to the same pixel — without this the canvas lurches every
+         time the window slides */
+      const at=pPlachtaAt(el,days);
+      pPlachtaBusy=true;
+      pPlachtaAnchor=at.day;
+      pPlachtaPaint(at);
+      pPlachtaBusy=false;
+    },160);
+  },{passive:true});
+}
+/* Repaint the canvas for the current anchor and put `at.day` back under the
+   left edge. Deliberately not renderSchedule(): that resets the care cache and
+   re-runs work the slide has not invalidated. */
+function pPlachtaPaint(at){
+  const days=pPlachtaDays(pPlachtaAnchor);
+  $("#pScheduleBody").innerHTML=pBoardHtml(days,pDatelessStripHtml(),{fullDay:true,plachta:true});
+  pWireBoard(); pWireDatelessStrip(); pWirePlachta();
+  $("#pBoardLabel").textContent=pBoardLabel("month",[pPlachtaAnchor]);
+  const el=document.querySelector("#pWeekBoard .wb-scroll");
+  if(el&&at){ const i=days.indexOf(at.day); if(i>=0) el.scrollLeft=i*PLACHTA_COLW+at.offset; }
+}
+/* centre a given day in the viewport */
+function pPlachtaCentre(iso){
+  const el=document.querySelector("#pWeekBoard .wb-scroll"); if(!el) return;
+  const days=pPlachtaDays(pPlachtaAnchor);
+  const i=days.indexOf(iso||pToday());
+  if(i<0) return;
+  el.scrollLeft=Math.max(0,i*PLACHTA_COLW-el.clientWidth/2+PLACHTA_COLW/2);
+}
+function pBoardHtml(days,topStrip,opts){
   const byDay=days.map(d=>pPlaceProjects(pBudgetOf(d).items));
   /* window: wide enough for everything timed, but a lone day starts from a
      plainer waking-hours default than a multi-day board would need */
-  let startH=days.length===1?6:7, endH=days.length===1?24:21;
-  byDay.forEach(items=>items.forEach(it=>{
+  const fullDay=!!(opts&&opts.fullDay);
+  let startH=fullDay?0:(days.length===1?6:7), endH=fullDay?24:(days.length===1?24:21);
+  if(!fullDay) byDay.forEach(items=>items.forEach(it=>{
     if(!(it.time&&it.hours>0)) return;
     const [h,m]=it.time.split(":").map(Number);
     startH=Math.min(startH,Math.floor(h+m/60));
     endH=Math.max(endH,Math.ceil(h+m/60+it.hours));
   }));
+  /* Plachta always shows the whole 24 hours: its point is a continuous canvas,
+     and a window that resized itself per scroll position would make the rows
+     jump as you moved through time. */
   /* if today is on the board, keep the current hour inside the window — an
      early-morning or late-night "now" outside the default 7–21 range would
      otherwise leave the now-line with nowhere to draw */
   const nowFrac=(()=>{ const n=new Date(); return n.getHours()+n.getMinutes()/60; })();
   const hasToday=days.includes(pToday());
-  if(hasToday){
+  if(hasToday&&!fullDay){
     startH=Math.min(startH,Math.floor(nowFrac));
     endH=Math.max(endH,Math.ceil(nowFrac));
   }
@@ -4504,6 +4594,7 @@ function pBoardHtml(days,topStrip){
      would otherwise trap the page between the visual end and the raw cap. */
   const winSpan=endH-startH;
   const maxShift=Math.max(0,24-winSpan-startH);
+  if(fullDay) pWinShift=0;
   if(pWinShift>maxShift) pWinShift=maxShift;
   if(pWinShift){ startH=startH+pWinShift; endH=startH+winSpan; }
   const H=(endH-startH)*WB_PXH;
@@ -4607,7 +4698,7 @@ function pBoardHtml(days,topStrip){
           aria-label="${esc(t("Mark done"))}"></i>${esc(it.name)}</span>`).join("")}${
       care?`<span class="wb-adcare" title="${esc(care.name)} · ${pFmtH(care.hours)}h">🌿</span>`:""}</div>`
       :'<div class="wb-allday"></div>';
-    return `<div class="wb-col${d===pToday()?" today":""}" data-wbday="${d}">
+    return `<div class="wb-col${d===pToday()?" today":""}${d.slice(8)==="01"?" mstart":""}" data-wbday="${d}">
       <button type="button" class="wb-head" data-wbgo="${d}">${label(d)}</button>
       ${allday}
       <div class="wb-track" style="height:${H}px">${lines}${now}${blocks}</div>
@@ -4643,7 +4734,7 @@ function pBoardHtml(days,topStrip){
   /* the dateless strip sits INSIDE the board: its chips carry data-wb, and
      pWireBoard's pointer handling is bound to this element, so a chip dragged
      from here onto an hour lands through the same commit path as the tray */
-  return `<div class="wb" id="pWeekBoard" data-starth="${startH}" data-maxshift="${maxShift}" style="--adrows:${adRows}">
+  return `<div class="wb${opts&&opts.plachta?" wb-plachta":""}" id="pWeekBoard" data-starth="${startH}" data-maxshift="${maxShift}" style="--adrows:${adRows}">
     ${topStrip||""}
     <div class="wb-scroll"><div class="wb-grid">${gutter}${cols}</div></div>${tray}</div>`;
 }
@@ -5158,6 +5249,28 @@ function renderSchedule(){
   $("#pTimelineZoom").style.display="none";
   $("#pScheduleBody").hidden=false;
   $("#pBoardNav").style.display="";
+  if(pScope==="plachta"){
+    if(!pPlachtaAnchor) pPlachtaAnchor=pToday();
+    const pdays=pPlachtaDays(pPlachtaAnchor);
+    $("#pBoardLabel").textContent=pBoardLabel("month",[pPlachtaAnchor]);
+    /* preserve the scroll position across a repaint — otherwise the 30s tick
+       would yank the canvas back to the anchor while you were reading it */
+    /* only inherit a scroll position from a board that WAS Plachta — arriving
+       from Week found that board's (unscrolled) scroller and pinned the canvas
+       to day one instead of centring on today */
+    const prev=document.querySelector("#pWeekBoard.wb-plachta .wb-scroll");
+    const keep=prev?prev.scrollLeft:null;
+    $("#pScheduleBody").innerHTML=pBoardHtml(pdays,pDatelessStripHtml(),{fullDay:true,plachta:true});
+    pWireBoard(); pWireDatelessStrip(); pWirePlachta();
+    const el=document.querySelector("#pWeekBoard .wb-scroll");
+    if(el){ if(keep!=null) el.scrollLeft=keep; else pPlachtaCentre(pToday()); }
+    if(days_includes_today_plachta(pdays)) pTick=setInterval(()=>{
+      if(curView!=="planner"||pScope!=="plachta"){ pStopTick(); return; }
+      if(pBoardBusy) return;
+      renderSchedule();
+    },30000);
+    return;
+  }
   const days=pDaysFor(pScope,pSelISO);
   $("#pBoardLabel").textContent=pBoardLabel(pScope,days);
   /* the Anytime strip rides above every board width, not just Day: a dateless
@@ -5448,8 +5561,14 @@ $("#pJumpToday").addEventListener("click",()=>{
   pSelISO=pToday();
   $("#pAddDue").value=pSelISO; renderPlanner();
 });
-$("#pBoardPrev").addEventListener("click",()=>{ pSelISO=pBoardStepIso(pScope,pSelISO,-1); pWinShift=0; renderSchedule(); });
-$("#pBoardNext").addEventListener("click",()=>{ pSelISO=pBoardStepIso(pScope,pSelISO,1); pWinShift=0; renderSchedule(); });
+$("#pBoardPrev").addEventListener("click",()=>{
+  if(pScope==="plachta"){ pPlachtaAnchor=ymd(fromYmd(pPlachtaAnchor||pToday())-14*DAY);
+    renderSchedule(); pPlachtaCentre(pPlachtaAnchor); return; }
+  pSelISO=pBoardStepIso(pScope,pSelISO,-1); pWinShift=0; renderSchedule(); });
+$("#pBoardNext").addEventListener("click",()=>{
+  if(pScope==="plachta"){ pPlachtaAnchor=ymd(fromYmd(pPlachtaAnchor||pToday())+14*DAY);
+    renderSchedule(); pPlachtaCentre(pPlachtaAnchor); return; }
+  pSelISO=pBoardStepIso(pScope,pSelISO,1); pWinShift=0; renderSchedule(); });
 $("#ppZoomSeg").addEventListener("click",e=>{
   const b=e.target.closest("[data-ppzoom]"); if(!b) return;
   const z=b.dataset.ppzoom;
@@ -10436,7 +10555,7 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 /* ---- projects timeline (ported Project Planner) ---- */
 "Start fresh":"Začít znovu","Undo":"Zpět","Redo":"Znovu","+ New project":"+ Nový projekt",
 "Move projects":"Přesouvat projekty","Paint days":"Malovat dny","Quarter":"Čtvrtletí","6 months":"6 měsíců","Year":"Rok",
-"Timeline":"Časová osa","Half":"Půl roku","Linear":"Lineární","Grid":"Mřížka",
+"Timeline":"Časová osa","Plachta":"Plachta","Half":"Půl roku","Linear":"Lineární","Grid":"Mřížka",
 "Anytime":"Kdykoliv","drag onto an hour to give it a time":"přetáhni na hodinu a dostane čas","Edit":"Upravit","New":"Nové","days":"dní","Save":"Uložit","Delete":"Smazat","Mark done":"Označit hotové","no project":"bez projektu","Event":"Událost",
 "All projects":"Všechny projekty","in progress":"probíhá","not started":"nezahájeno","ends":"končí","of":"z","over the daily limit":"přes denní limit","tasks":"úkolů","subtasks":"podúkolů",
 "No projects yet. Add one in the Timeline view and it'll be summarised here.":"Zatím žádné projekty. Přidej ho v Časové ose a zobrazí se tady.",
