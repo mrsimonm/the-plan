@@ -546,7 +546,10 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .wb-adtick:hover{border-color:var(--accent)}
 /* Plachta: columns are a fixed width so the canvas scrolls rather than
    squeezing, and so the scroll maths can trust a known column pitch */
-.wb-plachta .wb-grid{min-width:0}
+/* max-content, not 0: a sticky box is clamped to its containing block, so a
+   grid only as wide as the scrollport let the hour gutter travel one viewport
+   and then slide away — leaving ~90% of the canvas with no hour labels. */
+.wb-plachta .wb-grid{min-width:max-content}
 .wb-plachta .wb-col{flex:0 0 var(--plachta-colw,86px); min-width:0}
 .wb-plachta .wb-head{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 /* the first column of each month gets a heavier separator, so months read as
@@ -4248,6 +4251,12 @@ function pWeekDays(iso){
    columns with the 25th duplicated. Stepping the calendar field instead is
    DST-safe by definition. */
 const pNextDay=t=>{ const d=new Date(t); d.setDate(d.getDate()+1); return sod(+d); };
+const pPrevDay=t=>{ const d=new Date(t); d.setDate(d.getDate()-1); return sod(+d); };
+/* Step n calendar days from an ISO date. The same trap as above, one level up:
+   +14*864e5 across the fall-back lands at 23:00 the evening before, so ymd()
+   reads the day before the one meant and the step quietly loses a day. */
+const pStepIso=(iso,n)=>{ let t=fromYmd(iso||pToday()); const f=n<0?pPrevDay:pNextDay;
+  for(let i=Math.abs(n);i>0;i--) t=f(t); return ymd(t); };
 function pMonthDays(iso){
   const m=monthStart(fromYmd(iso)), next=addMonths(m,1);
   const days=[]; for(let d=m;d<next;d=pNextDay(d)) days.push(ymd(d));
@@ -4259,9 +4268,9 @@ function pDaysFor(scope,iso){
   return [iso];
 }
 function pBoardStepIso(scope,iso,dir){
-  if(scope==="week") return ymd(+pParseISO(iso)+dir*7*DAY);
+  if(scope==="week") return pStepIso(iso,dir*7);
   if(scope==="month") return ymd(addMonths(fromYmd(iso),dir));
-  return ymd(+pParseISO(iso)+dir*DAY);
+  return pStepIso(iso,dir);
 }
 function pBoardLabel(scope,days){
   if(scope==="month") return pParseISO(days[0]).toLocaleDateString(locale(),{month:"long",year:"numeric"});
@@ -4494,19 +4503,32 @@ function pSetGroupSpan(tk,firstIso,lastIso,keepIso){
    enough that a re-render stays cheap. */
 const PLACHTA_HALF=60;     // days rendered either side of the anchor
 const PLACHTA_EDGE=25;     // shift the window when this close to an end
-const PLACHTA_COLW=86;
-const days_includes_today_plachta=ds=>ds.indexOf(pToday())>=0;     // must match --plachta-colw in the stylesheet
-let pPlachtaAnchor=null, pPlachtaBusy=false, pPlachtaT=null;
+const PLACHTA_COLW=86;     // must match --plachta-colw in the stylesheet
+const pPlachtaHasToday=ds=>ds.indexOf(pToday())>=0;
+let pPlachtaAnchor=null, pPlachtaBusy=false, pPlachtaT=null, pPlachtaScrollT=0;
+/* Arm the 30s repaint only while today is on the canvas, and re-arm after every
+   repaint: a window slide can carry today out of view (tick should stop) or
+   back into it (the now-line would otherwise sit frozen until an unrelated
+   render). pBoardBusy guards pointer gestures, not scrolling, so this also
+   holds off while a flick is still travelling — a full 121-column rebuild
+   mid-throw stops the fling dead. */
+function pPlachtaArmTick(days){
+  pStopTick();
+  if(!pPlachtaHasToday(days)) return;
+  pTick=setInterval(()=>{
+    if(curView!=="planner"||pScope!=="plachta"){ pStopTick(); return; }
+    if(pBoardBusy||Date.now()-pPlachtaScrollT<2000) return;
+    renderSchedule();
+  },30000);
+}
 function pPlachtaDays(anchorIso){
   const a=fromYmd(anchorIso||pToday());
-  const out=[]; let d=a-0;
+  const out=[];
   /* step by calendar day both ways so a DST boundary cannot duplicate or skip */
-  let back=a; for(let i=0;i<PLACHTA_HALF;i++){ back=pPrevDay(back); }
-  d=back;
+  let d=a; for(let i=0;i<PLACHTA_HALF;i++){ d=pPrevDay(d); }
   for(let i=0;i<PLACHTA_HALF*2+1;i++){ out.push(ymd(d)); d=pNextDay(d); }
   return out;
 }
-const pPrevDay=t=>{ const d=new Date(t); d.setDate(d.getDate()-1); return sod(+d); };
 /* Which day sits under the left edge, and how far into it — the pair we have to
    preserve when the window slides, or the canvas jumps under the user. */
 function pPlachtaAt(scrollEl,days){
@@ -4517,31 +4539,53 @@ function pPlachtaAt(scrollEl,days){
 function pWirePlachta(){
   const board=document.getElementById("pWeekBoard"); if(!board) return;
   const scrollEl=board.querySelector(".wb-scroll"); if(!scrollEl) return;
+  /* A pending slide from the board we are replacing still holds that board's
+     day list. Its index->day mapping is about to be wrong, so drop it: letting
+     it fire would re-anchor to a day fourteen off from the one on screen. */
+  clearTimeout(pPlachtaT); pPlachtaT=null;
   const days=pPlachtaDays(pPlachtaAnchor);
   scrollEl.addEventListener("scroll",()=>{
+    pPlachtaScrollT=Date.now();
     if(pPlachtaBusy||pBoardBusy) return;          // never move ground mid-gesture
     const idx=Math.floor(scrollEl.scrollLeft/PLACHTA_COLW);
     const near=idx<PLACHTA_EDGE||idx>days.length-PLACHTA_EDGE-
       Math.ceil(scrollEl.clientWidth/PLACHTA_COLW);
+    /* disarm on the way out too, or scrolling into the zone and back out still
+       pays the rebuild the debounce exists to avoid */
+    clearTimeout(pPlachtaT);
     if(!near) return;
     /* Slide once the scroll settles, not on every scroll event: the rebuild
        costs a few hundred milliseconds and doing it under an active flick is
        exactly where it is felt. There are PLACHTA_EDGE days of runway past the
        trigger, so the canvas never runs out of content while we wait. */
-    clearTimeout(pPlachtaT);
     pPlachtaT=setTimeout(()=>{
       if(pPlachtaBusy||pBoardBusy||pScope!=="plachta") return;
-      const el=document.querySelector("#pWeekBoard .wb-scroll"); if(!el) return;
+      /* measure the board this timer was armed against, not whatever is in the
+         document now — a board swap clears the timer, so if one is still here
+         it is ours */
+      if(!scrollEl.isConnected) return;
       /* remember the exact day under the left edge, re-anchor, then restore
          that day to the same pixel — without this the canvas lurches every
          time the window slides */
-      const at=pPlachtaAt(el,days);
+      const at=pPlachtaAt(scrollEl,days);
       pPlachtaBusy=true;
       pPlachtaAnchor=at.day;
-      pPlachtaPaint(at);
-      pPlachtaBusy=false;
+      /* always clear the latch: a throw in the repaint would otherwise leave it
+         set and silently disable every future slide for the session */
+      try{ pPlachtaPaint(at); } finally{ pPlachtaBusy=false; }
     },160);
   },{passive:true});
+}
+/* The day in the middle of the viewport. Prev/Next step from what the user is
+   looking at, never from pPlachtaAnchor: the anchor only matches the view right
+   after a window slide, and a slide only fires near an end, so after ordinary
+   scrolling it is stale — stepping from it sent "next" backwards. */
+function pPlachtaViewDay(){
+  const el=document.querySelector("#pWeekBoard.wb-plachta .wb-scroll");
+  const days=pPlachtaDays(pPlachtaAnchor);
+  if(!el) return pPlachtaAnchor||pToday();
+  const i=Math.round((el.scrollLeft+el.clientWidth/2-PLACHTA_COLW/2)/PLACHTA_COLW);
+  return days[Math.max(0,Math.min(i,days.length-1))];
 }
 /* Repaint the canvas for the current anchor and put `at.day` back under the
    left edge. Deliberately not renderSchedule(): that resets the care cache and
@@ -4553,6 +4597,7 @@ function pPlachtaPaint(at){
   $("#pBoardLabel").textContent=pBoardLabel("month",[pPlachtaAnchor]);
   const el=document.querySelector("#pWeekBoard .wb-scroll");
   if(el&&at){ const i=days.indexOf(at.day); if(i>=0) el.scrollLeft=i*PLACHTA_COLW+at.offset; }
+  pPlachtaArmTick(days);
 }
 /* centre a given day in the viewport */
 function pPlachtaCentre(iso){
@@ -4981,7 +5026,18 @@ function pWireBoard(){
       return;
     }
     g.el.classList.remove("lift");
-    if(g.mode==="pan") return;
+    if(g.mode==="pan"){
+      /* A hand-panned board never runs the slide check: every scroll event
+         during the gesture was suppressed by pBoardBusy, and none arrive once
+         the finger lifts. On a phone — where blocks cover most of an 86px
+         column, so most pans start on one — the canvas would dead-end at the
+         window edge. pBoardBusy is already clear here, so re-run it. */
+      if(pScope==="plachta"){
+        const psc=document.querySelector("#pWeekBoard.wb-plachta .wb-scroll");
+        if(psc) psc.dispatchEvent(new Event("scroll"));
+      }
+      return;
+    }
     /* a mutation must reach every reader before the finger lifts twice:
        renderPlanner refreshes the task lists, the day panel, the warning line
        AND this board (it ends in pDayPanel + renderSchedule) */
@@ -5264,11 +5320,7 @@ function renderSchedule(){
     pWireBoard(); pWireDatelessStrip(); pWirePlachta();
     const el=document.querySelector("#pWeekBoard .wb-scroll");
     if(el){ if(keep!=null) el.scrollLeft=keep; else pPlachtaCentre(pToday()); }
-    if(days_includes_today_plachta(pdays)) pTick=setInterval(()=>{
-      if(curView!=="planner"||pScope!=="plachta"){ pStopTick(); return; }
-      if(pBoardBusy) return;
-      renderSchedule();
-    },30000);
+    pPlachtaArmTick(pdays);
     return;
   }
   const days=pDaysFor(pScope,pSelISO);
@@ -5562,11 +5614,11 @@ $("#pJumpToday").addEventListener("click",()=>{
   $("#pAddDue").value=pSelISO; renderPlanner();
 });
 $("#pBoardPrev").addEventListener("click",()=>{
-  if(pScope==="plachta"){ pPlachtaAnchor=ymd(fromYmd(pPlachtaAnchor||pToday())-14*DAY);
+  if(pScope==="plachta"){ pPlachtaAnchor=pStepIso(pPlachtaViewDay(),-14);
     renderSchedule(); pPlachtaCentre(pPlachtaAnchor); return; }
   pSelISO=pBoardStepIso(pScope,pSelISO,-1); pWinShift=0; renderSchedule(); });
 $("#pBoardNext").addEventListener("click",()=>{
-  if(pScope==="plachta"){ pPlachtaAnchor=ymd(fromYmd(pPlachtaAnchor||pToday())+14*DAY);
+  if(pScope==="plachta"){ pPlachtaAnchor=pStepIso(pPlachtaViewDay(),14);
     renderSchedule(); pPlachtaCentre(pPlachtaAnchor); return; }
   pSelISO=pBoardStepIso(pScope,pSelISO,1); pWinShift=0; renderSchedule(); });
 $("#ppZoomSeg").addEventListener("click",e=>{
