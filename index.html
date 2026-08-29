@@ -426,12 +426,15 @@ input[type="time"].mono-input{width:88px}
 .wb-gutter span{position:absolute; right:6px; transform:translateY(-6px);
   font-family:"JetBrains Mono",ui-monospace,monospace; font-size:9.5px; color:var(--ink-2)}
 .wb-col{flex:1 1 0; min-width:86px; border-left:1px solid var(--grid-sep); display:flex; flex-direction:column}
-.wb-col.today{background:color-mix(in srgb, var(--accent) 4%, transparent)}
+/* today gets a real frame, not just a tint — inset shadow rather than a border
+   so the column keeps its flex width and the grid stays aligned */
+.wb-col.today{background:color-mix(in srgb, var(--accent) 7%, transparent);
+  box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent)}
 .wb-head{appearance:none; border:0; background:none; cursor:pointer; font:inherit; color:var(--ink-2);
   font-size:11px; padding:4px 2px 3px; text-align:center; border-radius:6px}
 .wb-head b{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600;
   text-transform:uppercase; letter-spacing:.05em; font-size:10.5px; margin-right:3px}
-.wb-col.today .wb-head{color:var(--accent)}
+.wb-col.today .wb-head{color:var(--accent); font-weight:700}
 .wb-head:hover{background:var(--sunk)}
 .wb-allday{display:flex; align-items:center; justify-content:center; gap:3px; min-height:14px; padding:0 2px 3px}
 /* a project on the board: draggable sideways, edge-draggable for that day's
@@ -460,7 +463,12 @@ input[type="time"].mono-input{width:88px}
 .wb-adcare{font-size:9px; line-height:1}
 .wb-track{position:relative}
 .wb-hl{position:absolute; left:0; right:0; height:0; border-top:1px solid var(--grid-line)}
-.wb-now{position:absolute; left:0; right:0; height:0; border-top:2px solid var(--crit); z-index:3}
+/* faint everywhere so the hour tracks across the board, solid on today */
+.wb-now{position:absolute; left:0; right:0; height:0; z-index:3;
+  border-top:1px dashed color-mix(in srgb,var(--crit) 42%,transparent)}
+.wb-now.today{border-top:2px solid var(--crit)}
+.wb-now.today::before{content:""; position:absolute; left:-4px; top:-5px; width:8px; height:8px;
+  border-radius:50%; background:var(--crit)}
 .wb-blk{position:absolute; border-radius:6px; overflow:hidden; padding:2px 6px; z-index:1;
   background:var(--accent-soft); border-left:3px solid var(--accent); cursor:grab;
   -webkit-tap-highlight-color:transparent; touch-action:none; user-select:none}
@@ -4012,6 +4020,14 @@ function pBoardHtml(days){
     startH=Math.min(startH,Math.floor(h+m/60));
     endH=Math.max(endH,Math.ceil(h+m/60+it.hours));
   }));
+  /* if today is on the board, keep the current hour inside the window — an
+     early-morning or late-night "now" outside the default 7–21 range would
+     otherwise leave the now-line with nowhere to draw */
+  const nowFrac=(()=>{ const n=new Date(); return n.getHours()+n.getMinutes()/60; })();
+  if(days.includes(pToday())){
+    startH=Math.min(startH,Math.floor(nowFrac));
+    endH=Math.max(endH,Math.ceil(nowFrac));
+  }
   startH=Math.max(0,startH); endH=Math.min(24,Math.max(endH,startH+6));
   const H=(endH-startH)*WB_PXH;
   const label=d=>{ const x=pParseISO(d);
@@ -4020,7 +4036,7 @@ function pBoardHtml(days){
   const gutter=`<div class="wb-gutter" style="height:${H}px">${
     Array.from({length:endH-startH},(_,i)=>`<span style="top:${i*WB_PXH}px">${String((startH+i)%24).padStart(2,"0")}</span>`).join("")}</div>`;
 
-  const nowH=(()=>{ const n=new Date(); return n.getHours()+n.getMinutes()/60; })();
+  const nowH=nowFrac;          // one clock read for the whole board
   const cols=days.map((d,di)=>{
     const items=byDay[di];
     const care=items.find(it=>it.kind==="care");
@@ -4071,9 +4087,13 @@ function pBoardHtml(days){
           :drag&&hpx>=26?`<i class="wb-rsz" data-wbr="${it.kind}:${it.ref.id}" data-day="${d}"></i>`:""}
       </div>`; }).join("");
     let lines=""; for(let h=1;h<endH-startH;h++) lines+=`<i class="wb-hl" style="top:${h*WB_PXH}px"></i>`;
+    /* the now-line is drawn in EVERY column, not just today's — the columns
+       butt against each other, so the faint segments join into one rule across
+       the whole board and the hour reads at a glance from any day. Today's
+       segment is the solid one, and carries the dot. */
     let now="";
-    if(d===pToday()){
-      if(nowH>=startH&&nowH<=endH) now=`<i class="wb-now" style="top:${(nowH-startH)*WB_PXH}px"></i>`; }
+    if(nowH>=startH&&nowH<=endH)
+      now=`<i class="wb-now${d===pToday()?" today":""}" style="top:${(nowH-startH)*WB_PXH}px"></i>`;
     /* projects now draw on the grid itself, so the strip above it is left to
        plant care — the one claim on the day that genuinely has no clock slot */
     const allday=care?`<div class="wb-allday"><span class="wb-adcare"
