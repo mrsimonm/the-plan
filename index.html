@@ -4486,8 +4486,22 @@ function pWireDatelessStrip(){
 function pGroupOf(tk){
   if(!tk) return [];
   if(!tk.groupId) return [tk];
-  return (S.planner.tasks||[]).filter(x=>x.groupId===tk.groupId)
+  const all=(S.planner.tasks||[]).filter(x=>x.groupId===tk.groupId)
     .sort((a,b)=>String(a.due).localeCompare(String(b.due)));
+  /* Only the CONTIGUOUS stretch around tk is the run. A group gains a hole
+     whenever a member leaves it — dragged out, deleted from the edit dialog,
+     or deleted from the day list — and every caller treats this list as a span
+     from its first day to its last. pSetGroupSpan then FILLS that span, so a
+     single resize afterwards minted a fresh record on the missing day: the day
+     you just deleted reappearing by itself. Cutting at the gap here fixes that
+     for every caller at once, rather than each place a member can leave. */
+  const i=all.indexOf(tk);
+  if(i<0) return [tk];
+  const adj=(a,b)=>ymd(pNextDay(fromYmd(a)))===b;
+  let lo=i, hi=i;
+  while(lo>0&&adj(all[lo-1].due,all[lo].due)) lo--;
+  while(hi<all.length-1&&adj(all[hi].due,all[hi+1].due)) hi++;
+  return all.slice(lo,hi+1);
 }
 function pGroupSpan(tk){
   const g=pGroupOf(tk);
