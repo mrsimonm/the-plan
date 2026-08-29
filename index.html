@@ -447,6 +447,35 @@ input[type="time"].mono-input{width:88px}
   border:1.5px solid var(--line-strong); background:var(--surface)}
 .pqbox:hover{border-color:var(--accent)}
 .pqbox:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+/* All projects: one scannable row per project */
+.povw{padding:11px 14px; border-bottom:1px solid var(--line-soft)}
+.povw:last-child{border-bottom:0}
+.povw-top{display:flex; align-items:baseline; gap:8px}
+.povw-dot{width:9px; height:9px; border-radius:3px; background:var(--pc); flex:0 0 auto;
+  align-self:center}
+.povw-name{flex:1; min-width:0; font-size:14px; font-weight:600; overflow:hidden;
+  text-overflow:ellipsis; white-space:nowrap}
+.povw-state{font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-3);
+  flex:0 0 auto}
+.povw-state.done{color:var(--ok)}
+.povw-state.late{color:var(--crit); font-weight:600}
+.povw-hrs{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11px; color:var(--ink-2);
+  flex:0 0 auto; font-variant-numeric:tabular-nums}
+.povw-bar{height:5px; border-radius:99px; background:var(--sunk); overflow:hidden; margin:7px 0 5px}
+.povw-bar i{display:block; height:100%; background:var(--pc)}
+.povw-meta{display:flex; flex-wrap:wrap; gap:4px 12px; font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:10.5px; color:var(--ink-3)}
+.povw-warn{font-style:normal; color:var(--crit)}
+/* the small Gantt: every bar on one shared window so they can be compared */
+.povw-span{position:relative; height:4px; margin-top:7px; border-radius:99px;
+  background:var(--sunk); overflow:hidden}
+.povw-span i{position:absolute; top:0; bottom:0; border-radius:99px;
+  background:color-mix(in srgb,var(--pc) 70%,transparent)}
+.povw-tasks{list-style:none; margin:8px 0 0; padding:0; display:flex; flex-direction:column; gap:3px}
+.povw-tasks li{display:flex; align-items:baseline; gap:7px; font-size:12.5px; color:var(--ink-2)}
+.povw-tasks li.done{color:var(--ink-3); text-decoration:line-through}
+.povw-tasks small{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:10px; color:var(--ink-3)}
+.povw-tick{color:var(--accent); flex:0 0 auto; width:10px; text-align:center}
 .qadd-kind{align-self:flex-start}
 .pproj-count{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11px;
   color:var(--accent); flex:0 0 auto}
@@ -2185,6 +2214,12 @@ html{overscroll-behavior-y:none}
       <div class="pad" style="padding-bottom:9px"><span class="eyebrow">Scheduled</span></div>
       <div id="pSchedList"></div>
       <p class="empty" id="pSchedEmpty" hidden>Nothing scheduled. Tap a date on a task to pick a day.</p>
+    </div>
+
+    <div class="card">
+      <div class="pad" style="padding-bottom:9px"><span class="eyebrow">All projects</span></div>
+      <div id="pProjOverview"></div>
+      <p class="empty" id="pProjOverviewEmpty" hidden>No projects yet. Add one in the Timeline view and it'll be summarised here.</p>
     </div>
 
     <div class="card">
@@ -4759,10 +4794,83 @@ function pFillProjectSelect(){
     projs.map(p=>`<option value="${esc(p.id)}">${esc(p.name||t("Untitled project"))}</option>`).join("");
   if(keep&&projs.some(p=>p.id===keep)) sel.value=keep;
 }
+/* Every project on one screen: how much of its budget is used, when the
+   schedule engine says it lands, and what is filed against it. The hours come
+   from ppProjectStatus — the same engine that draws the Gantt — so this and
+   the Timeline can never disagree. The span bar is a deliberately small
+   Gantt: enough to see overlap at a glance, with the real one a click away
+   under Timeline rather than rebuilt here. */
+function renderProjectsOverview(){
+  const host=$("#pProjOverview"); if(!host) return;
+  const projs=((S.projplan&&S.projplan.projects)||[]);
+  $("#pProjOverviewEmpty").hidden=projs.length>0;
+  if(!projs.length){ host.innerHTML=""; return; }
+  const status=window.ppProjectStatus?ppProjectStatus(pToday()):[];
+  const byId={}; status.forEach(s=>{ byId[s.id]=s; });
+  const today=pToday();
+  /* one shared window for every span bar, or the bars would each be drawn to
+     their own scale and comparing two of them would mean nothing */
+  const spans=projs.map(p=>({s:p.start||today,e:(byId[p.id]||{}).end||p.start||today}));
+  const lo=spans.reduce((a,x)=>x.s<a?x.s:a,today);
+  const hi=spans.reduce((a,x)=>x.e>a?x.e:a,today);
+  const totalDays=Math.max(1,Math.round((fromYmd(hi)-fromYmd(lo))/DAY)+1);
+  const pct=iso=>Math.max(0,Math.min(100,Math.round((fromYmd(iso)-fromYmd(lo))/DAY/totalDays*1000)/10));
+
+  host.innerHTML=projs.map((p,i)=>{
+    const st=byId[p.id]||{};
+    const total=Math.max(0,+p.total||0);
+    const left=Math.max(0,+st.left||0);
+    const spent=Math.max(0,total-left);
+    const donePct=total?Math.round(spent/total*100):0;
+    const end=st.end||p.start||today;
+    const started=(p.start||today)<=today;
+    const finished=total>0&&left<=0.001;
+    const state=finished?t("done"):started?t("in progress"):t("not started");
+    const late=!finished&&end<today;
+    /* pDueLabel says "Overdue" for anything past, which is a lie about a
+       project that simply finished — a done or elapsed end date gets its
+       plain calendar date, and only a live one gets the relative wording */
+    const endD=pParseISO(end);
+    const endLabel=(finished||end<today)
+      ? endD.getDate()+"."+(endD.getMonth()+1)+"."+endD.getFullYear()
+      : pDueLabel(end);
+    const tasks=(S.planner.tasks||[]).filter(tk=>tk.projectId===p.id);
+    const tDone=tasks.filter(tk=>tk.done).length;
+    const subAll=tasks.reduce((n,tk)=>n+(tk.steps||[]).length,0);
+    const subDone=tasks.reduce((n,tk)=>n+(tk.steps||[]).filter(s=>s.done).length,0);
+    const c=ppSafeColor(p.color);
+    const l=pct(p.start||today), r=pct(end);
+    return `<div class="povw" style="--pc:${c}">
+      <div class="povw-top">
+        <i class="povw-dot"></i>
+        <b class="povw-name">${esc(p.name||t("Untitled project"))}</b>
+        <span class="povw-state${finished?" done":late?" late":""}">${esc(state)}</span>
+        <span class="povw-hrs">${pFmtH(spent)} / ${pFmtH(total)}h</span>
+      </div>
+      <div class="povw-bar" title="${pFmtH(spent)}h ${esc(t("of"))} ${pFmtH(total)}h">
+        <i style="width:${donePct}%"></i></div>
+      <div class="povw-meta">
+        <span>${esc(t("ends"))} ${esc(endLabel)}</span>
+        ${st.capped?`<em class="povw-warn">${esc(t("over the daily limit"))}</em>`:""}
+        ${tasks.length?`<span>${tDone}/${tasks.length} ${esc(t("tasks"))}</span>`:""}
+        ${subAll?`<span>${subDone}/${subAll} ${esc(t("subtasks"))}</span>`:""}
+      </div>
+      <div class="povw-span" aria-hidden="true">
+        <i style="left:${l}%; width:${Math.max(1.5,r-l)}%"></i></div>
+      ${tasks.length?`<ul class="povw-tasks">${tasks.map(tk=>{
+        const s=(tk.steps||[]), sd=s.filter(x=>x.done).length;
+        return `<li class="${tk.done?"done":""}">
+          <span class="povw-tick">${tk.done?"✓":"·"}</span>${esc(tk.title||t("Untitled task"))}
+          ${s.length?`<small>${sd}/${s.length}</small>`:""}
+          ${tk.kind==="event"?`<small>${esc(tk.time||"")}</small>`:""}</li>`;
+      }).join("")}</ul>`:""}
+    </div>`;
+  }).join("");
+}
 function renderPlanner(){
   pEnsureView();
   pCareCache={};
-  pFillProjectSelect(); pSyncAddKind();
+  pFillProjectSelect(); pSyncAddKind(); renderProjectsOverview();
   $("#pSleepInput").value=S.planner.sleep;
   $("#pLinkCare").checked=S.planner.linkCare!==false;
   $("#pLinkHours").checked=S.planner.linkHours!==false;
@@ -9797,6 +9905,8 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "Move projects":"Přesouvat projekty","Paint days":"Malovat dny","Quarter":"Čtvrtletí","6 months":"6 měsíců","Year":"Rok",
 "Timeline":"Časová osa","Half":"Půl roku","Linear":"Lineární","Grid":"Mřížka",
 "Anytime":"Kdykoliv","Mark done":"Označit hotové","no project":"bez projektu","Event":"Událost",
+"All projects":"Všechny projekty","in progress":"probíhá","not started":"nezahájeno","ends":"končí","of":"z","over the daily limit":"přes denní limit","tasks":"úkolů","subtasks":"podúkolů",
+"No projects yet. Add one in the Timeline view and it'll be summarised here.":"Zatím žádné projekty. Přidej ho v Časové ose a zobrazí se tady.",
 "I don’t work weekends":"O víkendech nepracuji","Daily limit":"Denní limit",
 "Brush — drag across days":"Štětec — táhni přes dny","Esc to stop painting":"Esc ukončí malování",
 "Light — up to 60%":"Volno — do 60 %","Busy — 60–100%":"Vytíženo — 60–100 %","Over limit":"Přes limit",
