@@ -21,6 +21,9 @@
   --amber:#A9640C; --amber-soft:#F7E9D2;
   --orange:#EA580C;
   --track-bg:#E4E7EA; --track-line:rgba(12,20,16,.14); --track-ink:#5B6B63;
+  /* the planner board's own rules: --line-soft vanished against the card, so
+     the hour grid and the day separators get their own readable tokens */
+  --grid-line:#CBD5C8; --grid-sep:#AEBCAA;
   --ok:#15803D; --crit:#BE3B30; --crit-soft:#F8E2DF;
   --glass:rgba(255,255,255,.72); --glass-2:rgba(255,255,255,.88);
   --hair:rgba(255,255,255,.95);
@@ -39,6 +42,7 @@
     --amber:#F1B24C; --amber-soft:#2C2210;
     --orange:#FB923C;
     --track-bg:#242B26; --track-line:rgba(233,241,234,.14); --track-ink:#B7C2BB;
+    --grid-line:#33422F; --grid-sep:#485C41;
     --ok:#4ADE80; --crit:#F08276; --crit-soft:#33191A;
     --glass:rgba(16,23,17,.66); --glass-2:rgba(19,28,21,.82);
     --hair:rgba(255,255,255,.06);
@@ -56,6 +60,7 @@
   --amber:#F1B24C; --amber-soft:#2C2210;
   --orange:#FB923C;
   --track-bg:#242B26; --track-line:rgba(233,241,234,.14); --track-ink:#B7C2BB;
+  --grid-line:#33422F; --grid-sep:#485C41;
   --ok:#4ADE80; --crit:#F08276; --crit-soft:#33191A;
   --glass:rgba(16,23,17,.66); --glass-2:rgba(19,28,21,.82);
   --hair:rgba(255,255,255,.06);
@@ -395,6 +400,101 @@ input[type="time"].mono-input{width:88px}
 .pblock-row2{display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-left:24px}
 .dowchips{display:flex; gap:3px; flex-wrap:wrap}
 
+/* ---- Timeline's Grid mode: the month-as-squares calendar ----
+   Same day-cell language at three densities: a full grid for one month,
+   three of them for a quarter, and dot-only miniatures once six or twelve
+   months have to share the width. */
+.pcal-dow{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:5px}
+.pcal-dow span{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:10px;
+  color:var(--ink-3); text-align:center; text-transform:uppercase}
+.pcal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:4px}
+.pcal-cell{appearance:none; border:1.5px solid transparent; background:var(--sunk); color:var(--ink);
+  border-radius:var(--r-xs); aspect-ratio:1; padding:4px 2px 5px; display:flex; flex-direction:column;
+  align-items:center; justify-content:space-between; cursor:pointer; font:inherit;
+  transition:border-color .12s, background .12s}
+.pcal-cell:hover{border-color:var(--line-strong)}
+/* adjacent-month days, same treatment as the diary's own .mcell.out */
+.pcal-cell.out{opacity:.25; pointer-events:none}
+.pcal-cell[data-today="1"]{border-color:var(--accent)}
+.pcal-cell[data-today="1"] .pcal-day{background:var(--ink); color:var(--bg); border-radius:5px; padding:0 4px}
+.pcal-day{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11.5px; font-weight:600;
+  font-variant-numeric:tabular-nums}
+.pcal-dots{display:flex; gap:2px; justify-content:center; min-height:4px; flex-wrap:wrap}
+.pcal-dots i{width:4px; height:4px; border-radius:50%; display:block}
+.pcal-quarter{display:flex; flex-direction:column; gap:22px}
+@media (min-width:760px){ .pcal-quarter{display:grid; grid-template-columns:repeat(3,1fr); gap:16px} }
+.pcal-qmonth-title{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600;
+  font-size:13.5px; margin:0 0 7px}
+.pcal-year{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:16px}
+.pcal-mini-title{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600;
+  font-size:12px; margin:0 0 5px; text-align:center}
+.pcal-mini-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:2px}
+.pcal-mini-cell{aspect-ratio:1; border-radius:2px; background:var(--sunk); border:0; padding:0;
+  cursor:pointer; appearance:none}
+.pcal-mini-cell.out{visibility:hidden; cursor:default}
+.pcal-mini-cell.today{box-shadow:inset 0 0 0 1.5px var(--ink)}
+/* the dateless-task strip above the Day board */
+.pquick-strip{display:flex; flex-wrap:wrap; align-items:center; gap:6px;
+  padding:0 0 10px; border-bottom:1px solid var(--line-soft); margin-bottom:2px}
+.pquick-strip .eyebrow{flex:0 0 auto; margin-right:2px}
+.pqchip{display:inline-flex; align-items:center; gap:6px; padding:5px 10px 5px 7px;
+  border:1px solid var(--line); border-radius:999px; background:var(--surface-2);
+  font-size:12.5px; color:var(--ink); cursor:grab; touch-action:none; user-select:none;
+  max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.pqchip:hover{border-color:var(--accent)}
+.pqchip.lift{box-shadow:var(--shadow-lift); opacity:.9; cursor:grabbing; z-index:6; position:relative}
+.pqbox{width:15px; height:15px; flex:0 0 auto; border-radius:4px; cursor:pointer;
+  border:1.5px solid var(--line-strong); background:var(--surface)}
+.pqbox:hover{border-color:var(--accent)}
+.pqbox:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+/* All projects: one scannable row per project */
+.povw{padding:11px 14px; border-bottom:1px solid var(--line-soft)}
+.povw:last-child{border-bottom:0}
+.povw-top{display:flex; align-items:baseline; gap:8px}
+.povw-dot{width:9px; height:9px; border-radius:3px; background:var(--pc); flex:0 0 auto;
+  align-self:center}
+.povw-name{flex:1; min-width:0; font-size:14px; font-weight:600; overflow:hidden;
+  text-overflow:ellipsis; white-space:nowrap}
+.povw-state{font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-3);
+  flex:0 0 auto}
+.povw-state.done{color:var(--ok)}
+.povw-state.late{color:var(--crit); font-weight:600}
+.povw-hrs{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11px; color:var(--ink-2);
+  flex:0 0 auto; font-variant-numeric:tabular-nums}
+.povw-bar{height:5px; border-radius:99px; background:var(--sunk); overflow:hidden; margin:7px 0 5px}
+.povw-bar i{display:block; height:100%; background:var(--pc)}
+.povw-meta{display:flex; flex-wrap:wrap; gap:4px 12px; font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:10.5px; color:var(--ink-3)}
+.povw-warn{font-style:normal; color:var(--crit)}
+/* the small Gantt: every bar on one shared window so they can be compared */
+.povw-span{position:relative; height:4px; margin-top:7px; border-radius:99px;
+  background:var(--sunk); overflow:hidden}
+.povw-span i{position:absolute; top:0; bottom:0; border-radius:99px;
+  background:color-mix(in srgb,var(--pc) 70%,transparent)}
+.povw-tasks{list-style:none; margin:8px 0 0; padding:0; display:flex; flex-direction:column; gap:3px}
+.povw-tasks li{display:flex; align-items:baseline; gap:7px; font-size:12.5px; color:var(--ink-2)}
+.povw-tasks li.done{color:var(--ink-3); text-decoration:line-through}
+.povw-tasks small{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:10px; color:var(--ink-3)}
+.povw-tick{color:var(--accent); flex:0 0 auto; width:10px; text-align:center}
+.wb-newsel{position:absolute; left:1px; right:2px; border-radius:6px; z-index:2;
+  background:color-mix(in srgb,var(--accent) 22%,transparent);
+  border:1px dashed color-mix(in srgb,var(--accent) 70%,transparent); pointer-events:none}
+.pslot-when{margin:0 0 10px; font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:12px; color:var(--ink-3)}
+.pslot-row{display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:10px}
+/* focus mode: the schedule card fills the screen for a second monitor.
+   position:fixed rather than the Fullscreen API so it still works when the
+   app is an installed PWA and so Escape can leave without a permission
+   dance; the app chrome is hidden rather than unmounted so leaving is a
+   class toggle and nothing has to re-render. */
+html.pfocus, html.pfocus body{overflow:hidden}
+html.pfocus .top,html.pfocus .navwrap,html.pfocus #view-planner > .stack > .card:not(.pfocus-card),
+html.pfocus #view-planner .sec-head{display:none}
+.pfocus-card{position:fixed; inset:0; z-index:60; margin:0; border-radius:0;
+  overflow:auto; background:var(--surface); padding:14px 16px 20px;
+  padding-top:max(14px,env(safe-area-inset-top))}
+.pfocus-btn{flex:0 0 auto}
+html.pfocus .pfocus-btn{position:sticky; right:0}
 .qadd-kind{align-self:flex-start}
 .pproj-count{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11px;
   color:var(--accent); flex:0 0 auto}
@@ -419,14 +519,17 @@ input[type="time"].mono-input{width:88px}
 /* sticky so the hour labels stay readable while the week scrolls sideways */
 .wb-gutter{flex:0 0 34px; position:sticky; left:0; z-index:4; background:var(--surface)}
 .wb-gutter span{position:absolute; right:6px; transform:translateY(-6px);
-  font-family:"JetBrains Mono",ui-monospace,monospace; font-size:9.5px; color:var(--ink-3)}
-.wb-col{flex:1 1 0; min-width:86px; border-left:1px solid var(--line-soft); display:flex; flex-direction:column}
-.wb-col.today{background:color-mix(in srgb, var(--accent) 4%, transparent)}
+  font-family:"JetBrains Mono",ui-monospace,monospace; font-size:9.5px; color:var(--ink-2)}
+.wb-col{flex:1 1 0; min-width:86px; border-left:1px solid var(--grid-sep); display:flex; flex-direction:column}
+/* today gets a real frame, not just a tint — inset shadow rather than a border
+   so the column keeps its flex width and the grid stays aligned */
+.wb-col.today{background:color-mix(in srgb, var(--accent) 7%, transparent);
+  box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent)}
 .wb-head{appearance:none; border:0; background:none; cursor:pointer; font:inherit; color:var(--ink-2);
   font-size:11px; padding:4px 2px 3px; text-align:center; border-radius:6px}
 .wb-head b{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600;
   text-transform:uppercase; letter-spacing:.05em; font-size:10.5px; margin-right:3px}
-.wb-col.today .wb-head{color:var(--accent)}
+.wb-col.today .wb-head{color:var(--accent); font-weight:700}
 .wb-head:hover{background:var(--sunk)}
 .wb-allday{display:flex; align-items:center; justify-content:center; gap:3px; min-height:14px; padding:0 2px 3px}
 /* a project on the board: draggable sideways, edge-draggable for that day's
@@ -439,7 +542,11 @@ input[type="time"].mono-input{width:88px}
 .wb-pchip small{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:8.5px;
   color:var(--ink-2); flex:0 0 auto}
 .wb-pchip.lift{box-shadow:var(--shadow-lift); opacity:.9; cursor:grabbing; z-index:6}
-.wb-pchip.sizing::after{content:attr(data-live); position:absolute; top:-16px; left:50%;
+/* the same project drawn as a grid block: its own colour, the chip's gestures */
+.wb-blk.wb-proj{background:color-mix(in srgb,var(--pc) 24%,var(--surface));
+  border-left:3px solid var(--pc); cursor:grab; touch-action:none; user-select:none}
+.wb-blk.wb-proj:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.wb-pchip.sizing::after,.wb-blk.sizing::after{content:attr(data-live); position:absolute; top:-16px; left:50%;
   transform:translateX(-50%); font-family:"JetBrains Mono",ui-monospace,monospace;
   font-size:9px; color:var(--accent); white-space:nowrap}
 .wb-phandle{position:absolute; right:-3px; top:0; bottom:0; width:9px; cursor:ew-resize}
@@ -450,8 +557,13 @@ input[type="time"].mono-input{width:88px}
 .wb-allday{flex-wrap:wrap; gap:2px}
 .wb-adcare{font-size:9px; line-height:1}
 .wb-track{position:relative}
-.wb-hl{position:absolute; left:0; right:0; height:0; border-top:1px solid var(--line-soft)}
-.wb-now{position:absolute; left:0; right:0; height:0; border-top:2px solid var(--crit); z-index:3}
+.wb-hl{position:absolute; left:0; right:0; height:0; border-top:1px solid var(--grid-line)}
+/* faint everywhere so the hour tracks across the board, solid on today */
+.wb-now{position:absolute; left:0; right:0; height:0; z-index:3;
+  border-top:1px dashed color-mix(in srgb,var(--crit) 42%,transparent)}
+.wb-now.today{border-top:2px solid var(--crit)}
+.wb-now.today::before{content:""; position:absolute; left:-4px; top:-5px; width:8px; height:8px;
+  border-radius:50%; background:var(--crit)}
 .wb-blk{position:absolute; border-radius:6px; overflow:hidden; padding:2px 6px; z-index:1;
   background:var(--accent-soft); border-left:3px solid var(--accent); cursor:grab;
   -webkit-tap-highlight-color:transparent; touch-action:none; user-select:none}
@@ -1941,17 +2053,19 @@ html{overscroll-behavior-y:none}
     <form class="card pad qadd" id="pAddForm">
       <div class="seg segsm qadd-kind" id="pAddKind">
         <button type="button" data-pkind="task" aria-pressed="true">Task</button>
-        <button type="button" data-pkind="project" aria-pressed="false">Project</button>
+        <button type="button" data-pkind="event" aria-pressed="false">Event</button>
       </div>
       <input type="text" id="pAddTitle" placeholder="What needs doing?" autocomplete="off">
       <div class="qadd-row2">
         <span class="field-label">on</span>
         <input type="date" id="pAddDue" class="mono-input">
-        <span class="field-label">at</span>
-        <input type="time" id="pAddTime" class="mono-input" aria-label="Start time, optional">
+        <span class="field-label pev-only">at</span>
+        <input type="time" id="pAddTime" class="mono-input pev-only" aria-label="Start time">
         <span class="field-label">takes</span>
         <input type="number" id="pAddHours" class="mono-input hrs" value="1" min="0" max="24" step="0.5">
         <span class="field-label">h</span>
+        <span class="field-label">for</span>
+        <select id="pAddProject" class="mono-input" aria-label="Link to a project"></select>
         <button class="btn primary mini" type="submit">Add</button>
       </div>
       <p class="pwarn" id="pAddWarn" hidden></p>
@@ -1982,6 +2096,8 @@ html{overscroll-behavior-y:none}
           <span class="pcal-month" id="pBoardLabel"></span>
           <button type="button" class="btn mini" id="pBoardNext" aria-label="Next">›</button>
         </span>
+        <button type="button" class="btn mini pfocus-btn" id="pFocusBtn"
+          title="Fill the screen" aria-pressed="false">⛶</button>
         <span class="pcal-nav" id="pTimelineZoom" style="display:none">
           <div class="seg segsm" id="ppZoomSeg">
             <button type="button" data-ppzoom="month" aria-pressed="false">Month</button>
@@ -1989,6 +2105,17 @@ html{overscroll-behavior-y:none}
             <button type="button" data-ppzoom="half" aria-pressed="false">Half</button>
             <button type="button" data-ppzoom="year" aria-pressed="false">Year</button>
           </div>
+        </span>
+        <span class="pcal-nav" id="pViewToggle" style="display:none">
+          <div class="seg segsm" id="ppViewSeg">
+            <button type="button" data-ppview="linear" aria-pressed="true">Linear</button>
+            <button type="button" data-ppview="grid" aria-pressed="false">Grid</button>
+          </div>
+        </span>
+        <span class="pcal-nav" id="pGridNav" style="display:none">
+          <button type="button" class="btn mini" id="pGridPrev" aria-label="Previous">‹</button>
+          <span class="pcal-month" id="pGridLabel"></span>
+          <button type="button" class="btn mini" id="pGridNext" aria-label="Next">›</button>
         </span>
       </div>
       <div id="pScheduleBody"></div>
@@ -2108,6 +2235,12 @@ html{overscroll-behavior-y:none}
       <div class="pad" style="padding-bottom:9px"><span class="eyebrow">Scheduled</span></div>
       <div id="pSchedList"></div>
       <p class="empty" id="pSchedEmpty" hidden>Nothing scheduled. Tap a date on a task to pick a day.</p>
+    </div>
+
+    <div class="card">
+      <div class="pad" style="padding-bottom:9px"><span class="eyebrow">All projects</span></div>
+      <div id="pProjOverview"></div>
+      <p class="empty" id="pProjOverviewEmpty" hidden>No projects yet. Add one in the Timeline view and it'll be summarised here.</p>
     </div>
 
     <div class="card">
@@ -2496,6 +2629,28 @@ html{overscroll-behavior-y:none}
 </form></dialog>
 
 <!-- confirmations: the sandbox swallows window.confirm, so we ask properly -->
+<dialog id="pSlotDlg">
+  <h3 class="dlg-head" id="pSlotTitle">New</h3>
+  <div class="dlg-body">
+    <p class="pslot-when" id="pSlotWhen"></p>
+    <input type="text" id="pSlotText" placeholder="What is it?" autocomplete="off" style="width:100%">
+    <div class="pslot-row">
+      <span class="field-label">at</span>
+      <input type="time" id="pSlotTime" class="mono-input">
+      <span class="field-label">takes</span>
+      <input type="number" id="pSlotHours" class="mono-input hrs" min="0.25" max="24" step="0.25" value="1">
+      <span class="field-label">h</span>
+      <span class="field-label">for</span>
+      <select id="pSlotProject" class="mono-input"></select>
+    </div>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn" type="button" id="pSlotCancel">Cancel</button>
+    <button class="btn" type="button" id="pSlotAddTask">Add task</button>
+    <button class="btn primary" type="button" id="pSlotAddEvent">Add event</button>
+  </div>
+</dialog>
+
 <dialog id="askDlg">
   <h3 class="dlg-head" id="askTitle">Are you sure?</h3>
   <div class="dlg-body"><p id="askMsg" style="margin:0; font-size:14px; line-height:1.6"></p></div>
@@ -2579,6 +2734,39 @@ function seed(){return{
 
 /* v2 lineups became schedule weeks; in v4 the doses move out into named formulas
    and a week just points at one, so mixing and planning stop being the same thing. */
+/* A snapshot taken immediately before a migration rewrites records in place.
+   Photos are left out on purpose: they are megabytes of base64, no migration
+   has ever touched them, and including them is the one thing likely to blow
+   the storage quota and cost us the backup we came here to make.
+
+   Only the FIRST call for a given tag writes — a later boot must not overwrite
+   the original pre-migration state with an already-migrated one. Never throws:
+   a failed backup must not take the whole boot down with it, but it does leave
+   a breadcrumb so a silent failure is still discoverable.
+   Retrieve with pDownloadBackup() from the console. */
+function pBackupBeforeMigrate(d,tag){
+  const key="pottingbench.backup."+tag;
+  try{
+    if(localStorage.getItem(key)) return;
+    const {photos,...rest}=d;
+    localStorage.setItem(key,JSON.stringify({at:new Date().toISOString(),tag,state:rest}));
+    console.info("[potting-bench] pre-migration backup saved to localStorage:",key);
+  }catch(e){ console.warn("[potting-bench] pre-migration backup FAILED for",key,e); }
+}
+/* console escape hatch: hand the raw pre-migration JSON back as a file */
+window.pDownloadBackup=function(tag){
+  const keys=tag?["pottingbench.backup."+tag]
+    :Object.keys(localStorage).filter(k=>k.indexOf("pottingbench.backup.")===0);
+  if(!keys.length){ console.warn("no backups stored"); return; }
+  keys.forEach(k=>{
+    const blob=new Blob([localStorage.getItem(k)],{type:"application/json"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob); a.download=k+".json";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  });
+  return keys;
+};
 function migrate(d){
   if(!d) return seed();
   if(Array.isArray(d.recipes)&&!Array.isArray(d.schedules)){
@@ -2651,6 +2839,44 @@ function migrate(d){
     if(tk.time===undefined) tk.time="";
     /* anything already carrying steps was a project in all but name */
     if(tk.kind===undefined) tk.kind=(tk.steps&&tk.steps.length)?"project":"task";
+  });
+  /* ---- v7: one list, two shapes ----
+     A planner entry used to be a single fuzzy thing that might or might not
+     have a time. It is now explicitly either a TASK (a day at most, never a
+     clock slot, may carry one level of subtasks) or an EVENT (a real start
+     time and duration, no nesting). The split is decided by what the record
+     already says: a genuine time range makes it an Event, anything else a
+     Task. The old "project" kind folds into Task — every Task can hold
+     subtasks now, so it no longer needs a kind of its own.
+
+     `hours` is kept on Tasks even though the shape does not feature it: the
+     day budget is computed from it, and dropping it would silently empty
+     everyone's planned totals. `steps` is likewise kept on any record that
+     had it, including the few that become Events, so nothing the user typed
+     is destroyed by a rule that could not have known about it. */
+  if(+d.planner.modelV!==7){
+    pBackupBeforeMigrate(d,"pre-v7");
+    d.planner.tasks=d.planner.tasks.map(tk=>{
+      const timed=!!(tk.time&&+tk.hours>0);
+      return Object.assign({},tk,{
+        kind: timed?"event":"task",
+        time: timed?tk.time:"",
+        hours: Number.isFinite(+tk.hours)?Math.max(0,+tk.hours):(timed?1:0),
+        steps: Array.isArray(tk.steps)?tk.steps:[],
+        projectId: tk.projectId||null,
+        done: !!tk.done
+      });
+    });
+    d.planner.modelV=7;
+  }
+  d.planner.tasks.forEach(tk=>{
+    if(!Array.isArray(tk.steps)) tk.steps=[];
+    /* subtasks are one level deep, full stop — anything nested deeper came
+       from a hand-edited import and is flattened rather than trusted */
+    tk.steps=tk.steps.filter(s=>s&&typeof s==="object").map(s=>({
+      id:s.id||uid(), text:String(s.text==null?"":s.text), done:!!s.done }));
+    if(tk.projectId===undefined) tk.projectId=null;
+    if(tk.kind!=="event"&&tk.kind!=="task") tk.kind="task";
   });
   if(typeof d.planner.sleep!=="number") d.planner.sleep=8;
   if(d.planner.linkCare===undefined) d.planner.linkCare=true;
@@ -3961,8 +4187,118 @@ function pBoardLabel(scope,days){
    separate implementation, so it carries every feature the old day
    timeline had (auto-fit hour window, live countdown, clash warnings,
    untimed care jobs) rather than losing them when folded in. */
-function pBoardHtml(days){
-  const byDay=days.map(d=>pBudgetOf(d).items);
+/* A project carries a day-level hour budget with no time-of-day, so on a clock
+   grid it has nowhere of its own to sit. Rather than leave it floating in a
+   chip strip above the board, pack it into the day's first free gap from
+   PROJ_ANCHOR on so it reads as a real block like everything else. The times
+   invented here are presentation only — pBudgetOf's totals are computed before
+   this runs and never see them, so the day's arithmetic is unchanged. */
+const PROJ_ANCHOR=9;
+function pPlaceProjects(items){
+  const projs=items.filter(it=>it.kind==="proj"&&it.hours>0);
+  if(!projs.length) return items;
+  /* round to the minute BEFORE splitting: a tracked session ending at
+     12.99444h would otherwise render as the nonexistent "12:60" */
+  const hhmm=v=>{ const mins=Math.round(Math.max(0,Math.min(v,24))*60);
+    return String(Math.floor(mins/60)%24).padStart(2,"0")+":"+String(mins%60).padStart(2,"0"); };
+  const busy=items.filter(it=>it.time&&it.hours>0&&it.kind!=="care")
+    .map(it=>{ const [h,m]=it.time.split(":").map(Number); return {s:h+m/60,e:h+m/60+it.hours}; });
+  const placed=new Map();
+  let cursor=PROJ_ANCHOR;
+  projs.forEach(p=>{
+    let s=Math.max(cursor,PROJ_ANCHOR);
+    /* step past whatever already occupies the slot; bounded by the number of
+       busy intervals so a pathological overlap set can't spin here */
+    for(let guard=0;guard<=busy.length;guard++){
+      const hit=busy.find(b=>b.e>s&&b.s<s+p.hours);
+      if(!hit) break;
+      s=hit.e;
+    }
+    /* keep the block inside the day rather than clamping its START — clamping
+       to a fixed 23:75 pushed long stacks back into the very interval the walk
+       above had just cleared, and let the tail paint past the bottom of the
+       track. A day with more booked than it holds genuinely overlaps; say so
+       with the same clash flag a double-booked hour gets. */
+    s=Math.max(0,Math.min(s,24-Math.min(p.hours,24)));
+    const clash=busy.some(b=>b.e>s&&b.s<s+p.hours);
+    placed.set(p,{time:hhmm(s),clash});
+    busy.push({s,e:s+p.hours});
+    cursor=s+p.hours;
+  });
+  return items.map(it=>placed.has(it)
+    ? Object.assign({},it,placed.get(it).clash?{time:placed.get(it).time,clash:true}
+                                             :{time:placed.get(it).time})
+    : it);
+}
+/* Tasks with no day at all — the "ring the dentist" kind. They belong to no
+   square on the grid, so they ride above it as a tick-off strip: tap the box
+   to finish one, or drag it down onto an hour to turn it into a real slot.
+   Day view only; on a week or a month they would compete with 7-31 columns
+   for the same glance. */
+function pDatelessStripHtml(){
+  const list=(S.planner.tasks||[]).filter(tk=>tk.kind!=="event"&&!tk.due&&!tk.done);
+  const done=(S.planner.tasks||[]).filter(tk=>tk.kind!=="event"&&!tk.due&&tk.done).length;
+  if(!list.length&&!done) return "";
+  return `<div class="pquick-strip">
+    <span class="eyebrow">${esc(t("Anytime"))}</span>
+    ${list.map(tk=>`<span class="pqchip" data-wb="tray:${tk.id}" data-pqid="${tk.id}">
+      <i class="pqbox" data-pqtick="${tk.id}" role="button" tabindex="0"
+        aria-label="${esc(t("Mark done"))}"></i>${esc(tk.title||t("Untitled task"))}</span>`).join("")}
+    ${done?`<small class="hint">${done} ${esc(t("done"))}</small>`:""}
+  </div>`;
+}
+/* the empty-slot dialog: one place that turns "there is nothing here" into
+   either kind of record, with the slot you pointed at already filled in.
+   Adding a Task deliberately keeps the day but drops the time — a Task has
+   no clock slot, so offering one here would contradict the model. */
+let pSlotDay=null;
+function pOpenSlotDialog(day,fromH,hours){
+  pSlotDay=day||pToday();
+  const hhmm=v=>{ const m=Math.round(Math.max(0,Math.min(v,24))*60);
+    return String(Math.floor(m/60)%24).padStart(2,"0")+":"+String(m%60).padStart(2,"0"); };
+  $("#pSlotTime").value=hhmm(fromH);
+  $("#pSlotHours").value=Math.round(Math.max(0.25,hours)*100)/100;
+  $("#pSlotText").value="";
+  const d=pParseISO(pSlotDay);
+  $("#pSlotWhen").textContent=dowName(d.getDay())+" "+d.getDate()+" "+pMonthGen(d.getMonth());
+  const sel=$("#pSlotProject");
+  const projs=((S.projplan&&S.projplan.projects)||[]);
+  sel.innerHTML=`<option value="">${esc(t("no project"))}</option>`+
+    projs.map(p=>`<option value="${esc(p.id)}">${esc(p.name||t("Untitled project"))}</option>`).join("");
+  $("#pSlotDlg").showModal();
+  setTimeout(()=>$("#pSlotText").focus(),30);
+}
+function pSlotCreate(kind){
+  const title=$("#pSlotText").value.trim()||t("Untitled task");
+  const isEvent=kind==="event";
+  S.planner.tasks.push({id:uid(),title,due:pSlotDay,
+    time:isEvent?$("#pSlotTime").value||"09:00":"",
+    /* the dialog's buttons are plain buttons in a form-less dialog, so the
+       input's min= is never validated — clamp here or an Event can be minted
+       with 0h and then render nowhere at all */
+    hours:isEvent?Math.max(0.25,+$("#pSlotHours").value||1)
+                 :Math.max(0,+$("#pSlotHours").value||0),
+    done:false,kind:isEvent?"event":"task",steps:[],
+    projectId:$("#pSlotProject").value||null});
+  $("#pSlotDlg").close();
+  pSelISO=pSlotDay; touch(); renderPlanner();
+}
+$("#pSlotCancel").addEventListener("click",()=>$("#pSlotDlg").close());
+$("#pSlotAddTask").addEventListener("click",()=>pSlotCreate("task"));
+$("#pSlotAddEvent").addEventListener("click",()=>pSlotCreate("event"));
+$("#pSlotText").addEventListener("keydown",e=>{
+  if(e.key==="Enter"){ e.preventDefault(); pSlotCreate("event"); } });
+function pWireDatelessStrip(){
+  const host=$("#pScheduleBody").querySelector(".pquick-strip"); if(!host) return;
+  host.addEventListener("click",e=>{
+    const box=e.target.closest("[data-pqtick]"); if(!box) return;
+    const tk=pFindTask(box.dataset.pqtick); if(!tk) return;
+    tk.done=true; tk.doneAt=new Date().toISOString();
+    touch(); renderPlanner();
+  });
+}
+function pBoardHtml(days,topStrip){
+  const byDay=days.map(d=>pPlaceProjects(pBudgetOf(d).items));
   /* window: wide enough for everything timed, but a lone day starts from a
      plainer waking-hours default than a multi-day board would need */
   let startH=days.length===1?6:7, endH=days.length===1?24:21;
@@ -3972,6 +4308,15 @@ function pBoardHtml(days){
     startH=Math.min(startH,Math.floor(h+m/60));
     endH=Math.max(endH,Math.ceil(h+m/60+it.hours));
   }));
+  /* if today is on the board, keep the current hour inside the window — an
+     early-morning or late-night "now" outside the default 7–21 range would
+     otherwise leave the now-line with nowhere to draw */
+  const nowFrac=(()=>{ const n=new Date(); return n.getHours()+n.getMinutes()/60; })();
+  const hasToday=days.includes(pToday());
+  if(hasToday){
+    startH=Math.min(startH,Math.floor(nowFrac));
+    endH=Math.max(endH,Math.ceil(nowFrac));
+  }
   startH=Math.max(0,startH); endH=Math.min(24,Math.max(endH,startH+6));
   const H=(endH-startH)*WB_PXH;
   const label=d=>{ const x=pParseISO(d);
@@ -3980,10 +4325,9 @@ function pBoardHtml(days){
   const gutter=`<div class="wb-gutter" style="height:${H}px">${
     Array.from({length:endH-startH},(_,i)=>`<span style="top:${i*WB_PXH}px">${String((startH+i)%24).padStart(2,"0")}</span>`).join("")}</div>`;
 
-  const nowH=(()=>{ const n=new Date(); return n.getHours()+n.getMinutes()/60; })();
+  const nowH=nowFrac;          // one clock read for the whole board
   const cols=days.map((d,di)=>{
     const items=byDay[di];
-    const projs=items.filter(it=>it.kind==="proj");
     const care=items.find(it=>it.kind==="care");
     const timed=items.filter(it=>it.time&&it.hours>0&&!(it.kind==="care"));
     /* lane packing inside the column: clashing blocks share the width side by
@@ -4005,12 +4349,19 @@ function pBoardHtml(days){
     const blocks=iv.map(x=>{
       const it=x.it, top=(x.s-startH)*WB_PXH, hpx=Math.max(17,it.hours*WB_PXH);
       const lane=`left:calc(${(x.col/x.n)*100}% + 1px); width:calc(${(1/x.n)*100}% - 3px)`;
-      const kind=it.kind==="hours"?"hrs":it.kind==="block"?"blk":"task";
+      const kind=it.kind==="hours"?"hrs":it.kind==="block"?"blk":it.kind==="proj"?"proj":"task";
+      /* a project keeps the gestures it had as a chip — sideways drags the
+         whole project across days, the handle changes just this day's hours */
       const drag=it.kind==="task"?` data-wb="task:${it.ref.id}" data-day="${d}"`
-               : it.kind==="block"?` data-wb="block:${it.ref.id}" data-day="${d}"`:"";
+               : it.kind==="block"?` data-wb="block:${it.ref.id}" data-day="${d}"`
+               : it.kind==="proj"?` data-wbp="${it.id}" data-day="${d}" tabindex="0"`:"";
+      const tint=it.kind==="proj"?` --pc:${ppSafeColor(it.color)};`:"";
       /* what you are in the middle of right now gets a live countdown — the
          now-line says where you are, this says how much of it is left */
-      const live=(it.live||(d===pToday()&&nowH>=x.s&&nowH<x.e));
+      /* a project's slot is invented by pPlaceProjects, so "2h left" on one
+         would be a countdown against a time the user never set — only things
+         with a real slot get to claim they are running */
+      const live=(it.live||(it.kind!=="proj"&&d===pToday()&&nowH>=x.s&&nowH<x.e));
       const leftMin=Math.ceil((x.e-nowH)*60);
       /* below ~38px there's no room for a title line plus a meta line — fold
          time+name onto one line rather than lose the fight against overflow */
@@ -4020,24 +4371,25 @@ function pBoardHtml(days){
           leftMin>=60?t("{h}h left").replace("{h}",pFmtH(leftMin/60))
                      :t("{m}m left").replace("{m}",leftMin))}</em>`:""}`;
       const warn=it.clash?'<i class="clash" title="'+esc(t("Overlaps another block"))+'">⚠</i> ':"";
-      return `<div class="wb-blk wb-${kind}${live?" live":""}${compact?" compact":""}"${drag} style="top:${top}px; height:${hpx}px; ${lane}">
+      return `<div class="wb-blk wb-${kind}${live?" live":""}${compact?" compact":""}"${drag} style="top:${top}px; height:${hpx}px;${tint} ${lane}">
         ${compact
           ? `<b>${warn}${it.kind==="block"?"↻ ":""}${esc(it.time)} ${esc(it.name)}</b>`
           : `<b>${warn}${it.kind==="block"?"↻ ":""}${esc(it.name)}</b><span>${meta}</span>`}
-        ${drag&&hpx>=26?`<i class="wb-rsz" data-wbr="${it.kind}:${it.ref.id}" data-day="${d}"></i>`:""}
+        ${it.kind==="proj"?`<i class="wb-phandle" data-wbph="${it.id}" data-day="${d}"></i>`
+          :drag&&hpx>=26?`<i class="wb-rsz" data-wbr="${it.kind}:${it.ref.id}" data-day="${d}"></i>`:""}
       </div>`; }).join("");
     let lines=""; for(let h=1;h<endH-startH;h++) lines+=`<i class="wb-hl" style="top:${h*WB_PXH}px"></i>`;
+    /* the now-line is drawn in EVERY column, not just today's — the columns
+       butt against each other, so the faint segments join into one rule across
+       the whole board and the hour reads at a glance from any day. Today's
+       segment is the solid one, and carries the dot. */
     let now="";
-    if(d===pToday()){
-      if(nowH>=startH&&nowH<=endH) now=`<i class="wb-now" style="top:${(nowH-startH)*WB_PXH}px"></i>`; }
-    /* projects are draggable here too: sideways moves the whole project,
-       the handle changes just this day's hours, a tap opens its editor */
-    const allday=(projs.length||care)?`<div class="wb-allday">${
-      projs.map(p=>`<span class="wb-pchip" data-wbp="${p.id}" data-day="${d}" tabindex="0"
-        title="${esc(p.name)} · ${pFmtH(p.hours)}h — ${esc(t("drag to move, edge to resize"))}"
-        style="--pc:${ppSafeColor(p.color)}"><b>${esc(p.name)}</b><small>${pFmtH(p.hours)}</small>
-        <i class="wb-phandle" data-wbph="${p.id}" data-day="${d}"></i></span>`).join("")}${
-      care?`<span class="wb-adcare" title="${esc(care.name)} · ${pFmtH(care.hours)}h">🌿</span>`:""}</div>`
+    if(hasToday&&nowH>=startH&&nowH<=endH)
+      now=`<i class="wb-now${d===pToday()?" today":""}" style="top:${(nowH-startH)*WB_PXH}px"></i>`;
+    /* projects now draw on the grid itself, so the strip above it is left to
+       plant care — the one claim on the day that genuinely has no clock slot */
+    const allday=care?`<div class="wb-allday"><span class="wb-adcare"
+      title="${esc(care.name)} · ${pFmtH(care.hours)}h">🌿</span></div>`
       :'<div class="wb-allday"></div>';
     return `<div class="wb-col${d===pToday()?" today":""}" data-wbday="${d}">
       <button type="button" class="wb-head" data-wbgo="${d}">${label(d)}</button>
@@ -4062,12 +4414,16 @@ function pBoardHtml(days){
     <span class="eyebrow">${esc(t("Unscheduled"))}</span>
     ${trayTasks.map(tk=>`<span class="wb-traychip${tk.due<pToday()?" late":""}" data-wb="tray:${tk.id}">${
       esc(tk.title||t("Untitled task"))}
-      <small>${tk.due<pToday()?esc(t("overdue")):pFmtH(+tk.hours||1)+"h"}</small></span>`).join("")}
+      <small>${tk.due<pToday()?esc(t("overdue")):(+tk.hours>0?pFmtH(+tk.hours)+"h":"")}</small></span>`).join("")}
     ${careTray}
     <small class="hint" style="flex-basis:100%; margin:2px 0 0">${esc(t("Drag a task onto the board to give it a time."))}</small>
   </div>`:"";
 
+  /* the dateless strip sits INSIDE the board: its chips carry data-wb, and
+     pWireBoard's pointer handling is bound to this element, so a chip dragged
+     from here onto an hour lands through the same commit path as the tray */
   return `<div class="wb" id="pWeekBoard" data-starth="${startH}">
+    ${topStrip||""}
     <div class="wb-scroll"><div class="wb-grid">${gutter}${cols}</div></div>${tray}</div>`;
 }
 
@@ -4097,15 +4453,36 @@ function pWireBoard(){
     const ph=e.target.closest("[data-wbph]");        // project day-hours handle
     const pchip=e.target.closest("[data-wbp]");      // project chip
     const blk=e.target.closest("[data-wb]");
-    if(!rsz&&!blk&&!pchip&&!ph) return;
+    if(!rsz&&!blk&&!pchip&&!ph){
+      /* empty grid: a click or a drag down the column proposes something new.
+         Touch is deliberately left alone here — the track is also how you
+         scroll the board on a phone, and stealing that to draw a selection
+         would trade a gesture people rely on for one they can reach from the
+         add form anyway. A touch TAP still opens the dialog on pointerup. */
+      const trk=e.target.closest(".wb-track");
+      const col=trk&&trk.closest(".wb-col");
+      if(!trk||!col) return;
+      const top=trk.getBoundingClientRect().top;
+      G2={mode:"newslot", pid:e.pointerId, x0:e.clientX, y0:e.clientY,
+          day0:col.dataset.wbday, armed:false, moved:false,
+          touch:e.pointerType==="touch", timer:null, el:null, trk,
+          t0:startH+(e.clientY-top)/WB_PXH};
+      pBoardBusy=true;
+      try{ board.setPointerCapture(e.pointerId); }catch(err){}
+      return;
+    }
     const kind = ph?"projday" : pchip?"proj" : null;
     const id = ph?ph.dataset.wbph : pchip?pchip.dataset.wbp : null;
     if(kind){
-      const el=pchip||ph.closest(".wb-pchip");
+      /* a project draws as a grid block now, but kept its chip-era gestures —
+         accept either host element so the handle can find what it belongs to */
+      const el=pchip||ph.closest(".wb-pchip,.wb-blk");
+      if(!el) return;
       G2={mode:kind==="projday"?"projday":"projmove", kind, id, pid:e.pointerId,
           x0:e.clientX, y0:e.clientY, el, armed:false, moved:false,
           touch:e.pointerType==="touch", timer:null,
           day0:(ph||pchip).dataset.day, time0:null};
+      pBoardBusy=true;
       try{ board.setPointerCapture(e.pointerId); }catch(err){}
       if(kind==="projday") e.preventDefault();
       else if(G2.touch){ G2.timer=setTimeout(()=>{ if(G2){ G2.armed=true; G2.el.classList.add("lift"); } },300); }
@@ -4123,6 +4500,7 @@ function pWireBoard(){
            at the raw pointer would snap the block's TOP to the finger and lose
            the grab offset, a visible jump on release */
         time0:kind3==="tray"?null:startH+(parseFloat(el.style.top)||0)/WB_PXH};
+    pBoardBusy=true;
     try{ board.setPointerCapture(e.pointerId); }catch(err){}
     if(G2.mode==="resize"){ e.preventDefault(); }   // arms after slop like everything else
     else if(G2.touch){
@@ -4132,6 +4510,18 @@ function pWireBoard(){
   board.addEventListener("pointermove",e=>{
     if(!G2||e.pointerId!==G2.pid) return;
     const dx=e.clientX-G2.x0, dy=e.clientY-G2.y0;
+    if(G2.mode==="newslot"){
+      if(G2.touch) return;                       // let the finger scroll
+      if(!G2.armed){ if(Math.abs(dy)<5) return; G2.armed=true; }
+      G2.moved=true;
+      if(!G2.el){ G2.el=document.createElement("div");
+        G2.el.className="wb-newsel"; G2.trk.appendChild(G2.el); }
+      const a=Math.min(G2.y0,e.clientY)-G2.trk.getBoundingClientRect().top;
+      G2.el.style.top=Math.max(0,a)+"px";
+      G2.el.style.height=Math.max(6,Math.abs(dy))+"px";
+      e.preventDefault();
+      return;
+    }
     if(!G2.armed){
       if(G2.mode==="projday"){
         if(Math.abs(dx)<(G2.touch?8:3)) return;      // horizontal = hours for this day
@@ -4188,7 +4578,18 @@ function pWireBoard(){
   });
   const commit=e=>{
     if(!G2||e.pointerId!==G2.pid) return;
-    const g=G2; G2=null; clearTimeout(g.timer);
+    const g=G2; G2=null; pBoardBusy=false; clearTimeout(g.timer);
+    if(g.mode==="newslot"){
+      if(g.el) g.el.remove();
+      const snapQ=v=>Math.round(v/WB_SNAP)*WB_SNAP;
+      const a=snapQ(Math.max(0,Math.min(g.t0,23.75)));
+      const b=g.moved
+        ? snapQ(Math.max(0,Math.min(startH+(e.clientY-g.trk.getBoundingClientRect().top)/WB_PXH,24)))
+        : a+1;
+      const from=Math.min(a,b), to=Math.max(a,b);
+      pOpenSlotDialog(g.day0,from,Math.max(0.25,to-from));
+      return;
+    }
     g.el.classList.remove("lift");
     if(g.mode==="pan") return;
     /* a mutation must reach every reader before the finger lifts twice:
@@ -4246,6 +4647,10 @@ function pWireBoard(){
       const tk=pFindTask(g.id);
       if(tk&&day){ tk.due=day; tk.time=fmtT(t2);
         if(!(+tk.hours>0)) tk.hours=1;     // a slot implies a duration
+        /* under the v7 model a clock slot IS what makes something an Event —
+           dropping a dateless task onto an hour promotes it rather than
+           leaving a Task that contradicts its own definition */
+        tk.kind="event";
         done(); return; }
     }
     if(g.kind==="block"){                  /* recurring: time moves, the weekday set stays */
@@ -4255,7 +4660,9 @@ function pWireBoard(){
     renderSchedule();
   };
   board.addEventListener("pointerup",commit);
-  const abort=()=>{ if(G2){ clearTimeout(G2.timer); G2.el.classList.remove("lift"); G2.el.style.transform=""; G2=null; renderSchedule(); } };
+  const abort=()=>{ pBoardBusy=false; if(G2){ clearTimeout(G2.timer);
+    if(G2.mode==="newslot"){ if(G2.el) G2.el.remove(); G2=null; return; }
+    G2.el.classList.remove("lift"); G2.el.style.transform=""; G2=null; renderSchedule(); } };
   board.addEventListener("pointercancel",abort);
   /* the board element is replaced on every render so its own listeners die with
      it — window's do NOT. One module-level hook, overwritten per wiring pass,
@@ -4268,8 +4675,83 @@ function pWireBoard(){
 }
 
 let pTick=null;
+/* set while a pointer gesture owns the board. The 30s repaint replaces the
+   whole board element, which would detach the very node an in-flight drag
+   measures against — losing the gesture, or worse, committing a range
+   computed from a detached rect of zeros. */
+let pBoardBusy=false;
 function pStopTick(){ clearInterval(pTick); pTick=null; }
 const ppSafeColor=c=>/^#[0-9A-Fa-f]{3,8}$/.test(c||"")?c:"var(--accent)";
+/* ---- Timeline, Grid mode ----
+   The same project schedule the linear Gantt draws, laid out as calendar
+   squares instead of bars. Read-only on purpose: editing stays in Linear,
+   where the drag model already exists, so the two can never disagree about
+   what an edit meant. Which span is on screen is ephemeral view state — never
+   saved, always normalised to the first month of its span. */
+const PP_GRID_SPAN={month:1,quarter:3,half:6,year:12};
+let ppGridISO=null;
+function ppGridStart(zoom,iso){
+  const d=pParseISO(iso), n=PP_GRID_SPAN[zoom]||1;
+  return ymd(monthStart(+new Date(d.getFullYear(),Math.floor(d.getMonth()/n)*n,1)));
+}
+function ppGridStepIso(zoom,iso,dir){
+  return ymd(addMonths(fromYmd(ppGridStart(zoom,iso)),(PP_GRID_SPAN[zoom]||1)*dir));
+}
+function ppGridLabel(zoom,iso){
+  const d=pParseISO(ppGridStart(zoom,iso)), y=d.getFullYear();
+  if(zoom==="year") return String(y);
+  if(zoom==="half") return "H"+(Math.floor(d.getMonth()/6)+1)+" "+y;
+  if(zoom==="quarter") return "Q"+(Math.floor(d.getMonth()/3)+1)+" "+y;
+  return d.toLocaleDateString(locale(),{month:"long",year:"numeric"});
+}
+const ppDowHtml=()=>`<div class="pcal-dow">${Array.from({length:7},(_,i)=>
+  `<span>${esc(dowName((i+1)%7).slice(0,L.lang==="cs"?2:3))}</span>`).join("")}</div>`;
+/* one month of day cells — full size (day number + up to four project dots)
+   for month/quarter, or a single-tone square per day once six or twelve
+   months have to share the width and a number would not survive the scale */
+function ppMonthCellsHtml(monthIso,{mini}={}){
+  const m=monthStart(fromYmd(monthIso)), first=weekStart(m), next=addMonths(m,1);
+  const cells=Math.ceil((next-first)/DAY/7)*7, today=sod(Date.now());
+  let html="";
+  for(let i=0;i<cells;i++){
+    const d=first+i*DAY, iso=ymd(d), out=d<m||d>=next;
+    const list=out?[]:((window.ppProjectsOn?ppProjectsOn(iso):[]).filter(p=>p.hours>0));
+    if(mini){
+      html+=`<button type="button" class="pcal-mini-cell${out?" out":""}${d===today?" today":""}"
+        data-pgcell="${iso}"${out?" tabindex=-1":""}
+        style="${list.length?`background:${ppSafeColor(list[0].color)}`:""}"
+        title="${esc(iso)}${list.length?" · "+list.length+" "+esc(t("projects")):""}"></button>`;
+    }else{
+      const dots=list.slice(0,4).map(p=>`<i style="background:${ppSafeColor(p.color)}"></i>`).join("");
+      html+=`<button type="button" class="pcal-cell${out?" out":""}" data-pgcell="${iso}"
+        ${d===today?'data-today="1"':""}${out?" tabindex=-1":""}
+        title="${esc(iso)}${list.length?" · "+list.map(p=>p.name+" "+pFmtH(p.hours)+"h").join(", "):""}">
+        <span class="pcal-day">${new Date(d).getDate()}</span>
+        <span class="pcal-dots">${dots}</span>
+      </button>`;
+    }
+  }
+  return html;
+}
+function ppGridBodyHtml(zoom,iso){
+  const start=ppGridStart(zoom,iso), n=PP_GRID_SPAN[zoom]||1;
+  if(n===1) return ppDowHtml()+`<div class="pcal-grid">${ppMonthCellsHtml(start)}</div>`;
+  const mini=n>3;
+  return `<div class="${mini?"pcal-year":"pcal-quarter"}">${Array.from({length:n},(_,i)=>{
+    const mi=ymd(addMonths(fromYmd(start),i));
+    const title=pParseISO(mi).toLocaleDateString(locale(),{month:mini?"short":"long"});
+    return mini
+      ? `<div><p class="pcal-mini-title">${esc(title)}</p>
+          <div class="pcal-mini-grid">${ppMonthCellsHtml(mi,{mini:true})}</div></div>`
+      : `<div><p class="pcal-qmonth-title">${esc(title)}</p>${ppDowHtml()}
+          <div class="pcal-grid">${ppMonthCellsHtml(mi)}</div></div>`;
+  }).join("")}</div>`;
+}
+function pWireProjGrid(){
+  $("#pScheduleBody").querySelectorAll("[data-pgcell]").forEach(el=>el.addEventListener("click",()=>{
+    pScope="day"; pSelISO=el.dataset.pgcell; pDayPanel(); renderSchedule();
+  }));
+}
 function renderSchedule(){
   pEnsureView();
   pCareCache={};
@@ -4282,29 +4764,49 @@ function renderSchedule(){
      it's the separate projects Gantt, kept exactly as it was, just reached
      through this pill instead of Month/Quarter/Year buttons of its own. */
   if(pScope==="timeline"){
-    ppWrap.hidden=false;
-    $("#pScheduleBody").hidden=true;
     $("#pBoardNav").style.display="none";
     $("#pTimelineZoom").style.display="";
-    if(window.ppEnter) ppEnter();          // normalises L.ppZoom if it's ever invalid
+    $("#pViewToggle").style.display="";
+    /* ppEnter normalises L.ppZoom if it is ever invalid — run it in both modes
+       so the zoom pills agree with the Gantt whichever one is on screen */
+    if(window.ppEnter) ppEnter();
     document.querySelectorAll("#ppZoomSeg [data-ppzoom]").forEach(b=>
       b.setAttribute("aria-pressed",String(b.dataset.ppzoom===L.ppZoom)));
+    document.querySelectorAll("#ppViewSeg [data-ppview]").forEach(b=>
+      b.setAttribute("aria-pressed",String(b.dataset.ppview===(L.ppViewMode||"linear"))));
+    if(L.ppViewMode==="grid"){
+      ppWrap.hidden=true;
+      $("#pScheduleBody").hidden=false;
+      $("#pGridNav").style.display="";
+      if(!ppGridISO) ppGridISO=ymd(monthStart(Date.now()));
+      $("#pGridLabel").textContent=ppGridLabel(L.ppZoom,ppGridISO);
+      $("#pScheduleBody").innerHTML=ppGridBodyHtml(L.ppZoom,ppGridISO);
+      pWireProjGrid();
+      return;
+    }
+    $("#pGridNav").style.display="none";
+    ppWrap.hidden=false;
+    $("#pScheduleBody").hidden=true;
     return;
   }
   ppWrap.hidden=true;
+  $("#pViewToggle").style.display="none";
+  $("#pGridNav").style.display="none";
   $("#pTimelineZoom").style.display="none";
   $("#pScheduleBody").hidden=false;
   $("#pBoardNav").style.display="";
   const days=pDaysFor(pScope,pSelISO);
   $("#pBoardLabel").textContent=pBoardLabel(pScope,days);
-  $("#pScheduleBody").innerHTML=pBoardHtml(days);
-  pWireBoard();
+  $("#pScheduleBody").innerHTML=pBoardHtml(days,pScope==="day"?pDatelessStripHtml():"");
+  pWireBoard(); pWireDatelessStrip();
   /* only a range that includes today moves; anything else is a static
      picture — nothing in the board holds focus, so a full repaint is safe */
   if(days.includes(pToday())) pTick=setInterval(()=>{
     if(curView!=="planner"||pScope==="timeline"){ pStopTick(); return; }
-    $("#pScheduleBody").innerHTML=pBoardHtml(pDaysFor(pScope,pSelISO));
-    pWireBoard();
+    if(pBoardBusy) return;                 // never repaint mid-gesture
+    $("#pScheduleBody").innerHTML=pBoardHtml(pDaysFor(pScope,pSelISO),
+      pScope==="day"?pDatelessStripHtml():"");
+    pWireBoard(); pWireDatelessStrip();
   },30000);
 }
 /* ---- overbooking warning, shown while you are still typing ----
@@ -4361,12 +4863,12 @@ function pTaskRow(tk,{inDone}={}){
   const overdue=tk.due&&tk.due<pToday();
   const badge=tk.due?`<span class="pill ${overdue?"over":"due"}">${esc(pDueLabel(tk.due))}</span>`:"";
   const open=pOpenTasks.has(tk.id);
-  const isProject=tk.kind==="project";
+  const isEvent=tk.kind==="event";
   const st=tk.steps||[], stDone=st.filter(x=>x.done).length;
-  /* Subtasks belong to projects only — a plain task with a "+ step" button on it
-     was clutter on every row. The trailing input adds one on Enter rather than
-     spawning a blank row you then have to find and fill. */
-  const steps=isProject?`<ul class="psteps">
+  /* Subtasks belong to Tasks — an Event is a slot in the day and does not
+     nest. The trailing input adds one on Enter rather than spawning a blank
+     row you then have to find and fill. */
+  const steps=!isEvent?`<ul class="psteps">
     ${st.map(sp=>`<li class="pstep${sp.done?" done":""}">
       <button type="button" class="tbox" data-ptog-step="${tk.id}:${sp.id}" aria-label="${sp.done?t("Mark not done"):t("Mark done")}">${sp.done?"✓":""}</button>
       <input type="text" class="ptask-title" data-pstep-title="${tk.id}:${sp.id}" value="${esc(sp.text)}" placeholder="${esc(t("Subtask…"))}">
@@ -4382,7 +4884,7 @@ function pTaskRow(tk,{inDone}={}){
       <button type="button" class="tbox" data-ptog="${tk.id}" aria-label="${esc(t("Mark done"))}"></button>
       <input type="text" class="ptask-title" data-ptitle="${tk.id}" value="${esc(tk.title)}" placeholder="${esc(t("Untitled task"))}">
       ${badge}
-      ${isProject&&st.length?`<span class="pproj-count">${stDone}/${st.length}</span>`:""}
+      ${!isEvent&&st.length?`<span class="pproj-count">${stDone}/${st.length}</span>`:""}
       ${tk.due?`<span class="ptask-hrs-ro">${pFmtH(tk.hours)}h</span>`:""}
       <span class="ptask-caret" aria-hidden="true">${open?"−":"+"}</span>
     </div>
@@ -4390,8 +4892,8 @@ function pTaskRow(tk,{inDone}={}){
       <div class="ptask-detail-row">
         <input type="number" class="mono-input hrs" data-phours="${tk.id}" value="${tk.hours}" min="0" max="24" step="0.5" aria-label="${esc(t("Hours"))}">
         <input type="date" class="mono-input" data-pdue="${tk.id}" value="${tk.due||""}" aria-label="${esc(t("Due date"))}">
-        <input type="time" class="mono-input" data-ptime="${tk.id}" value="${tk.time||""}" aria-label="${esc(t("Start time"))}">
-        <button type="button" class="btn mini" data-pconvert="${tk.id}">${esc(t(isProject?"Make a task":"Make a project"))}</button>
+        ${isEvent?`<input type="time" class="mono-input" data-ptime="${tk.id}" value="${tk.time||""}" aria-label="${esc(t("Start time"))}">`:""}
+        <button type="button" class="btn mini" data-pconvert="${tk.id}">${esc(t(isEvent?"Make a task":"Make an event"))}</button>
         <button type="button" class="tdel" data-pdel="${tk.id}" aria-label="${esc(t("Delete task"))}">×</button>
       </div>
       ${steps}
@@ -4416,9 +4918,93 @@ function pBlockRow(b){
     </div>
   </div>`;
 }
+/* the add form's project picker — the same projects the Timeline schedules,
+   so a task filed under one shows up against it in the All Projects overview */
+function pFillProjectSelect(){
+  const sel=$("#pAddProject"); if(!sel) return;
+  const keep=sel.value;
+  const projs=((S.projplan&&S.projplan.projects)||[]);
+  sel.innerHTML=`<option value="">${esc(t("no project"))}</option>`+
+    projs.map(p=>`<option value="${esc(p.id)}">${esc(p.name||t("Untitled project"))}</option>`).join("");
+  if(keep&&projs.some(p=>p.id===keep)) sel.value=keep;
+}
+/* Every project on one screen: how much of its budget is used, when the
+   schedule engine says it lands, and what is filed against it. The hours come
+   from ppProjectStatus — the same engine that draws the Gantt — so this and
+   the Timeline can never disagree. The span bar is a deliberately small
+   Gantt: enough to see overlap at a glance, with the real one a click away
+   under Timeline rather than rebuilt here. */
+function renderProjectsOverview(){
+  const host=$("#pProjOverview"); if(!host) return;
+  const projs=((S.projplan&&S.projplan.projects)||[]);
+  $("#pProjOverviewEmpty").hidden=projs.length>0;
+  if(!projs.length){ host.innerHTML=""; return; }
+  const status=window.ppProjectStatus?ppProjectStatus(pToday()):[];
+  const byId={}; status.forEach(s=>{ byId[s.id]=s; });
+  const today=pToday();
+  /* one shared window for every span bar, or the bars would each be drawn to
+     their own scale and comparing two of them would mean nothing */
+  const spans=projs.map(p=>({s:p.start||today,e:(byId[p.id]||{}).end||p.start||today}));
+  const lo=spans.reduce((a,x)=>x.s<a?x.s:a,today);
+  const hi=spans.reduce((a,x)=>x.e>a?x.e:a,today);
+  const totalDays=Math.max(1,Math.round((fromYmd(hi)-fromYmd(lo))/DAY)+1);
+  const pct=iso=>Math.max(0,Math.min(100,Math.round((fromYmd(iso)-fromYmd(lo))/DAY/totalDays*1000)/10));
+
+  host.innerHTML=projs.map((p,i)=>{
+    const st=byId[p.id]||{};
+    const total=Math.max(0,+p.total||0);
+    const left=Math.max(0,+st.left||0);
+    const spent=Math.max(0,total-left);
+    const donePct=total?Math.round(spent/total*100):0;
+    const end=st.end||p.start||today;
+    const started=(p.start||today)<=today;
+    const finished=total>0&&left<=0.001;
+    const state=finished?t("done"):started?t("in progress"):t("not started");
+    const late=!finished&&end<today;
+    /* pDueLabel says "Overdue" for anything past, which is a lie about a
+       project that simply finished — a done or elapsed end date gets its
+       plain calendar date, and only a live one gets the relative wording */
+    const endD=pParseISO(end);
+    const endLabel=(finished||end<today)
+      ? endD.getDate()+"."+(endD.getMonth()+1)+"."+endD.getFullYear()
+      : pDueLabel(end);
+    const tasks=(S.planner.tasks||[]).filter(tk=>tk.projectId===p.id);
+    const tDone=tasks.filter(tk=>tk.done).length;
+    const subAll=tasks.reduce((n,tk)=>n+(tk.steps||[]).length,0);
+    const subDone=tasks.reduce((n,tk)=>n+(tk.steps||[]).filter(s=>s.done).length,0);
+    const c=ppSafeColor(p.color);
+    const l=pct(p.start||today), r=pct(end);
+    return `<div class="povw" style="--pc:${c}">
+      <div class="povw-top">
+        <i class="povw-dot"></i>
+        <b class="povw-name">${esc(p.name||t("Untitled project"))}</b>
+        <span class="povw-state${finished?" done":late?" late":""}">${esc(state)}</span>
+        <span class="povw-hrs">${pFmtH(spent)} / ${pFmtH(total)}h</span>
+      </div>
+      <div class="povw-bar" title="${pFmtH(spent)}h ${esc(t("of"))} ${pFmtH(total)}h">
+        <i style="width:${donePct}%"></i></div>
+      <div class="povw-meta">
+        <span>${esc(t("ends"))} ${esc(endLabel)}</span>
+        ${st.capped?`<em class="povw-warn">${esc(t("over the daily limit"))}</em>`:""}
+        ${tasks.length?`<span>${tDone}/${tasks.length} ${esc(t("tasks"))}</span>`:""}
+        ${subAll?`<span>${subDone}/${subAll} ${esc(t("subtasks"))}</span>`:""}
+      </div>
+      <div class="povw-span" aria-hidden="true">
+        <i style="left:${l}%; width:${Math.max(1.5,r-l)}%"></i></div>
+      ${tasks.length?`<ul class="povw-tasks">${tasks.map(tk=>{
+        const s=(tk.steps||[]), sd=s.filter(x=>x.done).length;
+        return `<li class="${tk.done?"done":""}">
+          <span class="povw-tick">${tk.done?"✓":"·"}</span>${esc(tk.title||t("Untitled task"))}
+          ${s.length?`<small>${sd}/${s.length}</small>`:""}
+          ${tk.kind==="event"?`<small>${esc(tk.time||"")}</small>`:""}</li>`;
+      }).join("")}</ul>`:""}
+    </div>`;
+  }).join("");
+}
 function renderPlanner(){
   pEnsureView();
   pCareCache={};
+  pFillProjectSelect(); pSyncAddKind(); renderProjectsOverview();
   $("#pSleepInput").value=S.planner.sleep;
   $("#pLinkCare").checked=S.planner.linkCare!==false;
   $("#pLinkHours").checked=S.planner.linkHours!==false;
@@ -4452,19 +5038,34 @@ function renderPlanner(){
 $("#pAddForm").addEventListener("submit",e=>{
   e.preventDefault();
   const title=$("#pAddTitle").value.trim(); if(!title) return;
-  const due=$("#pAddDue").value||pToday();
-  S.planner.tasks.push({id:uid(),title,due,time:$("#pAddTime").value||"",
-    hours:+$("#pAddHours").value||1,done:false,kind:pAddKindVal,steps:[]});
+  const isEvent=pAddKindVal==="event";
+  /* a Task's day is optional — leaving the date empty files it in the
+     dateless strip rather than silently landing it on today. An Event has to
+     sit somewhere, so it falls back to the selected day and needs a time. */
+  const due=$("#pAddDue").value||(isEvent?pToday():"");
+  const time=isEvent?($("#pAddTime").value||"09:00"):"";
+  S.planner.tasks.push({id:uid(),title,due,time,
+    hours:isEvent?(+$("#pAddHours").value||1):(+$("#pAddHours").value||0),
+    done:false,kind:isEvent?"event":"task",steps:[],
+    projectId:$("#pAddProject").value||null});
   $("#pAddTitle").value=""; $("#pAddTitle").focus();
-  pSelISO=due; touch(); renderPlanner();
+  if(due) pSelISO=due;
+  touch(); renderPlanner();
 });
 ["pAddDue","pAddHours","pAddTime"].forEach(id=>
   $("#"+id).addEventListener("input",pAddWarn));
-$("#pAddKind").addEventListener("click",e=>{
-  const b=e.target.closest("[data-pkind]"); if(!b) return;
-  pAddKindVal=b.dataset.pkind;
+/* the time field only means anything for an Event; hiding it for a Task is
+   what makes "a Task never has a clock slot" visible rather than a rule
+   the user has to remember */
+function pSyncAddKind(){
   document.querySelectorAll("#pAddKind [data-pkind]").forEach(x=>
     x.setAttribute("aria-pressed",String(x.dataset.pkind===pAddKindVal)));
+  document.querySelectorAll("#pAddForm .pev-only").forEach(el=>{
+    el.style.display=pAddKindVal==="event"?"":"none"; });
+}
+$("#pAddKind").addEventListener("click",e=>{
+  const b=e.target.closest("[data-pkind]"); if(!b) return;
+  pAddKindVal=b.dataset.pkind; pSyncAddKind();
 });
 $("#pQuickForm").addEventListener("submit",e=>{
   e.preventDefault();
@@ -4492,6 +5093,38 @@ $("#ppZoomSeg").addEventListener("click",e=>{
   if(L.ppZoom!==z&&window.ppSetZoom) ppSetZoom(z);
   else { L.ppZoom=z; saveLocal(); }
   renderSchedule();
+});
+$("#ppViewSeg").addEventListener("click",e=>{
+  const b=e.target.closest("[data-ppview]"); if(!b) return;
+  L.ppViewMode=b.dataset.ppview; saveLocal(); renderSchedule();
+});
+$("#pGridPrev").addEventListener("click",()=>{
+  ppGridISO=ppGridStepIso(L.ppZoom,ppGridISO||ymd(monthStart(Date.now())),-1); renderSchedule();
+});
+$("#pGridNext").addEventListener("click",()=>{
+  ppGridISO=ppGridStepIso(L.ppZoom,ppGridISO||ymd(monthStart(Date.now())),1); renderSchedule();
+});
+/* focus mode lives on <html> so the whole page can be re-dressed from one
+   class; the card marks itself so the "hide every other card" rule can spare
+   it. Escape leaves, which is the exit people try first. */
+function pSetFocus(on){
+  const card=$("#pScheduleBody").closest(".card");
+  document.documentElement.classList.toggle("pfocus",!!on);
+  if(card) card.classList.toggle("pfocus-card",!!on);
+  const b=$("#pFocusBtn");
+  if(b){ b.setAttribute("aria-pressed",String(!!on)); b.textContent=on?"✕":"⛶"; }
+  /* the board sizes itself from its container, so it has to be redrawn once
+     the card has actually changed shape */
+  if(curView==="planner") renderSchedule();
+}
+$("#pFocusBtn").addEventListener("click",()=>
+  pSetFocus(!document.documentElement.classList.contains("pfocus")));
+window.addEventListener("keydown",e=>{
+  if(e.key==="Escape"&&document.documentElement.classList.contains("pfocus")){
+    /* a dialog open on top of the board owns Escape first */
+    if(document.querySelector("dialog[open]")) return;
+    pSetFocus(false);
+  }
 });
 $("#pScopeSeg").addEventListener("click",e=>{
   const b=e.target.closest("[data-pscope]"); if(!b) return;
@@ -4525,9 +5158,13 @@ document.querySelector("#view-planner").addEventListener("click",async e=>{
 
   const conv=e.target.closest("[data-pconvert]");
   if(conv){ const tk=pFindTask(conv.dataset.pconvert); if(!tk) return;
-    /* the one-way door opens: kind flips freely. Demoting keeps the steps in
-       the data — nothing is destroyed, they simply hide until promoted again */
-    tk.kind=tk.kind==="project"?"task":"project";
+    /* kind flips freely, and nothing is destroyed either way: becoming an
+       Event keeps any subtasks in the record (they simply hide, since an
+       Event does not nest), and becoming a Task keeps the hours but drops
+       the clock slot that is the whole difference between the two. */
+    if(tk.kind==="event"){ tk.kind="task"; tk.time=""; }
+    else { tk.kind="event"; tk.due=tk.due||pToday(); tk.time=tk.time||"09:00";
+           if(!(+tk.hours>0)) tk.hours=1; }
     touch(); renderPlanner(); return; }
 
   if(del){ const tk=pFindTask(del.dataset.pdel); if(!tk) return;
@@ -9422,7 +10059,10 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 /* ---- projects timeline (ported Project Planner) ---- */
 "Start fresh":"Začít znovu","Undo":"Zpět","Redo":"Znovu","+ New project":"+ Nový projekt",
 "Move projects":"Přesouvat projekty","Paint days":"Malovat dny","Quarter":"Čtvrtletí","6 months":"6 měsíců","Year":"Rok",
-"Timeline":"Časová osa","Half":"Půl roku",
+"Timeline":"Časová osa","Half":"Půl roku","Linear":"Lineární","Grid":"Mřížka",
+"Anytime":"Kdykoliv","Mark done":"Označit hotové","no project":"bez projektu","Event":"Událost",
+"All projects":"Všechny projekty","in progress":"probíhá","not started":"nezahájeno","ends":"končí","of":"z","over the daily limit":"přes denní limit","tasks":"úkolů","subtasks":"podúkolů",
+"No projects yet. Add one in the Timeline view and it'll be summarised here.":"Zatím žádné projekty. Přidej ho v Časové ose a zobrazí se tady.",
 "I don’t work weekends":"O víkendech nepracuji","Daily limit":"Denní limit",
 "Brush — drag across days":"Štětec — táhni přes dny","Esc to stop painting":"Esc ukončí malování",
 "Light — up to 60%":"Volno — do 60 %","Busy — 60–100%":"Vytíženo — 60–100 %","Over limit":"Přes limit",
@@ -9472,7 +10112,7 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "My day":"Můj den",
 "Plant care":"Péče o rostliny","Tracked work":"Měřená práce","jobs":"úkonů","running":"běží",
 "⚠ {h}h double-booked.":"⚠ {h}h se překrývá.","Over":"Přes","Overlaps another block":"Překrývá se s jiným blokem",
-"Make a project":"Změnit na projekt","Make a task":"Změnit na úkol",
+"Make an event":"Změnit na událost","Make a task":"Změnit na úkol",
 "Linked time":"Propojený čas","Plant care counts here":"Péče o rostliny se počítá sem",
 "Tracked hours count here":"Měřené hodiny se počítají sem",
 "Projects count here":"Projekty se počítají sem",
