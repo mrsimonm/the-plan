@@ -495,6 +495,37 @@ html.pfocus #view-planner .sec-head{display:none}
   padding-top:max(14px,env(safe-area-inset-top))}
 .pfocus-btn{flex:0 0 auto}
 html.pfocus .pfocus-btn{position:sticky; right:0}
+/* eight resize grips on an Event block. Kept small and only visible on hover
+   (or always, on touch, where there is no hover to reveal them). */
+.wb-h{position:absolute; z-index:4; opacity:0; transition:opacity .12s}
+.wb-blk:hover .wb-h,.wb-blk.rz .wb-h{opacity:1}
+.wb-h-n{top:-3px; left:8px; right:8px; height:7px; cursor:ns-resize}
+.wb-h-s{bottom:-3px; left:8px; right:8px; height:7px; cursor:ns-resize}
+.wb-h-w{left:-3px; top:8px; bottom:8px; width:7px; cursor:ew-resize}
+.wb-h-e{right:-3px; top:8px; bottom:8px; width:7px; cursor:ew-resize}
+.wb-h-nw{top:-3px; left:-3px; width:9px; height:9px; cursor:nwse-resize}
+.wb-h-ne{top:-3px; right:-3px; width:9px; height:9px; cursor:nesw-resize}
+.wb-h-sw{bottom:-3px; left:-3px; width:9px; height:9px; cursor:nesw-resize}
+.wb-h-se{bottom:-3px; right:-3px; width:9px; height:9px; cursor:nwse-resize}
+.wb-h-nw::after,.wb-h-ne::after,.wb-h-sw::after,.wb-h-se::after{content:"";
+  position:absolute; inset:2px; border-radius:2px; background:var(--accent)}
+.wb-h-n::after,.wb-h-s::after{content:""; position:absolute; left:50%; top:50%;
+  transform:translate(-50%,-50%); width:22px; height:3px; border-radius:2px; background:var(--accent)}
+.wb-h-w::after,.wb-h-e::after{content:""; position:absolute; left:50%; top:50%;
+  transform:translate(-50%,-50%); width:3px; height:22px; border-radius:2px; background:var(--accent)}
+@media (hover:none){
+  .wb-h{opacity:.9}
+  .wb-h-n,.wb-h-s{height:13px} .wb-h-w,.wb-h-e{width:13px}
+  .wb-h-nw,.wb-h-ne,.wb-h-sw,.wb-h-se{width:15px; height:15px}
+}
+/* while a resize is live, say what it will become */
+.wb-blk.rz{z-index:7; box-shadow:var(--shadow-lift)}
+.wb-blk.rz::after{content:attr(data-live); position:absolute; top:-17px; left:50%;
+  transform:translateX(-50%); font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:9.5px; color:var(--accent); background:var(--surface); padding:0 4px;
+  border-radius:3px; white-space:nowrap; z-index:8}
+/* the columns a sideways stretch is about to cover */
+.wb-col.rz-target{background:color-mix(in srgb,var(--accent) 12%,transparent)}
 .qadd-kind{align-self:flex-start}
 .pproj-count{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11px;
   color:var(--accent); flex:0 0 auto}
@@ -2651,6 +2682,8 @@ html{overscroll-behavior-y:none}
     <button class="btn" type="button" id="pSlotCancel">Cancel</button>
     <button class="btn" type="button" id="pSlotAddTask">Add task</button>
     <button class="btn primary" type="button" id="pSlotAddEvent">Add event</button>
+    <button class="btn danger" type="button" id="pSlotDelete" hidden>Delete</button>
+    <button class="btn primary" type="button" id="pSlotSave" hidden>Save</button>
   </div>
 </dialog>
 
@@ -2879,8 +2912,18 @@ function migrate(d){
     tk.steps=tk.steps.filter(s=>s&&typeof s==="object").map(s=>({
       id:s.id||uid(), text:String(s.text==null?"":s.text), done:!!s.done }));
     if(tk.projectId===undefined) tk.projectId=null;
+    /* a multi-day Event is stored as one record per day sharing a groupId —
+       the day IS the order, so no sequence field is needed. A group of one is
+       not a group, so a stale single-member groupId is cleared on load. */
+    if(tk.groupId===undefined) tk.groupId=null;
     if(tk.kind!=="event"&&tk.kind!=="task") tk.kind="task";
   });
+  /* drop groupIds that ended up with a single member (a delete, or a hand
+     edited import) — otherwise a lone record keeps claiming to be a span */
+  (()=>{ const n={};
+    d.planner.tasks.forEach(tk=>{ if(tk.groupId) n[tk.groupId]=(n[tk.groupId]||0)+1; });
+    d.planner.tasks.forEach(tk=>{ if(tk.groupId&&n[tk.groupId]<2) tk.groupId=null; });
+  })();
   if(typeof d.planner.sleep!=="number") d.planner.sleep=8;
   if(d.planner.linkCare===undefined) d.planner.linkCare=true;
   if(d.planner.linkHours===undefined) d.planner.linkHours=true;
@@ -4203,6 +4246,11 @@ function pBoardLabel(scope,days){
    invented here are presentation only — pBudgetOf's totals are computed before
    this runs and never see them, so the day's arithmetic is unchanged. */
 const PROJ_ANCHOR=9;
+const pSnapQ=v=>Math.round(v/WB_SNAP)*WB_SNAP;
+/* how far the wheel has pushed the visible hour window past what the day's
+   contents alone would show. Ephemeral: which hours you happen to be looking
+   at is not data, and it resets when the scope or day changes. */
+let pWinShift=0, pWheelT=null;
 function pPlaceProjects(items){
   const projs=items.filter(it=>it.kind==="proj"&&it.hours>0);
   if(!projs.length) return items;
@@ -4260,8 +4308,29 @@ function pDatelessStripHtml(){
    either kind of record, with the slot you pointed at already filled in.
    Adding a Task deliberately keeps the day but drops the time — a Task has
    no clock slot, so offering one here would contradict the model. */
-let pSlotDay=null;
+let pSlotDay=null, pSlotEditId=null;
+/* double-click opens the same dialog in edit mode: same fields, different
+   verbs. Reusing it keeps one place that knows what an Event is made of. */
+function pOpenEditDialog(id){
+  const tk=pFindTask(id); if(!tk) return;
+  const sp=pGroupSpan(tk);
+  pOpenSlotDialog(tk.due,0,tk.hours);
+  pSlotEditId=id;
+  $("#pSlotText").value=tk.title||"";
+  $("#pSlotTime").value=tk.time||"09:00";
+  $("#pSlotHours").value=Math.round(Math.max(0.25,+tk.hours||1)*100)/100;
+  $("#pSlotProject").value=tk.projectId||"";
+  $("#pSlotTitle").textContent=t("Edit");
+  const span=sp.members.length>1?" · "+sp.members.length+" "+t("days"):"";
+  $("#pSlotWhen").textContent=$("#pSlotWhen").textContent+span;
+  $("#pSlotAddTask").hidden=true; $("#pSlotAddEvent").hidden=true;
+  $("#pSlotSave").hidden=false; $("#pSlotDelete").hidden=false;
+}
 function pOpenSlotDialog(day,fromH,hours){
+  pSlotEditId=null;
+  $("#pSlotTitle").textContent=t("New");
+  $("#pSlotAddTask").hidden=false; $("#pSlotAddEvent").hidden=false;
+  $("#pSlotSave").hidden=true; $("#pSlotDelete").hidden=true;
   pSlotDay=day||pToday();
   const hhmm=v=>{ const m=Math.round(Math.max(0,Math.min(v,24))*60);
     return String(Math.floor(m/60)%24).padStart(2,"0")+":"+String(m%60).padStart(2,"0"); };
@@ -4292,11 +4361,32 @@ function pSlotCreate(kind){
   $("#pSlotDlg").close();
   pSelISO=pSlotDay; touch(); renderPlanner();
 }
+$("#pSlotSave").addEventListener("click",()=>{
+  const tk=pFindTask(pSlotEditId); if(!tk){ $("#pSlotDlg").close(); return; }
+  const title=$("#pSlotText").value.trim()||t("Untitled task");
+  const time=$("#pSlotTime").value||tk.time||"09:00";
+  const hours=Math.max(0.25,+$("#pSlotHours").value||1);
+  const pid=$("#pSlotProject").value||null;
+  /* everything except done-state belongs to the whole run */
+  pApplyToGroup(tk,m=>{ m.title=title; m.time=time; m.hours=hours; m.projectId=pid; });
+  $("#pSlotDlg").close(); touch(); renderPlanner();
+});
+$("#pSlotDelete").addEventListener("click",()=>{
+  const tk=pFindTask(pSlotEditId); if(!tk){ $("#pSlotDlg").close(); return; }
+  /* only this day goes; the survivors stay linked, and a lone survivor stops
+     claiming to be a span */
+  const gid=tk.groupId;
+  S.planner.tasks=S.planner.tasks.filter(x=>x.id!==tk.id);
+  if(gid){ const left=(S.planner.tasks||[]).filter(x=>x.groupId===gid);
+    if(left.length<2) left.forEach(x=>{ x.groupId=null; }); }
+  $("#pSlotDlg").close(); touch(); renderPlanner();
+});
 $("#pSlotCancel").addEventListener("click",()=>$("#pSlotDlg").close());
 $("#pSlotAddTask").addEventListener("click",()=>pSlotCreate("task"));
 $("#pSlotAddEvent").addEventListener("click",()=>pSlotCreate("event"));
 $("#pSlotText").addEventListener("keydown",e=>{
-  if(e.key==="Enter"){ e.preventDefault(); pSlotCreate("event"); } });
+  if(e.key==="Enter"){ e.preventDefault();
+    if(pSlotEditId) $("#pSlotSave").click(); else pSlotCreate("event"); } });
 function pWireDatelessStrip(){
   const host=$("#pScheduleBody").querySelector(".pquick-strip"); if(!host) return;
   host.addEventListener("click",e=>{
@@ -4305,6 +4395,58 @@ function pWireDatelessStrip(){
     tk.done=true; tk.doneAt=new Date().toISOString();
     touch(); renderPlanner();
   });
+}
+/* ---- multi-day Events ----
+   A stretched Event is one record per day sharing a groupId: same time, same
+   duration, repeated across a contiguous run. The day is the order, so there
+   is no sequence field, and a group of one is normalised back to a plain
+   Event so no orphan groups accumulate. `done` stays per-day — finishing
+   Monday's half should not tick Tuesday's — but time, duration, title and
+   project belong to the whole group. */
+function pGroupOf(tk){
+  if(!tk) return [];
+  if(!tk.groupId) return [tk];
+  return (S.planner.tasks||[]).filter(x=>x.groupId===tk.groupId)
+    .sort((a,b)=>String(a.due).localeCompare(String(b.due)));
+}
+function pGroupSpan(tk){
+  const g=pGroupOf(tk);
+  return {first:g[0]?g[0].due:tk.due, last:g[g.length-1]?g[g.length-1].due:tk.due, members:g};
+}
+/* apply an edit to every day of the run — the rectangle has to stay coherent */
+function pApplyToGroup(tk,fn){ pGroupOf(tk).forEach(fn); }
+function pDayRange(fromIso,toIso){
+  let a=fromYmd(fromIso), b=fromYmd(toIso);
+  if(a>b){ const t=a; a=b; b=t; }
+  const out=[]; for(let d=a;d<=b;d=pNextDay(d)) out.push(ymd(d));
+  return out;
+}
+/* Reshape a run to cover exactly [firstIso..lastIso]: reuse the records that
+   already sit on a wanted day, mint one per day that is missing, drop the
+   ones that fall outside. Returns the record now sitting on `keepIso` so the
+   caller can go on addressing the thing the user was dragging. */
+function pSetGroupSpan(tk,firstIso,lastIso,keepIso){
+  const want=pDayRange(firstIso,lastIso);
+  if(!want.length) return tk;
+  const members=pGroupOf(tk);
+  const byDay={}; members.forEach(m=>{ if(!byDay[m.due]) byDay[m.due]=m; });
+  const keep=[];
+  const gid=want.length>1?(tk.groupId||("g"+uid())):null;
+  want.forEach(day=>{
+    let rec=byDay[day];
+    if(rec){ delete byDay[day]; }
+    else{
+      rec={id:uid(),title:tk.title,due:day,time:tk.time,hours:tk.hours,
+           done:false,kind:"event",steps:[],projectId:tk.projectId||null,groupId:gid};
+      S.planner.tasks.push(rec);
+    }
+    rec.groupId=gid; rec.time=tk.time; rec.hours=tk.hours;
+    keep.push(rec);
+  });
+  /* whatever is left in byDay fell outside the new span */
+  const drop=new Set(Object.values(byDay).map(m=>m.id));
+  if(drop.size) S.planner.tasks=S.planner.tasks.filter(x=>!drop.has(x.id));
+  return keep.find(r=>r.due===keepIso)||keep[0];
 }
 function pBoardHtml(days,topStrip){
   const byDay=days.map(d=>pPlaceProjects(pBudgetOf(d).items));
@@ -4327,6 +4469,15 @@ function pBoardHtml(days,topStrip){
     endH=Math.max(endH,Math.ceil(nowFrac));
   }
   startH=Math.max(0,startH); endH=Math.min(24,Math.max(endH,startH+6));
+  /* the wheel slides the window without resizing it, so the grid keeps its
+     height and only the hours on show change. maxShift is how far it can
+     actually travel before hitting midnight — published on the board so the
+     wheel handler stops swallowing scrolls once nothing more can move, which
+     would otherwise trap the page between the visual end and the raw cap. */
+  const winSpan=endH-startH;
+  const maxShift=Math.max(0,24-winSpan-startH);
+  if(pWinShift>maxShift) pWinShift=maxShift;
+  if(pWinShift){ startH=startH+pWinShift; endH=startH+winSpan; }
   const H=(endH-startH)*WB_PXH;
   const label=d=>{ const x=pParseISO(d);
     return `<b>${esc((L.lang==="cs"?DOW_CS:DOW_LONG)[x.getDay()].slice(0,3))}</b> ${x.getDate()}`; };
@@ -4385,6 +4536,11 @@ function pBoardHtml(days,topStrip){
           ? `<b>${warn}${it.kind==="block"?"↻ ":""}${esc(it.time)} ${esc(it.name)}</b>`
           : `<b>${warn}${it.kind==="block"?"↻ ":""}${esc(it.name)}</b><span>${meta}</span>`}
         ${it.kind==="proj"?`<i class="wb-phandle" data-wbph="${it.id}" data-day="${d}"></i>`
+          :(it.ref&&it.ref.kind==="event")&&drag
+            /* Events get the full eight: N/S change duration on the day, E/W
+               stretch the run across days, corners do both. */
+            ?["n","s","w","e","nw","ne","sw","se"].map(h=>
+              `<i class="wb-h wb-h-${h}" data-wbrz="${h}"></i>`).join("")
           :drag&&hpx>=26?`<i class="wb-rsz" data-wbr="${it.kind}:${it.ref.id}" data-day="${d}"></i>`:""}
       </div>`; }).join("");
     let lines=""; for(let h=1;h<endH-startH;h++) lines+=`<i class="wb-hl" style="top:${h*WB_PXH}px"></i>`;
@@ -4431,7 +4587,7 @@ function pBoardHtml(days,topStrip){
   /* the dateless strip sits INSIDE the board: its chips carry data-wb, and
      pWireBoard's pointer handling is bound to this element, so a chip dragged
      from here onto an hour lands through the same commit path as the tray */
-  return `<div class="wb" id="pWeekBoard" data-starth="${startH}">
+  return `<div class="wb" id="pWeekBoard" data-starth="${startH}" data-maxshift="${maxShift}">
     ${topStrip||""}
     <div class="wb-scroll"><div class="wb-grid">${gutter}${cols}</div></div>${tray}</div>`;
 }
@@ -4463,6 +4619,26 @@ function pWireBoard(){
   board.addEventListener("pointerdown",e=>{
     if(e.button!==undefined&&e.button!==0) return;
     if(G2) return;                        // one gesture at a time — a second finger is noise
+    const rz8=e.target.closest("[data-wbrz]");
+    if(rz8){
+      const host=rz8.closest(".wb-blk"), col=rz8.closest(".wb-col");
+      const spec=host&&host.getAttribute("data-wb");
+      if(!host||!col||!spec) return;
+      const [k8,i8]=spec.split(":");
+      const tk=pFindTask(i8); if(!tk) return;
+      const sp=pGroupSpan(tk);
+      const [hh,mm]=(tk.time||"00:00").split(":").map(Number);
+      G2={mode:"rz8", edge:rz8.dataset.wbrz, kind:k8, id:i8, pid:e.pointerId,
+          x0:e.clientX, y0:e.clientY, el:host, armed:false, moved:false,
+          touch:e.pointerType==="touch", timer:null,
+          day0:col.dataset.wbday, first0:sp.first, last0:sp.last,
+          t0:hh+mm/60, h0:Math.max(0.25,+tk.hours||1),
+          top0:parseFloat(host.style.top)||0, hpx0:parseFloat(host.style.height)||17};
+      pBoardBusy=true;
+      try{ board.setPointerCapture(e.pointerId); }catch(err){}
+      e.preventDefault();
+      return;
+    }
     const rsz=e.target.closest("[data-wbr]");
     const ph=e.target.closest("[data-wbph]");        // project day-hours handle
     const pchip=e.target.closest("[data-wbp]");      // project chip
@@ -4528,6 +4704,38 @@ function pWireBoard(){
   board.addEventListener("pointermove",e=>{
     if(!G2||e.pointerId!==G2.pid) return;
     const dx=e.clientX-G2.x0, dy=e.clientY-G2.y0;
+    if(G2.mode==="rz8"){
+      if(!G2.armed){ if(Math.abs(dx)<4&&Math.abs(dy)<4) return; G2.armed=true; G2.el.classList.add("rz"); }
+      G2.moved=true;
+      const E=G2.edge;
+      const fmt=v=>{ const m=Math.round(Math.max(0,Math.min(v,24))*60);
+        return String(Math.floor(m/60)%24).padStart(2,"0")+":"+String(m%60).padStart(2,"0"); };
+      /* vertical: N moves the start and keeps the end put, S moves the end */
+      let start=G2.t0, hours=G2.h0;
+      if(E.indexOf("n")>=0){
+        const ns=Math.max(0,Math.min(pSnapQ(G2.t0+dy/WB_PXH),G2.t0+G2.h0-0.25));
+        hours=G2.t0+G2.h0-ns; start=ns;
+      } else if(E.indexOf("s")>=0){
+        hours=Math.max(0.25,Math.min(pSnapQ(G2.h0+dy/WB_PXH),24-G2.t0));
+      }
+      G2.liveStart=start; G2.liveHours=hours;
+      G2.el.style.top=((start-(+board.dataset.starth))*WB_PXH)+"px";
+      G2.el.style.height=Math.max(6,hours*WB_PXH)+"px";
+      /* horizontal: which run of days would this cover */
+      let days=null;
+      if(E.indexOf("w")>=0||E.indexOf("e")>=0){
+        const at=geom(e.clientX,e.clientY).day;
+        if(at) days=E.indexOf("w")>=0?pDayRange(at,G2.last0):pDayRange(G2.first0,at);
+      }
+      G2.liveDays=days;
+      board.querySelectorAll(".wb-col.rz-target").forEach(c=>c.classList.remove("rz-target"));
+      if(days&&days.length>1) days.forEach(d2=>{
+        const c=board.querySelector(`.wb-col[data-wbday="${d2}"]`);
+        if(c) c.classList.add("rz-target"); });
+      G2.el.dataset.live=fmt(start)+" · "+pFmtH(hours)+"h"+(days&&days.length>1?" · "+days.length+"d":"");
+      e.preventDefault();
+      return;
+    }
     if(G2.mode==="newslot"){
       if(G2.touch) return;                       // let the finger scroll
       if(!G2.armed){ if(Math.abs(dy)<5) return; G2.armed=true; }
@@ -4614,6 +4822,25 @@ function pWireBoard(){
        renderPlanner refreshes the task lists, the day panel, the warning line
        AND this board (it ends in pDayPanel + renderSchedule) */
     const done=()=>{ touch(); pCareCache={}; window.ppClearExt&&ppClearExt(); renderPlanner(); };
+    if(g.mode==="rz8"){
+      g.el.classList.remove("rz"); delete g.el.dataset.live;
+      board.querySelectorAll(".wb-col.rz-target").forEach(c=>c.classList.remove("rz-target"));
+      if(!g.moved){ renderSchedule(); return; }
+      const tk=pFindTask(g.id);
+      if(!tk){ renderSchedule(); return; }
+      const fmt=v=>{ const m=Math.round(Math.max(0,Math.min(v,24))*60);
+        return String(Math.floor(m/60)%24).padStart(2,"0")+":"+String(m%60).padStart(2,"0"); };
+      /* time and duration belong to the whole run, so they propagate */
+      if(g.liveHours!=null){
+        const st=fmt(g.liveStart), hr=Math.max(0.25,g.liveHours);
+        pApplyToGroup(tk,m=>{ m.time=st; m.hours=hr; });
+      }
+      if(g.liveDays&&g.liveDays.length){
+        pSetGroupSpan(tk,g.liveDays[0],g.liveDays[g.liveDays.length-1],tk.due);
+      }
+      done(); return;
+    }
+
     /* releasing outside the grid is a CANCEL, not a drop — the tray, the
        headers and the page around the board are not times of day */
     if(g.moved&&g.mode==="move"){
@@ -4686,6 +4913,28 @@ function pWireBoard(){
      it — window's do NOT. One module-level hook, overwritten per wiring pass,
      instead of a listener stacking up on every week render. */
   pBoardAbort=abort;
+  board.addEventListener("dblclick",e=>{
+    const blk=e.target.closest(".wb-blk[data-wb]");
+    if(!blk) return;
+    const [k,id]=(blk.getAttribute("data-wb")||"").split(":");
+    if(k==="task"||k==="event"){ e.preventDefault(); pOpenEditDialog(id); }
+  });
+  /* the wheel shifts the visible hour window rather than the page — but only
+     while there is somewhere to shift to. At either end the event is left
+     alone so the page scrolls normally and you can never get trapped in the
+     grid. */
+  board.addEventListener("wheel",e=>{
+    if(!e.target.closest(".wb-scroll")) return;
+    if(e.ctrlKey||e.shiftKey) return;              // leave zoom/h-scroll alone
+    if(Math.abs(e.deltaY)<Math.abs(e.deltaX)) return;
+    const dir=e.deltaY>0?1:-1;
+    const maxS=Math.max(0,+board.dataset.maxshift||0);
+    const next=Math.max(0,Math.min(pWinShift+dir,maxS));
+    if(next===pWinShift) return;                    // at either end: let the page have it
+    pWinShift=next; e.preventDefault();
+    clearTimeout(pWheelT);
+    pWheelT=setTimeout(()=>{ renderSchedule(); },60);
+  },{passive:false});
   board.addEventListener("click",e=>{
     const h=e.target.closest("[data-wbgo]");
     if(h){ pSelISO=h.dataset.wbgo; pScope="day"; pDayPanel(); renderSchedule(); }
@@ -5104,8 +5353,8 @@ $("#pJumpToday").addEventListener("click",()=>{
   pSelISO=pToday();
   $("#pAddDue").value=pSelISO; renderPlanner();
 });
-$("#pBoardPrev").addEventListener("click",()=>{ pSelISO=pBoardStepIso(pScope,pSelISO,-1); renderSchedule(); });
-$("#pBoardNext").addEventListener("click",()=>{ pSelISO=pBoardStepIso(pScope,pSelISO,1); renderSchedule(); });
+$("#pBoardPrev").addEventListener("click",()=>{ pSelISO=pBoardStepIso(pScope,pSelISO,-1); pWinShift=0; renderSchedule(); });
+$("#pBoardNext").addEventListener("click",()=>{ pSelISO=pBoardStepIso(pScope,pSelISO,1); pWinShift=0; renderSchedule(); });
 $("#ppZoomSeg").addEventListener("click",e=>{
   const b=e.target.closest("[data-ppzoom]"); if(!b) return;
   const z=b.dataset.ppzoom;
@@ -5149,7 +5398,7 @@ window.addEventListener("keydown",e=>{
 });
 $("#pScopeSeg").addEventListener("click",e=>{
   const b=e.target.closest("[data-pscope]"); if(!b) return;
-  pScope=b.dataset.pscope; renderSchedule();
+  pScope=b.dataset.pscope; pWinShift=0; renderSchedule();
 });
 
 $("#pLinkCare").addEventListener("change",e=>{ S.planner.linkCare=e.target.checked; touch(); renderPlanner(); });
@@ -10088,7 +10337,7 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "Start fresh":"Začít znovu","Undo":"Zpět","Redo":"Znovu","+ New project":"+ Nový projekt",
 "Move projects":"Přesouvat projekty","Paint days":"Malovat dny","Quarter":"Čtvrtletí","6 months":"6 měsíců","Year":"Rok",
 "Timeline":"Časová osa","Half":"Půl roku","Linear":"Lineární","Grid":"Mřížka",
-"Anytime":"Kdykoliv","Mark done":"Označit hotové","no project":"bez projektu","Event":"Událost",
+"Anytime":"Kdykoliv","Edit":"Upravit","New":"Nové","days":"dní","Save":"Uložit","Delete":"Smazat","Mark done":"Označit hotové","no project":"bez projektu","Event":"Událost",
 "All projects":"Všechny projekty","in progress":"probíhá","not started":"nezahájeno","ends":"končí","of":"z","over the daily limit":"přes denní limit","tasks":"úkolů","subtasks":"podúkolů",
 "No projects yet. Add one in the Timeline view and it'll be summarised here.":"Zatím žádné projekty. Přidej ho v Časové ose a zobrazí se tady.",
 "I don’t work weekends":"O víkendech nepracuji","Daily limit":"Denní limit",
