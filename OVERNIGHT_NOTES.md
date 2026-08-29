@@ -6,6 +6,8 @@ Nothing pushed, nothing force-pushed, no branches deleted.
 Review in the order below; every commit stands on its own.
 
 ```
+f9e8b92  Planner: fullscreen focus mode for the calendar                (Task 6)
+61efba1  Add OVERNIGHT_NOTES.md
 5ec452f  Planner: click or drag empty grid to add a task or event      (Task 5a/5b)
 561dc16  Planner: add an All Projects overview                          (Task 4)
 b943150  Planner: Task / Event / Subtask model in the UI                (Task 3)
@@ -33,7 +35,7 @@ a4702e9  Planner: make the board's grid lines and day separators legible (Task 1
 | 5c drag to move | **Already worked; verified not regressed** | copy/duplicate **not** built |
 | 5d resize handles | **Partial (pre-existing)** | bottom-edge only; sides/corners not built |
 | 5e double-click detail / wheel scroll | **Not built** | |
-| 6 fullscreen focus mode | **Not built** | ran out of night |
+| 6 fullscreen focus mode | **Done, tested** | ⌘ button + Escape to exit |
 | 7 "Plachta" year canvas | **Not built** | plan sketched below |
 
 ---
@@ -146,8 +148,6 @@ list is Month / Quarter / Half / Year rather than carrying both.
   one Event belongs to one day in this model, so it would have to split into
   per-day records. That needs a decision from you first.
 - **5e double-click to edit / wheel to scroll hours.** Not started.
-- **6 fullscreen focus mode.** Not started — the night went into making 1–5
-  solid rather than starting something I could not finish.
 - **7 "Plachta" year canvas.** Not started. Sketch below.
 
 ### Sketch: "Plachta" year canvas (Task 7)
@@ -188,6 +188,9 @@ Everything below was exercised in a real browser, not just read:
 - **5** click → dialog at that hour with a 1h default; drag → dialog with the
   swept range; existing block drag still moves 07:00→10:00 without the new
   dialog firing.
+- **6** entering hides header/nav and pins the card fullscreen with the board
+  still rendering its blocks; ✕ and Escape both restore everything. Screenshotted
+  at full size.
 
 **Console is clean** apart from two pre-existing errors unrelated to this work:
 a `sw.js` 404 (the service worker is not served by the plain static test server)
