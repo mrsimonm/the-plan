@@ -1,7 +1,7 @@
 /* Cache-first for the shell so the app opens with no signal at all — she may
    well be standing in a room full of plants with her phone on airplane mode.
    Bump CACHE to push a new version to an installed phone. */
-const CACHE = "potting-bench-v34";
+const CACHE = "potting-bench-v35";
 const SHELL = ["./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {
