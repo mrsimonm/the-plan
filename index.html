@@ -502,14 +502,19 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
    (or always, on touch, where there is no hover to reveal them). */
 .wb-h{position:absolute; z-index:4; opacity:0; transition:opacity .12s}
 .wb-blk:hover .wb-h,.wb-blk.rz .wb-h{opacity:1}
-.wb-h-n{top:-3px; left:8px; right:8px; height:7px; cursor:ns-resize}
-.wb-h-s{bottom:-3px; left:8px; right:8px; height:7px; cursor:ns-resize}
-.wb-h-w{left:-3px; top:8px; bottom:8px; width:7px; cursor:ew-resize}
-.wb-h-e{right:-3px; top:8px; bottom:8px; width:7px; cursor:ew-resize}
-.wb-h-nw{top:-3px; left:-3px; width:9px; height:9px; cursor:nwse-resize}
-.wb-h-ne{top:-3px; right:-3px; width:9px; height:9px; cursor:nesw-resize}
-.wb-h-sw{bottom:-3px; left:-3px; width:9px; height:9px; cursor:nesw-resize}
-.wb-h-se{bottom:-3px; right:-3px; width:9px; height:9px; cursor:nwse-resize}
+/* Sat 3px OUTSIDE the block so the grip straddled its border — but .wb-blk is
+   overflow:hidden, which clips hit-testing as well as paint. Measured: a 7px
+   grip offered 4 grabbable rows, and the 3 it lost were the outer ones, which
+   is exactly where you aim at an edge. Held fully inside, the whole grip is
+   live. */
+.wb-h-n{top:0; left:8px; right:8px; height:8px; cursor:ns-resize}
+.wb-h-s{bottom:0; left:8px; right:8px; height:8px; cursor:ns-resize}
+.wb-h-w{left:0; top:8px; bottom:8px; width:8px; cursor:ew-resize}
+.wb-h-e{right:0; top:8px; bottom:8px; width:8px; cursor:ew-resize}
+.wb-h-nw{top:0; left:0; width:10px; height:10px; cursor:nwse-resize}
+.wb-h-ne{top:0; right:0; width:10px; height:10px; cursor:nesw-resize}
+.wb-h-sw{bottom:0; left:0; width:10px; height:10px; cursor:nesw-resize}
+.wb-h-se{bottom:0; right:0; width:10px; height:10px; cursor:nwse-resize}
 .wb-h-nw::after,.wb-h-ne::after,.wb-h-sw::after,.wb-h-se::after{content:"";
   position:absolute; inset:2px; border-radius:2px; background:var(--accent)}
 .wb-h-n::after,.wb-h-s::after{content:""; position:absolute; left:50%; top:50%;
@@ -4238,8 +4243,29 @@ function pMonthGen(m){ return (L.lang==="cs"?MONTH_CS_GEN:MONTH_EN)[m]; }
    DOM is never rebuilt mid-gesture — a ghost transform moves, the commit
    renders once on release. */
 const WB_PXH=34, WB_SNAP=0.25;
-let pBoardAbort=null;
+/* How far you drag a W/E handle for one day, when the board has no second
+   column to snap to (Day view). Roughly a Plachta column, so the effort of
+   spanning a day feels the same whichever board you are on. */
+const WB_DAYDRAG=86;
+let pBoardAbort=null, pBoardCommit=null;
 window.addEventListener("keydown",e=>{ if(e.key==="Escape"&&pBoardAbort) pBoardAbort(); });
+/* A gesture has to END wherever the pointer is actually released, not only
+   over the board.
+
+   pointerup was bound to the board alone. Release past its edge — routine with
+   a trackpad, and unavoidable once a mid-gesture render detaches the element
+   setPointerCapture was taken on — and the gesture never finished: the edit
+   was silently dropped, pBoardBusy stayed latched, and G2 stayed live, so the
+   block went on tracking a mouse with no button held and the next click
+   committed a resize nobody asked for. That is the "calendar moves and expands
+   by itself, handles do nothing" report.
+
+   Registered once here at module level. The board's own listeners are replaced
+   with the board on every render; window's are not, and commit already returns
+   unless the pointerId matches the live gesture, so this cannot fire twice or
+   act on an unrelated click. */
+window.addEventListener("pointerup",e=>{ if(pBoardCommit) pBoardCommit(e); });
+window.addEventListener("pointercancel",()=>{ if(pBoardAbort) pBoardAbort(); });
 function pWeekDays(iso){
   const d=pParseISO(iso), off=(d.getDay()+6)%7;
   const monday=new Date(d); monday.setDate(d.getDate()-off);
@@ -4719,7 +4745,10 @@ function pBoardHtml(days,topStrip,opts){
               ?["n","s","w","e","nw","ne","sw","se"].map(h=>
                 `<i class="wb-h wb-h-${h}" data-wbrz="${h}"></i>`).join("")
               :`<i class="wb-h wb-h-s" data-wbrz="s"></i>`)
-          :drag&&hpx>=26?`<i class="wb-rsz" data-wbr="${it.kind}:${it.ref.id}" data-day="${d}"></i>`:""}
+          /* 24, not 26: a 45-minute block is 25.5px and fell half a pixel short,
+             so it rendered with no resize handle at all — indistinguishable
+             from a handle that does not work. */
+          :drag&&hpx>=24?`<i class="wb-rsz" data-wbr="${it.kind}:${it.ref.id}" data-day="${d}"></i>`:""}
       </div>`; }).join("");
     let lines=""; for(let h=1;h<endH-startH;h++) lines+=`<i class="wb-hl" style="top:${h*WB_PXH}px"></i>`;
     /* the now-line is drawn in EVERY column, not just today's — the columns
@@ -4916,23 +4945,33 @@ function pWireBoard(){
       /* horizontal: which run of days would this cover */
       let days=null;
       if(E.indexOf("w")>=0||E.indexOf("e")>=0){
-        const at=geom(e.clientX,e.clientY).day;
         /* a DELTA in days, measured against the column the block sits in —
            an absolute target could only ever name a visible day, so a run
            reaching outside the board was silently truncated (in Day view,
            every day but one). The edge also cannot cross its opposite: the
            run collapses to a single day instead of inverting. */
-        if(at){
-          const cols=[...board.querySelectorAll(".wb-col")].map(c=>c.dataset.wbday);
-          const dl=cols.indexOf(at)-cols.indexOf(G2.day0);
-          if(!isNaN(dl)&&cols.indexOf(at)>=0&&cols.indexOf(G2.day0)>=0){
-            if(E.indexOf("w")>=0){
-              const nf=ymd(fromYmd(G2.first0)+dl*DAY);
-              days=pDayRange(nf>G2.last0?G2.last0:nf,G2.last0);
-            }else{
-              const nl=ymd(fromYmd(G2.last0)+dl*DAY);
-              days=pDayRange(G2.first0,nl<G2.first0?G2.first0:nl);
-            }
+        const cols=[...board.querySelectorAll(".wb-col")].map(c=>c.dataset.wbday);
+        const i0=cols.indexOf(G2.day0);
+        let dl=null;
+        if(cols.length>1){
+          const at=geom(e.clientX,e.clientY).day;
+          const ia=cols.indexOf(at);
+          if(at&&ia>=0&&i0>=0) dl=ia-i0;
+        }else{
+          /* Day view has ONE column, so a column-index delta is always zero and
+             W/E could never do anything however far you dragged — the handles
+             were drawn but inert. With nothing to snap to, step by distance. */
+          dl=Math.round((e.clientX-G2.x0)/WB_DAYDRAG);
+        }
+        if(dl!=null){
+          /* pStepIso, not first0 + dl*DAY: adding whole days in milliseconds
+             lands an hour short across a DST boundary and drops a day. */
+          if(E.indexOf("w")>=0){
+            const nf=pStepIso(G2.first0,dl);
+            days=pDayRange(nf>G2.last0?G2.last0:nf,G2.last0);
+          }else{
+            const nl=pStepIso(G2.last0,dl);
+            days=pDayRange(G2.first0,nl<G2.first0?G2.first0:nl);
           }
         }
       }
@@ -5144,7 +5183,7 @@ function pWireBoard(){
   /* the board element is replaced on every render so its own listeners die with
      it — window's do NOT. One module-level hook, overwritten per wiring pass,
      instead of a listener stacking up on every week render. */
-  pBoardAbort=abort;
+  pBoardAbort=abort; pBoardCommit=commit;
   board.addEventListener("click",e=>{
     const tick=e.target.closest("[data-adtick]"); if(!tick) return;
     const tk=pFindTask(tick.dataset.adtick); if(!tk) return;
