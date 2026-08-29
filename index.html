@@ -570,7 +570,10 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .wb-blk b{display:block; font-size:10.5px; font-weight:600; line-height:1.25; color:var(--ink);
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .wb-blk span{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:9px; color:var(--ink-2)}
-.wb-blk.wb-hrs{border-left-color:var(--hours-hue); background:color-mix(in srgb,var(--hours-hue) 26%,var(--surface)); cursor:default}
+.wb-blk.wb-hrs{border-left-color:var(--hours-hue); background:color-mix(in srgb,var(--hours-hue) 26%,var(--surface));
+  /* not draggable, so it must not inherit .wb-blk's touch-action:none —
+     a finger landing on tracked work still has to be able to scroll */
+  cursor:default; touch-action:pan-y}
 .wb-blk.wb-blk{}
 .wb-blk.wb-blk b{}
 .wb-blk[data-wb^="block"]{border-left-style:dashed}
@@ -4161,9 +4164,15 @@ function pWeekDays(iso){
   const monday=new Date(d); monday.setDate(d.getDate()-off);
   return Array.from({length:7},(_,i)=>{ const x=new Date(monday); x.setDate(monday.getDate()+i); return ymd(+x); });
 }
+/* Stepping a date by adding 864e5ms accumulates the DST offset: on the day a
+   clock goes back, "+1 day" lands at 23:00 the SAME evening, so a month walk
+   emits that date twice and runs a column long — October 2026 rendered 32
+   columns with the 25th duplicated. Stepping the calendar field instead is
+   DST-safe by definition. */
+const pNextDay=t=>{ const d=new Date(t); d.setDate(d.getDate()+1); return sod(+d); };
 function pMonthDays(iso){
   const m=monthStart(fromYmd(iso)), next=addMonths(m,1);
-  const days=[]; for(let d=m;d<next;d+=DAY) days.push(ymd(d));
+  const days=[]; for(let d=m;d<next;d=pNextDay(d)) days.push(ymd(d));
   return days;
 }
 function pDaysFor(scope,iso){
@@ -4431,6 +4440,11 @@ function pBoardHtml(days,topStrip){
 function pWireBoard(){
   const board=document.getElementById("pWeekBoard");
   if(!board) return;
+  /* this board is new, so whatever gesture the previous one owned went with
+     it and its commit/abort will never run. Clear the repaint guard here or a
+     gesture interrupted by an unrelated re-render (tapping Week mid-drag)
+     leaves it latched and silently freezes the 30s repaint for good. */
+  pBoardBusy=false;
   const scrollEl=board.querySelector(".wb-scroll");
   const startH=+board.dataset.starth;
   let G2=null;
@@ -4462,6 +4476,10 @@ function pWireBoard(){
       const trk=e.target.closest(".wb-track");
       const col=trk&&trk.closest(".wb-col");
       if(!trk||!col) return;
+      /* tracked-work blocks carry no drag attributes, but they are still
+         blocks — treating one as empty grid drew a selection over it, and on
+         touch swallowed the finger that was trying to scroll the board */
+      if(e.target.closest(".wb-blk")) return;
       const top=trk.getBoundingClientRect().top;
       G2={mode:"newslot", pid:e.pointerId, x0:e.clientX, y0:e.clientY,
           day0:col.dataset.wbday, armed:false, moved:false,
@@ -4713,8 +4731,8 @@ function ppMonthCellsHtml(monthIso,{mini}={}){
   const m=monthStart(fromYmd(monthIso)), first=weekStart(m), next=addMonths(m,1);
   const cells=Math.ceil((next-first)/DAY/7)*7, today=sod(Date.now());
   let html="";
-  for(let i=0;i<cells;i++){
-    const d=first+i*DAY, iso=ymd(d), out=d<m||d>=next;
+  for(let i=0,d=first;i<cells;i++,d=pNextDay(d)){
+    const iso=ymd(d), out=d<m||d>=next;
     const list=out?[]:((window.ppProjectsOn?ppProjectsOn(iso):[]).filter(p=>p.hours>0));
     if(mini){
       html+=`<button type="button" class="pcal-mini-cell${out?" out":""}${d===today?" today":""}"
@@ -4725,7 +4743,7 @@ function ppMonthCellsHtml(monthIso,{mini}={}){
       const dots=list.slice(0,4).map(p=>`<i style="background:${ppSafeColor(p.color)}"></i>`).join("");
       html+=`<button type="button" class="pcal-cell${out?" out":""}" data-pgcell="${iso}"
         ${d===today?'data-today="1"':""}${out?" tabindex=-1":""}
-        title="${esc(iso)}${list.length?" · "+list.map(p=>p.name+" "+pFmtH(p.hours)+"h").join(", "):""}">
+        title="${esc(iso)}${list.length?esc(" · "+list.map(p=>p.name+" "+pFmtH(p.hours)+"h").join(", ")):""}">
         <span class="pcal-day">${new Date(d).getDate()}</span>
         <span class="pcal-dots">${dots}</span>
       </button>`;
@@ -4767,16 +4785,21 @@ function renderSchedule(){
     $("#pBoardNav").style.display="none";
     $("#pTimelineZoom").style.display="";
     $("#pViewToggle").style.display="";
-    /* ppEnter normalises L.ppZoom if it is ever invalid — run it in both modes
-       so the zoom pills agree with the Gantt whichever one is on screen */
+    const ppGrid=L.ppViewMode==="grid";
+    /* Show the Gantt BEFORE ppEnter runs. ppEnter ends by scroll-anchoring to
+       today, and an element with display:none has no scrollable box — the
+       assignment silently did nothing while latching its already-scrolled
+       flag, so the timeline opened parked at the far-left edge of the span
+       and never corrected itself for the rest of the session.
+       ppEnter also normalises L.ppZoom, so it runs in both modes. */
+    ppWrap.hidden=ppGrid;
+    $("#pScheduleBody").hidden=!ppGrid;
     if(window.ppEnter) ppEnter();
     document.querySelectorAll("#ppZoomSeg [data-ppzoom]").forEach(b=>
       b.setAttribute("aria-pressed",String(b.dataset.ppzoom===L.ppZoom)));
     document.querySelectorAll("#ppViewSeg [data-ppview]").forEach(b=>
       b.setAttribute("aria-pressed",String(b.dataset.ppview===(L.ppViewMode||"linear"))));
-    if(L.ppViewMode==="grid"){
-      ppWrap.hidden=true;
-      $("#pScheduleBody").hidden=false;
+    if(ppGrid){
       $("#pGridNav").style.display="";
       if(!ppGridISO) ppGridISO=ymd(monthStart(Date.now()));
       $("#pGridLabel").textContent=ppGridLabel(L.ppZoom,ppGridISO);
@@ -4785,8 +4808,6 @@ function renderSchedule(){
       return;
     }
     $("#pGridNav").style.display="none";
-    ppWrap.hidden=false;
-    $("#pScheduleBody").hidden=true;
     return;
   }
   ppWrap.hidden=true;
