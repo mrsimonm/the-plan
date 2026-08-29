@@ -4273,7 +4273,11 @@ function pSlotCreate(kind){
   const isEvent=kind==="event";
   S.planner.tasks.push({id:uid(),title,due:pSlotDay,
     time:isEvent?$("#pSlotTime").value||"09:00":"",
-    hours:Math.max(0,+$("#pSlotHours").value||1),
+    /* the dialog's buttons are plain buttons in a form-less dialog, so the
+       input's min= is never validated — clamp here or an Event can be minted
+       with 0h and then render nowhere at all */
+    hours:isEvent?Math.max(0.25,+$("#pSlotHours").value||1)
+                 :Math.max(0,+$("#pSlotHours").value||0),
     done:false,kind:isEvent?"event":"task",steps:[],
     projectId:$("#pSlotProject").value||null});
   $("#pSlotDlg").close();
@@ -4410,7 +4414,7 @@ function pBoardHtml(days,topStrip){
     <span class="eyebrow">${esc(t("Unscheduled"))}</span>
     ${trayTasks.map(tk=>`<span class="wb-traychip${tk.due<pToday()?" late":""}" data-wb="tray:${tk.id}">${
       esc(tk.title||t("Untitled task"))}
-      <small>${tk.due<pToday()?esc(t("overdue")):pFmtH(+tk.hours||1)+"h"}</small></span>`).join("")}
+      <small>${tk.due<pToday()?esc(t("overdue")):(+tk.hours>0?pFmtH(+tk.hours)+"h":"")}</small></span>`).join("")}
     ${careTray}
     <small class="hint" style="flex-basis:100%; margin:2px 0 0">${esc(t("Drag a task onto the board to give it a time."))}</small>
   </div>`:"";
@@ -4463,6 +4467,7 @@ function pWireBoard(){
           day0:col.dataset.wbday, armed:false, moved:false,
           touch:e.pointerType==="touch", timer:null, el:null, trk,
           t0:startH+(e.clientY-top)/WB_PXH};
+      pBoardBusy=true;
       try{ board.setPointerCapture(e.pointerId); }catch(err){}
       return;
     }
@@ -4477,6 +4482,7 @@ function pWireBoard(){
           x0:e.clientX, y0:e.clientY, el, armed:false, moved:false,
           touch:e.pointerType==="touch", timer:null,
           day0:(ph||pchip).dataset.day, time0:null};
+      pBoardBusy=true;
       try{ board.setPointerCapture(e.pointerId); }catch(err){}
       if(kind==="projday") e.preventDefault();
       else if(G2.touch){ G2.timer=setTimeout(()=>{ if(G2){ G2.armed=true; G2.el.classList.add("lift"); } },300); }
@@ -4494,6 +4500,7 @@ function pWireBoard(){
            at the raw pointer would snap the block's TOP to the finger and lose
            the grab offset, a visible jump on release */
         time0:kind3==="tray"?null:startH+(parseFloat(el.style.top)||0)/WB_PXH};
+    pBoardBusy=true;
     try{ board.setPointerCapture(e.pointerId); }catch(err){}
     if(G2.mode==="resize"){ e.preventDefault(); }   // arms after slop like everything else
     else if(G2.touch){
@@ -4571,7 +4578,7 @@ function pWireBoard(){
   });
   const commit=e=>{
     if(!G2||e.pointerId!==G2.pid) return;
-    const g=G2; G2=null; clearTimeout(g.timer);
+    const g=G2; G2=null; pBoardBusy=false; clearTimeout(g.timer);
     if(g.mode==="newslot"){
       if(g.el) g.el.remove();
       const snapQ=v=>Math.round(v/WB_SNAP)*WB_SNAP;
@@ -4653,7 +4660,7 @@ function pWireBoard(){
     renderSchedule();
   };
   board.addEventListener("pointerup",commit);
-  const abort=()=>{ if(G2){ clearTimeout(G2.timer);
+  const abort=()=>{ pBoardBusy=false; if(G2){ clearTimeout(G2.timer);
     if(G2.mode==="newslot"){ if(G2.el) G2.el.remove(); G2=null; return; }
     G2.el.classList.remove("lift"); G2.el.style.transform=""; G2=null; renderSchedule(); } };
   board.addEventListener("pointercancel",abort);
@@ -4668,6 +4675,11 @@ function pWireBoard(){
 }
 
 let pTick=null;
+/* set while a pointer gesture owns the board. The 30s repaint replaces the
+   whole board element, which would detach the very node an in-flight drag
+   measures against — losing the gesture, or worse, committing a range
+   computed from a detached rect of zeros. */
+let pBoardBusy=false;
 function pStopTick(){ clearInterval(pTick); pTick=null; }
 const ppSafeColor=c=>/^#[0-9A-Fa-f]{3,8}$/.test(c||"")?c:"var(--accent)";
 /* ---- Timeline, Grid mode ----
@@ -4791,6 +4803,7 @@ function renderSchedule(){
      picture — nothing in the board holds focus, so a full repaint is safe */
   if(days.includes(pToday())) pTick=setInterval(()=>{
     if(curView!=="planner"||pScope==="timeline"){ pStopTick(); return; }
+    if(pBoardBusy) return;                 // never repaint mid-gesture
     $("#pScheduleBody").innerHTML=pBoardHtml(pDaysFor(pScope,pSelISO),
       pScope==="day"?pDatelessStripHtml():"");
     pWireBoard(); pWireDatelessStrip();
