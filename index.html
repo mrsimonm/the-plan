@@ -5122,9 +5122,20 @@ function pWireBoard(){
     }
     if(!g.moved){
       g.el.style.transform=""; g.el.classList.remove("sizing"); delete g.el.dataset.live;
-      /* a plain tap opens the thing itself: a project its editor, a task its day */
+      /* A plain tap opens the THING you tapped; it does not navigate. Going to
+         a day is what the day label is for (data-wbgo), so tapping a block no
+         longer jumps the whole board to that day and loses your place.
+         Only an Event carries a time and a duration, so only an Event has an
+         edit dialog under the v7 model. A timed Task, a recurring block and a
+         project day have nothing to open yet — giving them editors is Wave 2 —
+         so they keep the old jump-to-day rather than making the tap do nothing
+         at all. */
       if(g.mode==="projmove"||g.mode==="projday"){ window.ppOpenProject&&ppOpenProject(g.id); }
-      else if(g.mode==="move"){ const d=g.day0; if(d){ pSelISO=d; pScope="day"; pWinShift=0; pDayPanel(); renderSchedule(); } }
+      else if(g.mode==="move"){
+        const tk=(g.kind==="task"||g.kind==="tray")?pFindTask(g.id):null;
+        if(tk&&tk.kind==="event"){ pOpenEditDialog(g.id); }
+        else { const d=g.day0; if(d){ pSelISO=d; pScope="day"; pWinShift=0; pDayPanel(); renderSchedule(); } }
+      }
       return;
     }
     if(g.mode==="projmove"){
