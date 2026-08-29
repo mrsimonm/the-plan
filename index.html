@@ -439,7 +439,11 @@ input[type="time"].mono-input{width:88px}
 .wb-pchip small{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:8.5px;
   color:var(--ink-2); flex:0 0 auto}
 .wb-pchip.lift{box-shadow:var(--shadow-lift); opacity:.9; cursor:grabbing; z-index:6}
-.wb-pchip.sizing::after{content:attr(data-live); position:absolute; top:-16px; left:50%;
+/* the same project drawn as a grid block: its own colour, the chip's gestures */
+.wb-blk.wb-proj{background:color-mix(in srgb,var(--pc) 24%,var(--surface));
+  border-left:3px solid var(--pc); cursor:grab; touch-action:none; user-select:none}
+.wb-blk.wb-proj:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.wb-pchip.sizing::after,.wb-blk.sizing::after{content:attr(data-live); position:absolute; top:-16px; left:50%;
   transform:translateX(-50%); font-family:"JetBrains Mono",ui-monospace,monospace;
   font-size:9px; color:var(--accent); white-space:nowrap}
 .wb-phandle{position:absolute; right:-3px; top:0; bottom:0; width:9px; cursor:ew-resize}
@@ -3961,8 +3965,39 @@ function pBoardLabel(scope,days){
    separate implementation, so it carries every feature the old day
    timeline had (auto-fit hour window, live countdown, clash warnings,
    untimed care jobs) rather than losing them when folded in. */
+/* A project carries a day-level hour budget with no time-of-day, so on a clock
+   grid it has nowhere of its own to sit. Rather than leave it floating in a
+   chip strip above the board, pack it into the day's first free gap from
+   PROJ_ANCHOR on so it reads as a real block like everything else. The times
+   invented here are presentation only — pBudgetOf's totals are computed before
+   this runs and never see them, so the day's arithmetic is unchanged. */
+const PROJ_ANCHOR=9;
+function pPlaceProjects(items){
+  const projs=items.filter(it=>it.kind==="proj"&&it.hours>0);
+  if(!projs.length) return items;
+  const hhmm=v=>String(Math.floor(v)).padStart(2,"0")+":"+String(Math.round((v%1)*60)).padStart(2,"0");
+  const busy=items.filter(it=>it.time&&it.hours>0&&it.kind!=="care")
+    .map(it=>{ const [h,m]=it.time.split(":").map(Number); return {s:h+m/60,e:h+m/60+it.hours}; });
+  const placed=new Map();
+  let cursor=PROJ_ANCHOR;
+  projs.forEach(p=>{
+    let s=Math.max(cursor,PROJ_ANCHOR);
+    /* step past whatever already occupies the slot; bounded by the number of
+       busy intervals so a pathological overlap set can't spin here */
+    for(let guard=0;guard<=busy.length;guard++){
+      const hit=busy.find(b=>b.e>s&&b.s<s+p.hours);
+      if(!hit) break;
+      s=hit.e;
+    }
+    s=Math.max(0,Math.min(s,23.75));
+    placed.set(p,hhmm(s));
+    busy.push({s,e:s+p.hours});
+    cursor=s+p.hours;
+  });
+  return items.map(it=>placed.has(it)?Object.assign({},it,{time:placed.get(it)}):it);
+}
 function pBoardHtml(days){
-  const byDay=days.map(d=>pBudgetOf(d).items);
+  const byDay=days.map(d=>pPlaceProjects(pBudgetOf(d).items));
   /* window: wide enough for everything timed, but a lone day starts from a
      plainer waking-hours default than a multi-day board would need */
   let startH=days.length===1?6:7, endH=days.length===1?24:21;
@@ -3983,7 +4018,6 @@ function pBoardHtml(days){
   const nowH=(()=>{ const n=new Date(); return n.getHours()+n.getMinutes()/60; })();
   const cols=days.map((d,di)=>{
     const items=byDay[di];
-    const projs=items.filter(it=>it.kind==="proj");
     const care=items.find(it=>it.kind==="care");
     const timed=items.filter(it=>it.time&&it.hours>0&&!(it.kind==="care"));
     /* lane packing inside the column: clashing blocks share the width side by
@@ -4005,9 +4039,13 @@ function pBoardHtml(days){
     const blocks=iv.map(x=>{
       const it=x.it, top=(x.s-startH)*WB_PXH, hpx=Math.max(17,it.hours*WB_PXH);
       const lane=`left:calc(${(x.col/x.n)*100}% + 1px); width:calc(${(1/x.n)*100}% - 3px)`;
-      const kind=it.kind==="hours"?"hrs":it.kind==="block"?"blk":"task";
+      const kind=it.kind==="hours"?"hrs":it.kind==="block"?"blk":it.kind==="proj"?"proj":"task";
+      /* a project keeps the gestures it had as a chip — sideways drags the
+         whole project across days, the handle changes just this day's hours */
       const drag=it.kind==="task"?` data-wb="task:${it.ref.id}" data-day="${d}"`
-               : it.kind==="block"?` data-wb="block:${it.ref.id}" data-day="${d}"`:"";
+               : it.kind==="block"?` data-wb="block:${it.ref.id}" data-day="${d}"`
+               : it.kind==="proj"?` data-wbp="${it.id}" data-day="${d}" tabindex="0"`:"";
+      const tint=it.kind==="proj"?` --pc:${ppSafeColor(it.color)};`:"";
       /* what you are in the middle of right now gets a live countdown — the
          now-line says where you are, this says how much of it is left */
       const live=(it.live||(d===pToday()&&nowH>=x.s&&nowH<x.e));
@@ -4020,24 +4058,21 @@ function pBoardHtml(days){
           leftMin>=60?t("{h}h left").replace("{h}",pFmtH(leftMin/60))
                      :t("{m}m left").replace("{m}",leftMin))}</em>`:""}`;
       const warn=it.clash?'<i class="clash" title="'+esc(t("Overlaps another block"))+'">⚠</i> ':"";
-      return `<div class="wb-blk wb-${kind}${live?" live":""}${compact?" compact":""}"${drag} style="top:${top}px; height:${hpx}px; ${lane}">
+      return `<div class="wb-blk wb-${kind}${live?" live":""}${compact?" compact":""}"${drag} style="top:${top}px; height:${hpx}px;${tint} ${lane}">
         ${compact
           ? `<b>${warn}${it.kind==="block"?"↻ ":""}${esc(it.time)} ${esc(it.name)}</b>`
           : `<b>${warn}${it.kind==="block"?"↻ ":""}${esc(it.name)}</b><span>${meta}</span>`}
-        ${drag&&hpx>=26?`<i class="wb-rsz" data-wbr="${it.kind}:${it.ref.id}" data-day="${d}"></i>`:""}
+        ${it.kind==="proj"?`<i class="wb-phandle" data-wbph="${it.id}" data-day="${d}"></i>`
+          :drag&&hpx>=26?`<i class="wb-rsz" data-wbr="${it.kind}:${it.ref.id}" data-day="${d}"></i>`:""}
       </div>`; }).join("");
     let lines=""; for(let h=1;h<endH-startH;h++) lines+=`<i class="wb-hl" style="top:${h*WB_PXH}px"></i>`;
     let now="";
     if(d===pToday()){
       if(nowH>=startH&&nowH<=endH) now=`<i class="wb-now" style="top:${(nowH-startH)*WB_PXH}px"></i>`; }
-    /* projects are draggable here too: sideways moves the whole project,
-       the handle changes just this day's hours, a tap opens its editor */
-    const allday=(projs.length||care)?`<div class="wb-allday">${
-      projs.map(p=>`<span class="wb-pchip" data-wbp="${p.id}" data-day="${d}" tabindex="0"
-        title="${esc(p.name)} · ${pFmtH(p.hours)}h — ${esc(t("drag to move, edge to resize"))}"
-        style="--pc:${ppSafeColor(p.color)}"><b>${esc(p.name)}</b><small>${pFmtH(p.hours)}</small>
-        <i class="wb-phandle" data-wbph="${p.id}" data-day="${d}"></i></span>`).join("")}${
-      care?`<span class="wb-adcare" title="${esc(care.name)} · ${pFmtH(care.hours)}h">🌿</span>`:""}</div>`
+    /* projects now draw on the grid itself, so the strip above it is left to
+       plant care — the one claim on the day that genuinely has no clock slot */
+    const allday=care?`<div class="wb-allday"><span class="wb-adcare"
+      title="${esc(care.name)} · ${pFmtH(care.hours)}h">🌿</span></div>`
       :'<div class="wb-allday"></div>';
     return `<div class="wb-col${d===pToday()?" today":""}" data-wbday="${d}">
       <button type="button" class="wb-head" data-wbgo="${d}">${label(d)}</button>
@@ -4101,7 +4136,10 @@ function pWireBoard(){
     const kind = ph?"projday" : pchip?"proj" : null;
     const id = ph?ph.dataset.wbph : pchip?pchip.dataset.wbp : null;
     if(kind){
-      const el=pchip||ph.closest(".wb-pchip");
+      /* a project draws as a grid block now, but kept its chip-era gestures —
+         accept either host element so the handle can find what it belongs to */
+      const el=pchip||ph.closest(".wb-pchip,.wb-blk");
+      if(!el) return;
       G2={mode:kind==="projday"?"projday":"projmove", kind, id, pid:e.pointerId,
           x0:e.clientX, y0:e.clientY, el, armed:false, moved:false,
           touch:e.pointerType==="touch", timer:null,
