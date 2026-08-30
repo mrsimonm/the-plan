@@ -5405,15 +5405,22 @@ function pWireBoard(){
         if(Math.abs(dy)<(G2.touch?8:3)) return;        // brushing the handle is not an edit
         G2.armed=true;
       } else if(G2.touch){
-        /* an unarmed touch move is a SCROLL, not a drag — pan the board by
-           hand, since touch-action:none silenced the native pan (the same
-           trade the projects timeline makes) */
-        if(Math.abs(dx)>10||Math.abs(dy)>10){
-          clearTimeout(G2.timer);
-          G2.mode="pan"; G2.armed=true;
-          G2.sl0=scrollEl.scrollLeft;
-          G2.st0=(document.scrollingElement||document.documentElement).scrollTop;
-        } else return;
+        /* A touch that started ON A BLOCK drags that block, immediately.
+
+           It used to become a pan unless you first held still for 300ms, so on
+           a phone dragging a block did nothing at all — the board scrolled
+           under your finger instead, with nothing anywhere to suggest a
+           long-press was required. That is the "drag does nothing" report, and
+           it is why it only ever showed up on touch.
+
+           Scrolling is not lost: touch-action:none is set on blocks alone, so
+           a finger anywhere else — the empty track, the gutter, the day
+           headers, the page around the board — still scrolls natively. Only
+           the case of starting on a block changes, and there dragging is what
+           you meant. 8px of slop, so a tap is still a tap. */
+        if(Math.abs(dx)<8&&Math.abs(dy)<8) return;
+        clearTimeout(G2.timer);
+        G2.armed=true; G2.el.classList.add("lift");
       } else {
         if(Math.abs(dx)<6&&Math.abs(dy)<6) return;
         G2.armed=true; G2.el.classList.add("lift");
