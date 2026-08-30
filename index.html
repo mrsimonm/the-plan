@@ -4263,13 +4263,14 @@ function pItemsFor(iso){
   });
   /* ---- the other two apps' claims on the same 24 hours ---- */
   if(S.planner.linkHours!==false){
-    (S.hours&&S.hours.sessions||[]).forEach(x=>{
-      const st=x.start?new Date(x.start):null; if(!st) return;
-      if(ymd(+st)!==iso) return;
-      out.push({kind:"hours",ref:x,name:(hFindProject(x.projectId)||{}).name||t("Tracked work"),
-        hours:x.seconds/3600,
-        time:String(st.getHours()).padStart(2,"0")+":"+String(st.getMinutes()).padStart(2,"0"),
-        overdue:false});
+    /* Bucketed by day once per render pass, not rescanned per day. This used
+       to build a Date and format it for EVERY session on EVERY column, so a
+       month of 31 columns against a year of sessions did tens of thousands of
+       date conversions to find a handful of matches. Cleared alongside
+       pCareCache, which already tracks exactly when this can go stale. */
+    (pSessionsOn(iso)||[]).forEach(e=>{
+      out.push({kind:"hours",ref:e.x,name:(hFindProject(e.x.projectId)||{}).name||t("Tracked work"),
+        hours:e.x.seconds/3600, time:e.time, overdue:false});
     });
     const run=S.hours&&S.hours.running;
     if(run&&isToday){
@@ -4298,7 +4299,25 @@ function pItemsFor(iso){
 /* how many care jobs land on a day — today from the live due list, future days
    from the same forecast the diary draws. Cached per render pass: the month
    grid asks 31 times and the agenda walk isn't free. */
-let pCareCache={};
+/* Tracked-work sessions grouped by the day they fall on. Built once and reused
+   across every column of a render, instead of every column walking the whole
+   session list. Null means "not built yet"; it is cleared wherever pCareCache
+   is, since the same edits invalidate both. */
+let pSessCache=null;
+function pSessionsOn(iso){
+  if(!pSessCache){
+    pSessCache={};
+    ((S.hours&&S.hours.sessions)||[]).forEach(x=>{
+      if(!x||!x.start) return;
+      const st=new Date(x.start); if(isNaN(+st)) return;
+      const k=ymd(+st);
+      (pSessCache[k]||(pSessCache[k]=[])).push({x,
+        time:String(st.getHours()).padStart(2,"0")+":"+String(st.getMinutes()).padStart(2,"0")});
+    });
+  }
+  return pSessCache[iso];
+}
+let pCareCache={}; pSessCache=null;
 function pCareJobs(iso){
   if(iso in pCareCache) return pCareCache[iso];
   let n=0;
@@ -5459,7 +5478,7 @@ function pWireBoard(){
     /* a mutation must reach every reader before the finger lifts twice:
        renderPlanner refreshes the task lists, the day panel, the warning line
        AND this board (it ends in pDayPanel + renderSchedule) */
-    const done=()=>{ touch(); pCareCache={}; window.ppClearExt&&ppClearExt(); renderPlanner(); };
+    const done=()=>{ touch(); pCareCache={}; pSessCache=null; window.ppClearExt&&ppClearExt(); renderPlanner(); };
     if(g.mode==="rz8"){
       g.el.classList.remove("rz"); delete g.el.dataset.live;
       board.querySelectorAll(".wb-col.rz-target").forEach(c=>c.classList.remove("rz-target"));
@@ -5740,7 +5759,7 @@ function pWireProjGrid(){
 }
 function renderSchedule(){
   pEnsureView();
-  pCareCache={};
+  pCareCache={}; pSessCache=null;
   if(window.ppClearExt) ppClearExt();   // planner data may have changed — the band re-reads it
   pStopTick();
   const ppWrap=$("#view-projplan");
@@ -6012,7 +6031,7 @@ function renderProjectsOverview(){
 }
 function renderPlanner(){
   pEnsureView();
-  pCareCache={};
+  pCareCache={}; pSessCache=null;
   pFillProjectSelect(); pSyncAddKind(); renderProjectsOverview();
   $("#pSleepInput").value=S.planner.sleep;
   $("#pLinkCare").checked=S.planner.linkCare!==false;
@@ -9301,7 +9320,7 @@ function renderAll(){ renderMixSel(); renderDue(); renderHow(); renderMix(); ren
   /* the planner sat outside this list historically — after an import or reset
      its DOM stayed stale until you navigated to it. Caches cleared too, since
      the underlying data may be wholly different now. */
-  pCareCache={}; if(window.ppClearExt) ppClearExt();
+  pCareCache={}; pSessCache=null; if(window.ppClearExt) ppClearExt();
   if(typeof pSelISO!=="undefined"&&pSelISO) try{ renderPlanner(); }catch(e){} }
 
 function renderTaskBar(){
@@ -12537,7 +12556,7 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
     persist(); draw(); pd.close();
     /* the calendar shows these too — repaint it when the editor commits */
     if(typeof renderPlanner==="function"&&typeof curView!=="undefined"&&curView==="planner"){
-      if(typeof pCareCache!=="undefined") pCareCache={};
+      if(typeof pCareCache!=="undefined") pCareCache={}; pSessCache=null;
       if(window.ppClearExt) ppClearExt();
       renderPlanner();
     }
