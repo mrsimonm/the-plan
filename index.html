@@ -9480,7 +9480,17 @@ function show(v){
   if(!canX) return showNow(v);
   document.documentElement.dataset.vt="1";
   const tx=document.startViewTransition(()=>showNow(v));
-  tx.finished.finally(()=>{ delete document.documentElement.dataset.vt; });
+  /* .finally() does NOT handle a rejection, it passes it through — so an
+     aborted transition (switching views faster than one settles) left
+     tx.finished rejected with nothing attached, producing a permanent
+     "Uncaught (in promise) InvalidStateError: Transition was aborted" in the
+     console. The abort is harmless: showNow() has already run, so the view is
+     correct and only the animation was dropped. Catching it keeps a real error
+     from hiding behind a noisy expected one. */
+  tx.finished
+    .catch(()=>{})
+    .finally(()=>{ delete document.documentElement.dataset.vt; });
+  if(tx.ready&&tx.ready.catch) tx.ready.catch(()=>{});
 }
 function showNow(v){
   if(v!==curView){ scrollMem[curView]=window.scrollY; curView=v; }
