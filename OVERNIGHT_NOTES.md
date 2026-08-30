@@ -181,6 +181,37 @@ Applied at the token layer, so it lands across Garden, Bench, Grow, Diary,
 Library, Stats, Hours and the Daily Planner at once rather than section by
 section.
 
+### What was actually built — and one thing the plan missed
+
+Implemented as its own pass, after the bug and performance work, in `fc541c1`.
+42 token replacements across the three theme blocks, plus 46 typography
+declarations.
+
+The plan missed something I found while verifying: **the Planner and Hours each
+override `--accent` with their own identity colour**, and both were loud — a
+saturated blue `#1D4ED8` and purple `#6D28D9`. Changing only the base palette
+would have left two of the most-used sections still looking like the old app.
+They are now muted into the same system:
+
+| Section | Was | Now (light / dark) |
+|---|---|---|
+| Garden and the rest | `#15803D` green | `#3F6B54` / `#7FA890` |
+| Daily Planner | `#1D4ED8` blue | `#40566E` / `#8FA6BF` |
+| Hours | `#6D28D9` purple | `#5B5470` / `#8E86A6` |
+
+Section identity is kept, because it is a good idea — it just needed to stop
+shouting.
+
+**Contrast, measured across both themes and all three identities:** body text
+17.8:1 light and 15.6:1 dark, secondary text 6.3 and 6.9, lowest accent 5.29:1.
+Every value clears the 4.5 body threshold, not merely the 3.0 for UI.
+
+**Verified it did not break anything.** All eight views render with no console
+errors, and after the CSS changed I re-ran the gestures rather than assuming
+radii and shadows were cosmetic: body-drag moved 10:00→13:00, S-handle resized
+2h→4h, and a tap opened the editor on the right record, with `pBoardBusy` never
+latching.
+
 ---
 
 ## What needs your attention
@@ -204,3 +235,48 @@ section.
 - **Kept Manrope and JetBrains Mono**, replaced only the display face. A full
   three-family swap would have been a larger, more disruptive change for less
   gain — the mono is already doing the engineered work.
+- **Muted the Planner and Hours identity accents rather than removing them.**
+  Deleting them would have been simpler and more uniform, but the sections
+  reading as distinct is genuinely useful; the problem was saturation, not the
+  idea.
+
+## Commits, in order
+
+```
+2f09d00  Notes: Part 1 verification, Part 2 measurements, Part 3 design plan
+dfda354  Perf: coalesce the store write instead of paying it per mutation
+c1e4c28  Perf: bucket tracked-work sessions by day instead of rescanning
+fc541c1  Design: neutral palette, engineered type, flatter surfaces
+```
+
+Part 1 produced no commit, because nothing was broken.
+
+## How to check my work quickly
+
+1. Tap the version badge — everything below assumes you are on this build.
+2. **Look**, in both light and dark. Dark mode is the bigger change; it should
+   feel like a considered near-black, not a dark green.
+3. Planner and Hours should still feel like their own places, in slate and plum
+   rather than blue and purple.
+4. Drag a block up and down, resize it, and tap it. Those three are what I
+   re-checked after the CSS changed.
+5. If the phone still feels slow with a big photo library, that is the storage
+   split I deliberately did not do — see Part 2.
+
+## Testing honesty
+
+Everything above was exercised in a real browser, not read. Two caveats worth
+stating plainly:
+
+- The performance work was measured with **synthetic** data on a desktop. The
+  mechanisms are real and the numbers are real, but I could not reproduce your
+  dad's phone, so I cannot promise the felt improvement matches the measured
+  one.
+- I drove gestures with dispatched pointer events rather than physical input.
+  That exercises the same handlers a mouse does, and it caught real bugs during
+  Waves 1 and 2 — but it is not identical to a finger on glass, and the touch
+  path is the one I have tested least.
+
+Test fixtures created during the night were cleaned out of `localStorage`
+afterwards; the store on `localhost:8934` is back to 3 KB. Your real data lives
+on a different origin and was never touched.
