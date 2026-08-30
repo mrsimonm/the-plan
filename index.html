@@ -3332,9 +3332,33 @@ let photosLoaded=false, photosDirty=false, dirty=false, readOnly=false;
    could not see an edit-in-place, so a height typed into an existing photo was
    silently never published. */
 function photosTouched(){ photosDirty=true; }
-function touch(){
+/* Writing the store is O(everything), and everything includes the photos —
+   megabytes of base64 that a calendar drag never touches. Measured on a
+   desktop: 0.1ms for a 10KB store, 4.5ms once twelve photos put it at 1.9MB,
+   and a phone is several times slower again. touch() runs on every mutation,
+   so a burst of them paid that cost once per mutation.
+
+   The write is now coalesced onto the next frame: callers still call touch()
+   exactly as before and the bytes written are identical, but one write happens
+   instead of several. Anything that could end the session flushes
+   synchronously first, so the window in which a pending write could be lost is
+   a single frame and never spans a tab switch, a navigation or a close. */
+let pWriteQueued=false;
+function pFlushWrite(){
+  if(!pWriteQueued) return;
+  pWriteQueued=false;
   try{ localStorage.setItem(KEY,JSON.stringify(S)); }
   catch(e){ setSync("error","storage full"); }
+}
+addEventListener("visibilitychange",()=>{ if(document.visibilityState==="hidden") pFlushWrite(); });
+addEventListener("pagehide",pFlushWrite);
+addEventListener("beforeunload",pFlushWrite);
+function touch(){
+  /* setTimeout, not requestAnimationFrame: rAF is paused outright in a hidden
+     tab, so a mutation made by a background timer would sit unwritten until
+     the tab was looked at again. setTimeout is throttled there but still
+     fires, so nothing is ever stranded. */
+  if(!pWriteQueued){ pWriteQueued=true; setTimeout(pFlushWrite,0); }
   dirty=true;
   if(readOnly){ setSync("readonly","view only"); return; }
   if(!ART){ setSync("local","this device"); return; }
