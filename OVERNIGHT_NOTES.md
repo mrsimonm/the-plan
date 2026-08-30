@@ -1,260 +1,206 @@
-# Overnight notes — 29 Aug 2026
+# Overnight notes — 30 Aug 2026
 
-Branch: **`overnight-features`** (branched from `main` at `88cacb2`). `main` untouched.
-Nothing pushed, nothing force-pushed, no branches deleted.
+Branch: **`overnight-polish`**, branched from `main` at `956eff5`. `main` untouched,
+nothing force-pushed, no branches deleted.
 
-Review in the order below; every commit stands on its own.
+The previous overnight run's notes are preserved in git history (`git show
+956eff5:OVERNIGHT_NOTES.md`).
+
+---
+
+## Part 1 — Bug re-checks: all three were already fixed
+
+You asked me to verify before fixing. I did, with real gestures in the browser,
+and **none of the three still reproduces.** No code was changed for Part 1.
+
+| # | Report | Verified result |
+|---|---|---|
+| 1 | Plachta has no up/down drag at all | **Works.** Body-drag 10:00→13:00 with duration kept; S-handle 2h→4h; N-handle to 11:00/6h |
+| 2 | Up/down resize flaky on his device | **No bug found.** Resize lands on every drag from 5px upward |
+| 3 | Empty-slot click-to-add missing in some views | **Works in all four.** Day, Week, Month and Plachta each open the dialog on the right day with a prefilled time |
+
+On #2 specifically, I swept drag distances rather than trying it a few times:
 
 ```
-4026d3a  Planner: fix three defects found reviewing the overnight work  (review)
-f9e8b92  Planner: fullscreen focus mode for the calendar                (Task 6)
-61efba1  Add OVERNIGHT_NOTES.md
-5ec452f  Planner: click or drag empty grid to add a task or event      (Task 5a/5b)
-561dc16  Planner: add an All Projects overview                          (Task 4)
-b943150  Planner: Task / Event / Subtask model in the UI                (Task 3)
-b5e8f9c  Planner: v7 Task/Event split groundwork, and four board fixes  (Task 3 + review fixes)
-93c5b0b  Timeline: add a Grid calendar mode alongside the linear Gantt   (Task 2)
-a904b32  Planner: frame today and draw a now-line across the board      (Task 1c)
-a4702e9  Planner: make the board's grid lines and day separators legible (Task 1b)
-916f037  Planner: draw scheduled project time as real calendar blocks   (Task 1a)
+3px → no change     (below the 4px arm threshold — correct, stops a click resizing)
+4px → no change     (at the threshold — correct)
+5,6,8,9px → +0.25h
+13,17px   → +0.5h
+26px      → +0.75h
+34px      → +1h
 ```
 
+Monotonic, no dead zone. An earlier code review had suspected a 4–8px band where
+a drag registers but changes nothing; that does **not** reproduce.
+
+### Why his device behaved differently — worth your attention
+
+These reports almost certainly predate the Wave 1 fixes, and the reason they
+survived on *his* laptop specifically is the service-worker bug: the app was
+cache-first on the shell, so a device that had loaded the site once kept that
+build forever. Twenty-five builds shipped under one cache name. **Before
+concluding anything is broken on his machine again, have him tap the version
+badge (bottom-right).** If it does not match the deployed build, nothing else
+he reports can be trusted.
+
 ---
 
-## Status at a glance
+## Part 2 — Mobile performance: what was actually slow
 
-| Task | State | Notes |
+Profiled before changing anything, as asked. Two real causes, both fixed.
+
+### 1. Every edit rewrote the entire store, photos included
+
+`touch()` ran a synchronous `JSON.stringify(S)` plus `localStorage.setItem` on
+**every mutation**. `S` includes `S.photos` — base64 images. Dragging a calendar
+block never touches a photo, but rewrote all of them anyway.
+
+Measured on this desktop, which is several times faster than a phone:
+
+| Store | `touch()` |
+|---|---|
+| 10 KB, no photos | 0.1 ms |
+| 1.9 MB, 12 photos | **4.5 ms** (45×) |
+
+**Fix:** the write is coalesced onto the next timer tick. Callers are unchanged
+and the bytes written are identical — one write happens instead of several.
+Measured after: 20 mutations on a 1.9 MB store produce **0 writes during the
+burst and exactly 1 after**.
+
+`setTimeout`, not `requestAnimationFrame` — rAF is paused outright in a hidden
+tab, so a background mutation would sit unwritten until you looked at the tab
+again. `visibilitychange`, `pagehide` and `beforeunload` all flush
+synchronously, so a pending write can never outlive the session. Verified the
+case that matters: a drag committed and the page reloaded **in the same tick**
+still persisted.
+
+### 2. Work sessions were rescanned for every column
+
+`pItemsFor` walked the whole session list for each day it was asked about,
+building a `Date` and formatting it every time. A Month board asks 31 times, so a
+year of tracked work meant tens of thousands of date conversions to find a
+handful of matches.
+
+**Fix:** sessions are bucketed by day once per render pass, cleared exactly where
+`pCareCache` already is.
+
+| 900 sessions, 31 days | |
+|---|---|
+| rescan per day | 8.4 ms |
+| indexed | **1.7 ms** (~5×) |
+| index build | 0.2 ms |
+
+### Honest caveat
+
+Both wins are real and measured, but they were measured on a desktop with
+*synthetic* data. I could not reproduce your dad's phone. The photo finding is
+the one I would bet on, because it scales with exactly the thing a plant app
+accumulates — and it is invisible until the library gets big.
+
+**Not done, deliberately:** photos still live in the same `localStorage` key as
+everything else, so a very large library keeps the whole store heavy. Splitting
+photos into their own key (or IndexedDB) is the real fix, and it is a storage
+change I was not willing to make unattended overnight.
+
+---
+
+## Part 3 — Visual redesign: the plan
+
+Written before implementing, as you asked.
+
+### Direction
+
+The current look reads generic because it is **tinted green throughout** — the
+neutrals themselves carry a hue, so every surface is faintly green and the
+saturated accent (`#22C55E`) sits on top of it. That combination is what makes
+it feel "like a Google".
+
+The change: **neutral, untinted greys as the system, with one restrained accent
+used sparingly.** Nothing's discipline is that the interface is monochrome and
+the accent is an event, not a background condition. Dark mode becomes a true
+near-black rather than a dark green.
+
+### Palette
+
+**Light**
+
+| Token | Value | Note |
 |---|---|---|
-| 1a projects as calendar blocks | **Done, tested** | |
-| 1b grid line contrast | **Done, tested** | both themes |
-| 1c today frame + now line | **Done, tested** | |
-| 2 Month/Quarter/Year grid + toggle | **Done, tested** | lives under Timeline — see decision D1 |
-| 3 Task / Event / Subtask + migration | **Done, tested** | migration verified branch-by-branch |
-| 4 All Projects overview | **Done, tested** | small Gantt included |
-| 5a click empty slot → dialog | **Done, tested** | |
-| 5b drag range → dialog | **Done, tested** | mouse only, see decision D5 |
-| 5c drag to move | **Already worked; verified not regressed** | copy/duplicate **not** built |
-| 5d resize handles | **Partial (pre-existing)** | bottom-edge only; sides/corners not built |
-| 5e double-click detail / wheel scroll | **Not built** | |
-| 6 fullscreen focus mode | **Done, tested** | fullscreen button + Escape to exit |
-| 7 "Plachta" year canvas | **Not built** | plan sketched below |
+| `--bg` | `#F4F4F2` | warm neutral paper, no hue |
+| `--surface` | `#FFFFFF` | |
+| `--surface-2` | `#FAFAF9` | |
+| `--sunk` | `#ECECEA` | |
+| `--line` | `#E2E2DF` | |
+| `--line-strong` | `#C9C9C4` | |
+| `--ink` | `#16181A` | near-black, faintly cool |
+| `--ink-2` | `#5C6166` | |
+| `--ink-3` | `#8E9499` | |
+| `--accent` | `#3F6B54` | muted forest — the subject acknowledged, not shouted |
+| `--accent-soft` | `#E8EEEA` | |
 
----
+**Dark**
 
-## Review outcome
-
-Both review passes are finished and everything they found is **fixed and
-verified**, not left outstanding.
-
-The first pass (Task 1) found four defects, fixed in `b5e8f9c`: a clamp that
-pushed long project stacks back into the slot it had just cleared and let
-blocks paint past midnight; a now-line drawn frozen across future weeks; a
-`"12:60"` clock string; and a live countdown on slots the app itself invented.
-
-The second pass (Tasks 3–5) found three, fixed in `4026d3a`:
-
-- **The 30s board repaint did not check for an in-flight gesture.** Holding a
-  drag across the tick detached the node the selection measures against — the
-  marquee vanished, and in engines that keep delivering to a removed captured
-  node it would have opened the dialog with a range computed from a zeroed
-  rect (a ~15h event from a 3h drag). A `pBoardBusy` flag now suppresses the
-  repaint for the life of any gesture, cleared on both commit and cancel.
-- **An Event could be created with 0 hours** and then render nowhere at all —
-  excluded from the board for having no duration and from the tray for having
-  a time. Events now clamp to a quarter hour.
-- **The tray labelled a 0-hour task "1h"** while the budget counted it as 0.
-
-Seven items were checked and came back clean, including the null-`el` paths
-through the new gesture, project id plumbing, the overview's window math, and
-whether a task could appear in both the dateless strip and the tray at once.
-
----
-
-## Needs your attention
-
-1. **Visually check the All Projects card on a real screen.** It was verified
-   structurally (asserting against the live DOM: correct rows, hours, states,
-   task rollups), but the browser pane I test in kept collapsing to zero width,
-   so I never got a clean screenshot of that card laid out at full size. The
-   values are right; I have not *seen* it.
-
-2. **BACK UP YOUR REAL DATA BEFORE YOU OPEN THIS BRANCH.** An earlier draft of
-   this file claimed the migration had already run against your data. That was
-   wrong, and I have corrected it.
-
-   The migration has only ever run against synthetic fixtures on my test
-   server (`localhost:8934`). Your real data lives in the `localStorage` of
-   whatever origin you actually use the app from — the Netlify URL — and
-   `localStorage` is per-origin, so nothing I did here touched it. **The
-   migration will run for the first time the moment you load this branch with
-   your real data, and it rewrites every planner record in place.**
-
-   The automatic backup does work — verified: it fires before any record is
-   touched, writes once, is never overwritten, and excludes photos. But belt
-   and braces on a one-way rewrite of real data:
-
-   1. On your **current** app (before loading this branch), open the console
-      and save a copy yourself:
-      ```js
-      copy(localStorage.getItem("pottingbench.v2"))   // then paste into a file
-      ```
-      or use the app's own export if you prefer.
-   2. Then load this branch. The migration runs and writes
-      `pottingbench.backup.pre-v7` automatically.
-   3. `pDownloadBackup()` in the console hands that snapshot back as a file.
-
-   Step 1 is the one that matters — it is the copy that exists independently
-   of anything this branch does.
-
-3. **`hours` on a Task is kept but no longer prominent.** The day budget is
-   computed from it, so dropping it would have silently emptied your planned
-   totals — but a Task's duration is now only editable from the add form. If
-   you want Tasks to stop consuming budget, that is a product decision I did
-   not make for you.
-
-4. **Two projects on one day can still overlap** when the day is genuinely
-   overbooked. They now get the ⚠ clash marker instead of silently rendering as
-   unexplained half-width lanes. Honest, but an overbooked day will look busy.
-
----
-
-## Migration logic (Task 3)
-
-Runs once, gated on `S.planner.modelV !== 7`. **Before any record is touched**,
-`pBackupBeforeMigrate()` writes the whole state (minus photos) to
-`localStorage["pottingbench.backup.pre-v7"]`.
-
-Photos are excluded on purpose: they are megabytes of base64, no migration has
-ever touched them, and including them is the one thing likely to blow the
-storage quota and cost us the backup we came here to make.
-
-**The rule, per your brief:** no meaningful duration → Task; real time range →
-Event.
-
-| Old record | Becomes | Why |
+| Token | Value | Note |
 |---|---|---|
-| `time` set **and** `hours > 0` | **Event** | a real time range |
-| `time` set but `hours === 0` | **Task**, time cleared | a time with no duration is not a range |
-| no `time` | **Task** | nothing to anchor to a clock |
-| old `kind:"project"` (had steps) | **Task** | every Task can hold subtasks now, so the kind is obsolete |
+| `--bg` | `#0B0C0C` | true near-black, untinted |
+| `--surface` | `#141616` | |
+| `--surface-2` | `#1A1D1D` | |
+| `--line` | `#262A29` | |
+| `--line-strong` | `#3A403E` | |
+| `--ink` | `#ECEEED` | |
+| `--ink-2` | `#9AA1A0` | |
+| `--accent` | `#7FA890` | muted sage — calm, deliberately not neon |
+| `--accent-soft` | `#17241D` | |
 
-**Nothing is deleted.**
-- `hours` survives on Tasks (the day budget reads it).
-- `steps` survives on *every* record, including the handful that become Events.
-  An Event does not display subtasks, but they stay in the data — convert it
-  back to a Task and they reappear. I followed your stated rule (time range
-  wins) rather than letting subtasks override it, but kept the data so the
-  call stays reversible.
-- Subtasks are flattened to one level and given id/text/done defaults.
+Dark mode is designed as its own thing rather than an inversion: the accent is
+*lighter and less saturated* than its light-mode counterpart, because a
+saturated colour on near-black glares.
 
-Verified against a hand-built v6 fixture covering all six branches: 0 records
-lost, correct kind on each, backup written, photos excluded, and the migration
-is idempotent (three runs give an identical result, and migrating different
-data afterwards does not overwrite the original backup).
+### Typography
 
----
+- **Display / headings: Space Grotesk** replaces Bricolage Grotesque. Bricolage
+  is a lively, organic variable face; Space Grotesk is drawn from a
+  proto-geometric skeleton with squared terminals — engineered rather than
+  friendly, which is the register asked for.
+- **Body: Manrope**, kept. Clean, geometric, and not the default-system look
+  that reads as generic.
+- **Numerals: JetBrains Mono**, kept and already used in 70 places. Tabular,
+  technical, and central to the engineered feel — the strongest existing asset.
 
-## Decisions I made on your behalf
+### Shape and noise
 
-**D1 — Where the Grid calendar lives.** Task 2 was approved when the scope pill
-still had Month/Quarter/Year buttons. Those no longer exist: Month is now the
-hours×days board and the long-range magnifications moved under **Timeline**. So
-the Grid↔Linear toggle sits in **Timeline**, next to the zoom pills. Linear is
-the existing Gantt, untouched; Grid is the calendar of squares.
+- Radii tighten: `--r` 18→12, `--r-sm` 12→8, `--r-xs` 9→5. Rounded, but
+  precise rather than soft.
+- Shadows flatten hard. The current two-layer 48px blooms are the main source of
+  visual noise; separation comes from 1px hairlines instead.
+- Decorative `--bloom-*` gradients dropped to near-nothing.
 
-**D2 — Grid honours all four magnifications**, not the three originally
-planned: one full month grid, three for a Quarter, dot-only miniatures for Half
-(6) and Year (12). Half was in your magnification list, so leaving it without a
-Grid equivalent would have made the toggle inconsistent.
+### Scope
 
-**D3 — Grid stays read-only** (your approved default). Editing lives in Linear
-where the drag model already exists, so the two can never disagree about what
-an edit meant. Clicking a day opens it in the Day board.
-
-**D4 — Projects are auto-placed on the calendar.** A project has a day-level
-hour budget and no time-of-day, so drawing it as a normal block meant inventing
-one: it packs into the day's first free gap from 09:00, stepping over anything
-already booked. **These times are presentation only** — the day's budget totals
-are computed before placement and never see them. A project block deliberately
-does *not* claim to be "running now" even when the clock falls inside its
-invented slot; that would be a countdown against a time you never set.
-
-**D5 — Drag-to-select is mouse only.** The track is also how the board scrolls
-on a phone; stealing that to draw a selection would trade a gesture you rely on
-for one already reachable from the add form. A touch *tap* still opens the
-dialog.
-
-**D6 — "Half" and "six months" are the same duration**, so the magnification
-list is Month / Quarter / Half / Year rather than carrying both.
+Applied at the token layer, so it lands across Garden, Bench, Grow, Diary,
+Library, Stats, Hours and the Daily Planner at once rather than section by
+section.
 
 ---
 
-## What I did not build, and why
+## What needs your attention
 
-- **5c copy/duplicate a block.** Moving already worked and still does.
-  Duplicating needs a modifier-key or long-press affordance that does not
-  collide with the existing move gesture; I did not want to guess at that
-  interaction and leave it half-wired.
-- **5d side/corner resize handles.** Bottom-edge resize is pre-existing and
-  works. Stretching a block *across days* is a genuinely different operation —
-  one Event belongs to one day in this model, so it would have to split into
-  per-day records. That needs a decision from you first.
-- **5e double-click to edit / wheel to scroll hours.** Not started.
-- **7 "Plachta" year canvas.** Not started. Sketch below.
+1. **Wave 2 is on `main` and on GitHub, untested by you.** You asked me to merge
+   it anyway and I did (`72f47b2`). Tonight's branch sits on top of it. If Wave 2
+   turns out to have problems, `main`'s pre-Wave-2 tip is `07eb0de`.
+2. **The photo storage question** above — the remaining performance ceiling.
+3. **GitHub Pages is not enabled yet.** It needs a click in Settings → Pages, or
+   `gh auth login` so I can do it.
 
-### Sketch: "Plachta" year canvas (Task 7)
+## Decisions made on your behalf
 
-The pieces mostly exist; it is largely assembly plus one real problem.
-
-- `pBoardHtml(days)` already renders an arbitrary list of days as columns with
-  hours down the side, and already scrolls horizontally. A year is just
-  `pDaysFor("year", iso)` returning 365 ISO strings.
-- The blocker is cost, not layout: the board calls `pBudgetOf(d)` per day, which
-  calls `pItemsFor(d)`, which re-scans `S.hours.sessions` from scratch on every
-  call. At 365 columns that is 365 full scans per render. Month (31) is already
-  the current ceiling.
-- So the real work is **windowing or indexing**: either render only ~60 days
-  either side of the scroll position and fill in as it scrolls, or precompute a
-  day→items index once per render instead of re-scanning per day. I would do
-  the index first — it is a contained change and it makes Month cheaper too.
-- Column width would drop to ~18–24px with the day header reduced to a number,
-  and the hour gutter must stay `position:sticky`.
-
----
-
-## Testing notes
-
-Everything below was exercised in a real browser, not just read:
-
-- **1a** project renders as a grid block at 10:00 after a 09:00 standup
-  (correctly skipping the occupied slot), drag handle intact, old chips gone.
-- **1b** measured contrast against the card — dark-mode hour rules went from
-  ~1.1:1 to 1.63:1, separators to 2.39:1.
-- **1c** today framed; 7 now-line segments across a week, solid + dot on today;
-  **0** on a week that does not contain today.
-- **2** all four magnifications render (42 / 112 / 224 / 441 cells), paging
-  steps by the right span, a day cell opens the Day board.
-- **3** migration fixture (above); Task↔Event round trip preserves subtasks and
-  hours; a dateless chip dragged onto an hour became an Event at 05:00.
-- **4** three projects with correct state / hours / end date / task rollups.
-- **5** click → dialog at that hour with a 1h default; drag → dialog with the
-  swept range; existing block drag still moves 07:00→10:00 without the new
-  dialog firing.
-- **6** entering hides header/nav and pins the card fullscreen with the board
-  still rendering its blocks; ✕ and Escape both restore everything. Screenshotted
-  at full size.
-
-**Console is clean** apart from two pre-existing errors unrelated to this work:
-a `sw.js` 404 (the service worker is not served by the plain static test server)
-and `InvalidStateError: Transition was aborted`, from my test script switching
-views faster than the View Transitions API settles.
-
-### A caveat about the test environment
-
-The browser pane repeatedly collapsed to zero width mid-session, which makes
-`getBoundingClientRect()` return zeros. Early drag tests using those
-coordinates failed for that reason and **not** because the feature was broken —
-once the pane was re-opened and driven with real screen coordinates, the same
-drags worked first time. Anywhere I claim something is tested, it was verified
-either by asserting on live DOM content or by a real pointer gesture after the
-pane recovered.
+- **Part 1: changed nothing.** All three reports verified as already fixed. Given
+  your instruction to verify first and only fix what is broken, writing code
+  would have meant inventing a problem.
+- **Coalesced writes rather than splitting photos out.** The bigger win is moving
+  photos to their own key, but that is a storage-layout change, and doing it
+  unattended against a store that holds your real data is not a risk worth
+  taking overnight. The safe fix captures most of the benefit.
+- **Kept Manrope and JetBrains Mono**, replaced only the display face. A full
+  three-family swap would have been a larger, more disruptive change for less
+  gain — the mono is already doing the engineered work.
