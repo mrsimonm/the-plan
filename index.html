@@ -4429,6 +4429,11 @@ const WB_PXH=34, WB_SNAP=0.25;
    column to snap to (Day view). Roughly a Plachta column, so the effort of
    spanning a day feels the same whichever board you are on. */
 const WB_DAYDRAG=86;
+/* Why the last board gesture ended as it did. Purely diagnostic: a drag that
+   silently snaps back is indistinguishable from one the app never saw, and
+   this class of bug has cost several rounds of guessing. Read it from the
+   console with window.pLastCommit after a failed drag. */
+let pLastCommit=null;
 let pBoardAbort=null, pBoardCommit=null;
 window.addEventListener("keydown",e=>{ if(e.key==="Escape"&&pBoardAbort) pBoardAbort(); });
 /* A gesture has to END wherever the pointer is actually released, not only
@@ -5485,7 +5490,7 @@ function pWireBoard(){
     /* a mutation must reach every reader before the finger lifts twice:
        renderPlanner refreshes the task lists, the day panel, the warning line
        AND this board (it ends in pDayPanel + renderSchedule) */
-    const done=()=>{ touch(); pCareCache={}; pSessCache=null; window.ppClearExt&&ppClearExt(); renderPlanner(); };
+    const done=()=>{ pLastCommit={result:"committed",mode:g.mode}; touch(); pCareCache={}; pSessCache=null; window.ppClearExt&&ppClearExt(); renderPlanner(); };
     if(g.mode==="rz8"){
       g.el.classList.remove("rz"); delete g.el.dataset.live;
       board.querySelectorAll(".wb-col.rz-target").forEach(c=>c.classList.remove("rz-target"));
@@ -5494,10 +5499,20 @@ function pWireBoard(){
       if(!tk){ renderSchedule(); return; }
       const fmt=v=>{ const m=Math.round(Math.max(0,Math.min(v,24))*60);
         return String(Math.floor(m/60)%24).padStart(2,"0")+":"+String(m%60).padStart(2,"0"); };
-      /* time and duration belong to the whole run, so they propagate */
+      /* Resizing ONE day resizes that day. Time and duration used to propagate
+         to every member of the run, so dragging one block's N or S handle
+         silently rewrote all its neighbours — the "it resizes all the others"
+         report. A day being resized has stopped matching the run, so it leaves
+         it, exactly as dragging its body does.
+
+         The exception is a corner or W/E drag, which changes how many days the
+         run covers: that IS a whole-run edit, so the run stays intact and the
+         new size applies across it. Vertical alone means one day. */
       if(g.liveHours!=null){
         const st=fmt(g.liveStart), hr=Math.max(0.25,g.liveHours);
-        pApplyToGroup(tk,m=>{ m.time=st; m.hours=hr; });
+        const spanEdit=!!(g.liveDays&&g.liveDays.length);
+        if(spanEdit){ pApplyToGroup(tk,m=>{ m.time=st; m.hours=hr; }); }
+        else { pDetachFromRun(tk); tk.time=st; tk.hours=hr; }
       }
       if(g.liveDays&&g.liveDays.length){
         pSetGroupSpan(tk,g.liveDays[0],g.liveDays[g.liveDays.length-1],tk.due);
@@ -5510,9 +5525,19 @@ function pWireBoard(){
     if(g.moved&&g.mode==="move"){
       const tr=board.querySelector(".wb-track"), sr=tr?tr.getBoundingClientRect():null;
       const rows=board.querySelector(".wb-scroll").getBoundingClientRect();
-      if(sr&&(e.clientY<sr.top-24||e.clientY>sr.bottom+24||e.clientX<rows.left-40||e.clientX>rows.right+40)){
+      /* A detached board measures as all zeros, which would put every release
+         "outside" and snap every drag back. Treat a degenerate rect as no
+         opinion rather than as a rejection. */
+      const measurable=sr&&(sr.height>0||sr.width>0)&&(rows.width>0);
+      if(measurable&&(e.clientY<sr.top-24||e.clientY>sr.bottom+24||e.clientX<rows.left-40||e.clientX>rows.right+40)){
+        pLastCommit={result:"cancelled: released outside the grid",
+          release:{x:Math.round(e.clientX),y:Math.round(e.clientY)},
+          track:{top:Math.round(sr.top),bottom:Math.round(sr.bottom)},
+          scroller:{left:Math.round(rows.left),right:Math.round(rows.right)}};
         g.el.style.transform=""; renderSchedule(); return;
       }
+      if(!measurable) pLastCommit={result:"grid unmeasurable — cancel guard skipped",
+        trackRect:sr?{w:Math.round(sr.width),h:Math.round(sr.height)}:null};
     }
     if(!g.moved){
       g.el.style.transform=""; g.el.classList.remove("sizing"); delete g.el.dataset.live;
@@ -5637,7 +5662,9 @@ function pWireBoard(){
     renderSchedule();
   };
   board.addEventListener("pointerup",commit);
-  const abort=()=>{ pBoardBusy=false; if(G2){ clearTimeout(G2.timer);
+  const abort=()=>{ pBoardBusy=false;
+    if(G2) pLastCommit={result:"aborted: pointercancel or Escape",mode:G2.mode,moved:!!G2.moved};
+    if(G2){ clearTimeout(G2.timer);
     if(G2.mode==="newslot"){ if(G2.el) G2.el.remove(); G2=null; return; }
     G2.el.classList.remove("lift"); G2.el.style.transform=""; G2=null; renderSchedule(); } };
   board.addEventListener("pointercancel",abort);
