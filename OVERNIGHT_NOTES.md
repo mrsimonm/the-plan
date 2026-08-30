@@ -33,6 +33,41 @@ On #2 specifically, I swept drag distances rather than trying it a few times:
 Monotonic, no dead zone. An earlier code review had suspected a 4–8px band where
 a drag registers but changes nothing; that does **not** reproduce.
 
+### Correction, added after you tested — Part 1 was verified on MOUSE only
+
+The table above is true, and it is also incomplete, which made it misleading.
+Everything in it was verified with mouse-type pointer events. On **touch** one
+of them was broken, and it is the one you reported: a touch on a block armed a
+drag only after holding still for 300ms, and any movement before that turned
+the gesture into a pan — so the board scrolled and the block did not move.
+
+```
+touch, drag immediately   09:00 unchanged   nothing happens
+touch, hold 300ms first   09:00 -> 12:00    works
+mouse, drag immediately   09:00 -> 12:00    works
+```
+
+That is why my testing kept passing while yours failed — not a redesign
+regression and not a logic bug, but a touch model requiring an undiscoverable
+long-press. Fixed in `5f38913`: a touch starting on a block now arms the drag
+on movement, with 8px of slop so a tap is still a tap.
+
+Scrolling is not lost. `touch-action:none` is set on `.wb-blk` alone —
+verified, 15 blocks on the board and nothing else — so the empty track, the
+hour gutter, the day headers and the page all still scroll natively.
+
+**The lesson for these notes: "verified" without naming the input type is not
+verified.** Every Part 1 claim has since been re-run on both. Empty-slot click
+is now 8/8 across Day, Week, Month and Plachta on mouse and touch; Plachta
+drag and resize are confirmed on touch as well.
+
+One false alarm worth recording, because it nearly became a bug report: my
+Plachta probe initially reported the empty-slot click as broken. It was picking
+a point at y=10, which sits under the sticky app header — the click hit the
+header, not the track. The earlier run used a 900px-tall viewport where the
+same code happened to pick a valid point. The probe now requires the top-most
+element at the point to actually be the track.
+
 ### Why his device behaved differently — worth your attention
 
 These reports almost certainly predate the Wave 1 fixes, and the reason they
