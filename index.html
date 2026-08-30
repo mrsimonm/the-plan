@@ -5482,7 +5482,7 @@ function pWireBoard(){
     }
     e.preventDefault();
   });
-  const commit=e=>{
+  const commitInner=e=>{
     if(!G2||e.pointerId!==G2.pid) return;
     const g=G2; G2=null; pBoardBusy=false; clearTimeout(g.timer);
     if(g.mode==="newslot"){
@@ -5695,6 +5695,23 @@ function pWireBoard(){
       mode:g.mode, kind:g.kind, id:g.id, day:day,
       taskFound:!!pFindTask(g.id), blockFound:!!pFindBlock(g.id)});
     renderSchedule();
+  };
+  /* Any throw inside the commit used to vanish: it aborted the board's
+     pointerup handler before any endpoint could be recorded, left the gesture
+     half-finished, and the next render put the block back — a snap-back with
+     no trace, which is exactly what the logs showed. The error is now recorded
+     and the latch released, so one bad commit cannot wedge every later
+     gesture. It is still rethrown, because it is a real bug and should reach
+     the console too. */
+  const commit=e=>{
+    try{ commitInner(e); }
+    catch(err){
+      pGLog("end",{result:"threw: "+(err&&err.message),
+        where:String((err&&err.stack)||"").split("\n").slice(0,4).join(" | ")});
+      G2=null; pBoardBusy=false;
+      renderSchedule();
+      throw err;
+    }
   };
   board.addEventListener("pointerup",e=>{ pGLog("up",{ptr:e.pointerType,
     hasGesture:!!G2, mode:G2&&G2.mode, armed:!!(G2&&G2.armed), moved:!!(G2&&G2.moved),
