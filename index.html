@@ -3167,7 +3167,7 @@ const $=s=>document.querySelector(s);
 /* Build stamp. `n` is incremented by bump.py at publish time so two phones can
    be compared at a glance — an installed PWA serving a stale service-worker
    cache is otherwise indistinguishable from an up-to-date one. */
-const BUILD={ver:"1.0",n:45,at:"2026-08-30"};
+const BUILD={ver:"1.0",n:46,at:"2026-08-30"};
 const uid=()=>Math.random().toString(36).slice(2,9);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
