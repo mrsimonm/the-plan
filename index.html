@@ -4429,11 +4429,27 @@ const WB_PXH=34, WB_SNAP=0.25;
    column to snap to (Day view). Roughly a Plachta column, so the effort of
    spanning a day feels the same whichever board you are on. */
 const WB_DAYDRAG=86;
-/* Why the last board gesture ended as it did. Purely diagnostic: a drag that
-   silently snaps back is indistinguishable from one the app never saw, and
-   this class of bug has cost several rounds of guessing. Read it from the
-   console with window.pLastCommit after a failed drag. */
+/* Board gesture diagnostics. A drag that silently snaps back is
+   indistinguishable from one the app never saw, and guessing at the difference
+   has cost several rounds.
+
+   Deliberately hung off `window`: a top-level `let` in a classic script is a
+   lexical binding, NOT a property of window, so `window.pLastCommit` read
+   undefined even after a perfectly good commit and made a working gesture look
+   like a missing one. Anything meant to be read from a console has to be an
+   explicit window property.
+
+   Read after a failed drag:  copy(JSON.stringify(window.pGestureLog)) */
 let pLastCommit=null;
+window.pGestureLog=[];
+function pGLog(stage,info){
+  const e=Object.assign({stage},info||{});
+  window.pGestureLog.push(e);
+  if(window.pGestureLog.length>40) window.pGestureLog.shift();
+  if(stage==="end"){ pLastCommit=e; window.pLastCommit=e; }
+  return e;
+}
+window.pGestureReset=()=>{ window.pGestureLog=[]; };
 let pBoardAbort=null, pBoardCommit=null;
 window.addEventListener("keydown",e=>{ if(e.key==="Escape"&&pBoardAbort) pBoardAbort(); });
 /* A gesture has to END wherever the pointer is actually released, not only
@@ -4451,7 +4467,9 @@ window.addEventListener("keydown",e=>{ if(e.key==="Escape"&&pBoardAbort) pBoardA
    with the board on every render; window's are not, and commit already returns
    unless the pointerId matches the live gesture, so this cannot fire twice or
    act on an unrelated click. */
-window.addEventListener("pointerup",e=>{ if(pBoardCommit) pBoardCommit(e); });
+window.addEventListener("pointerup",e=>{
+  if(typeof pGLog==="function") pGLog("winUp",{hasHook:!!pBoardCommit});
+  if(pBoardCommit) pBoardCommit(e); });
 window.addEventListener("pointercancel",()=>{ if(pBoardAbort) pBoardAbort(); });
 function pWeekDays(iso){
   const d=pParseISO(iso), off=(d.getDay()+6)%7;
@@ -5241,6 +5259,10 @@ function pWireBoard(){
     return {day, time:Math.max(0,Math.min(23.75,time))};
   };
   board.addEventListener("pointerdown",e=>{
+    pGLog("down",{ptr:e.pointerType,btn:e.button,buttons:e.buttons,
+      target:(e.target.className||e.target.tagName)+"",
+      onBlock:!!(e.target.closest&&e.target.closest(".wb-blk")),
+      hadLiveGesture:!!G2});
     if(e.button!==undefined&&e.button!==0) return;
     if(G2) return;                        // one gesture at a time — a second finger is noise
     const rz8=e.target.closest("[data-wbrz]");
@@ -5490,7 +5512,7 @@ function pWireBoard(){
     /* a mutation must reach every reader before the finger lifts twice:
        renderPlanner refreshes the task lists, the day panel, the warning line
        AND this board (it ends in pDayPanel + renderSchedule) */
-    const done=()=>{ pLastCommit={result:"committed",mode:g.mode}; touch(); pCareCache={}; pSessCache=null; window.ppClearExt&&ppClearExt(); renderPlanner(); };
+    const done=()=>{ pGLog("end",{result:"committed",mode:g.mode}); touch(); pCareCache={}; pSessCache=null; window.ppClearExt&&ppClearExt(); renderPlanner(); };
     if(g.mode==="rz8"){
       g.el.classList.remove("rz"); delete g.el.dataset.live;
       board.querySelectorAll(".wb-col.rz-target").forEach(c=>c.classList.remove("rz-target"));
@@ -5530,14 +5552,14 @@ function pWireBoard(){
          opinion rather than as a rejection. */
       const measurable=sr&&(sr.height>0||sr.width>0)&&(rows.width>0);
       if(measurable&&(e.clientY<sr.top-24||e.clientY>sr.bottom+24||e.clientX<rows.left-40||e.clientX>rows.right+40)){
-        pLastCommit={result:"cancelled: released outside the grid",
+        pGLog("end",{result:"cancelled: released outside the grid",
           release:{x:Math.round(e.clientX),y:Math.round(e.clientY)},
           track:{top:Math.round(sr.top),bottom:Math.round(sr.bottom)},
-          scroller:{left:Math.round(rows.left),right:Math.round(rows.right)}};
+          scroller:{left:Math.round(rows.left),right:Math.round(rows.right)}});
         g.el.style.transform=""; renderSchedule(); return;
       }
-      if(!measurable) pLastCommit={result:"grid unmeasurable — cancel guard skipped",
-        trackRect:sr?{w:Math.round(sr.width),h:Math.round(sr.height)}:null};
+      if(!measurable) pGLog("end",{result:"grid unmeasurable — cancel guard skipped",
+        trackRect:sr?{w:Math.round(sr.width),h:Math.round(sr.height)}:null});
     }
     if(!g.moved){
       g.el.style.transform=""; g.el.classList.remove("sizing"); delete g.el.dataset.live;
@@ -5661,13 +5683,15 @@ function pWireBoard(){
     }
     renderSchedule();
   };
-  board.addEventListener("pointerup",commit);
+  board.addEventListener("pointerup",e=>{ pGLog("up",{ptr:e.pointerType,
+    hasGesture:!!G2, mode:G2&&G2.mode, armed:!!(G2&&G2.armed), moved:!!(G2&&G2.moved),
+    pidMatch:!!(G2&&e.pointerId===G2.pid)}); commit(e); });
   const abort=()=>{ pBoardBusy=false;
-    if(G2) pLastCommit={result:"aborted: pointercancel or Escape",mode:G2.mode,moved:!!G2.moved};
+    if(G2) pGLog("end",{result:"aborted: pointercancel or Escape",mode:G2.mode,moved:!!G2.moved});
     if(G2){ clearTimeout(G2.timer);
     if(G2.mode==="newslot"){ if(G2.el) G2.el.remove(); G2=null; return; }
     G2.el.classList.remove("lift"); G2.el.style.transform=""; G2=null; renderSchedule(); } };
-  board.addEventListener("pointercancel",abort);
+  board.addEventListener("pointercancel",e=>{ pGLog("cancel",{ptr:e.pointerType}); abort(); });
   /* the board element is replaced on every render so its own listeners die with
      it — window's do NOT. One module-level hook, overwritten per wiring pass,
      instead of a listener stacking up on every week render. */
