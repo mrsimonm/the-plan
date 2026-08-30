@@ -524,8 +524,14 @@ html.pfocus #view-planner .sec-head{display:none}
 html.pfocus .pfocus-btn{position:sticky; right:0}
 /* eight resize grips on an Event block. Kept small and only visible on hover
    (or always, on touch, where there is no hover to reveal them). */
-.wb-h{position:absolute; z-index:4; opacity:0; transition:opacity .12s}
-.wb-blk:hover .wb-h,.wb-blk.rz .wb-h{opacity:1}
+/* Invisible handles must not be grabbable. These sat at opacity:0 with
+   pointer-events:auto, so a block looked like a plain rectangle while eight
+   resize targets covered its edges — grabbing the title hit the N or NW handle
+   and silently resized instead of moving. You can only grab what you can see. */
+.wb-h{position:absolute; z-index:4; opacity:0; pointer-events:none;
+  transition:opacity .12s}
+.wb-blk:hover .wb-h,.wb-blk:focus-within .wb-h,.wb-blk.rz .wb-h{
+  opacity:1; pointer-events:auto}
 /* Sat 3px OUTSIDE the block so the grip straddled its border — but .wb-blk is
    overflow:hidden, which clips hit-testing as well as paint. Measured: a 7px
    grip offered 4 grabbable rows, and the 3 it lost were the outer ones, which
@@ -537,8 +543,8 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
    is ~40px wide, where flat 12px corners plus the side grips left only half the
    block grabbable. min() keeps the same comfortable target on a wide Day column
    and shrinks it on a narrow one. */
-.wb-h-n{top:0; left:min(14px,22%); right:min(14px,22%); height:var(--grip,8px); cursor:ns-resize}
-.wb-h-s{bottom:0; left:min(14px,22%); right:min(14px,22%); height:var(--grip,8px); cursor:ns-resize}
+.wb-h-n{top:0; left:28%; right:28%; height:min(var(--grip,8px),6px); cursor:ns-resize}
+.wb-h-s{bottom:0; left:28%; right:28%; height:min(var(--grip,8px),6px); cursor:ns-resize}
 .wb-h-w{left:0; top:var(--grip,8px); bottom:var(--grip,8px); width:min(6px,10%); cursor:ew-resize}
 .wb-h-e{right:0; top:var(--grip,8px); bottom:var(--grip,8px); width:min(6px,10%); cursor:ew-resize}
 .wb-h-nw{top:0; left:0; width:min(12px,20%); height:var(--grip,8px); cursor:nwse-resize}
@@ -5147,8 +5153,13 @@ function pBoardHtml(days,topStrip,opts){
                block (17px) the N and S grips alone left 3px of body and the
                thing could not be dragged at all, so a short Event keeps just the
                bottom edge and stays movable. */
+            /* No corners. A corner combined a vertical and a horizontal edit
+               in a single grab, so one mis-aimed press changed the time AND
+               minted a record on the neighbouring day — two wrong things at
+               once, from a target the user could not see. Both axes are still
+               reachable, one at a time, from the edges. */
             ?(hpx>=30
-              ?["n","s","w","e","nw","ne","sw","se"].map(h=>
+              ?["n","s","w","e"].map(h=>
                 `<i class="wb-h wb-h-${h}" data-wbrz="${h}"></i>`).join("")
               :`<i class="wb-h wb-h-s" data-wbrz="s"></i>`)
           /* 24, not 26: a 45-minute block is 25.5px and fell half a pixel short,
