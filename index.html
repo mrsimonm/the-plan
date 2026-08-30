@@ -482,6 +482,30 @@ input[type="time"].mono-input{width:88px}
 .pslot-when{margin:0 0 10px; font-family:"JetBrains Mono",ui-monospace,monospace;
   font-size:12px; color:var(--ink-3)}
 .pslot-row{display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:10px}
+/* the kind toggle sits above the title, so switching Task/Event reads as
+   changing what this thing IS rather than as another field */
+#pSlotKind{margin-bottom:10px}
+#pSlotKind[hidden]{display:none}
+.pslot-done{display:inline-flex; align-items:center; gap:7px; margin-top:12px;
+  font-size:13px; color:var(--ink-2); cursor:pointer}
+.pslot-done input{width:15px; height:15px; accent-color:var(--accent); cursor:pointer}
+/* subtasks: one level, so the list is flat by construction */
+.pslot-steps{margin-top:14px; border-top:1px solid var(--line); padding-top:10px}
+.pslot-steps[hidden]{display:none}
+.pslot-step{display:flex; align-items:center; gap:7px; margin:5px 0}
+.pslot-step input[type=checkbox]{width:14px; height:14px; flex:0 0 auto;
+  accent-color:var(--accent); cursor:pointer}
+.pslot-steptext{flex:1 1 auto; min-width:0; background:transparent; color:var(--ink);
+  border:1px solid transparent; border-radius:5px; padding:3px 5px; font:inherit; font-size:13px}
+.pslot-steptext:hover{border-color:var(--line)}
+.pslot-steptext:focus{border-color:var(--accent); outline:none; background:var(--sunk)}
+.pslot-step.done .pslot-steptext{color:var(--ink-2); text-decoration:line-through}
+.pslot-stepdel{flex:0 0 auto; background:none; border:0; color:var(--ink-2);
+  cursor:pointer; font-size:13px; line-height:1; padding:3px 5px; border-radius:5px}
+.pslot-stepdel:hover{color:var(--crit); background:var(--sunk)}
+.pslot-addstep{display:flex; gap:6px; margin-top:8px}
+.pslot-addstep input{flex:1 1 auto; min-width:0}
+.pdaydlg-note{margin:0 0 10px; font-size:12px; line-height:1.5; color:var(--ink-2)}
 /* the footer is a flex row, and display:flex beats the hidden attribute — New
    mode was still showing Delete and Save */
 .dlg-foot [hidden]{display:none}
@@ -557,6 +581,17 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .wb-adtick{width:11px; height:11px; flex:0 0 auto; border-radius:3px; cursor:pointer;
   border:1.5px solid var(--line-strong); background:var(--surface)}
 .wb-adtick:hover{border-color:var(--accent)}
+/* a ticked Quick Task: filled box, and the chip recedes without leaving the
+   day — the point is to read back what you did, not to make it vanish */
+.wb-adtick.on{background:var(--accent); border-color:var(--accent); position:relative}
+.wb-adtick.on::after{content:"✓"; position:absolute; inset:0; display:flex;
+  align-items:center; justify-content:center; font-size:8px; line-height:1; color:#fff}
+/* A Quick Task has no clock slot, so it is never picked up. touch-action goes
+   back to auto with it: the drag-only value would otherwise swallow a scroll
+   started on the chip, on a chip that cannot be dragged. */
+.wb-adtask.quick{cursor:default; touch-action:auto}
+.wb-adtask.done{opacity:.5}
+.wb-adtask.done:not(:hover){text-decoration:line-through; text-decoration-thickness:1px}
 /* Plachta: columns are a fixed width so the canvas scrolls rather than
    squeezing, and so the scroll maths can trust a known column pitch */
 /* max-content, not 0: a sticky box is clamped to its containing block, so a
@@ -671,7 +706,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
   outline:2px solid var(--accent); outline-offset:2px}
 .wb-blk:hover{filter:brightness(1.06)}
 .wb-traychip:hover{border-style:solid}
-#view-projplan .ppsw:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.ppsw:focus-visible{outline:2px solid var(--accent); outline-offset:3px}
 @media (hover:none){ .wb-rsz{height:14px} }
 .plink-row{display:flex; align-items:center; gap:9px; padding:5px 0; font-size:13.5px; cursor:pointer}
 .plink-row input[type="checkbox"]{width:auto; accent-color:var(--accent)}
@@ -1684,9 +1719,24 @@ html{overscroll-behavior-y:none}
 #view-projplan .f input{ width: 100%; }
 #view-projplan .duo{ display: flex; gap: .7rem; }
 #view-projplan .duo .f{ flex: 1; }
-#view-projplan .swatch{ display: flex; gap: .4rem; flex-wrap: wrap; }
-#view-projplan .ppsw{ width: 27px; height: 27px; border-radius: 3px; border: 2px solid transparent; padding: 0; cursor: pointer; }
-#view-projplan .ppsw[aria-pressed="true"]{ border-color: var(--ink); }
+/* NOT scoped to #view-projplan: the project dialog is deliberately body-level
+   (a <dialog> inside a display:none ancestor opens invisible), so every rule
+   written as "#view-projplan .ppsw" silently missed it. The swatches were
+   getting no width or height at all and collapsed to 16x6px, which is why the
+   colours could not be told apart. */
+.swatch{ display:flex; gap:8px; flex-wrap:wrap; }
+.ppsw{ width:38px; height:38px; border-radius:9px; padding:0; cursor:pointer;
+  border:2px solid color-mix(in srgb, var(--ink) 22%, transparent);
+  position:relative; transition:transform .08s ease, box-shadow .12s ease; }
+.ppsw:hover{ transform:translateY(-1px); box-shadow:0 2px 6px rgba(0,0,0,.28); }
+/* the chosen one reads at a glance: a ring that is not the colour itself,
+   plus a tick, so it survives whatever the swatch colour happens to be */
+.ppsw[aria-pressed="true"]{ border-color:var(--ink);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--ink) 20%, transparent); }
+.ppsw[aria-pressed="true"]::after{ content:"✓"; position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:17px; line-height:1; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.65); }
+@media (hover:none){ .ppsw{ width:44px; height:44px; } }
 #view-projplan .info{ font-size: var(--fs-small); line-height: 1.55; color: var(--ink-2); background: var(--surface-2);
           border-left: 2px solid var(--accent); padding: .55rem .7rem; border-radius: 0 3px 3px 0; }
 #view-projplan .info.warn{ border-left-color: var(--amber); color: var(--amber); }
@@ -2129,21 +2179,25 @@ html{overscroll-behavior-y:none}
     <div class="stack pstack">
 
     <form class="card pad qadd" id="pAddForm">
+      <!-- all four kinds are created from one place; Project opens its own
+           dialog because it is budgeted in hours, not placed on a clock -->
       <div class="seg segsm qadd-kind" id="pAddKind">
+        <button type="button" data-pkind="quick" aria-pressed="false">Quick</button>
         <button type="button" data-pkind="task" aria-pressed="true">Task</button>
         <button type="button" data-pkind="event" aria-pressed="false">Event</button>
+        <button type="button" data-pnew="project">Project</button>
       </div>
       <input type="text" id="pAddTitle" placeholder="What needs doing?" autocomplete="off">
       <div class="qadd-row2">
         <span class="field-label">on</span>
         <input type="date" id="pAddDue" class="mono-input">
-        <span class="field-label pev-only">at</span>
-        <input type="time" id="pAddTime" class="mono-input pev-only" aria-label="Start time">
-        <span class="field-label">takes</span>
-        <input type="number" id="pAddHours" class="mono-input hrs" value="1" min="0" max="24" step="0.5">
-        <span class="field-label">h</span>
-        <span class="field-label">for</span>
-        <select id="pAddProject" class="mono-input" aria-label="Link to a project"></select>
+        <span class="field-label pk-time">at</span>
+        <input type="time" id="pAddTime" class="mono-input pk-time" aria-label="Start time">
+        <span class="field-label pk-detail">takes</span>
+        <input type="number" id="pAddHours" class="mono-input hrs pk-detail" value="1" min="0" max="24" step="0.5">
+        <span class="field-label pk-detail">h</span>
+        <span class="field-label pk-detail">for</span>
+        <select id="pAddProject" class="mono-input pk-detail" aria-label="Link to a project"></select>
         <button class="btn primary mini" type="submit">Add</button>
       </div>
       <p class="pwarn" id="pAddWarn" hidden></p>
@@ -2712,15 +2766,36 @@ html{overscroll-behavior-y:none}
   <h3 class="dlg-head" id="pSlotTitle">New</h3>
   <div class="dlg-body">
     <p class="pslot-when" id="pSlotWhen"></p>
+    <!-- editing only: a Task and an Event hold the same fields, so the kind is
+         a property you can change rather than something fixed at creation -->
+    <div class="seg segsm" id="pSlotKind" hidden>
+      <button type="button" data-skind="task" aria-pressed="true">Task</button>
+      <button type="button" data-skind="event" aria-pressed="false">Event</button>
+    </div>
     <input type="text" id="pSlotText" placeholder="What is it?" autocomplete="off" style="width:100%">
     <div class="pslot-row">
+      <span class="field-label pslot-edit-only">on</span>
+      <input type="date" id="pSlotDate" class="mono-input pslot-edit-only">
       <span class="field-label">at</span>
       <input type="time" id="pSlotTime" class="mono-input">
       <span class="field-label">takes</span>
-      <input type="number" id="pSlotHours" class="mono-input hrs" min="0.25" max="24" step="0.25" value="1">
+      <input type="number" id="pSlotHours" class="mono-input hrs" min="0" max="24" step="0.25" value="1">
       <span class="field-label">h</span>
       <span class="field-label">for</span>
       <select id="pSlotProject" class="mono-input"></select>
+    </div>
+    <label class="pslot-done pslot-edit-only" id="pSlotDoneWrap">
+      <input type="checkbox" id="pSlotDone"> <span>Done</span>
+    </label>
+    <!-- one level of subtasks, Tasks only: an Event is a slot in the day, not
+         a thing with parts -->
+    <div class="pslot-steps" id="pSlotSteps" hidden>
+      <span class="eyebrow">Subtasks</span>
+      <div id="pSlotStepList"></div>
+      <div class="pslot-addstep">
+        <input type="text" id="pSlotStepNew" placeholder="Add a subtask" autocomplete="off">
+        <button class="btn mini" type="button" id="pSlotStepAdd">Add</button>
+      </div>
     </div>
   </div>
   <div class="dlg-foot">
@@ -2729,6 +2804,30 @@ html{overscroll-behavior-y:none}
     <button class="btn primary" type="button" id="pSlotAddEvent">Add event</button>
     <button class="btn danger" type="button" id="pSlotDelete" hidden>Delete</button>
     <button class="btn primary" type="button" id="pSlotSave" hidden>Save</button>
+  </div>
+</dialog>
+
+<!-- One day of a repeating thing. A Project and a recurring block are each a
+     single record spread over many days, so an edit has to say which it means:
+     this day, or the whole series. -->
+<dialog id="pDayDlg">
+  <h3 class="dlg-head" id="pDayDlgTitle">This day</h3>
+  <div class="dlg-body">
+    <p class="pslot-when" id="pDayDlgWhen"></p>
+    <p class="pdaydlg-note" id="pDayDlgNote"></p>
+    <div class="pslot-row" id="pDayDlgRow">
+      <span class="field-label">at</span>
+      <input type="time" id="pDayDlgTime" class="mono-input">
+      <span class="field-label">takes</span>
+      <input type="number" id="pDayDlgHours" class="mono-input hrs" min="0" max="24" step="0.25">
+      <span class="field-label">h</span>
+    </div>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn" type="button" id="pDayDlgCancel">Cancel</button>
+    <button class="btn" type="button" id="pDayDlgSeries">Whole series…</button>
+    <button class="btn danger" type="button" id="pDayDlgRemove">Remove this day</button>
+    <button class="btn primary" type="button" id="pDayDlgSave">Save this day</button>
   </div>
 </dialog>
 
@@ -2916,6 +3015,24 @@ function migrate(d){
      itself — taking the whole boot down with it. Array.isArray or nothing. */
   if(!Array.isArray(d.planner.tasks)) d.planner.tasks=[];
   if(!Array.isArray(d.planner.blocks)) d.planner.blocks=[];
+  /* a recurring block's per-day exceptions: null means that occurrence is
+     gone, an object means it exists with its own time and duration. Anything
+     else came from a hand-edited import and is dropped rather than trusted. */
+  d.planner.blocks.forEach(b=>{
+    if(!b||typeof b!=="object") return;
+    if(!b.ex||typeof b.ex!=="object"||Array.isArray(b.ex)){ b.ex={}; return; }
+    const clean={};
+    Object.keys(b.ex).forEach(k=>{
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(k)) return;
+      const v=b.ex[k];
+      if(v===null){ clean[k]=null; return; }
+      if(v&&typeof v==="object"){
+        clean[k]={time:typeof v.time==="string"?v.time:(b.time||""),
+                  hours:Math.max(0,Math.min(24,+v.hours||0))};
+      }
+    });
+    b.ex=clean;
+  });
   d.planner.tasks.forEach(tk=>{
     if(tk.time===undefined) tk.time="";
     /* anything already carrying steps was a project in all but name */
@@ -2961,7 +3078,15 @@ function migrate(d){
        the day IS the order, so no sequence field is needed. A group of one is
        not a group, so a stale single-member groupId is cleared on load. */
     if(tk.groupId===undefined) tk.groupId=null;
-    if(tk.kind!=="event"&&tk.kind!=="task") tk.kind="task";
+    /* The whitelist rejects junk from a hand-edited import, so every kind the
+       app can actually create has to be in it. "quick" was not, and this line
+       runs on EVERY load rather than behind the version gate — so a Quick Task
+       was quietly demoted to a Task the next time the app opened, and the
+       distinction never survived a reload. */
+    if(tk.kind!=="event"&&tk.kind!=="task"&&tk.kind!=="quick") tk.kind="task";
+    /* a Quick Task is a whole day with no clock slot and no duration; carrying
+       either would let it draw as a block */
+    if(tk.kind==="quick"){ tk.time=""; tk.hours=0; }
   });
   /* drop groupIds that ended up with a single member (a delete, or a hand
      edited import) — otherwise a lone record keeps claiming to be a span */
@@ -4086,13 +4211,17 @@ function pDueLabel(due){
 function pItemsFor(iso){
   const out=[], isToday=iso===pToday();
   (S.planner.blocks||[]).forEach(b=>{
-    if(!(b.dow||[]).includes(pParseISO(iso).getDay())) return;
-    out.push({kind:"block",ref:b,name:b.title||t("Untitled block"),hours:+b.hours||0,
-      time:b.time||"",overdue:false});
+    const oc=pBlockOn(b,iso); if(!oc) return;
+    out.push({kind:"block",ref:b,name:b.title||t("Untitled block"),hours:+oc.hours||0,
+      time:oc.time||"",overdue:false});
   });
   (S.planner.tasks||[]).forEach(tk=>{
-    if(tk.done) return;
-    if(!tk.due) return;                 // quick tasks have no day and no duration
+    const isQuick=tk.kind==="quick";
+    /* Everything else disappears once it is done. A Quick Task stays put and
+       greys out: ticking it off is the whole interaction, and a list that
+       empties itself as you tick it gives you nothing to read back. */
+    if(tk.done&&!isQuick) return;
+    if(!tk.due) return;                 // dateless items live in the tray below
     /* Only a TASK can be overdue. A task is a thing still to be done, so once
        its day passes it is pulled onto today and loses its slot — yesterday's
        09:00 means nothing now, and drawing it there would be a lie.
@@ -4101,7 +4230,9 @@ function pItemsFor(iso){
        overdue stripped their time on their own day too, so every past day of
        the calendar rendered empty and anything created on one vanished. */
     const isEvent=tk.kind==="event";
-    const overdue=!isEvent&&tk.due<pToday();
+    /* a Quick Task belongs to its day the way an Event does — it is what that
+       day held, so it is never dragged forward onto today */
+    const overdue=!isEvent&&!isQuick&&tk.due<pToday();
     if(!(tk.due===iso||(isToday&&overdue))) return;
     out.push({kind:"task",ref:tk,name:tk.title||t("Untitled task"),hours:+tk.hours||0,
       time:overdue?"":(tk.time||""),overdue});
@@ -4389,28 +4520,75 @@ function pDatelessStripHtml(){
 let pSlotDay=null, pSlotEditId=null;
 /* double-click opens the same dialog in edit mode: same fields, different
    verbs. Reusing it keeps one place that knows what an Event is made of. */
+/* Which kind the open dialog is editing. Kept apart from the record so the
+   fields can follow the toggle before anything is saved. */
+let pSlotKindVal="task";
+/* Draw the subtask list for the record being edited. One level, no nesting:
+   a subtask is a step, not another task. */
+function pSlotRenderSteps(){
+  const tk=pFindTask(pSlotEditId);
+  const box=$("#pSlotStepList"); if(!box) return;
+  const steps=(tk&&Array.isArray(tk.steps))?tk.steps:[];
+  box.innerHTML=steps.length?steps.map(s=>`<label class="pslot-step${s.done?" done":""}">
+      <input type="checkbox" data-stog="${esc(s.id)}"${s.done?" checked":""}>
+      <input type="text" class="pslot-steptext" data-stext="${esc(s.id)}" value="${esc(s.text||"")}">
+      <button type="button" class="pslot-stepdel" data-sdel="${esc(s.id)}"
+        aria-label="${esc(t("Remove"))}">✕</button>
+    </label>`).join("")
+    :`<p class="empty" style="margin:2px 0 6px">${esc(t("No subtasks yet."))}</p>`;
+}
+/* Show the fields that mean something for this kind. An Event must sit at a
+   time; a Task may carry one and may hold subtasks. Nothing is hidden to make
+   a Task feel smaller — only what genuinely does not apply. */
+function pSlotSyncKind(){
+  const isEvent=pSlotKindVal==="event";
+  document.querySelectorAll("#pSlotKind [data-skind]").forEach(b=>
+    b.setAttribute("aria-pressed",String(b.dataset.skind===pSlotKindVal)));
+  const steps=$("#pSlotSteps"); if(steps) steps.hidden=isEvent||!pSlotEditId;
+  const ti=$("#pSlotTime");
+  if(ti) ti.placeholder=isEvent?"":t("optional");
+}
 function pOpenEditDialog(id){
   const tk=pFindTask(id); if(!tk) return;
-  /* this dialog writes a time and a duration, which only an Event may carry */
-  if(tk.kind!=="event") return;
+  /* A Quick Task is deliberately the one thing with no editor: it is a whole
+     day and a tick, and giving it fields would make it a Task. */
+  if(tk.kind==="quick") return;
   const sp=pGroupSpan(tk);
-  pOpenSlotDialog(tk.due,0,tk.hours);
+  pOpenSlotDialog(tk.due,0,tk.hours||1);
   pSlotEditId=id;
+  pSlotKindVal=tk.kind==="event"?"event":"task";
+  $("#pSlotKind").hidden=false;
   $("#pSlotText").value=tk.title||"";
-  $("#pSlotTime").value=tk.time||"09:00";
-  $("#pSlotHours").value=Math.round(Math.max(0.25,+tk.hours||1)*100)/100;
+  $("#pSlotDate").value=tk.due||"";
+  $("#pSlotTime").value=tk.time||"";
+  $("#pSlotHours").value=Math.round(Math.max(0,+tk.hours||0)*100)/100;
   $("#pSlotProject").value=tk.projectId||"";
+  $("#pSlotDone").checked=!!tk.done;
   $("#pSlotTitle").textContent=t("Edit");
   const span=sp.members.length>1?" · "+sp.members.length+" "+t("days"):"";
   $("#pSlotWhen").textContent=$("#pSlotWhen").textContent+span;
   $("#pSlotAddTask").hidden=true; $("#pSlotAddEvent").hidden=true;
   $("#pSlotSave").hidden=false; $("#pSlotDelete").hidden=false;
+  document.querySelectorAll("#pSlotDlg .pslot-edit-only").forEach(el=>{ el.style.display=""; });
+  /* "Close", not "Cancel": ticking or adding a subtask writes straight to the
+     record — which is what you want from a checklist — so this button cannot
+     honestly promise to undo everything. The fields above it still need Save. */
+  $("#pSlotCancel").textContent=t("Close");
+  pSlotSyncKind(); pSlotRenderSteps();
 }
 function pOpenSlotDialog(day,fromH,hours){
   pSlotEditId=null;
   $("#pSlotTitle").textContent=t("New");
   $("#pSlotAddTask").hidden=false; $("#pSlotAddEvent").hidden=false;
   $("#pSlotSave").hidden=true; $("#pSlotDelete").hidden=true;
+  /* creating, not editing: the edit-only controls stay out of the way, and
+     none of them may carry a value over from the last record opened */
+  $("#pSlotKind").hidden=true;
+  $("#pSlotSteps").hidden=true;
+  $("#pSlotDone").checked=false;
+  $("#pSlotStepNew").value="";
+  $("#pSlotCancel").textContent=t("Cancel");   // nothing written yet, so it really does cancel
+  document.querySelectorAll("#pSlotDlg .pslot-edit-only").forEach(el=>{ el.style.display="none"; });
   pSlotDay=day||pToday();
   const hhmm=v=>{ const m=Math.round(Math.max(0,Math.min(v,24))*60);
     return String(Math.floor(m/60)%24).padStart(2,"0")+":"+String(m%60).padStart(2,"0"); };
@@ -4443,14 +4621,53 @@ function pSlotCreate(kind){
 }
 $("#pSlotSave").addEventListener("click",()=>{
   const tk=pFindTask(pSlotEditId); if(!tk){ $("#pSlotDlg").close(); return; }
+  const isEvent=pSlotKindVal==="event";
   const title=$("#pSlotText").value.trim()||t("Untitled task");
-  const time=$("#pSlotTime").value||tk.time||"09:00";
-  const hours=Math.max(0.25,+$("#pSlotHours").value||1);
+  /* An Event has to sit at a time, so it keeps a fallback. A Task may have
+     none, and clearing the field is how you take one away. */
+  const time=isEvent?($("#pSlotTime").value||tk.time||"09:00"):($("#pSlotTime").value||"");
+  const hours=isEvent?Math.max(0.25,+$("#pSlotHours").value||1)
+                     :Math.max(0,+$("#pSlotHours").value||0);
   const pid=$("#pSlotProject").value||null;
-  /* everything except done-state belongs to the whole run */
+  const done=$("#pSlotDone").checked;
+  const newDue=$("#pSlotDate").value||tk.due;
+  /* A run is a multi-day EVENT. Moving this day out of it, or making it stop
+     being an Event at all, both take it out of the run — otherwise a Task was
+     left holding a groupId and the run mixed kinds, after which pApplyToGroup
+     would push Event edits onto the Task and pSetGroupSpan would mint Events
+     back over it. Same splitter as the body-drag, so no remainder keeps a
+     hole. */
+  const leavesRun = newDue!==tk.due || (tk.kind==="event"&&!isEvent);
+  if(leavesRun) pDetachFromRun(tk);
+  /* title, time, duration and project describe the whole run — but once this
+     record has left, the "group" is just itself, which is what we want */
   pApplyToGroup(tk,m=>{ m.title=title; m.time=time; m.hours=hours; m.projectId=pid; });
+  tk.due=newDue;
+  tk.kind=isEvent?"event":"task";
+  tk.done=done;
+  if(done&&!tk.doneAt) tk.doneAt=new Date().toISOString();
+  if(!done) delete tk.doneAt;
   $("#pSlotDlg").close(); touch(); renderPlanner();
 });
+/* Take a record out of its run, leaving every remaining stretch contiguous.
+   Shared by the body-drag commit and the edit dialog: a run that keeps a hole
+   gets that day minted back the next time anyone resizes it. */
+function pDetachFromRun(tk){
+  const grp=tk.groupId?pGroupOf(tk):null;
+  if(!grp||grp.length<2) { tk.groupId=null; return; }
+  tk.groupId=null;
+  const rest=grp.filter(m=>m!==tk)
+    .sort((a,b)=>String(a.due).localeCompare(String(b.due)));
+  let seg=[];
+  const flush=()=>{ if(!seg.length) return;
+    const id=seg.length>1?("g"+uid()):null;
+    seg.forEach(m=>{ m.groupId=id; }); seg=[]; };
+  rest.forEach(m=>{
+    if(seg.length&&ymd(pNextDay(fromYmd(seg[seg.length-1].due)))!==m.due) flush();
+    seg.push(m);
+  });
+  flush();
+}
 $("#pSlotDelete").addEventListener("click",()=>{
   const tk=pFindTask(pSlotEditId); if(!tk){ $("#pSlotDlg").close(); return; }
   /* only this day goes; the survivors stay linked, and a lone survivor stops
@@ -4460,6 +4677,98 @@ $("#pSlotDelete").addEventListener("click",()=>{
   if(gid){ const left=(S.planner.tasks||[]).filter(x=>x.groupId===gid);
     if(left.length<2) left.forEach(x=>{ x.groupId=null; }); }
   $("#pSlotDlg").close(); touch(); renderPlanner();
+});
+/* ---- the one-day editor for Projects and recurring blocks ---- */
+let pDayCtx=null;                       // {type:"proj"|"block", id, iso}
+function pOpenDayDialog(type,id,iso){
+  const day=iso||pSelISO||pToday();
+  let name="", time="", hours=0;
+  if(type==="proj"){
+    const p=((S.projplan&&S.projplan.projects)||[]).find(x=>x.id===id); if(!p) return;
+    name=p.name||t("Untitled project");
+    hours=window.ppDayTarget?(ppDayTarget(id,day)||0):0;
+  } else {
+    const b=pFindBlock(id); if(!b) return;
+    const oc=pBlockOn(b,day); if(!oc) return;
+    name=b.title||t("Untitled block"); time=oc.time||""; hours=oc.hours||0;
+  }
+  pDayCtx={type,id,iso:day};
+  const d=pParseISO(day);
+  $("#pDayDlgTitle").textContent=name;
+  $("#pDayDlgWhen").textContent=dowName(d.getDay())+" "+d.getDate()+" "+pMonthGen(d.getMonth());
+  /* say what removing a day does, because for a Project it is not a deletion:
+     the hours are a budget, so they move into the days that follow */
+  $("#pDayDlgNote").textContent=type==="proj"
+    ? t("Removing this day moves its hours into the following days — the project finishes later, and its total is unchanged.")
+    : t("This changes only this day. The repeat pattern itself stays as it is.");
+  $("#pDayDlgTime").value=time;
+  $("#pDayDlgHours").value=Math.round(Math.max(0,+hours||0)*100)/100;
+  /* a Project's day has hours but no clock slot of its own — the board invents
+     one to draw it, and offering to edit an invented time would be a lie */
+  document.querySelectorAll("#pDayDlgRow .field-label").forEach((el,i)=>{
+    if(i<1) el.style.display=type==="proj"?"none":""; });
+  $("#pDayDlgTime").style.display=type==="proj"?"none":"";
+  $("#pDayDlg").showModal();
+}
+$("#pDayDlgCancel").addEventListener("click",()=>$("#pDayDlg").close());
+$("#pDayDlgSeries").addEventListener("click",()=>{
+  const c=pDayCtx; $("#pDayDlg").close(); if(!c) return;
+  if(c.type==="proj") window.ppOpenProject&&ppOpenProject(c.id);
+  else { show("planner"); const el=document.querySelector(`[data-pblock-title="${c.id}"]`);
+    if(el){ el.scrollIntoView({block:"center"}); el.focus&&el.focus(); } }
+});
+$("#pDayDlgRemove").addEventListener("click",()=>{
+  const c=pDayCtx; if(!c){ $("#pDayDlg").close(); return; }
+  if(c.type==="proj"){ window.ppClearDay&&ppClearDay(c.id,c.iso); }
+  else { const b=pFindBlock(c.id); if(b) pBlockSkip(b,c.iso); }
+  $("#pDayDlg").close(); touch(); renderPlanner();
+});
+$("#pDayDlgSave").addEventListener("click",()=>{
+  const c=pDayCtx; if(!c){ $("#pDayDlg").close(); return; }
+  const hours=Math.max(0,Math.min(24,+$("#pDayDlgHours").value||0));
+  if(c.type==="proj"){ window.ppSetDayHours&&ppSetDayHours(c.id,c.iso,hours); }
+  else { const b=pFindBlock(c.id); if(b){ b.ex=b.ex||{};
+    b.ex[c.iso]={time:$("#pDayDlgTime").value||"",hours}; } }
+  $("#pDayDlg").close(); touch(); renderPlanner();
+});
+$("#pSlotKind").addEventListener("click",e=>{
+  const b=e.target.closest("[data-skind]"); if(!b) return;
+  pSlotKindVal=b.dataset.skind;
+  /* an Event has to sit somewhere, so switching to one fills a blank time
+     rather than saving a record that contradicts its own kind */
+  if(pSlotKindVal==="event"){
+    if(!$("#pSlotTime").value) $("#pSlotTime").value="09:00";
+    if(!(+$("#pSlotHours").value>0)) $("#pSlotHours").value=1;
+  }
+  pSlotSyncKind();
+});
+/* Subtasks are written straight to the record: the dialog is already editing
+   a live object, and keeping a separate draft list would just be a second
+   thing to get out of step with it. */
+$("#pSlotStepAdd").addEventListener("click",()=>{
+  const tk=pFindTask(pSlotEditId); if(!tk) return;
+  const text=$("#pSlotStepNew").value.trim(); if(!text) return;
+  if(!Array.isArray(tk.steps)) tk.steps=[];
+  tk.steps.push({id:uid(),text,done:false});
+  $("#pSlotStepNew").value="";
+  touch(); pSlotRenderSteps(); $("#pSlotStepNew").focus();
+});
+$("#pSlotStepNew").addEventListener("keydown",e=>{
+  if(e.key==="Enter"){ e.preventDefault(); $("#pSlotStepAdd").click(); } });
+$("#pSlotStepList").addEventListener("click",e=>{
+  const tk=pFindTask(pSlotEditId); if(!tk||!Array.isArray(tk.steps)) return;
+  const del=e.target.closest("[data-sdel]");
+  if(del){ tk.steps=tk.steps.filter(s=>s.id!==del.dataset.sdel);
+    touch(); pSlotRenderSteps(); return; }
+  const tog=e.target.closest("[data-stog]");
+  if(tog){ const s=tk.steps.find(x=>x.id===tog.dataset.stog);
+    if(s){ s.done=tog.checked; touch(); pSlotRenderSteps(); } }
+});
+$("#pSlotStepList").addEventListener("input",e=>{
+  const tk=pFindTask(pSlotEditId); if(!tk||!Array.isArray(tk.steps)) return;
+  const txt=e.target.closest("[data-stext]"); if(!txt) return;
+  const s=tk.steps.find(x=>x.id===txt.dataset.stext);
+  if(s){ s.text=txt.value; touch(); }        // no re-render: it would steal focus
 });
 $("#pSlotCancel").addEventListener("click",()=>$("#pSlotDlg").close());
 $("#pSlotAddTask").addEventListener("click",()=>pSlotCreate("task"));
@@ -4702,8 +5011,10 @@ function pBoardHtml(days,topStrip,opts){
      chip pushed its hour track down and its grid no longer lined up with its
      neighbours. Every column reserves the same number of rows — that of the
      busiest day — so the board stays on one baseline whatever is in it. */
+  /* must match what the lane actually draws, Quick Tasks included, or a day
+     full of them reserves too few rows and clips its own contents */
   const adCount=days.map((d,di)=>byDay[di].filter(it=>
-      it.ref&&it.ref.kind==="task"&&!it.time&&it.ref.due===d).length
+      it.ref&&(it.ref.kind==="task"||it.ref.kind==="quick")&&!it.time&&it.ref.due===d).length
     + (byDay[di].some(it=>it.kind==="care")?1:0));
   const adRows=Math.min(3,Math.max(1,...adCount));
   const cols=days.map((d,di)=>{
@@ -4793,12 +5104,21 @@ function pBoardHtml(days,topStrip,opts){
        fold and read as lost — it belongs in its own day, in the lane that
        means "today, no particular time". Chips keep data-wb so they can still
        be dragged down onto an hour, which promotes them to Events. */
-    const adTasks=items.filter(it=>it.ref&&it.ref.kind==="task"&&!it.time&&it.ref.due===d);
+    /* Quick Tasks share this lane with untimed Tasks, but not its gestures: a
+       Quick Task has no clock slot to be dragged to, so it carries no data-wb
+       and cannot be picked up. Ticking it is the whole of it. */
+    const adTasks=items.filter(it=>it.ref&&(it.ref.kind==="task"||it.ref.kind==="quick")
+      &&!it.time&&it.ref.due===d);
     const allday=(adTasks.length||care)?`<div class="wb-allday">${
-      adTasks.map(it=>`<span class="wb-adtask" data-wb="tray:${it.ref.id}" data-day="${d}"
-        title="${esc(it.name)}${+it.hours>0?" · "+pFmtH(it.hours)+"h":""} — ${esc(t("drag onto an hour to give it a time"))}">
-        <i class="wb-adtick" data-adtick="${it.ref.id}" role="button" tabindex="0"
-          aria-label="${esc(t("Mark done"))}"></i>${esc(it.name)}</span>`).join("")}${
+      adTasks.map(it=>{
+        const q=it.ref.kind==="quick", dn=q&&it.ref.done;
+        return `<span class="wb-adtask${q?" quick":""}${dn?" done":""}"${
+          q?"":` data-wb="tray:${it.ref.id}" data-day="${d}"`}
+          title="${esc(it.name)}${+it.hours>0?" · "+pFmtH(it.hours)+"h":""}${
+            q?"":" — "+esc(t("drag onto an hour to give it a time"))}">
+          <i class="wb-adtick${dn?" on":""}" data-adtick="${it.ref.id}" role="button" tabindex="0"
+            aria-label="${esc(dn?t("Mark not done"):t("Mark done"))}"></i>${esc(it.name)}</span>`;
+      }).join("")}${
       care?`<span class="wb-adcare" title="${esc(care.name)} · ${pFmtH(care.hours)}h">🌿</span>`:""}</div>`
       :'<div class="wb-allday"></div>';
     return `<div class="wb-col${d===pToday()?" today":""}${d.slice(8)==="01"?" mstart":""}" data-wbday="${d}">
@@ -4816,8 +5136,14 @@ function pBoardHtml(days,topStrip,opts){
      genuinely has nowhere else to be: an overdue TASK, still to be done, whose
      day has gone. A past Event is a record, not a to-do, and listing it here
      as well would double it on screen. */
+  /* "not an Event" used to be the same thing as "a Task", and a Quick Task
+     slipped through it: once its day had passed and fallen outside the board's
+     window it appeared here as a draggable chip, and dropping it on an hour
+     promoted it to a timed Event — the one thing a Quick Task must never
+     become. It belongs to its day and is never carried forward. */
   const trayTasks=(S.planner.tasks||[]).filter(tk=>
-    !tk.done&&tk.due&&tk.kind!=="event"&&tk.due<pToday()&&!days.includes(tk.due));
+    !tk.done&&tk.due&&tk.kind!=="event"&&tk.kind!=="quick"
+    &&tk.due<pToday()&&!days.includes(tk.due));
   const careTray=days.map((d,di)=>{
     const c=byDay[di].find(it=>it.kind==="care"); if(!c) return "";
     const x=pParseISO(d);
@@ -5148,10 +5474,16 @@ function pWireBoard(){
          project day have nothing to open yet — giving them editors is Wave 2 —
          so they keep the old jump-to-day rather than making the tap do nothing
          at all. */
-      if(g.mode==="projmove"||g.mode==="projday"){ window.ppOpenProject&&ppOpenProject(g.id); }
+      /* Everything that repeats opens on the DAY you tapped, with the whole
+         series one button away — tapping straight into the series editor made
+         a single day feel uneditable, which is the report this wave answers. */
+      if(g.mode==="projmove"||g.mode==="projday"){ pOpenDayDialog("proj",g.id,g.day0); }
+      else if(g.kind==="block"){ pOpenDayDialog("block",g.id,g.day0); }
       else if(g.mode==="move"){
         const tk=(g.kind==="task"||g.kind==="tray")?pFindTask(g.id):null;
-        if(tk&&tk.kind==="event"){ pOpenEditDialog(g.id); }
+        /* Tasks and Events both open the same editor. A Quick Task has none by
+           design, so it keeps the jump-to-day fallback rather than a dead tap. */
+        if(tk&&tk.kind!=="quick"){ pOpenEditDialog(g.id); }
         else { const d=g.day0; if(d){ pSelISO=d; pScope="day"; pWinShift=0; pDayPanel(); renderSchedule(); } }
       }
       return;
@@ -5159,8 +5491,11 @@ function pWireBoard(){
     if(g.mode==="projmove"){
       g.el.style.transform="";
       const {day}=geom(e.clientX,e.clientY);
-      const delta=day?Math.round((+pParseISO(day)-+pParseISO(g.day0))/864e5):0;
-      if(delta&&window.ppShiftProject&&ppShiftProject(g.id,delta)) done();
+      /* Dragging ONE day of a project moves that day's work, not the whole
+         project — the same rule Events got in Wave 1. A project's span is
+         derived from its start and budget, so this is expressed as moving the
+         day's hours: the old day empties and the new one gains them. */
+      if(day&&day!==g.day0&&window.ppMoveDay&&ppMoveDay(g.id,g.day0,day)) done();
       else renderSchedule();
       return;
     }
@@ -5176,7 +5511,16 @@ function pWireBoard(){
       const px=+g.el.style.height.replace("px","");
       const hrs=Math.max(0.5,snap(px/WB_PXH));   // below 0.5h a block can't hold its text
       if(g.kind==="task"){ const tk=pFindTask(g.id); if(tk){ tk.hours=hrs; done(); return; } }
-      if(g.kind==="block"){ const b=pFindBlock(g.id); if(b){ b.hours=hrs; done(); return; } }
+      /* resizing one occurrence changes that day only, same rule as moving it */
+      if(g.kind==="block"){ const b=pFindBlock(g.id);
+        if(b){ const day=g.day0||pSelISO;
+          const oc=pBlockOn(b,day)||{time:b.time||""};
+          /* clamp to a real day: the drag height is never capped, so pulling
+             the handle past the bottom of the column produced more than 24
+             hours. Every other writer of ex — the day dialog and migrate's
+             own sanitiser — already bounds it; this one did not. */
+          b.ex=b.ex||{}; b.ex[day]={time:oc.time,hours:Math.max(0,Math.min(24,hrs))};
+          done(); return; } }
       renderSchedule(); return;
     }
     const {day,time}=geom(e.clientX,e.clientY);
@@ -5199,6 +5543,11 @@ function pWireBoard(){
       : snap(time);
     if(g.kind==="task"||g.kind==="tray"){
       const tk=pFindTask(g.id);
+      /* second lock on the same door: a Quick Task has no clock slot, so no
+         drop can give it one. The chip should never be draggable in the first
+         place, but this is the path that would rewrite the record, so it
+         refuses here too rather than trusting every future caller. */
+      if(tk&&tk.kind==="quick"){ g.el.style.transform=""; renderSchedule(); return; }
       if(tk&&day){
         /* Dragging the BODY moves exactly the day you dragged, never its
            neighbours. A run used to move as one, so pulling a single day
@@ -5210,29 +5559,9 @@ function pWireBoard(){
            a remainder of one is not a run either, so its group is cleared too,
            or the next drag of THAT block would behave as grouped for no
            visible reason. */
-        const grp=tk.groupId?pGroupOf(tk):null;
-        if(grp&&grp.length>1){
-          tk.groupId=null;
-          /* What is left has to stay CONTIGUOUS. pSetGroupSpan fills every day
-             between a run's first and last, so a run with a hole in it would
-             mint a fresh record on the very day just detached the next time
-             anyone dragged its W/E handle — the day you pulled out reappearing
-             beside the one you moved. Split the remainder at the gap instead:
-             each contiguous stretch becomes its own run, and a stretch of one
-             is not a run at all. */
-          const rest=grp.filter(m=>m!==tk)
-            .sort((a,b)=>String(a.due).localeCompare(String(b.due)));
-          let seg=[];
-          const flush=()=>{ if(!seg.length) return;
-            const id=seg.length>1?("g"+uid()):null;
-            seg.forEach(m=>{ m.groupId=id; });
-            seg=[]; };
-          rest.forEach(m=>{
-            if(seg.length&&ymd(pNextDay(fromYmd(seg[seg.length-1].due)))!==m.due) flush();
-            seg.push(m);
-          });
-          flush();
-        }
+        /* leaving the run splits whatever is left at the gap — see
+           pDetachFromRun, shared with the edit dialog's day change */
+        pDetachFromRun(tk);
         tk.due=day; tk.time=fmtT(t2);
         if(!(+tk.hours>0)) tk.hours=1;       // a slot implies a duration
         /* under the v7 model a clock slot IS what makes something an Event —
@@ -5241,9 +5570,19 @@ function pWireBoard(){
         tk.kind="event";
         done(); return; }
     }
-    if(g.kind==="block"){                  /* recurring: time moves, the weekday set stays */
+    if(g.kind==="block"){
+      /* One occurrence moves, not the whole series. Before this, dragging a
+         recurring block on one day rewrote the shared record and moved it on
+         every weekday it appears — the reported bug. The weekday pattern is
+         left alone; this day becomes an exception. */
       const b=pFindBlock(g.id);
-      if(b){ b.time=fmtT(t2); done(); return; }
+      if(b&&day){
+        if(day===g.day0){ b.ex=b.ex||{};
+          const oc=pBlockOn(b,day)||{hours:+b.hours||0};
+          b.ex[day]={time:fmtT(t2),hours:oc.hours}; }
+        else pBlockMoveDay(b,g.day0,day,fmtT(t2));
+        done(); return;
+      }
     }
     renderSchedule();
   };
@@ -5260,7 +5599,12 @@ function pWireBoard(){
     const tick=e.target.closest("[data-adtick]"); if(!tick) return;
     const tk=pFindTask(tick.dataset.adtick); if(!tk) return;
     e.stopPropagation();
-    tk.done=true; tk.doneAt=new Date().toISOString();
+    /* A Quick Task stays on its day after it is ticked, so the tick has to
+       work both ways — otherwise one mis-tap greys it for good with nothing
+       to undo it. Everything else leaves the board when done, so there is no
+       tick left to press and one-way is right. */
+    if(tk.kind==="quick"&&tk.done){ tk.done=false; delete tk.doneAt; }
+    else { tk.done=true; tk.doneAt=new Date().toISOString(); }
     touch(); renderPlanner();
   });
   board.addEventListener("dblclick",e=>{
@@ -5679,16 +6023,22 @@ function renderPlanner(){
 $("#pAddForm").addEventListener("submit",e=>{
   e.preventDefault();
   const title=$("#pAddTitle").value.trim(); if(!title) return;
-  const isEvent=pAddKindVal==="event";
-  /* a Task's day is optional — leaving the date empty files it in the
-     dateless strip rather than silently landing it on today. An Event has to
-     sit somewhere, so it falls back to the selected day and needs a time. */
-  const due=$("#pAddDue").value||(isEvent?pToday():"");
-  const time=isEvent?($("#pAddTime").value||"09:00"):"";
+  const kind=pAddKindVal;
+  const isEvent=kind==="event", isQuick=kind==="quick";
+  /* A Task's day is optional — leaving the date empty files it in the dateless
+     strip rather than silently landing it on today. An Event has to sit
+     somewhere, so it falls back to the selected day and needs a time. A Quick
+     Task IS a day — it belongs to one whole day and never to an hour — so a
+     blank date means the day you are looking at, not "no day". */
+  const due=$("#pAddDue").value||(isEvent?pToday():isQuick?(pSelISO||pToday()):"");
+  /* a Task may carry a time; blank simply means it has not been given one */
+  const time=isEvent?($("#pAddTime").value||"09:00")
+            :isQuick?""
+            :($("#pAddTime").value||"");
   S.planner.tasks.push({id:uid(),title,due,time,
-    hours:isEvent?(+$("#pAddHours").value||1):(+$("#pAddHours").value||0),
-    done:false,kind:isEvent?"event":"task",steps:[],
-    projectId:$("#pAddProject").value||null});
+    hours:isQuick?0:isEvent?(+$("#pAddHours").value||1):(+$("#pAddHours").value||0),
+    done:false,kind,steps:[],
+    projectId:isQuick?null:($("#pAddProject").value||null)});
   $("#pAddTitle").value=""; $("#pAddTitle").focus();
   if(due){ pSelISO=due; pWinShift=0; }
   touch(); renderPlanner();
@@ -5701,10 +6051,27 @@ $("#pAddForm").addEventListener("submit",e=>{
 function pSyncAddKind(){
   document.querySelectorAll("#pAddKind [data-pkind]").forEach(x=>
     x.setAttribute("aria-pressed",String(x.dataset.pkind===pAddKindVal)));
-  document.querySelectorAll("#pAddForm .pev-only").forEach(el=>{
-    el.style.display=pAddKindVal==="event"?"":"none"; });
+  /* A Quick Task is the whole day and nothing else: no clock, no duration, no
+     project. A Task MAY carry a time but does not have to, so it keeps the
+     field and leaves it blank. An Event has to have one. */
+  const quick=pAddKindVal==="quick";
+  document.querySelectorAll("#pAddForm .pk-time").forEach(el=>{
+    el.style.display=quick?"none":""; });
+  document.querySelectorAll("#pAddForm .pk-detail").forEach(el=>{
+    el.style.display=quick?"none":""; });
+  const ti=$("#pAddTime");
+  if(ti) ti.placeholder=pAddKindVal==="task"?"optional":"";
+  const title=$("#pAddTitle");
+  if(title) title.placeholder=quick?t("Something to do that day"):t("What needs doing?");
 }
 $("#pAddKind").addEventListener("click",e=>{
+  /* Project is budgeted in hours over a span, not placed on a clock, so it
+     cannot share this row's fields — it opens its own dialog instead. The
+     selected kind is left alone so the form stays where you left it. */
+  if(e.target.closest('[data-pnew="project"]')){
+    if(window.ppNewProject) ppNewProject();
+    return;
+  }
   const b=e.target.closest("[data-pkind]"); if(!b) return;
   pAddKindVal=b.dataset.pkind; pSyncAddKind();
 });
@@ -5793,6 +6160,36 @@ $("#pAddBlock").addEventListener("click",()=>{
 
 function pFindTask(id){ return (S.planner.tasks||[]).find(x=>x.id===id); }
 function pFindBlock(id){ return (S.planner.blocks||[]).find(x=>x.id===id); }
+/* ---- per-day identity for a recurring block ----
+   A recurring block is one record drawn on every matching weekday, so before
+   this there was no way to touch a single day: editing one edited all of them.
+   `ex` is the exception map every calendar keeps beside a repeat rule —
+     ex[iso] === null        this occurrence is gone
+     ex[iso] === {time,hours} this occurrence exists with its OWN values,
+                             even on a weekday the pattern does not include
+   The weekday pattern itself is untouched, so the series still means what it
+   said; the exceptions are the days you have since disagreed with. */
+function pBlockOn(b,iso){
+  const ex=b.ex&&Object.prototype.hasOwnProperty.call(b.ex,iso)?b.ex[iso]:undefined;
+  if(ex===null) return null;                       // deleted occurrence
+  if(ex&&typeof ex==="object")                     // moved or reshaped one
+    return {time:ex.time!==undefined?ex.time:(b.time||""),
+            hours:ex.hours!==undefined?+ex.hours:(+b.hours||0)};
+  if(!(b.dow||[]).includes(pParseISO(iso).getDay())) return null;
+  return {time:b.time||"",hours:+b.hours||0};
+}
+function pBlockSkip(b,iso){ if(!b) return false; b.ex=b.ex||{}; b.ex[iso]=null; return true; }
+/* Move one occurrence to another day: the old day becomes an explicit gap and
+   the new day an explicit occurrence, so it lands even on a weekday the
+   pattern never included. */
+function pBlockMoveDay(b,fromIso,toIso,time){
+  if(!b||fromIso===toIso) return false;
+  const oc=pBlockOn(b,fromIso); if(!oc) return false;
+  b.ex=b.ex||{};
+  b.ex[fromIso]=null;
+  b.ex[toIso]={time:time!==undefined?time:oc.time,hours:oc.hours};
+  return true;
+}
 
 document.querySelector("#view-planner").addEventListener("click",async e=>{
   const tog=e.target.closest("[data-ptog]"),
@@ -11994,14 +12391,18 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
   var ed = null, col = PAL[0];
 
   document.getElementById("ppSwatch").innerHTML = PAL.map(function (c, i) {
-    return '<button type="button" class="ppsw" data-c="' + c + '" style="background:' + c + '" aria-label="Color: ' + PALN[i] + '"></button>';
+    return '<button type="button" class="ppsw" data-c="' + c + '" style="background:' + c +
+      '" title="' + PALN[i] + '" aria-label="Color: ' + PALN[i] + '"></button>';
   }).join("");
   document.getElementById("ppSwatch").addEventListener("click", function (e) {
     var b = e.target.closest(".ppsw"); if (!b) return;
     col = b.getAttribute("data-c"); markCol();
   });
   function markCol() {
-    ppRoot.querySelectorAll(".ppsw").forEach(function (b) {
+    /* query the swatch container, not ppRoot: the dialog holding these lives
+       at body level, outside the view, so scoping to the view found nothing
+       and the chosen colour was never marked — the same mistake the CSS made */
+    document.getElementById("ppSwatch").querySelectorAll(".ppsw").forEach(function (b) {
       b.setAttribute("aria-pressed", b.getAttribute("data-c") === col ? "true" : "false");
     });
   }
@@ -12415,7 +12816,50 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
     touchP(p); persist(); invalAll();
     return true;
   };
+  /* ---- per-day identity for a Project ----
+     A Project stores no days: build() walks forward from start, spending
+     hours(day) until total runs out, so its span is derived. That is why a
+     single day is expressed as an OVERRIDE rather than a record — days[iso]=0
+     is already how weekendsOff skips a Saturday. Removing a day therefore
+     defers its hours into the following days and pushes the end date out; the
+     budget you set is preserved, and undoing it restores the original end. */
+  /* What this day ACTUALLY carries, straight from the schedule. want() cannot
+     answer this: it returns the default for any day after start, including
+     days past the end where the budget already ran out — so a move that read
+     want() believed there were hours on a day the project never reaches, and
+     wrote a phantom entry into days{} out beyond its own span. */
+  function dayUse(p, iso) {
+    var i = dif(p.start, iso); if (i < 0) return 0;
+    var sc = sch(p); if (i >= sc.cells.length) return 0;
+    return sc.cells[i].u;
+  }
+  window.ppClearDay = function (id, iso) {
+    PS = S.projplan; var p = byId(id); if (!p) return false;
+    if (!(dayUse(p, iso) > 0)) return false;         // nothing there to remove
+    snap(tr("day change on") + " " + p.name);
+    p.days[iso] = 0;
+    touchP(p); persist(); invalAll();
+    return true;
+  };
+  /* Move one day's work to another day, leaving the rest of the project where
+     it is — the per-day equivalent of dragging one Event out of a run. */
+  window.ppMoveDay = function (id, fromIso, toIso) {
+    PS = S.projplan; var p = byId(id); if (!p || fromIso === toIso) return false;
+    /* a project cannot hold work before it starts; moving its first day
+       earlier is a change of start date, which is a series edit */
+    if (dif(p.start, toIso) < 0) return false;
+    var moved = dayUse(p, fromIso);
+    if (!(moved > 0)) return false;                  // that day carries nothing
+    snap(tr("moving") + " " + p.name);
+    p.days[fromIso] = 0;
+    p.days[toIso] = Math.min(24, want(p, toIso) + moved);
+    touchP(p); persist(); invalAll();
+    return true;
+  };
   window.ppOpenProject = function (id) { PS = S.projplan; var p = byId(id); if (p) openP(p); };
+  /* Lets the planner's Add row create a Project without leaving the planner.
+     The dialog is body-level, so it opens fine while this view is hidden. */
+  window.ppNewProject = function () { PS = S.projplan; openP(null); };
   window.ppUndo = undo;
   /* Read-only feed for the Daily Planner's linked time: which projects want
      hours on a given day, per the same schedule engine that draws the bars.
