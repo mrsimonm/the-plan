@@ -10,64 +10,64 @@
 <link rel="apple-touch-icon" href="./icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
 
 <style>
 :root{
-  --bg:#EFF2EF; --surface:#FFFFFF; --surface-2:#F6F8F5; --sunk:#E8ECE7;
-  --line:#DEE4DC; --line-soft:#EBEFE9; --line-strong:#C4CFC1;
-  --ink:#0C1410; --ink-2:#4E5A52; --ink-3:#87938B;
-  --accent:#15803D; --accent-2:#22C55E; --accent-soft:#DCF4E4; --on-accent:#FFFFFF;
-  --amber:#A9640C; --amber-soft:#F7E9D2;
-  --orange:#EA580C;
-  --track-bg:#E4E7EA; --track-line:rgba(12,20,16,.14); --track-ink:#5B6B63;
+  --bg:#F4F4F2; --surface:#FFFFFF; --surface-2:#FAFAF9; --sunk:#ECECEA;
+  --line:#E2E2DF; --line-soft:#EDEDEA; --line-strong:#C9C9C4;
+  --ink:#16181A; --ink-2:#5C6166; --ink-3:#8E9499;
+  --accent:#3F6B54; --accent-2:#55806A; --accent-soft:#E8EEEA; --on-accent:#FFFFFF;
+  --amber:#8A6A2F; --amber-soft:#F0EADC;
+  --orange:#B4633A;
+  --track-bg:#E9E9E6; --track-line:rgba(22,24,26,.12); --track-ink:#5C6166;
   /* the planner board's own rules: --line-soft vanished against the card, so
      the hour grid and the day separators get their own readable tokens */
-  --grid-line:#CBD5C8; --grid-sep:#AEBCAA;
-  --ok:#15803D; --crit:#BE3B30; --crit-soft:#F8E2DF;
+  --grid-line:#DCDCD8; --grid-sep:#C2C2BD;
+  --ok:#3F6B54; --crit:#A34B41; --crit-soft:#F2E4E1;
   --glass:rgba(255,255,255,.72); --glass-2:rgba(255,255,255,.88);
   --hair:rgba(255,255,255,.95);
-  --bloom-a:rgba(34,197,94,.16); --bloom-b:rgba(21,128,61,.10);
-  --shadow:0 1px 2px rgba(12,20,16,.04), 0 8px 24px rgba(12,20,16,.06);
-  --shadow-lift:0 2px 6px rgba(12,20,16,.06), 0 20px 48px rgba(12,20,16,.10);
-  --r:18px; --r-sm:12px; --r-xs:9px;
-  --hours-hue:#6D28D9;          /* Hours identity, used inside other apps */
+  --bloom-a:rgba(63,107,84,.05); --bloom-b:rgba(22,24,26,.03);
+  --shadow:0 1px 2px rgba(22,24,26,.05);
+  --shadow-lift:0 2px 8px rgba(22,24,26,.10);
+  --r:12px; --r-sm:8px; --r-xs:5px;
+  --hours-hue:#5B5470;          /* Hours identity, used inside other apps */
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#070B08; --surface:#101711; --surface-2:#151E17; --sunk:#0B1109;
-    --line:#22301F; --line-soft:#1A2419; --line-strong:#3A4F34;
-    --ink:#E9F1EA; --ink-2:#A0AFA4; --ink-3:#6F7E73;
-    --accent:#4ADE80; --accent-2:#86EFAC; --accent-soft:#0F2C19; --on-accent:#04180B;
-    --amber:#F1B24C; --amber-soft:#2C2210;
-    --orange:#FB923C;
-    --track-bg:#242B26; --track-line:rgba(233,241,234,.14); --track-ink:#B7C2BB;
-    --grid-line:#33422F; --grid-sep:#485C41;
-    --ok:#4ADE80; --crit:#F08276; --crit-soft:#33191A;
-    --glass:rgba(16,23,17,.66); --glass-2:rgba(19,28,21,.82);
+    --bg:#0B0C0C; --surface:#141616; --surface-2:#1A1D1D; --sunk:#0F1111;
+    --line:#262A29; --line-soft:#1E2121; --line-strong:#3A403E;
+    --ink:#ECEEED; --ink-2:#9AA1A0; --ink-3:#6B7271;
+    --accent:#7FA890; --accent-2:#9BBEA9; --accent-soft:#17241D; --on-accent:#0B0C0C;
+    --amber:#C6A468; --amber-soft:#241F14;
+    --orange:#C08155;
+    --track-bg:#202323; --track-line:rgba(236,238,237,.12); --track-ink:#9AA1A0;
+    --grid-line:#282C2B; --grid-sep:#3C4241;
+    --ok:#7FA890; --crit:#C98079; --crit-soft:#2A1D1C;
+    --glass:rgba(20,22,22,.72); --glass-2:rgba(26,29,29,.86);
     --hair:rgba(255,255,255,.06);
-    --bloom-a:rgba(74,222,128,.12); --bloom-b:rgba(34,197,94,.07);
-    --shadow:0 1px 2px rgba(0,0,0,.5), 0 8px 24px rgba(0,0,0,.42);
-    --shadow-lift:0 2px 6px rgba(0,0,0,.5), 0 20px 48px rgba(0,0,0,.55);
-    --hours-hue:#A78BFA;
+    --bloom-a:rgba(127,168,144,.05); --bloom-b:rgba(255,255,255,.02);
+    --shadow:0 1px 2px rgba(0,0,0,.45);
+    --shadow-lift:0 2px 8px rgba(0,0,0,.55);
+    --hours-hue:#8E86A6;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#070B08; --surface:#101711; --surface-2:#151E17; --sunk:#0B1109;
-  --line:#22301F; --line-soft:#1A2419; --line-strong:#3A4F34;
-  --ink:#E9F1EA; --ink-2:#A0AFA4; --ink-3:#6F7E73;
-  --accent:#4ADE80; --accent-2:#86EFAC; --accent-soft:#0F2C19; --on-accent:#04180B;
-  --amber:#F1B24C; --amber-soft:#2C2210;
-  --orange:#FB923C;
-  --track-bg:#242B26; --track-line:rgba(233,241,234,.14); --track-ink:#B7C2BB;
-  --grid-line:#33422F; --grid-sep:#485C41;
-  --ok:#4ADE80; --crit:#F08276; --crit-soft:#33191A;
-  --glass:rgba(16,23,17,.66); --glass-2:rgba(19,28,21,.82);
+  --bg:#0B0C0C; --surface:#141616; --surface-2:#1A1D1D; --sunk:#0F1111;
+  --line:#262A29; --line-soft:#1E2121; --line-strong:#3A403E;
+  --ink:#ECEEED; --ink-2:#9AA1A0; --ink-3:#6B7271;
+  --accent:#7FA890; --accent-2:#9BBEA9; --accent-soft:#17241D; --on-accent:#0B0C0C;
+  --amber:#C6A468; --amber-soft:#241F14;
+  --orange:#C08155;
+  --track-bg:#202323; --track-line:rgba(236,238,237,.12); --track-ink:#9AA1A0;
+  --grid-line:#282C2B; --grid-sep:#3C4241;
+  --ok:#7FA890; --crit:#C98079; --crit-soft:#2A1D1C;
+  --glass:rgba(20,22,22,.72); --glass-2:rgba(26,29,29,.86);
   --hair:rgba(255,255,255,.06);
-  --bloom-a:rgba(74,222,128,.12); --bloom-b:rgba(34,197,94,.07);
-  --shadow:0 1px 2px rgba(0,0,0,.5), 0 8px 24px rgba(0,0,0,.42);
-  --shadow-lift:0 2px 6px rgba(0,0,0,.5), 0 20px 48px rgba(0,0,0,.55);
-  --hours-hue:#A78BFA;
+  --bloom-a:rgba(127,168,144,.05); --bloom-b:rgba(255,255,255,.02);
+  --shadow:0 1px 2px rgba(0,0,0,.45);
+  --shadow-lift:0 2px 8px rgba(0,0,0,.55);
+  --hours-hue:#8E86A6;
 }
 
 *{box-sizing:border-box}
@@ -81,9 +81,9 @@ body{
   font-size:15px; line-height:1.5; display:flex; flex-direction:column; min-height:100vh;
   -webkit-text-size-adjust:100%;
 }
-h1,h2,h3{margin:0; font-family:"Bricolage Grotesque",Impact,sans-serif; text-wrap:balance; font-weight:600}
+h1,h2,h3{margin:0; font-family:"Space Grotesk",Impact,sans-serif; text-wrap:balance; font-weight:600}
 .num{font-family:"JetBrains Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums}
-.eyebrow{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+.eyebrow{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
   letter-spacing:.1em; font-size:13px; color:var(--ink-3)}
 
 /* ---------- chrome ---------- */
@@ -168,7 +168,7 @@ h1,h2,h3{margin:0; font-family:"Bricolage Grotesque",Impact,sans-serif; text-wra
   border:1px solid var(--line); background:var(--sunk); color:var(--ink); outline:none}
 .acq:focus{border-color:var(--accent); background:var(--surface)}
 .acq::placeholder{color:var(--ink-3)}
-.pgroup{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600;
+.pgroup{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
   text-transform:uppercase; letter-spacing:.09em; font-size:10.5px; color:var(--ink-3);
   padding:5px 15px 8px}
 .pgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(94px,1fr));
@@ -184,13 +184,13 @@ h1,h2,h3{margin:0; font-family:"Bricolage Grotesque",Impact,sans-serif; text-wra
 .acopen{margin:0 15px 16px; border:1px solid var(--accent); border-radius:var(--r-sm);
   background:var(--accent-soft); overflow:hidden}
 .ao-head{display:flex; align-items:center; gap:11px; padding:12px 12px 9px}
-.ao-head b{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-size:16px;
+.ao-head b{font-family:"Space Grotesk","Manrope",sans-serif; font-size:16px;
   font-weight:700; letter-spacing:-.01em; flex:1; min-width:0; color:var(--ink)}
 .ao-head .picto{width:42px; height:42px}
 .lore{margin-top:13px; border-top:1px solid var(--line); padding-top:12px;
   display:flex; flex-direction:column; gap:11px}
 .lore-sec p{margin:3px 0 0; font-size:13.5px; line-height:1.5; color:var(--ink-2)}
-.lore-k{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600;
+.lore-k{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
   text-transform:uppercase; letter-spacing:.07em; font-size:10.5px; color:var(--accent)}
 .pg-list{border-top:1px solid var(--line)}
 .pg-row{border-bottom:1px solid var(--line)}
@@ -198,7 +198,7 @@ h1,h2,h3{margin:0; font-family:"Bricolage Grotesque",Impact,sans-serif; text-wra
 .pg-head{display:flex; align-items:center; gap:10px; width:100%; background:none; border:0;
   padding:13px 15px; cursor:pointer; text-align:left; color:var(--ink); font:inherit}
 .pg-head:hover{background:var(--sunk)}
-.pg-name{flex:1; min-width:0; font-family:"Bricolage Grotesque","Manrope",sans-serif;
+.pg-name{flex:1; min-width:0; font-family:"Space Grotesk","Manrope",sans-serif;
   font-weight:600; font-size:14.5px}
 .pg-span{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11.5px; color:var(--ink-3);
   flex:0 0 auto; white-space:nowrap}
@@ -208,7 +208,7 @@ h1,h2,h3{margin:0; font-family:"Bricolage Grotesque",Impact,sans-serif; text-wra
 .pg-body{padding:0 15px 15px; display:flex; flex-direction:column; gap:12px}
 .pg-sec p{margin:3px 0 0; font-size:13.5px; line-height:1.5; color:var(--ink-2)}
 .pg-sec .steplist{margin:5px 0 0}
-.pg-k{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600;
+.pg-k{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
   text-transform:uppercase; letter-spacing:.07em; font-size:10.5px; color:var(--accent)}
 .sbars{display:flex; flex-direction:column; gap:7px}
 .sbar{display:grid; grid-template-columns:minmax(64px,34%) 1fr auto; align-items:center; gap:9px}
@@ -247,7 +247,7 @@ h1,h2,h3{margin:0; font-family:"Bricolage Grotesque",Impact,sans-serif; text-wra
   background:var(--surface-2); position:relative; z-index:1; will-change:transform;
   width:100%}
 .swipe-act{position:absolute; left:0; top:0; bottom:0; z-index:0; display:flex; align-items:center;
-  padding-left:16px; font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600;
+  padding-left:16px; font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
   font-size:12.5px; letter-spacing:.05em; text-transform:uppercase;
   color:var(--on-accent); background:var(--accent); width:100%; opacity:.55;
   transition:opacity .12s}
@@ -287,35 +287,35 @@ h1,h2,h3{margin:0; font-family:"Bricolage Grotesque",Impact,sans-serif; text-wra
    changes, and --ok/--crit/--amber are left alone since those are semantic,
    not identity. Toggled by adding .theme-planner to <html> in showNow(). */
 html.theme-planner{
-  --accent:#1D4ED8; --accent-2:#3B82F6; --accent-soft:#DBEAFE; --on-accent:#FFFFFF;
-  --bloom-a:rgba(59,130,246,.16); --bloom-b:rgba(29,78,216,.10);
+  --accent:#40566E; --accent-2:#586E88; --accent-soft:#E7EAEE; --on-accent:#FFFFFF;
+  --bloom-a:rgba(64,86,110,.05); --bloom-b:rgba(22,24,26,.03);
 }
 @media (prefers-color-scheme: dark){
   html.theme-planner:not([data-theme="light"]){
-    --accent:#60A5FA; --accent-2:#93C5FD; --accent-soft:#122A4A; --on-accent:#04101F;
-    --bloom-a:rgba(96,165,250,.12); --bloom-b:rgba(37,99,235,.07);
+    --accent:#8FA6BF; --accent-2:#A9BCD1; --accent-soft:#1A2029; --on-accent:#0B0C0C;
+    --bloom-a:rgba(143,166,191,.05); --bloom-b:rgba(255,255,255,.02);
   }
 }
 html.theme-planner[data-theme="dark"]{
-  --accent:#60A5FA; --accent-2:#93C5FD; --accent-soft:#122A4A; --on-accent:#04101F;
-  --bloom-a:rgba(96,165,250,.12); --bloom-b:rgba(37,99,235,.07);
+  --accent:#8FA6BF; --accent-2:#A9BCD1; --accent-soft:#1A2029; --on-accent:#0B0C0C;
+  --bloom-a:rgba(143,166,191,.05); --bloom-b:rgba(255,255,255,.02);
 }
 
 /* Hours gets the same scoped-token treatment as the planner, purple instead of
    blue. Toggled by .theme-hours on <html> in showNow(). */
 html.theme-hours{
-  --accent:#6D28D9; --accent-2:#8B5CF6; --accent-soft:#EDE9FE; --on-accent:#FFFFFF;
-  --bloom-a:rgba(139,92,246,.16); --bloom-b:rgba(109,40,217,.10);
+  --accent:#5B5470; --accent-2:#736B8A; --accent-soft:#EAE8EE; --on-accent:#FFFFFF;
+  --bloom-a:rgba(91,84,112,.05); --bloom-b:rgba(22,24,26,.03);
 }
 @media (prefers-color-scheme: dark){
   html.theme-hours:not([data-theme="light"]){
-    --accent:#A78BFA; --accent-2:#C4B5FD; --accent-soft:#2C1B4D; --on-accent:#1A0E33;
-    --bloom-a:rgba(167,139,250,.12); --bloom-b:rgba(124,58,237,.07);
+    --accent:#8E86A6; --accent-2:#A7A0BC; --accent-soft:#221E2B; --on-accent:#0B0C0C;
+    --bloom-a:rgba(142,134,166,.05); --bloom-b:rgba(255,255,255,.02);
   }
 }
 html.theme-hours[data-theme="dark"]{
-  --accent:#A78BFA; --accent-2:#C4B5FD; --accent-soft:#2C1B4D; --on-accent:#1A0E33;
-  --bloom-a:rgba(167,139,250,.12); --bloom-b:rgba(124,58,237,.07);
+  --accent:#8E86A6; --accent-2:#A7A0BC; --accent-soft:#221E2B; --on-accent:#0B0C0C;
+  --bloom-a:rgba(142,134,166,.05); --bloom-b:rgba(255,255,255,.02);
 }
 
 /* ---------------- planner components ---------------- */
@@ -331,7 +331,7 @@ input[type="date"].mono-input{width:132px}
 input[type="time"].mono-input{width:88px}
 
 .pday-head{display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:13px}
-.pday-title{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:700;
+.pday-title{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:700;
   font-size:17px; margin:0}
 .pday-sub{margin:2px 0 0; font-family:"JetBrains Mono",ui-monospace,monospace;
   font-size:11.5px; color:var(--ink-3); font-variant-numeric:tabular-nums}
@@ -339,7 +339,7 @@ input[type="time"].mono-input{width:88px}
 .budget-bar{display:flex; height:48px; border-radius:14px; overflow:hidden; background:var(--sunk)}
 .budget-bar > i{display:flex; flex:0 0 auto; align-items:center; justify-content:center;
   min-width:0; overflow:hidden; padding:0 4px;
-  font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; font-size:11.5px;
+  font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; font-size:11.5px;
   letter-spacing:.02em; white-space:nowrap}
 .budget-bar > i > span{overflow:hidden; text-overflow:clip}
 .bb-sleep{background:var(--ink-3); color:var(--bg)}
@@ -423,10 +423,10 @@ input[type="time"].mono-input{width:88px}
 .pcal-dots i{width:4px; height:4px; border-radius:50%; display:block}
 .pcal-quarter{display:flex; flex-direction:column; gap:22px}
 @media (min-width:760px){ .pcal-quarter{display:grid; grid-template-columns:repeat(3,1fr); gap:16px} }
-.pcal-qmonth-title{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600;
+.pcal-qmonth-title{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
   font-size:13.5px; margin:0 0 7px}
 .pcal-year{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:16px}
-.pcal-mini-title{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600;
+.pcal-mini-title{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
   font-size:12px; margin:0 0 5px; text-align:center}
 .pcal-mini-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:2px}
 .pcal-mini-cell{aspect-ratio:1; border-radius:2px; background:var(--sunk); border:0; padding:0;
@@ -635,7 +635,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
   box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent)}
 .wb-head{appearance:none; border:0; background:none; cursor:pointer; font:inherit; color:var(--ink-2);
   font-size:11px; padding:4px 2px 3px; text-align:center; border-radius:6px}
-.wb-head b{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600;
+.wb-head b{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
   text-transform:uppercase; letter-spacing:.05em; font-size:10.5px; margin-right:3px}
 .wb-col.today .wb-head{color:var(--accent); font-weight:700}
 .wb-head:hover{background:var(--sunk)}
@@ -741,7 +741,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .hactive{border:1.5px solid var(--accent)}
 .hactive-row{display:flex; align-items:center; justify-content:space-between; gap:10px}
 .hactive-name{display:flex; align-items:center; gap:8px; background:none; border:0; padding:0;
-  cursor:pointer; color:var(--ink); font-family:"Bricolage Grotesque","Manrope",sans-serif;
+  cursor:pointer; color:var(--ink); font-family:"Space Grotesk","Manrope",sans-serif;
   font-weight:700; font-size:15px; text-align:left}
 .hdot{width:9px; height:9px; border-radius:3px; flex:0 0 auto}
 /* the clock is the one place this app shouts — it has to be readable across a
@@ -749,7 +749,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .hclock{margin-top:12px; text-align:center}
 .hclock.resting .hclock-time{color:var(--ink-3)}
 .hclock.idle .hclock-time{color:var(--ink-3)}
-.hclock-phase{display:inline-block; font-family:"Bricolage Grotesque","Manrope",sans-serif;
+.hclock-phase{display:inline-block; font-family:"Space Grotesk","Manrope",sans-serif;
   font-weight:600; text-transform:uppercase; letter-spacing:.09em; font-size:11px;
   color:var(--accent); margin-bottom:2px}
 .hclock-time{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:44px; font-weight:600;
@@ -780,7 +780,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
   display:flex; align-items:center; justify-content:center;
   background:color-mix(in srgb,var(--accent) 22%,var(--surface));
   border:1px solid color-mix(in srgb,var(--accent) 34%,transparent)}
-.hrb-b i{font-style:normal; font-family:"Bricolage Grotesque","Manrope",sans-serif;
+.hrb-b i{font-style:normal; font-family:"Space Grotesk","Manrope",sans-serif;
   font-weight:600; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em;
   color:var(--ink-2); white-space:nowrap; padding:0 5px}
 .hrb-short,.hrb-long{top:17px; bottom:17px}
@@ -837,7 +837,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
   display:flex; align-items:center; justify-content:center;
   background:color-mix(in srgb,var(--pc,var(--accent)) 24%,var(--surface));
   border:1px solid color-mix(in srgb,var(--pc,var(--accent)) 38%,transparent)}
-.hrb-proj i{font-style:normal; font-family:"Bricolage Grotesque","Manrope",sans-serif;
+.hrb-proj i{font-style:normal; font-family:"Space Grotesk","Manrope",sans-serif;
   font-weight:600; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em;
   color:var(--ink-2); white-space:nowrap; padding:0 5px; overflow:hidden; text-overflow:ellipsis}
 .hproj-empty{padding:13px 2px; font-size:12.5px; color:var(--ink-3); text-align:center}
@@ -859,7 +859,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .hproj-total{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:12.5px; color:var(--ink-2);
   flex:0 0 auto; font-variant-numeric:tabular-nums}
 .hset-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px}
-.hset-grid .field span{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600;
+.hset-grid .field span{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
   text-transform:uppercase; letter-spacing:.09em; font-size:11px; color:var(--ink-2)}
 .hset-grid .mono-input{width:100%}
 .hcolors{display:flex; gap:7px; flex-wrap:wrap}
@@ -892,7 +892,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .langsel button[aria-pressed="true"]{background:var(--accent); color:var(--on-accent)}
 .duestrip{display:flex; flex-direction:column}
 .duehead{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px 8px}
-.duehead b{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:700; font-size:15px}
+.duehead b{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:700; font-size:15px}
 .duerow{display:flex; align-items:center; gap:10px; padding:9px 14px; border-top:1px solid var(--line-soft)}
 .duerow-t{flex:1; min-width:0; font-size:13.5px}
 .duerow-t small{display:block; font-size:11.5px; color:var(--ink-3);
@@ -917,11 +917,11 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .statrow.q{display:grid; grid-template-columns:1fr 1fr; gap:10px}
 @media(min-width:620px){ .statrow.q{grid-template-columns:repeat(4,1fr)} }
 .stat{flex:1 1 90px; background:var(--sunk); border-radius:var(--r); padding:11px 12px; min-width:0}
-.stat b{display:block; font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; font-size:26px;
+.stat b{display:block; font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; font-size:26px;
   line-height:1.1; color:var(--ink)}
 .stat b.good{color:var(--ok)} .stat b.none{color:var(--ink-3)}
 .stat span{display:block; margin-top:2px; font-size:11px; text-transform:uppercase;
-  letter-spacing:.06em; color:var(--ink-3); font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600}
+  letter-spacing:.06em; color:var(--ink-3); font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600}
 .track{display:flex; align-items:center; gap:0; margin:2px 0 4px}
 .track i{flex:1; height:3px; background:var(--line)}
 .track b{width:11px; height:11px; border-radius:50%; background:var(--line); flex:0 0 auto;
@@ -930,7 +930,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .track b.now{background:var(--accent); box-shadow:0 0 0 3px rgba(125,211,229,.22)}
 .track i.on{background:var(--accent)}
 .tracklab{display:flex; justify-content:space-between; font-size:10.5px; color:var(--ink-3);
-  font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; text-transform:uppercase; letter-spacing:.06em}
+  font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase; letter-spacing:.06em}
 .cutcounts{display:flex; gap:7px; flex-wrap:wrap}
 .cutcounts .btn{flex:1 1 0; min-width:82px}
 .steplist{counter-reset:cs; padding:0; margin:0; list-style:none}
@@ -1004,7 +1004,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .appmenu button[aria-current="true"]{color:var(--accent); font-weight:500}
 .rules{display:grid; gap:16px}
 @media (min-width:560px){ .rules{grid-template-columns:1fr 1fr} }
-.rule-col h4{margin:0 0 9px; font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600;
+.rule-col h4{margin:0 0 9px; font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
   text-transform:uppercase; letter-spacing:.08em; font-size:13px}
 .rule-do h4{color:var(--ok)} .rule-dont h4{color:var(--crit)}
 .rule-col ul{list-style:none; margin:0; padding:0; display:grid; gap:9px}
@@ -1025,14 +1025,14 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .acad-sec .fold p:last-child{margin-bottom:14px}
 .acad-sec .fold b{color:var(--ink)}
 .blankapp{padding:60px 20px; text-align:center; color:var(--ink-3)}
-.blankapp h2{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+.blankapp h2{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
   letter-spacing:.08em; font-size:17px; color:var(--ink-2); margin:0 0 7px}
 .blankapp p{margin:0; font-size:14px}
 .top{display:flex; align-items:center; gap:10px; padding:10px 16px; order:0;
   position:sticky; top:0; z-index:30; background:var(--glass);
   backdrop-filter:blur(22px) saturate(160%); -webkit-backdrop-filter:blur(22px) saturate(160%);
   border-bottom:1px solid var(--line-soft); box-shadow:inset 0 1px 0 var(--hair)}
-.mark{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:800; font-size:19px;
+.mark{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:800; font-size:19px;
   letter-spacing:-.02em; text-transform:none; line-height:1; white-space:nowrap;
   overflow:hidden; text-overflow:ellipsis; min-width:0}
 .mark span{color:var(--accent)}
@@ -1079,11 +1079,11 @@ main{order:2; flex:1; padding:14px 13px 44px; width:100%; max-width:1060px; marg
 .card-sec{padding:14px 15px}
 .card-sec + .card-sec{border-top:1px solid var(--line-soft)}
 .sec-head{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px}
-.sec-head h2{font-size:22px; font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:700; letter-spacing:-.02em}
+.sec-head h2{font-size:22px; font-family:"Space Grotesk","Manrope",sans-serif; font-weight:700; letter-spacing:-.02em}
 
 /* ---------- form atoms ---------- */
 .field{display:flex; flex-direction:column; gap:6px}
-.field > label, .field > .lbl-row > label{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+.field > label, .field > .lbl-row > label{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
   letter-spacing:.09em; font-size:13px; color:var(--ink-2)}
 input,select,textarea{font-family:"Manrope",sans-serif; font-size:15px; color:var(--ink);
   background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r); padding:9px 10px; width:100%}
@@ -1094,7 +1094,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 
 .btn{appearance:none; cursor:pointer; border:1px solid var(--line); border-radius:999px;
   background:var(--surface); font-family:"Manrope",sans-serif; font-weight:600; letter-spacing:-.01em;
-  color:var(--ink); border-radius:var(--r); padding:8px 14px; font-family:"Bricolage Grotesque","Manrope",sans-serif;
+  color:var(--ink); border-radius:var(--r); padding:8px 14px; font-family:"Space Grotesk","Manrope",sans-serif;
   font-weight:600; font-size:14px; text-transform:uppercase; letter-spacing:.08em; white-space:nowrap}
 .btn:hover{border-color:var(--accent); color:var(--accent)}
 .btn.primary{background:var(--accent); border-color:var(--accent); color:var(--on-accent);
@@ -1133,13 +1133,13 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 .duecard small{display:block; margin-top:4px; font-size:12px; color:var(--ink-3)}
 .mixhead{display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap;
   padding:11px 15px; background:var(--sunk); border-bottom:1px solid var(--line);
-  font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+  font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
   letter-spacing:.09em; font-size:13px; color:var(--ink-2)}
 .mixhead b{color:var(--accent); font-weight:600}
 /* segmented control — formula vs one product */
 .seg{display:flex; gap:0; border:1px solid var(--line); border-radius:var(--r); overflow:hidden; background:var(--surface-2)}
 .seg button{flex:1 1 0; appearance:none; border:0; background:none; cursor:pointer; min-height:38px;
-  color:var(--ink-3); font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; font-size:14px;
+  color:var(--ink-3); font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; font-size:14px;
   text-transform:uppercase; letter-spacing:.07em; transition:background .12s, color .12s;
   -webkit-tap-highlight-color:transparent}
 .seg button + button{border-left:1px solid var(--line)}
@@ -1182,11 +1182,11 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 
 .pnav{display:flex; align-items:center; gap:8px; padding:12px 14px 4px}
 .pnav .btn{min-width:38px; font-size:17px; padding:0 10px}
-.pnav b{flex:1; min-width:0; text-align:center; font-family:"Bricolage Grotesque","Manrope",sans-serif;
+.pnav b{flex:1; min-width:0; text-align:center; font-family:"Space Grotesk","Manrope",sans-serif;
   font-weight:600; text-transform:uppercase; letter-spacing:.06em; font-size:14px; color:var(--ink-2)}
 
 .aday{padding:8px 14px; background:var(--sunk); border-top:1px solid var(--line);
-  font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+  font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
   letter-spacing:.08em; font-size:12.5px; color:var(--ink-2)}
 .arow{display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:center;
   padding:10px 14px; border-bottom:1px solid var(--line-soft)}
@@ -1204,7 +1204,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
   background:none; color:var(--ink); font:inherit; cursor:pointer; transition:background .12s}
 .wrow:last-child{border-bottom:0}
 .wrow:hover{background:var(--surface-2)}
-.wrow-d{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+.wrow-d{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
   letter-spacing:.05em; font-size:13px; color:var(--ink-3)}
 .wrow.today .wrow-d{color:var(--accent)}
 .wrow.late .wrow-d{color:var(--crit)}
@@ -1213,7 +1213,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 
 /* month: a square per day, coloured when something is due */
 .mgrid{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; padding:12px 14px 14px}
-.mhead{text-align:center; font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; font-size:11px;
+.mhead{text-align:center; font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; font-size:11px;
   text-transform:uppercase; letter-spacing:.06em; color:var(--ink-3); padding-bottom:3px}
 .mcell{aspect-ratio:1; min-height:38px; display:flex; flex-direction:column; gap:3px;
   align-items:center; justify-content:center; padding:0; cursor:pointer;
@@ -1232,7 +1232,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 .mdots i.w.done{background:none; border:1.5px solid var(--accent)}
 .mdots i.f.done{background:none; border:1.5px solid var(--amber)}
 .noplants{border-top:1px solid var(--line)}
-.dsec{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+.dsec{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
   letter-spacing:.08em; font-size:12.5px; color:var(--ink-3); margin:0 0 7px}
 .trow{display:grid; grid-template-columns:auto 1fr auto; gap:2px 10px; align-items:center;
   padding:8px 0; border-bottom:1px solid var(--line-soft)}
@@ -1299,7 +1299,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 /* the volume is a readout, not a form field — no box, just the number */
 .vol-row{display:flex; gap:5px; align-items:baseline; justify-content:center; padding:2px 0 4px}
 .vol-row input{border:0; background:none; padding:0 1px; min-width:0;
-  font-family:"Bricolage Grotesque","Manrope",sans-serif; font-size:38px; font-weight:600; line-height:1.05;
+  font-family:"Space Grotesk","Manrope",sans-serif; font-size:38px; font-weight:600; line-height:1.05;
   text-align:right; color:var(--ink); border-radius:0}
 .vol-row input:focus{outline:none; box-shadow:0 3px 0 var(--accent)}
 
@@ -1317,7 +1317,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 .step-no b{display:flex; align-items:center; justify-content:center; width:24px; height:24px;
   border:1px solid var(--line); border-radius:50%; font-weight:500}
 .step.done .step-no b{background:var(--ok); border-color:var(--ok); color:var(--surface); }
-.step-cat{grid-column:2; font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600;
+.step-cat{grid-column:2; font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
   text-transform:uppercase; letter-spacing:.08em; font-size:12px; color:var(--accent)}
 .step-name{grid-column:2; font-weight:500; line-height:1.3}
 .step-rule{grid-column:2; font-size:12.5px; color:var(--ink-3); line-height:1.45; margin-top:3px}
@@ -1340,7 +1340,7 @@ textarea.desc{min-height:66px; font-family:"Manrope",sans-serif; font-size:15px}
 .cell:last-child{border-right:0}
 .cell b{display:block; font-family:"JetBrains Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums;
   font-size:16px; font-weight:500}
-.cell span{font-family:"Bricolage Grotesque","Manrope",sans-serif; text-transform:uppercase; letter-spacing:.08em;
+.cell span{font-family:"Space Grotesk","Manrope",sans-serif; text-transform:uppercase; letter-spacing:.08em;
   font-size:11px; color:var(--ink-3)}
 
 .note{display:flex; gap:9px; padding:11px 13px; font-size:13px; line-height:1.45; border-radius:var(--r);
@@ -1364,13 +1364,13 @@ textarea.desc{min-height:66px; font-family:"Manrope",sans-serif; font-size:15px}
 .row-sub{font-size:12.5px; color:var(--ink-3); font-family:"JetBrains Mono",ui-monospace,monospace}
 .chev{flex:0 0 auto; font-size:22px; line-height:1; color:var(--ink-3); transition:color .12s, transform .12s}
 .row:hover .chev{color:var(--accent); transform:translateX(2px)}
-.tag{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+.tag{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
   letter-spacing:.07em; font-size:11px; padding:2px 7px; border-radius:2px;
   background:var(--sunk); color:var(--ink-2)}
 .tag.cat{background:var(--accent-soft); color:var(--accent)}
 .tag.check{background:var(--amber-soft); color:var(--amber)}
 .tag.bio{background:transparent; color:var(--ok); border:1px solid currentColor}
-.pill{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+.pill{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
   letter-spacing:.07em; font-size:12px; padding:3px 9px; border-radius:999px;
   border:1px solid currentColor; white-space:nowrap}
 /* three tiers of urgency, not one style in three colours — late is the only
@@ -1394,7 +1394,7 @@ textarea.desc{min-height:66px; font-family:"Manrope",sans-serif; font-size:15px}
 .pcard-body{padding:12px 15px; display:flex; flex-direction:column; gap:9px;
   border-top:1px solid var(--line-soft)}
 .pline{display:flex; align-items:center; gap:10px; min-width:0}
-.pline-k{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+.pline-k{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
   letter-spacing:.08em; font-size:12px; color:var(--ink-2); width:44px; flex:0 0 auto}
 .pline-v{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:12.5px; color:var(--ink-2);
   min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
@@ -1417,12 +1417,12 @@ textarea.desc{min-height:66px; font-family:"Manrope",sans-serif; font-size:15px}
 .pcard .btn-row{margin:0}
 
 /* log */
-.day{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+.day{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
   letter-spacing:.09em; font-size:12px; color:var(--ink-3); padding:11px 14px 5px;
   border-bottom:1px solid var(--line-soft); background:var(--sunk)}
 .ev{display:grid; grid-template-columns:46px 1fr auto; gap:2px 10px;
   padding:9px 14px; border-bottom:1px solid var(--line-soft); font-size:14px; align-items:start}
-.ev-type{grid-area:1/1; font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600;
+.ev-type{grid-area:1/1; font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
   text-transform:uppercase; letter-spacing:.07em; font-size:12px}
 .ev-type.water{color:var(--accent)} .ev-type.task{color:var(--ok)}
 .ev-type.chore{color:var(--ink-2)}
@@ -1473,7 +1473,7 @@ dialog::backdrop{background:rgba(6,14,13,.55)}
 textarea{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:12px; min-height:110px; resize:vertical}
 .fold{border-top:1px solid var(--line-soft); padding-top:12px}
 .fold > summary{cursor:pointer; list-style:none; padding:8px 0; min-height:34px; display:flex;
-  align-items:center; font-family:"Bricolage Grotesque","Manrope",sans-serif;
+  align-items:center; font-family:"Space Grotesk","Manrope",sans-serif;
   font-weight:600; text-transform:uppercase; letter-spacing:.08em; font-size:13px; color:var(--ink-2)}
 .fold > summary::-webkit-details-marker{display:none}
 .fold > summary::before{content:"+ "; color:var(--ink-3)}
@@ -1512,7 +1512,7 @@ textarea{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:12px; mi
 .tb-top{display:flex; align-items:baseline; gap:6px; flex:0 0 auto}
 .tb-label{font-size:11px; text-transform:uppercase; letter-spacing:.1em;
   font-weight:700; color:var(--ink-3)}
-.tb-pct{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:700;
+.tb-pct{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:700;
   font-size:13px; line-height:1; color:var(--ink-2); font-variant-numeric:tabular-nums}
 .task-bar-full .bar{flex:1; height:6px; background:var(--sunk); border-radius:999px; overflow:hidden; min-width:40px}
 .task-bar-full .bar-fill{height:100%; background:var(--accent); border-radius:999px;
@@ -1710,7 +1710,7 @@ html{overscroll-behavior-y:none}
     padding: 2rem 1.6rem;
   }
 #view-projplan .ppempty.show{ display: flex; }
-#view-projplan .ppempty h2{ margin: 0; font-family: "Bricolage Grotesque","Manrope",sans-serif; font-weight: 600; font-size: var(--fs-title); }
+#view-projplan .ppempty h2{ margin: 0; font-family: "Space Grotesk","Manrope",sans-serif; font-weight: 600; font-size: var(--fs-title); }
 #view-projplan .ppempty p{ margin: 0; color: var(--ink-2); max-width: 60ch; line-height: 1.6; }
 #view-projplan .foot{ font-size: var(--fs-small); color: var(--ink-2); line-height: 1.65; max-width: 78ch; }
 #view-projplan .foot b{ font-weight: 600; }
