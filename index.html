@@ -1104,15 +1104,29 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
    collapsing everything into one flat alphabet — the group is half the answer. */
 .sp-pick{border:1px solid var(--line); border-radius:var(--r); background:var(--surface-2); overflow:hidden}
 .sp-pick:focus-within{border-color:var(--accent)}
-.sp-search{padding:7px 8px; border-bottom:1px solid var(--line)}
+.sp-search{display:flex; gap:7px; align-items:center; padding:7px 8px; border-bottom:1px solid var(--line)}
+.sp-search input{min-width:0}
+/* the escape hatch for a plant we do not carry — an action of its own beside
+   the search, rather than the last row of a list of 158 other things */
+.sp-add{flex:0 0 auto; width:38px; height:38px; display:flex; align-items:center; justify-content:center;
+  appearance:none; cursor:pointer; padding:0; line-height:1;
+  border:1px solid var(--line); border-radius:var(--r); background:var(--surface); color:var(--ink-2);
+  font-family:"Space Grotesk","Manrope",sans-serif; font-size:21px; font-weight:600;
+  transition:border-color .12s, color .12s, background .12s}
+.sp-add:hover{border-color:var(--accent); color:var(--accent)}
+.sp-add[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--on-accent)}
 .sp-search input{background:var(--surface); padding:8px 11px}
 .sp-list{max-height:216px; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch}
-.sp-g{position:sticky; top:0; z-index:1; padding:7px 12px 6px; background:var(--sunk);
-  border-bottom:1px solid var(--line-soft);
+/* the header was the same grey as the plant names and read as another row.
+   It is a different kind of thing, so it now looks like one: accent, tighter
+   and smaller, on its own band, with the names indented beneath it. */
+.sp-g{position:sticky; top:0; z-index:1; padding:9px 12px 7px; background:var(--sunk);
+  border-top:1px solid var(--line); border-bottom:1px solid var(--line);
   font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
-  letter-spacing:.08em; font-size:11.5px; color:var(--ink-3)}
+  letter-spacing:.11em; font-size:10.5px; color:var(--accent)}
+.sp-g:first-child{border-top:0}
 .sp-o{display:flex; align-items:center; gap:8px; width:100%; text-align:left; border:0; background:none;
-  color:var(--ink); font-family:"Manrope",sans-serif; font-size:14.5px; padding:9px 12px; cursor:pointer;
+  color:var(--ink); font-family:"Manrope",sans-serif; font-size:14.5px; padding:9px 12px 9px 17px; cursor:pointer;
   border-bottom:1px solid var(--line-soft); -webkit-tap-highlight-color:transparent;
   transition:background .12s}
 .sp-o:last-child{border-bottom:0}
@@ -1123,7 +1137,6 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 .sp-o[aria-selected="true"]::after{content:"\2713"; margin-left:auto; font-size:13px}
 .sp-o > span{min-width:0; overflow-wrap:anywhere}
 .sp-o mark{background:var(--accent-soft); color:var(--accent); border-radius:3px}
-.sp-o.sp-other{color:var(--ink-2); border-top:1px solid var(--line)}
 .sp-none{padding:15px 12px; text-align:center; color:var(--ink-3); font-size:13px}
 
 .btn{appearance:none; cursor:pointer; border:1px solid var(--line); border-radius:999px;
@@ -1135,6 +1148,12 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
   box-shadow:0 2px 10px rgba(21,128,61,.26)}
 .btn.primary:hover{opacity:.9; color:var(--on-accent)}
 .btn.mini{padding:5px 9px; font-size:13px}
+/* Edit is a different kind of action from the buttons beside it: Watered and
+   Fed record something that happened, Edit changes the plant itself. Set
+   apart rather than shouted — its own end of the row, and the accent. */
+.btn.mini.edit{margin-left:auto; background:var(--accent-soft); border-color:transparent;
+  color:var(--accent)}
+.btn.mini.edit:hover{border-color:var(--accent); color:var(--accent)}
 .btn.danger:hover{border-color:var(--crit); color:var(--crit)}
 .btn[disabled]{opacity:.45; cursor:not-allowed}
 .btn-row{display:flex; gap:8px; flex-wrap:wrap}
@@ -1536,6 +1555,17 @@ textarea{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:12px; mi
   opacity:0; font-size:0; cursor:pointer; z-index:1}
 .photo-row{display:flex; gap:8px; margin-top:10px}
 .photo-row .photo-pick{flex:1; min-width:0; padding-left:4px; padding-right:4px}
+/* the same picker, in the new-plant dialog, where there is no plant to hang
+   the photo on yet — it is held until Save and written with the new id */
+.pl-photo{display:flex; gap:9px; align-items:center}
+.pl-photo-btns{display:flex; gap:7px; flex:1; min-width:0}
+.pl-photo-btns .btn{flex:1 1 0; min-width:0; text-align:center; justify-content:center}
+.pl-photo-prev{position:relative; flex:0 0 auto; width:52px; height:52px; border-radius:var(--r-sm);
+  overflow:hidden; border:1px solid var(--line); background:var(--sunk)}
+.pl-photo-prev img{width:100%; height:100%; object-fit:cover; display:block}
+.pl-photo-drop{position:absolute; top:2px; right:2px; width:19px; height:19px; padding:0; line-height:1;
+  display:flex; align-items:center; justify-content:center; appearance:none; border:0;
+  border-radius:50%; cursor:pointer; background:rgba(0,0,0,.62); color:#fff; font-size:13px}
 
 /* how much of today is done */
 /* A quiet sub-heading strip under the section title, not a second card — it
@@ -2656,7 +2686,10 @@ html{overscroll-behavior-y:none}
       <div class="sp-pick">
         <div class="sp-search">
           <input id="plSpSearch" type="search" autocomplete="off" enterkeyhint="done"
-                 placeholder="Search plants…" aria-controls="plSpList"></div>
+                 placeholder="Search plants…" aria-controls="plSpList">
+          <button type="button" class="sp-add" id="plSpAdd" aria-pressed="false"
+                  title="Not in the list? Add it yourself"
+                  aria-label="Add a plant that is not in the list">+</button></div>
         <div class="sp-list" id="plSpList" role="listbox" aria-label="Plant"></div>
       </div>
       <input type="hidden" id="plSpecies">
@@ -2664,6 +2697,12 @@ html{overscroll-behavior-y:none}
     <div class="field"><label for="plName">Call it</label>
       <input id="plName" required placeholder="Big Monstera"></div>
     <div class="field"><label for="plSpot">Spot</label><input id="plSpot" placeholder="Living room"></div>
+    <div class="field"><label>Photo</label>
+      <div class="pl-photo">
+        <div class="pl-photo-prev" id="plPhotoPrev" hidden></div>
+        <div class="pl-photo-btns" id="plPhotoBtns"></div>
+      </div>
+      <p class="hint" id="plPhotoHint" style="margin:2px 0 0"></p></div>
     <div class="grid2">
       <div class="field"><label for="plPot">Pot size</label>
         <select id="plPot"></select></div>
@@ -7514,7 +7553,7 @@ function renderPlant(){
           `<button class="btn mini" data-did="${r.id}">${esc(DID[r.kind]||r.name)}</button>`).join("")}
         ${pf?`<button class="btn mini" data-mix="${p.id}">Mix</button>`:""}
         <button class="btn mini" data-takecut="${p.id}">Propagate</button>
-        <button class="btn mini" data-edit-plant="${p.id}">Edit</button>
+        <button class="btn mini edit" data-edit-plant="${p.id}">Edit</button>
       </div></div>
     </div>
 
@@ -7664,7 +7703,11 @@ async function takePhoto(e){
   }catch(err){ say("Couldn't use that image: "+err.message); }
 }
 document.addEventListener("change",e=>{
-  if(e.target&&e.target.classList&&e.target.classList.contains("photo-input")) takePhoto(e);
+  const el=e.target;
+  if(!el||!el.classList||!el.classList.contains("photo-input")) return;
+  /* the one in the plant dialog has no subject to attach to yet, and pvId may
+     still point at whatever plant you opened the editor from */
+  if(el.classList.contains("pl-photo-input")) plantDlgPhoto(e); else takePhoto(e);
 });
 
 function openAction(){
@@ -7941,6 +7984,12 @@ const SPECIES=[
   {n:"Butterwort (Pinguicula)",w:3,f:0,l:2,h:2,x:0,t:"Sticky leaves that catch fungus gnats — genuinely useful next to other houseplants."},
  ]}
 ];
+/* Alphabetical inside each category. The order here was curated once and then
+   drifted as plants were added, and by 158 entries it had stopped meaning
+   anything — a name is only findable if you can guess where it sits. Sorted at
+   the source rather than in one view, so the picker, the cuttings list and the
+   academy can never disagree about where a plant lives. */
+SPECIES.forEach(g=>g.list.sort((a,b)=>a.n.localeCompare(b.n,undefined,{sensitivity:"base"})));
 /* ---------------- what each plant actually is ----------------
    Three things the care numbers cannot tell you: what the plant is and where
    it comes from, the one thing that actually matters once it is in your room,
@@ -10588,6 +10637,52 @@ $("#ssBack").addEventListener("click",()=>{
 });
 /* ---------------- plants ---------------- */
 let editingPlant=null;
+/* A photo chosen while adding a plant has nowhere to go yet — the subject has
+   no id until Save. Hold the shrunk data URL here and write it in the submit
+   handler, so cancelling costs nothing and never leaves an orphan shot. */
+let pendingPhoto=null;
+/* shrinkImage awaits, and on a phone the camera round-trip is slow. Cancel in
+   that window, open a different plant, and the old promise would resolve into
+   the new dialog — attaching one plant's photo to another. Every open gets a
+   ticket; a resolution holding a stale one is dropped. */
+let plantDlgTicket=0;
+function renderPlantPhoto(){
+  const prev=$("#plPhotoPrev"), pick=(cap,label)=>
+    `<label class="btn mini photo-pick"><input type="file" accept="image/*"${
+      cap?' capture="environment"':""} class="photo-input pl-photo-input">${esc(label)}</label>`;
+  prev.hidden=!pendingPhoto;
+  prev.innerHTML=pendingPhoto
+    ? `<img alt="" src="${pendingPhoto}"><button type="button" class="pl-photo-drop"
+        id="plPhotoDrop" aria-label="Remove this photo">\u00d7</button>`
+    : "";
+  /* capture= only reaches a camera on a device that has one; on a desktop it
+     opens the same file dialog, so offering it twice there would be a lie */
+  $("#plPhotoBtns").innerHTML=TOUCH
+    ? pick(true,t("Take a photo"))+pick(false,t("Choose one"))
+    : pick(false,pendingPhoto?t("Choose another"):t("Choose a photo"));
+  $("#plPhotoHint").textContent=pendingPhoto
+    ? `${t("Ready to save")} \u00b7 ${t("about")} ${Math.round(pendingPhoto.length/1024)} KB`
+    : t(editingPlant?"Adds another photo to this plant.":"Optional. Saved with the plant.");
+}
+async function plantDlgPhoto(e){
+  const file=e.target.files&&e.target.files[0];
+  e.target.value="";
+  if(!file) return;
+  const mine=plantDlgTicket;
+  try{
+    const data=await shrinkImage(file);     // 640 px, JPEG 0.65 — same as everywhere else
+    if(mine!==plantDlgTicket) return;       // this dialog is gone; the photo is not ours to place
+    pendingPhoto=data;
+    renderPlantPhoto();
+  }catch(err){ if(mine===plantDlgTicket) say("Couldn't use that image: "+err.message); }
+}
+/* Cancel, Escape and the backdrop all end up here — void the ticket so a
+   pick still in flight cannot land in whatever opens next */
+$("#plantDlg").addEventListener("close",()=>{ plantDlgTicket++; pendingPhoto=null; });
+$("#plPhotoPrev").addEventListener("click",e=>{
+  if(!e.target.closest("#plPhotoDrop")) return;
+  pendingPhoto=null; renderPlantPhoto();
+});
 function fillCareSelects(){
   $("#plLight").innerHTML='<option value="">—</option>'
     +LIGHTS.map((l,i)=>`<option value="${i}">${esc(l)}</option>`).join("");
@@ -10615,17 +10710,17 @@ function renderSpeciesList(){
       `<button type="button" class="sp-o" role="option" data-sp="${esc(x.n)}"`
       +` aria-selected="${x.n===cur}"><span>${spLabel(x.n,q)}</span></button>`).join("");
   });
-  if(!hits) html+=`<p class="sp-none">Nothing matches “${esc(spQuery.trim())}”.</p>`;
-  html+=`<button type="button" class="sp-o sp-other" role="option" data-sp="__other"`
-       +` aria-selected="${cur==="__other"}"><span>Something else</span></button>`;
+  if(!hits) html=`<p class="sp-none">Nothing matches “${esc(spQuery.trim())}”.<br>`
+    +`Tap + to add it yourself.</p>`;
   $("#plSpList").innerHTML=html;
+  $("#plSpAdd").setAttribute("aria-pressed",String(cur==="__other"));
 }
 function renderSpeciesSel(cur){
   /* a species we no longer carry still has to round-trip as "something else" */
   $("#plSpecies").value = cur ? (speciesFind(cur)?cur:"__other") : "";
   spQuery=""; $("#plSpSearch").value="";
   renderSpeciesList();
-  showTip(cur);
+  showTip($("#plSpecies").value);
 }
 /* the list only exists once the dialog is on screen, so this runs after showModal */
 function spScrollToSelected(){
@@ -10643,8 +10738,19 @@ $("#plSpSearch").addEventListener("keydown",e=>{
   }
   if(e.key!=="Enter") return;
   e.preventDefault();
-  const first=$("#plSpList").querySelector(".sp-o:not(.sp-other)");
-  if(first) first.click();
+  const first=$("#plSpList").querySelector(".sp-o");
+  /* nothing matched, so Enter means the only thing left it can mean: add it */
+  if(first) first.click(); else $("#plSpAdd").click();
+});
+$("#plSpAdd").addEventListener("click",()=>{
+  const sel=$("#plSpecies"), typed=$("#plSpSearch").value.trim();
+  sel.value="__other";
+  /* whatever you typed and could not find is almost certainly what it is called */
+  if(typed && !$("#plName").value.trim()) $("#plName").value=typed;
+  $("#plSpSearch").value=""; spQuery="";
+  renderSpeciesList();
+  sel.dispatchEvent(new Event("change"));
+  $("#plName").focus();
 });
 $("#plSpList").addEventListener("click",e=>{
   const b=e.target.closest("[data-sp]"); if(!b) return;
@@ -10654,8 +10760,14 @@ $("#plSpList").addEventListener("click",e=>{
   sel.dispatchEvent(new Event("change"));
 });
 function showTip(n){
-  const sp=speciesFind(n);
   const box=$("#plTip");
+  if(n==="__other"){
+    box.style.display="";
+    box.innerHTML="<span style=\"display:block\">"+esc(t("Not one of ours \u2014 name it "
+      +"below, and set how often it wants water and feeding under Adjust."))+"</span>";
+    return;
+  }
+  const sp=speciesFind(n);
   if(!sp){ box.innerHTML=""; box.style.display="none"; return; }
   box.style.display="";
   box.innerHTML=`<span class="tagrow" style="margin-bottom:7px">${speciesTags(sp).map(id=>
@@ -10735,6 +10847,7 @@ function openPlant(p){
   /* an existing plant opens folded too — you came to change one thing */
   $("#plCareDetail").hidden=true;
   $("#plCareToggle").textContent=t("Adjust");
+  plantDlgTicket++; pendingPhoto=null; renderPlantPhoto();
   plCareSummary(); plPotHint();
   $("#plantDlg").showModal();
   setTimeout(()=>{ spScrollToSelected(); $(p?"#plName":"#plSpSearch").focus(); },40);
@@ -10792,7 +10905,17 @@ $("#plantForm").addEventListener("submit",async e=>{
   const sv=$("#plSpray").value.trim();
   if(sv) set("spray","Spray",Math.max(1,+sv||1));
   else S.routines=S.routines.filter(r=>!(r.subjectId===sid&&r.kind==="spray"));
-  touch(); renderSubjects(); renderAgenda();
+  if(pendingPhoto){
+    S.photos=S.photos||[];
+    S.photos.push({id:uid(),subjectId:sid,at:new Date().toISOString(),
+      data:pendingPhoto,h:null,by:L.me});
+    photosTouched();
+    pendingPhoto=null;
+    if(photoBytes()>3.2e6) say("Photo storage is getting full — delete a few older shots to make room.");
+  }
+  /* renderGarden was missing: a plant saved from the garden did not appear on
+     it until the next reload, which read as the save having failed */
+  touch(); renderSubjects(); renderAgenda(); renderGarden();
   if(pvId===sid) renderPlant();          // the plant's own page must follow the edit
   $("#plantDlg").close();
 });
@@ -11135,6 +11258,12 @@ document.querySelectorAll("[data-close]").forEach(b=>
 
 /* ---------------- Czech ---------------- */
 Object.assign(CS,{"Today":"Dnes","done":"hotovo",
+"Search plants…":"Hledat rostliny…",
+"Choose a photo":"Vybrat fotku","Choose another":"Vybrat jinou",
+"Ready to save":"Připraveno k uložení","about":"asi",
+"Optional. Saved with the plant.":"Nepovinné. Uloží se s rostlinou.",
+"Adds another photo to this plant.":"Přidá k této rostlině další fotku.",
+"Not one of ours — name it below, and set how often it wants water and feeding under Adjust.":"Není z našeho seznamu — pojmenuj ji níž a pod Upravit nastav, jak často chce zalít a přihnojit.",
 "Take a photo":"Vyfotit","Choose one":"Vybrat z galerie","+ Photo":"+ Fotka",
 "No photos yet":"Zatím žádné fotky",
 "Take one now and another in a month — that's the whole point.":"Vyfoť ji teď a pak za měsíc — o to přesně jde.",
