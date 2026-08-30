@@ -10,64 +10,64 @@
 <link rel="apple-touch-icon" href="./icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
 
 <style>
 :root{
-  --bg:#EFF2EF; --surface:#FFFFFF; --surface-2:#F6F8F5; --sunk:#E8ECE7;
-  --line:#DEE4DC; --line-soft:#EBEFE9; --line-strong:#C4CFC1;
-  --ink:#0C1410; --ink-2:#4E5A52; --ink-3:#87938B;
-  --accent:#15803D; --accent-2:#22C55E; --accent-soft:#DCF4E4; --on-accent:#FFFFFF;
-  --amber:#A9640C; --amber-soft:#F7E9D2;
-  --orange:#EA580C;
-  --track-bg:#E4E7EA; --track-line:rgba(12,20,16,.14); --track-ink:#5B6B63;
+  --bg:#F4F4F2; --surface:#FFFFFF; --surface-2:#FAFAF9; --sunk:#ECECEA;
+  --line:#E2E2DF; --line-soft:#EDEDEA; --line-strong:#C9C9C4;
+  --ink:#16181A; --ink-2:#5C6166; --ink-3:#8E9499;
+  --accent:#3F6B54; --accent-2:#55806A; --accent-soft:#E8EEEA; --on-accent:#FFFFFF;
+  --amber:#8A6A2F; --amber-soft:#F0EADC;
+  --orange:#B4633A;
+  --track-bg:#E9E9E6; --track-line:rgba(22,24,26,.12); --track-ink:#5C6166;
   /* the planner board's own rules: --line-soft vanished against the card, so
      the hour grid and the day separators get their own readable tokens */
-  --grid-line:#CBD5C8; --grid-sep:#AEBCAA;
-  --ok:#15803D; --crit:#BE3B30; --crit-soft:#F8E2DF;
+  --grid-line:#DCDCD8; --grid-sep:#C2C2BD;
+  --ok:#3F6B54; --crit:#A34B41; --crit-soft:#F2E4E1;
   --glass:rgba(255,255,255,.72); --glass-2:rgba(255,255,255,.88);
   --hair:rgba(255,255,255,.95);
-  --bloom-a:rgba(34,197,94,.16); --bloom-b:rgba(21,128,61,.10);
-  --shadow:0 1px 2px rgba(12,20,16,.04), 0 8px 24px rgba(12,20,16,.06);
-  --shadow-lift:0 2px 6px rgba(12,20,16,.06), 0 20px 48px rgba(12,20,16,.10);
-  --r:18px; --r-sm:12px; --r-xs:9px;
-  --hours-hue:#6D28D9;          /* Hours identity, used inside other apps */
+  --bloom-a:rgba(63,107,84,.05); --bloom-b:rgba(22,24,26,.03);
+  --shadow:0 1px 2px rgba(22,24,26,.05);
+  --shadow-lift:0 2px 8px rgba(22,24,26,.10);
+  --r:12px; --r-sm:8px; --r-xs:5px;
+  --hours-hue:#5B5470;          /* Hours identity, used inside other apps */
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#070B08; --surface:#101711; --surface-2:#151E17; --sunk:#0B1109;
-    --line:#22301F; --line-soft:#1A2419; --line-strong:#3A4F34;
-    --ink:#E9F1EA; --ink-2:#A0AFA4; --ink-3:#6F7E73;
-    --accent:#4ADE80; --accent-2:#86EFAC; --accent-soft:#0F2C19; --on-accent:#04180B;
-    --amber:#F1B24C; --amber-soft:#2C2210;
-    --orange:#FB923C;
-    --track-bg:#242B26; --track-line:rgba(233,241,234,.14); --track-ink:#B7C2BB;
-    --grid-line:#33422F; --grid-sep:#485C41;
-    --ok:#4ADE80; --crit:#F08276; --crit-soft:#33191A;
-    --glass:rgba(16,23,17,.66); --glass-2:rgba(19,28,21,.82);
+    --bg:#0B0C0C; --surface:#141616; --surface-2:#1A1D1D; --sunk:#0F1111;
+    --line:#262A29; --line-soft:#1E2121; --line-strong:#3A403E;
+    --ink:#ECEEED; --ink-2:#9AA1A0; --ink-3:#6B7271;
+    --accent:#7FA890; --accent-2:#9BBEA9; --accent-soft:#17241D; --on-accent:#0B0C0C;
+    --amber:#C6A468; --amber-soft:#241F14;
+    --orange:#C08155;
+    --track-bg:#202323; --track-line:rgba(236,238,237,.12); --track-ink:#9AA1A0;
+    --grid-line:#282C2B; --grid-sep:#3C4241;
+    --ok:#7FA890; --crit:#C98079; --crit-soft:#2A1D1C;
+    --glass:rgba(20,22,22,.72); --glass-2:rgba(26,29,29,.86);
     --hair:rgba(255,255,255,.06);
-    --bloom-a:rgba(74,222,128,.12); --bloom-b:rgba(34,197,94,.07);
-    --shadow:0 1px 2px rgba(0,0,0,.5), 0 8px 24px rgba(0,0,0,.42);
-    --shadow-lift:0 2px 6px rgba(0,0,0,.5), 0 20px 48px rgba(0,0,0,.55);
-    --hours-hue:#A78BFA;
+    --bloom-a:rgba(127,168,144,.05); --bloom-b:rgba(255,255,255,.02);
+    --shadow:0 1px 2px rgba(0,0,0,.45);
+    --shadow-lift:0 2px 8px rgba(0,0,0,.55);
+    --hours-hue:#8E86A6;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#070B08; --surface:#101711; --surface-2:#151E17; --sunk:#0B1109;
-  --line:#22301F; --line-soft:#1A2419; --line-strong:#3A4F34;
-  --ink:#E9F1EA; --ink-2:#A0AFA4; --ink-3:#6F7E73;
-  --accent:#4ADE80; --accent-2:#86EFAC; --accent-soft:#0F2C19; --on-accent:#04180B;
-  --amber:#F1B24C; --amber-soft:#2C2210;
-  --orange:#FB923C;
-  --track-bg:#242B26; --track-line:rgba(233,241,234,.14); --track-ink:#B7C2BB;
-  --grid-line:#33422F; --grid-sep:#485C41;
-  --ok:#4ADE80; --crit:#F08276; --crit-soft:#33191A;
-  --glass:rgba(16,23,17,.66); --glass-2:rgba(19,28,21,.82);
+  --bg:#0B0C0C; --surface:#141616; --surface-2:#1A1D1D; --sunk:#0F1111;
+  --line:#262A29; --line-soft:#1E2121; --line-strong:#3A403E;
+  --ink:#ECEEED; --ink-2:#9AA1A0; --ink-3:#6B7271;
+  --accent:#7FA890; --accent-2:#9BBEA9; --accent-soft:#17241D; --on-accent:#0B0C0C;
+  --amber:#C6A468; --amber-soft:#241F14;
+  --orange:#C08155;
+  --track-bg:#202323; --track-line:rgba(236,238,237,.12); --track-ink:#9AA1A0;
+  --grid-line:#282C2B; --grid-sep:#3C4241;
+  --ok:#7FA890; --crit:#C98079; --crit-soft:#2A1D1C;
+  --glass:rgba(20,22,22,.72); --glass-2:rgba(26,29,29,.86);
   --hair:rgba(255,255,255,.06);
-  --bloom-a:rgba(74,222,128,.12); --bloom-b:rgba(34,197,94,.07);
-  --shadow:0 1px 2px rgba(0,0,0,.5), 0 8px 24px rgba(0,0,0,.42);
-  --shadow-lift:0 2px 6px rgba(0,0,0,.5), 0 20px 48px rgba(0,0,0,.55);
-  --hours-hue:#A78BFA;
+  --bloom-a:rgba(127,168,144,.05); --bloom-b:rgba(255,255,255,.02);
+  --shadow:0 1px 2px rgba(0,0,0,.45);
+  --shadow-lift:0 2px 8px rgba(0,0,0,.55);
+  --hours-hue:#8E86A6;
 }
 
 *{box-sizing:border-box}
@@ -81,9 +81,9 @@ body{
   font-size:15px; line-height:1.5; display:flex; flex-direction:column; min-height:100vh;
   -webkit-text-size-adjust:100%;
 }
-h1,h2,h3{margin:0; font-family:"Bricolage Grotesque",Impact,sans-serif; text-wrap:balance; font-weight:600}
+h1,h2,h3{margin:0; font-family:"Space Grotesk",Impact,sans-serif; text-wrap:balance; font-weight:600}
 .num{font-family:"JetBrains Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums}
-.eyebrow{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+.eyebrow{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
   letter-spacing:.1em; font-size:13px; color:var(--ink-3)}
 
 /* ---------- chrome ---------- */
@@ -168,7 +168,7 @@ h1,h2,h3{margin:0; font-family:"Bricolage Grotesque",Impact,sans-serif; text-wra
   border:1px solid var(--line); background:var(--sunk); color:var(--ink); outline:none}
 .acq:focus{border-color:var(--accent); background:var(--surface)}
 .acq::placeholder{color:var(--ink-3)}
-.pgroup{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600;
+.pgroup{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
   text-transform:uppercase; letter-spacing:.09em; font-size:10.5px; color:var(--ink-3);
   padding:5px 15px 8px}
 .pgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(94px,1fr));
@@ -184,13 +184,13 @@ h1,h2,h3{margin:0; font-family:"Bricolage Grotesque",Impact,sans-serif; text-wra
 .acopen{margin:0 15px 16px; border:1px solid var(--accent); border-radius:var(--r-sm);
   background:var(--accent-soft); overflow:hidden}
 .ao-head{display:flex; align-items:center; gap:11px; padding:12px 12px 9px}
-.ao-head b{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-size:16px;
+.ao-head b{font-family:"Space Grotesk","Manrope",sans-serif; font-size:16px;
   font-weight:700; letter-spacing:-.01em; flex:1; min-width:0; color:var(--ink)}
 .ao-head .picto{width:42px; height:42px}
 .lore{margin-top:13px; border-top:1px solid var(--line); padding-top:12px;
   display:flex; flex-direction:column; gap:11px}
 .lore-sec p{margin:3px 0 0; font-size:13.5px; line-height:1.5; color:var(--ink-2)}
-.lore-k{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600;
+.lore-k{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
   text-transform:uppercase; letter-spacing:.07em; font-size:10.5px; color:var(--accent)}
 .pg-list{border-top:1px solid var(--line)}
 .pg-row{border-bottom:1px solid var(--line)}
@@ -198,7 +198,7 @@ h1,h2,h3{margin:0; font-family:"Bricolage Grotesque",Impact,sans-serif; text-wra
 .pg-head{display:flex; align-items:center; gap:10px; width:100%; background:none; border:0;
   padding:13px 15px; cursor:pointer; text-align:left; color:var(--ink); font:inherit}
 .pg-head:hover{background:var(--sunk)}
-.pg-name{flex:1; min-width:0; font-family:"Bricolage Grotesque","Manrope",sans-serif;
+.pg-name{flex:1; min-width:0; font-family:"Space Grotesk","Manrope",sans-serif;
   font-weight:600; font-size:14.5px}
 .pg-span{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11.5px; color:var(--ink-3);
   flex:0 0 auto; white-space:nowrap}
@@ -208,7 +208,7 @@ h1,h2,h3{margin:0; font-family:"Bricolage Grotesque",Impact,sans-serif; text-wra
 .pg-body{padding:0 15px 15px; display:flex; flex-direction:column; gap:12px}
 .pg-sec p{margin:3px 0 0; font-size:13.5px; line-height:1.5; color:var(--ink-2)}
 .pg-sec .steplist{margin:5px 0 0}
-.pg-k{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600;
+.pg-k{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
   text-transform:uppercase; letter-spacing:.07em; font-size:10.5px; color:var(--accent)}
 .sbars{display:flex; flex-direction:column; gap:7px}
 .sbar{display:grid; grid-template-columns:minmax(64px,34%) 1fr auto; align-items:center; gap:9px}
@@ -247,7 +247,7 @@ h1,h2,h3{margin:0; font-family:"Bricolage Grotesque",Impact,sans-serif; text-wra
   background:var(--surface-2); position:relative; z-index:1; will-change:transform;
   width:100%}
 .swipe-act{position:absolute; left:0; top:0; bottom:0; z-index:0; display:flex; align-items:center;
-  padding-left:16px; font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600;
+  padding-left:16px; font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
   font-size:12.5px; letter-spacing:.05em; text-transform:uppercase;
   color:var(--on-accent); background:var(--accent); width:100%; opacity:.55;
   transition:opacity .12s}
@@ -287,35 +287,35 @@ h1,h2,h3{margin:0; font-family:"Bricolage Grotesque",Impact,sans-serif; text-wra
    changes, and --ok/--crit/--amber are left alone since those are semantic,
    not identity. Toggled by adding .theme-planner to <html> in showNow(). */
 html.theme-planner{
-  --accent:#1D4ED8; --accent-2:#3B82F6; --accent-soft:#DBEAFE; --on-accent:#FFFFFF;
-  --bloom-a:rgba(59,130,246,.16); --bloom-b:rgba(29,78,216,.10);
+  --accent:#40566E; --accent-2:#586E88; --accent-soft:#E7EAEE; --on-accent:#FFFFFF;
+  --bloom-a:rgba(64,86,110,.05); --bloom-b:rgba(22,24,26,.03);
 }
 @media (prefers-color-scheme: dark){
   html.theme-planner:not([data-theme="light"]){
-    --accent:#60A5FA; --accent-2:#93C5FD; --accent-soft:#122A4A; --on-accent:#04101F;
-    --bloom-a:rgba(96,165,250,.12); --bloom-b:rgba(37,99,235,.07);
+    --accent:#8FA6BF; --accent-2:#A9BCD1; --accent-soft:#1A2029; --on-accent:#0B0C0C;
+    --bloom-a:rgba(143,166,191,.05); --bloom-b:rgba(255,255,255,.02);
   }
 }
 html.theme-planner[data-theme="dark"]{
-  --accent:#60A5FA; --accent-2:#93C5FD; --accent-soft:#122A4A; --on-accent:#04101F;
-  --bloom-a:rgba(96,165,250,.12); --bloom-b:rgba(37,99,235,.07);
+  --accent:#8FA6BF; --accent-2:#A9BCD1; --accent-soft:#1A2029; --on-accent:#0B0C0C;
+  --bloom-a:rgba(143,166,191,.05); --bloom-b:rgba(255,255,255,.02);
 }
 
 /* Hours gets the same scoped-token treatment as the planner, purple instead of
    blue. Toggled by .theme-hours on <html> in showNow(). */
 html.theme-hours{
-  --accent:#6D28D9; --accent-2:#8B5CF6; --accent-soft:#EDE9FE; --on-accent:#FFFFFF;
-  --bloom-a:rgba(139,92,246,.16); --bloom-b:rgba(109,40,217,.10);
+  --accent:#5B5470; --accent-2:#736B8A; --accent-soft:#EAE8EE; --on-accent:#FFFFFF;
+  --bloom-a:rgba(91,84,112,.05); --bloom-b:rgba(22,24,26,.03);
 }
 @media (prefers-color-scheme: dark){
   html.theme-hours:not([data-theme="light"]){
-    --accent:#A78BFA; --accent-2:#C4B5FD; --accent-soft:#2C1B4D; --on-accent:#1A0E33;
-    --bloom-a:rgba(167,139,250,.12); --bloom-b:rgba(124,58,237,.07);
+    --accent:#8E86A6; --accent-2:#A7A0BC; --accent-soft:#221E2B; --on-accent:#0B0C0C;
+    --bloom-a:rgba(142,134,166,.05); --bloom-b:rgba(255,255,255,.02);
   }
 }
 html.theme-hours[data-theme="dark"]{
-  --accent:#A78BFA; --accent-2:#C4B5FD; --accent-soft:#2C1B4D; --on-accent:#1A0E33;
-  --bloom-a:rgba(167,139,250,.12); --bloom-b:rgba(124,58,237,.07);
+  --accent:#8E86A6; --accent-2:#A7A0BC; --accent-soft:#221E2B; --on-accent:#0B0C0C;
+  --bloom-a:rgba(142,134,166,.05); --bloom-b:rgba(255,255,255,.02);
 }
 
 /* ---------------- planner components ---------------- */
@@ -331,7 +331,7 @@ input[type="date"].mono-input{width:132px}
 input[type="time"].mono-input{width:88px}
 
 .pday-head{display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:13px}
-.pday-title{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:700;
+.pday-title{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:700;
   font-size:17px; margin:0}
 .pday-sub{margin:2px 0 0; font-family:"JetBrains Mono",ui-monospace,monospace;
   font-size:11.5px; color:var(--ink-3); font-variant-numeric:tabular-nums}
@@ -339,7 +339,7 @@ input[type="time"].mono-input{width:88px}
 .budget-bar{display:flex; height:48px; border-radius:14px; overflow:hidden; background:var(--sunk)}
 .budget-bar > i{display:flex; flex:0 0 auto; align-items:center; justify-content:center;
   min-width:0; overflow:hidden; padding:0 4px;
-  font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; font-size:11.5px;
+  font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; font-size:11.5px;
   letter-spacing:.02em; white-space:nowrap}
 .budget-bar > i > span{overflow:hidden; text-overflow:clip}
 .bb-sleep{background:var(--ink-3); color:var(--bg)}
@@ -423,10 +423,10 @@ input[type="time"].mono-input{width:88px}
 .pcal-dots i{width:4px; height:4px; border-radius:50%; display:block}
 .pcal-quarter{display:flex; flex-direction:column; gap:22px}
 @media (min-width:760px){ .pcal-quarter{display:grid; grid-template-columns:repeat(3,1fr); gap:16px} }
-.pcal-qmonth-title{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600;
+.pcal-qmonth-title{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
   font-size:13.5px; margin:0 0 7px}
 .pcal-year{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:16px}
-.pcal-mini-title{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600;
+.pcal-mini-title{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
   font-size:12px; margin:0 0 5px; text-align:center}
 .pcal-mini-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:2px}
 .pcal-mini-cell{aspect-ratio:1; border-radius:2px; background:var(--sunk); border:0; padding:0;
@@ -524,8 +524,14 @@ html.pfocus #view-planner .sec-head{display:none}
 html.pfocus .pfocus-btn{position:sticky; right:0}
 /* eight resize grips on an Event block. Kept small and only visible on hover
    (or always, on touch, where there is no hover to reveal them). */
-.wb-h{position:absolute; z-index:4; opacity:0; transition:opacity .12s}
-.wb-blk:hover .wb-h,.wb-blk.rz .wb-h{opacity:1}
+/* Invisible handles must not be grabbable. These sat at opacity:0 with
+   pointer-events:auto, so a block looked like a plain rectangle while eight
+   resize targets covered its edges — grabbing the title hit the N or NW handle
+   and silently resized instead of moving. You can only grab what you can see. */
+.wb-h{position:absolute; z-index:4; opacity:0; pointer-events:none;
+  transition:opacity .12s}
+.wb-blk:hover .wb-h,.wb-blk:focus-within .wb-h,.wb-blk.rz .wb-h{
+  opacity:1; pointer-events:auto}
 /* Sat 3px OUTSIDE the block so the grip straddled its border — but .wb-blk is
    overflow:hidden, which clips hit-testing as well as paint. Measured: a 7px
    grip offered 4 grabbable rows, and the 3 it lost were the outer ones, which
@@ -537,8 +543,8 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
    is ~40px wide, where flat 12px corners plus the side grips left only half the
    block grabbable. min() keeps the same comfortable target on a wide Day column
    and shrinks it on a narrow one. */
-.wb-h-n{top:0; left:min(14px,22%); right:min(14px,22%); height:var(--grip,8px); cursor:ns-resize}
-.wb-h-s{bottom:0; left:min(14px,22%); right:min(14px,22%); height:var(--grip,8px); cursor:ns-resize}
+.wb-h-n{top:0; left:28%; right:28%; height:min(var(--grip,8px),6px); cursor:ns-resize}
+.wb-h-s{bottom:0; left:28%; right:28%; height:min(var(--grip,8px),6px); cursor:ns-resize}
 .wb-h-w{left:0; top:var(--grip,8px); bottom:var(--grip,8px); width:min(6px,10%); cursor:ew-resize}
 .wb-h-e{right:0; top:var(--grip,8px); bottom:var(--grip,8px); width:min(6px,10%); cursor:ew-resize}
 .wb-h-nw{top:0; left:0; width:min(12px,20%); height:var(--grip,8px); cursor:nwse-resize}
@@ -635,7 +641,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
   box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent)}
 .wb-head{appearance:none; border:0; background:none; cursor:pointer; font:inherit; color:var(--ink-2);
   font-size:11px; padding:4px 2px 3px; text-align:center; border-radius:6px}
-.wb-head b{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600;
+.wb-head b{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
   text-transform:uppercase; letter-spacing:.05em; font-size:10.5px; margin-right:3px}
 .wb-col.today .wb-head{color:var(--accent); font-weight:700}
 .wb-head:hover{background:var(--sunk)}
@@ -741,7 +747,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .hactive{border:1.5px solid var(--accent)}
 .hactive-row{display:flex; align-items:center; justify-content:space-between; gap:10px}
 .hactive-name{display:flex; align-items:center; gap:8px; background:none; border:0; padding:0;
-  cursor:pointer; color:var(--ink); font-family:"Bricolage Grotesque","Manrope",sans-serif;
+  cursor:pointer; color:var(--ink); font-family:"Space Grotesk","Manrope",sans-serif;
   font-weight:700; font-size:15px; text-align:left}
 .hdot{width:9px; height:9px; border-radius:3px; flex:0 0 auto}
 /* the clock is the one place this app shouts — it has to be readable across a
@@ -749,7 +755,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .hclock{margin-top:12px; text-align:center}
 .hclock.resting .hclock-time{color:var(--ink-3)}
 .hclock.idle .hclock-time{color:var(--ink-3)}
-.hclock-phase{display:inline-block; font-family:"Bricolage Grotesque","Manrope",sans-serif;
+.hclock-phase{display:inline-block; font-family:"Space Grotesk","Manrope",sans-serif;
   font-weight:600; text-transform:uppercase; letter-spacing:.09em; font-size:11px;
   color:var(--accent); margin-bottom:2px}
 .hclock-time{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:44px; font-weight:600;
@@ -780,7 +786,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
   display:flex; align-items:center; justify-content:center;
   background:color-mix(in srgb,var(--accent) 22%,var(--surface));
   border:1px solid color-mix(in srgb,var(--accent) 34%,transparent)}
-.hrb-b i{font-style:normal; font-family:"Bricolage Grotesque","Manrope",sans-serif;
+.hrb-b i{font-style:normal; font-family:"Space Grotesk","Manrope",sans-serif;
   font-weight:600; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em;
   color:var(--ink-2); white-space:nowrap; padding:0 5px}
 .hrb-short,.hrb-long{top:17px; bottom:17px}
@@ -837,7 +843,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
   display:flex; align-items:center; justify-content:center;
   background:color-mix(in srgb,var(--pc,var(--accent)) 24%,var(--surface));
   border:1px solid color-mix(in srgb,var(--pc,var(--accent)) 38%,transparent)}
-.hrb-proj i{font-style:normal; font-family:"Bricolage Grotesque","Manrope",sans-serif;
+.hrb-proj i{font-style:normal; font-family:"Space Grotesk","Manrope",sans-serif;
   font-weight:600; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em;
   color:var(--ink-2); white-space:nowrap; padding:0 5px; overflow:hidden; text-overflow:ellipsis}
 .hproj-empty{padding:13px 2px; font-size:12.5px; color:var(--ink-3); text-align:center}
@@ -859,7 +865,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .hproj-total{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:12.5px; color:var(--ink-2);
   flex:0 0 auto; font-variant-numeric:tabular-nums}
 .hset-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px}
-.hset-grid .field span{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600;
+.hset-grid .field span{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
   text-transform:uppercase; letter-spacing:.09em; font-size:11px; color:var(--ink-2)}
 .hset-grid .mono-input{width:100%}
 .hcolors{display:flex; gap:7px; flex-wrap:wrap}
@@ -892,7 +898,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .langsel button[aria-pressed="true"]{background:var(--accent); color:var(--on-accent)}
 .duestrip{display:flex; flex-direction:column}
 .duehead{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px 8px}
-.duehead b{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:700; font-size:15px}
+.duehead b{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:700; font-size:15px}
 .duerow{display:flex; align-items:center; gap:10px; padding:9px 14px; border-top:1px solid var(--line-soft)}
 .duerow-t{flex:1; min-width:0; font-size:13.5px}
 .duerow-t small{display:block; font-size:11.5px; color:var(--ink-3);
@@ -917,11 +923,11 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .statrow.q{display:grid; grid-template-columns:1fr 1fr; gap:10px}
 @media(min-width:620px){ .statrow.q{grid-template-columns:repeat(4,1fr)} }
 .stat{flex:1 1 90px; background:var(--sunk); border-radius:var(--r); padding:11px 12px; min-width:0}
-.stat b{display:block; font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; font-size:26px;
+.stat b{display:block; font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; font-size:26px;
   line-height:1.1; color:var(--ink)}
 .stat b.good{color:var(--ok)} .stat b.none{color:var(--ink-3)}
 .stat span{display:block; margin-top:2px; font-size:11px; text-transform:uppercase;
-  letter-spacing:.06em; color:var(--ink-3); font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600}
+  letter-spacing:.06em; color:var(--ink-3); font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600}
 .track{display:flex; align-items:center; gap:0; margin:2px 0 4px}
 .track i{flex:1; height:3px; background:var(--line)}
 .track b{width:11px; height:11px; border-radius:50%; background:var(--line); flex:0 0 auto;
@@ -930,7 +936,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .track b.now{background:var(--accent); box-shadow:0 0 0 3px rgba(125,211,229,.22)}
 .track i.on{background:var(--accent)}
 .tracklab{display:flex; justify-content:space-between; font-size:10.5px; color:var(--ink-3);
-  font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; text-transform:uppercase; letter-spacing:.06em}
+  font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase; letter-spacing:.06em}
 .cutcounts{display:flex; gap:7px; flex-wrap:wrap}
 .cutcounts .btn{flex:1 1 0; min-width:82px}
 .steplist{counter-reset:cs; padding:0; margin:0; list-style:none}
@@ -1004,7 +1010,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .appmenu button[aria-current="true"]{color:var(--accent); font-weight:500}
 .rules{display:grid; gap:16px}
 @media (min-width:560px){ .rules{grid-template-columns:1fr 1fr} }
-.rule-col h4{margin:0 0 9px; font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600;
+.rule-col h4{margin:0 0 9px; font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
   text-transform:uppercase; letter-spacing:.08em; font-size:13px}
 .rule-do h4{color:var(--ok)} .rule-dont h4{color:var(--crit)}
 .rule-col ul{list-style:none; margin:0; padding:0; display:grid; gap:9px}
@@ -1025,14 +1031,14 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .acad-sec .fold p:last-child{margin-bottom:14px}
 .acad-sec .fold b{color:var(--ink)}
 .blankapp{padding:60px 20px; text-align:center; color:var(--ink-3)}
-.blankapp h2{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+.blankapp h2{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
   letter-spacing:.08em; font-size:17px; color:var(--ink-2); margin:0 0 7px}
 .blankapp p{margin:0; font-size:14px}
 .top{display:flex; align-items:center; gap:10px; padding:10px 16px; order:0;
   position:sticky; top:0; z-index:30; background:var(--glass);
   backdrop-filter:blur(22px) saturate(160%); -webkit-backdrop-filter:blur(22px) saturate(160%);
   border-bottom:1px solid var(--line-soft); box-shadow:inset 0 1px 0 var(--hair)}
-.mark{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:800; font-size:19px;
+.mark{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:800; font-size:19px;
   letter-spacing:-.02em; text-transform:none; line-height:1; white-space:nowrap;
   overflow:hidden; text-overflow:ellipsis; min-width:0}
 .mark span{color:var(--accent)}
@@ -1079,11 +1085,11 @@ main{order:2; flex:1; padding:14px 13px 44px; width:100%; max-width:1060px; marg
 .card-sec{padding:14px 15px}
 .card-sec + .card-sec{border-top:1px solid var(--line-soft)}
 .sec-head{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px}
-.sec-head h2{font-size:22px; font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:700; letter-spacing:-.02em}
+.sec-head h2{font-size:22px; font-family:"Space Grotesk","Manrope",sans-serif; font-weight:700; letter-spacing:-.02em}
 
 /* ---------- form atoms ---------- */
 .field{display:flex; flex-direction:column; gap:6px}
-.field > label, .field > .lbl-row > label{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+.field > label, .field > .lbl-row > label{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
   letter-spacing:.09em; font-size:13px; color:var(--ink-2)}
 input,select,textarea{font-family:"Manrope",sans-serif; font-size:15px; color:var(--ink);
   background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r); padding:9px 10px; width:100%}
@@ -1094,7 +1100,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 
 .btn{appearance:none; cursor:pointer; border:1px solid var(--line); border-radius:999px;
   background:var(--surface); font-family:"Manrope",sans-serif; font-weight:600; letter-spacing:-.01em;
-  color:var(--ink); border-radius:var(--r); padding:8px 14px; font-family:"Bricolage Grotesque","Manrope",sans-serif;
+  color:var(--ink); border-radius:var(--r); padding:8px 14px; font-family:"Space Grotesk","Manrope",sans-serif;
   font-weight:600; font-size:14px; text-transform:uppercase; letter-spacing:.08em; white-space:nowrap}
 .btn:hover{border-color:var(--accent); color:var(--accent)}
 .btn.primary{background:var(--accent); border-color:var(--accent); color:var(--on-accent);
@@ -1133,13 +1139,13 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 .duecard small{display:block; margin-top:4px; font-size:12px; color:var(--ink-3)}
 .mixhead{display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap;
   padding:11px 15px; background:var(--sunk); border-bottom:1px solid var(--line);
-  font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+  font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
   letter-spacing:.09em; font-size:13px; color:var(--ink-2)}
 .mixhead b{color:var(--accent); font-weight:600}
 /* segmented control — formula vs one product */
 .seg{display:flex; gap:0; border:1px solid var(--line); border-radius:var(--r); overflow:hidden; background:var(--surface-2)}
 .seg button{flex:1 1 0; appearance:none; border:0; background:none; cursor:pointer; min-height:38px;
-  color:var(--ink-3); font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; font-size:14px;
+  color:var(--ink-3); font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; font-size:14px;
   text-transform:uppercase; letter-spacing:.07em; transition:background .12s, color .12s;
   -webkit-tap-highlight-color:transparent}
 .seg button + button{border-left:1px solid var(--line)}
@@ -1182,11 +1188,11 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 
 .pnav{display:flex; align-items:center; gap:8px; padding:12px 14px 4px}
 .pnav .btn{min-width:38px; font-size:17px; padding:0 10px}
-.pnav b{flex:1; min-width:0; text-align:center; font-family:"Bricolage Grotesque","Manrope",sans-serif;
+.pnav b{flex:1; min-width:0; text-align:center; font-family:"Space Grotesk","Manrope",sans-serif;
   font-weight:600; text-transform:uppercase; letter-spacing:.06em; font-size:14px; color:var(--ink-2)}
 
 .aday{padding:8px 14px; background:var(--sunk); border-top:1px solid var(--line);
-  font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+  font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
   letter-spacing:.08em; font-size:12.5px; color:var(--ink-2)}
 .arow{display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:center;
   padding:10px 14px; border-bottom:1px solid var(--line-soft)}
@@ -1204,7 +1210,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
   background:none; color:var(--ink); font:inherit; cursor:pointer; transition:background .12s}
 .wrow:last-child{border-bottom:0}
 .wrow:hover{background:var(--surface-2)}
-.wrow-d{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+.wrow-d{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
   letter-spacing:.05em; font-size:13px; color:var(--ink-3)}
 .wrow.today .wrow-d{color:var(--accent)}
 .wrow.late .wrow-d{color:var(--crit)}
@@ -1213,7 +1219,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 
 /* month: a square per day, coloured when something is due */
 .mgrid{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; padding:12px 14px 14px}
-.mhead{text-align:center; font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; font-size:11px;
+.mhead{text-align:center; font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; font-size:11px;
   text-transform:uppercase; letter-spacing:.06em; color:var(--ink-3); padding-bottom:3px}
 .mcell{aspect-ratio:1; min-height:38px; display:flex; flex-direction:column; gap:3px;
   align-items:center; justify-content:center; padding:0; cursor:pointer;
@@ -1232,7 +1238,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 .mdots i.w.done{background:none; border:1.5px solid var(--accent)}
 .mdots i.f.done{background:none; border:1.5px solid var(--amber)}
 .noplants{border-top:1px solid var(--line)}
-.dsec{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+.dsec{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
   letter-spacing:.08em; font-size:12.5px; color:var(--ink-3); margin:0 0 7px}
 .trow{display:grid; grid-template-columns:auto 1fr auto; gap:2px 10px; align-items:center;
   padding:8px 0; border-bottom:1px solid var(--line-soft)}
@@ -1299,7 +1305,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 /* the volume is a readout, not a form field — no box, just the number */
 .vol-row{display:flex; gap:5px; align-items:baseline; justify-content:center; padding:2px 0 4px}
 .vol-row input{border:0; background:none; padding:0 1px; min-width:0;
-  font-family:"Bricolage Grotesque","Manrope",sans-serif; font-size:38px; font-weight:600; line-height:1.05;
+  font-family:"Space Grotesk","Manrope",sans-serif; font-size:38px; font-weight:600; line-height:1.05;
   text-align:right; color:var(--ink); border-radius:0}
 .vol-row input:focus{outline:none; box-shadow:0 3px 0 var(--accent)}
 
@@ -1317,7 +1323,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 .step-no b{display:flex; align-items:center; justify-content:center; width:24px; height:24px;
   border:1px solid var(--line); border-radius:50%; font-weight:500}
 .step.done .step-no b{background:var(--ok); border-color:var(--ok); color:var(--surface); }
-.step-cat{grid-column:2; font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600;
+.step-cat{grid-column:2; font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
   text-transform:uppercase; letter-spacing:.08em; font-size:12px; color:var(--accent)}
 .step-name{grid-column:2; font-weight:500; line-height:1.3}
 .step-rule{grid-column:2; font-size:12.5px; color:var(--ink-3); line-height:1.45; margin-top:3px}
@@ -1340,7 +1346,7 @@ textarea.desc{min-height:66px; font-family:"Manrope",sans-serif; font-size:15px}
 .cell:last-child{border-right:0}
 .cell b{display:block; font-family:"JetBrains Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums;
   font-size:16px; font-weight:500}
-.cell span{font-family:"Bricolage Grotesque","Manrope",sans-serif; text-transform:uppercase; letter-spacing:.08em;
+.cell span{font-family:"Space Grotesk","Manrope",sans-serif; text-transform:uppercase; letter-spacing:.08em;
   font-size:11px; color:var(--ink-3)}
 
 .note{display:flex; gap:9px; padding:11px 13px; font-size:13px; line-height:1.45; border-radius:var(--r);
@@ -1364,13 +1370,13 @@ textarea.desc{min-height:66px; font-family:"Manrope",sans-serif; font-size:15px}
 .row-sub{font-size:12.5px; color:var(--ink-3); font-family:"JetBrains Mono",ui-monospace,monospace}
 .chev{flex:0 0 auto; font-size:22px; line-height:1; color:var(--ink-3); transition:color .12s, transform .12s}
 .row:hover .chev{color:var(--accent); transform:translateX(2px)}
-.tag{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+.tag{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
   letter-spacing:.07em; font-size:11px; padding:2px 7px; border-radius:2px;
   background:var(--sunk); color:var(--ink-2)}
 .tag.cat{background:var(--accent-soft); color:var(--accent)}
 .tag.check{background:var(--amber-soft); color:var(--amber)}
 .tag.bio{background:transparent; color:var(--ok); border:1px solid currentColor}
-.pill{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+.pill{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
   letter-spacing:.07em; font-size:12px; padding:3px 9px; border-radius:999px;
   border:1px solid currentColor; white-space:nowrap}
 /* three tiers of urgency, not one style in three colours — late is the only
@@ -1394,7 +1400,7 @@ textarea.desc{min-height:66px; font-family:"Manrope",sans-serif; font-size:15px}
 .pcard-body{padding:12px 15px; display:flex; flex-direction:column; gap:9px;
   border-top:1px solid var(--line-soft)}
 .pline{display:flex; align-items:center; gap:10px; min-width:0}
-.pline-k{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+.pline-k{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
   letter-spacing:.08em; font-size:12px; color:var(--ink-2); width:44px; flex:0 0 auto}
 .pline-v{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:12.5px; color:var(--ink-2);
   min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
@@ -1417,12 +1423,12 @@ textarea.desc{min-height:66px; font-family:"Manrope",sans-serif; font-size:15px}
 .pcard .btn-row{margin:0}
 
 /* log */
-.day{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+.day{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
   letter-spacing:.09em; font-size:12px; color:var(--ink-3); padding:11px 14px 5px;
   border-bottom:1px solid var(--line-soft); background:var(--sunk)}
 .ev{display:grid; grid-template-columns:46px 1fr auto; gap:2px 10px;
   padding:9px 14px; border-bottom:1px solid var(--line-soft); font-size:14px; align-items:start}
-.ev-type{grid-area:1/1; font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:600;
+.ev-type{grid-area:1/1; font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
   text-transform:uppercase; letter-spacing:.07em; font-size:12px}
 .ev-type.water{color:var(--accent)} .ev-type.task{color:var(--ok)}
 .ev-type.chore{color:var(--ink-2)}
@@ -1473,7 +1479,7 @@ dialog::backdrop{background:rgba(6,14,13,.55)}
 textarea{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:12px; min-height:110px; resize:vertical}
 .fold{border-top:1px solid var(--line-soft); padding-top:12px}
 .fold > summary{cursor:pointer; list-style:none; padding:8px 0; min-height:34px; display:flex;
-  align-items:center; font-family:"Bricolage Grotesque","Manrope",sans-serif;
+  align-items:center; font-family:"Space Grotesk","Manrope",sans-serif;
   font-weight:600; text-transform:uppercase; letter-spacing:.08em; font-size:13px; color:var(--ink-2)}
 .fold > summary::-webkit-details-marker{display:none}
 .fold > summary::before{content:"+ "; color:var(--ink-3)}
@@ -1512,7 +1518,7 @@ textarea{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:12px; mi
 .tb-top{display:flex; align-items:baseline; gap:6px; flex:0 0 auto}
 .tb-label{font-size:11px; text-transform:uppercase; letter-spacing:.1em;
   font-weight:700; color:var(--ink-3)}
-.tb-pct{font-family:"Bricolage Grotesque","Manrope",sans-serif; font-weight:700;
+.tb-pct{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:700;
   font-size:13px; line-height:1; color:var(--ink-2); font-variant-numeric:tabular-nums}
 .task-bar-full .bar{flex:1; height:6px; background:var(--sunk); border-radius:999px; overflow:hidden; min-width:40px}
 .task-bar-full .bar-fill{height:100%; background:var(--accent); border-radius:999px;
@@ -1710,7 +1716,7 @@ html{overscroll-behavior-y:none}
     padding: 2rem 1.6rem;
   }
 #view-projplan .ppempty.show{ display: flex; }
-#view-projplan .ppempty h2{ margin: 0; font-family: "Bricolage Grotesque","Manrope",sans-serif; font-weight: 600; font-size: var(--fs-title); }
+#view-projplan .ppempty h2{ margin: 0; font-family: "Space Grotesk","Manrope",sans-serif; font-weight: 600; font-size: var(--fs-title); }
 #view-projplan .ppempty p{ margin: 0; color: var(--ink-2); max-width: 60ch; line-height: 1.6; }
 #view-projplan .foot{ font-size: var(--fs-small); color: var(--ink-2); line-height: 1.65; max-width: 78ch; }
 #view-projplan .foot b{ font-weight: 600; }
@@ -3332,9 +3338,33 @@ let photosLoaded=false, photosDirty=false, dirty=false, readOnly=false;
    could not see an edit-in-place, so a height typed into an existing photo was
    silently never published. */
 function photosTouched(){ photosDirty=true; }
-function touch(){
+/* Writing the store is O(everything), and everything includes the photos —
+   megabytes of base64 that a calendar drag never touches. Measured on a
+   desktop: 0.1ms for a 10KB store, 4.5ms once twelve photos put it at 1.9MB,
+   and a phone is several times slower again. touch() runs on every mutation,
+   so a burst of them paid that cost once per mutation.
+
+   The write is now coalesced onto the next frame: callers still call touch()
+   exactly as before and the bytes written are identical, but one write happens
+   instead of several. Anything that could end the session flushes
+   synchronously first, so the window in which a pending write could be lost is
+   a single frame and never spans a tab switch, a navigation or a close. */
+let pWriteQueued=false;
+function pFlushWrite(){
+  if(!pWriteQueued) return;
+  pWriteQueued=false;
   try{ localStorage.setItem(KEY,JSON.stringify(S)); }
   catch(e){ setSync("error","storage full"); }
+}
+addEventListener("visibilitychange",()=>{ if(document.visibilityState==="hidden") pFlushWrite(); });
+addEventListener("pagehide",pFlushWrite);
+addEventListener("beforeunload",pFlushWrite);
+function touch(){
+  /* setTimeout, not requestAnimationFrame: rAF is paused outright in a hidden
+     tab, so a mutation made by a background timer would sit unwritten until
+     the tab was looked at again. setTimeout is throttled there but still
+     fires, so nothing is ever stranded. */
+  if(!pWriteQueued){ pWriteQueued=true; setTimeout(pFlushWrite,0); }
   dirty=true;
   if(readOnly){ setSync("readonly","view only"); return; }
   if(!ART){ setSync("local","this device"); return; }
@@ -4239,13 +4269,14 @@ function pItemsFor(iso){
   });
   /* ---- the other two apps' claims on the same 24 hours ---- */
   if(S.planner.linkHours!==false){
-    (S.hours&&S.hours.sessions||[]).forEach(x=>{
-      const st=x.start?new Date(x.start):null; if(!st) return;
-      if(ymd(+st)!==iso) return;
-      out.push({kind:"hours",ref:x,name:(hFindProject(x.projectId)||{}).name||t("Tracked work"),
-        hours:x.seconds/3600,
-        time:String(st.getHours()).padStart(2,"0")+":"+String(st.getMinutes()).padStart(2,"0"),
-        overdue:false});
+    /* Bucketed by day once per render pass, not rescanned per day. This used
+       to build a Date and format it for EVERY session on EVERY column, so a
+       month of 31 columns against a year of sessions did tens of thousands of
+       date conversions to find a handful of matches. Cleared alongside
+       pCareCache, which already tracks exactly when this can go stale. */
+    (pSessionsOn(iso)||[]).forEach(e=>{
+      out.push({kind:"hours",ref:e.x,name:(hFindProject(e.x.projectId)||{}).name||t("Tracked work"),
+        hours:e.x.seconds/3600, time:e.time, overdue:false});
     });
     const run=S.hours&&S.hours.running;
     if(run&&isToday){
@@ -4274,7 +4305,25 @@ function pItemsFor(iso){
 /* how many care jobs land on a day — today from the live due list, future days
    from the same forecast the diary draws. Cached per render pass: the month
    grid asks 31 times and the agenda walk isn't free. */
-let pCareCache={};
+/* Tracked-work sessions grouped by the day they fall on. Built once and reused
+   across every column of a render, instead of every column walking the whole
+   session list. Null means "not built yet"; it is cleared wherever pCareCache
+   is, since the same edits invalidate both. */
+let pSessCache=null;
+function pSessionsOn(iso){
+  if(!pSessCache){
+    pSessCache={};
+    ((S.hours&&S.hours.sessions)||[]).forEach(x=>{
+      if(!x||!x.start) return;
+      const st=new Date(x.start); if(isNaN(+st)) return;
+      const k=ymd(+st);
+      (pSessCache[k]||(pSessCache[k]=[])).push({x,
+        time:String(st.getHours()).padStart(2,"0")+":"+String(st.getMinutes()).padStart(2,"0")});
+    });
+  }
+  return pSessCache[iso];
+}
+let pCareCache={}; pSessCache=null;
 function pCareJobs(iso){
   if(iso in pCareCache) return pCareCache[iso];
   let n=0;
@@ -4386,6 +4435,27 @@ const WB_PXH=34, WB_SNAP=0.25;
    column to snap to (Day view). Roughly a Plachta column, so the effort of
    spanning a day feels the same whichever board you are on. */
 const WB_DAYDRAG=86;
+/* Board gesture diagnostics. A drag that silently snaps back is
+   indistinguishable from one the app never saw, and guessing at the difference
+   has cost several rounds.
+
+   Deliberately hung off `window`: a top-level `let` in a classic script is a
+   lexical binding, NOT a property of window, so `window.pLastCommit` read
+   undefined even after a perfectly good commit and made a working gesture look
+   like a missing one. Anything meant to be read from a console has to be an
+   explicit window property.
+
+   Read after a failed drag:  copy(JSON.stringify(window.pGestureLog)) */
+let pLastCommit=null;
+window.pGestureLog=[];
+function pGLog(stage,info){
+  const e=Object.assign({stage},info||{});
+  window.pGestureLog.push(e);
+  if(window.pGestureLog.length>40) window.pGestureLog.shift();
+  if(stage==="end"){ pLastCommit=e; window.pLastCommit=e; }
+  return e;
+}
+window.pGestureReset=()=>{ window.pGestureLog=[]; };
 let pBoardAbort=null, pBoardCommit=null;
 window.addEventListener("keydown",e=>{ if(e.key==="Escape"&&pBoardAbort) pBoardAbort(); });
 /* A gesture has to END wherever the pointer is actually released, not only
@@ -4403,7 +4473,9 @@ window.addEventListener("keydown",e=>{ if(e.key==="Escape"&&pBoardAbort) pBoardA
    with the board on every render; window's are not, and commit already returns
    unless the pointerId matches the live gesture, so this cannot fire twice or
    act on an unrelated click. */
-window.addEventListener("pointerup",e=>{ if(pBoardCommit) pBoardCommit(e); });
+window.addEventListener("pointerup",e=>{
+  if(typeof pGLog==="function") pGLog("winUp",{hasHook:!!pBoardCommit});
+  if(pBoardCommit) pBoardCommit(e); });
 window.addEventListener("pointercancel",()=>{ if(pBoardAbort) pBoardAbort(); });
 function pWeekDays(iso){
   const d=pParseISO(iso), off=(d.getDay()+6)%7;
@@ -5081,8 +5153,13 @@ function pBoardHtml(days,topStrip,opts){
                block (17px) the N and S grips alone left 3px of body and the
                thing could not be dragged at all, so a short Event keeps just the
                bottom edge and stays movable. */
+            /* No corners. A corner combined a vertical and a horizontal edit
+               in a single grab, so one mis-aimed press changed the time AND
+               minted a record on the neighbouring day — two wrong things at
+               once, from a target the user could not see. Both axes are still
+               reachable, one at a time, from the edges. */
             ?(hpx>=30
-              ?["n","s","w","e","nw","ne","sw","se"].map(h=>
+              ?["n","s","w","e"].map(h=>
                 `<i class="wb-h wb-h-${h}" data-wbrz="${h}"></i>`).join("")
               :`<i class="wb-h wb-h-s" data-wbrz="s"></i>`)
           /* 24, not 26: a 45-minute block is 25.5px and fell half a pixel short,
@@ -5193,6 +5270,10 @@ function pWireBoard(){
     return {day, time:Math.max(0,Math.min(23.75,time))};
   };
   board.addEventListener("pointerdown",e=>{
+    pGLog("down",{ptr:e.pointerType,btn:e.button,buttons:e.buttons,
+      target:(e.target.className||e.target.tagName)+"",
+      onBlock:!!(e.target.closest&&e.target.closest(".wb-blk")),
+      hadLiveGesture:!!G2});
     if(e.button!==undefined&&e.button!==0) return;
     if(G2) return;                        // one gesture at a time — a second finger is noise
     const rz8=e.target.closest("[data-wbrz]");
@@ -5362,15 +5443,22 @@ function pWireBoard(){
         if(Math.abs(dy)<(G2.touch?8:3)) return;        // brushing the handle is not an edit
         G2.armed=true;
       } else if(G2.touch){
-        /* an unarmed touch move is a SCROLL, not a drag — pan the board by
-           hand, since touch-action:none silenced the native pan (the same
-           trade the projects timeline makes) */
-        if(Math.abs(dx)>10||Math.abs(dy)>10){
-          clearTimeout(G2.timer);
-          G2.mode="pan"; G2.armed=true;
-          G2.sl0=scrollEl.scrollLeft;
-          G2.st0=(document.scrollingElement||document.documentElement).scrollTop;
-        } else return;
+        /* A touch that started ON A BLOCK drags that block, immediately.
+
+           It used to become a pan unless you first held still for 300ms, so on
+           a phone dragging a block did nothing at all — the board scrolled
+           under your finger instead, with nothing anywhere to suggest a
+           long-press was required. That is the "drag does nothing" report, and
+           it is why it only ever showed up on touch.
+
+           Scrolling is not lost: touch-action:none is set on blocks alone, so
+           a finger anywhere else — the empty track, the gutter, the day
+           headers, the page around the board — still scrolls natively. Only
+           the case of starting on a block changes, and there dragging is what
+           you meant. 8px of slop, so a tap is still a tap. */
+        if(Math.abs(dx)<8&&Math.abs(dy)<8) return;
+        clearTimeout(G2.timer);
+        G2.armed=true; G2.el.classList.add("lift");
       } else {
         if(Math.abs(dx)<6&&Math.abs(dy)<6) return;
         G2.armed=true; G2.el.classList.add("lift");
@@ -5405,7 +5493,7 @@ function pWireBoard(){
     }
     e.preventDefault();
   });
-  const commit=e=>{
+  const commitInner=e=>{
     if(!G2||e.pointerId!==G2.pid) return;
     const g=G2; G2=null; pBoardBusy=false; clearTimeout(g.timer);
     if(g.mode==="newslot"){
@@ -5435,7 +5523,7 @@ function pWireBoard(){
     /* a mutation must reach every reader before the finger lifts twice:
        renderPlanner refreshes the task lists, the day panel, the warning line
        AND this board (it ends in pDayPanel + renderSchedule) */
-    const done=()=>{ touch(); pCareCache={}; window.ppClearExt&&ppClearExt(); renderPlanner(); };
+    const done=()=>{ pGLog("end",{result:"committed",mode:g.mode}); touch(); pCareCache={}; pSessCache=null; window.ppClearExt&&ppClearExt(); renderPlanner(); };
     if(g.mode==="rz8"){
       g.el.classList.remove("rz"); delete g.el.dataset.live;
       board.querySelectorAll(".wb-col.rz-target").forEach(c=>c.classList.remove("rz-target"));
@@ -5444,10 +5532,20 @@ function pWireBoard(){
       if(!tk){ renderSchedule(); return; }
       const fmt=v=>{ const m=Math.round(Math.max(0,Math.min(v,24))*60);
         return String(Math.floor(m/60)%24).padStart(2,"0")+":"+String(m%60).padStart(2,"0"); };
-      /* time and duration belong to the whole run, so they propagate */
+      /* Resizing ONE day resizes that day. Time and duration used to propagate
+         to every member of the run, so dragging one block's N or S handle
+         silently rewrote all its neighbours — the "it resizes all the others"
+         report. A day being resized has stopped matching the run, so it leaves
+         it, exactly as dragging its body does.
+
+         The exception is a corner or W/E drag, which changes how many days the
+         run covers: that IS a whole-run edit, so the run stays intact and the
+         new size applies across it. Vertical alone means one day. */
       if(g.liveHours!=null){
         const st=fmt(g.liveStart), hr=Math.max(0.25,g.liveHours);
-        pApplyToGroup(tk,m=>{ m.time=st; m.hours=hr; });
+        const spanEdit=!!(g.liveDays&&g.liveDays.length);
+        if(spanEdit){ pApplyToGroup(tk,m=>{ m.time=st; m.hours=hr; }); }
+        else { pDetachFromRun(tk); tk.time=st; tk.hours=hr; }
       }
       if(g.liveDays&&g.liveDays.length){
         pSetGroupSpan(tk,g.liveDays[0],g.liveDays[g.liveDays.length-1],tk.due);
@@ -5460,9 +5558,19 @@ function pWireBoard(){
     if(g.moved&&g.mode==="move"){
       const tr=board.querySelector(".wb-track"), sr=tr?tr.getBoundingClientRect():null;
       const rows=board.querySelector(".wb-scroll").getBoundingClientRect();
-      if(sr&&(e.clientY<sr.top-24||e.clientY>sr.bottom+24||e.clientX<rows.left-40||e.clientX>rows.right+40)){
+      /* A detached board measures as all zeros, which would put every release
+         "outside" and snap every drag back. Treat a degenerate rect as no
+         opinion rather than as a rejection. */
+      const measurable=sr&&(sr.height>0||sr.width>0)&&(rows.width>0);
+      if(measurable&&(e.clientY<sr.top-24||e.clientY>sr.bottom+24||e.clientX<rows.left-40||e.clientX>rows.right+40)){
+        pGLog("end",{result:"cancelled: released outside the grid",
+          release:{x:Math.round(e.clientX),y:Math.round(e.clientY)},
+          track:{top:Math.round(sr.top),bottom:Math.round(sr.bottom)},
+          scroller:{left:Math.round(rows.left),right:Math.round(rows.right)}});
         g.el.style.transform=""; renderSchedule(); return;
       }
+      if(!measurable) pGLog("end",{result:"grid unmeasurable — cancel guard skipped",
+        trackRect:sr?{w:Math.round(sr.width),h:Math.round(sr.height)}:null});
     }
     if(!g.moved){
       g.el.style.transform=""; g.el.classList.remove("sizing"); delete g.el.dataset.live;
@@ -5523,21 +5631,27 @@ function pWireBoard(){
           done(); return; } }
       renderSchedule(); return;
     }
-    const {day,time}=geom(e.clientX,e.clientY);
-    /* the past is a record, not a plan — a drop there snaps back.
-       Except onto the day the record ALREADY belongs to: saying when that day's
-       work happened is not planning the past. Without this, a record carried
-       over from before the Task/Event split — an old planner "project", which
-       never had a clock time — was stranded. It drew as an all-day chip with no
-       handles, dragging it refused because its own day had passed, and the edit
-       dialog only opens for Events, so there was no way to make it a block at
-       all short of recreating it. */
-    if((g.kind==="task"||g.kind==="tray")&&day&&day<pToday()){
-      const tkPast=pFindTask(g.id);
-      if(!(tkPast&&tkPast.due===day&&!tkPast.time)){
-        g.el.style.transform=""; renderSchedule(); return;
-      }
-    }
+    let {day,time}=geom(e.clientX,e.clientY);
+    /* geom() can only fail to name a day when the board it measures has no
+       columns — a stale or detached board. Discarding the edit there is the
+       worst option: the drag tracked the cursor, so the user believes it
+       happened, and it silently reverts. Fall back to the day the block was
+       already on, which keeps the vertical (time) part of the drag that we
+       CAN resolve. */
+    if(!day) day=g.day0||pSelISO||pToday();
+    /* A drop onto an earlier day is allowed, and commits like any other.
+
+       This used to refuse every past-day drop on the theory that "the past is a
+       record, not a plan". That reasoning does not survive contact with how the
+       app is used: a calendar holds what happened as well as what is planned,
+       and correcting last Tuesday is an ordinary thing to want. Worse, the
+       refusal was silent — the block tracked the cursor for the whole drag and
+       then sprang back with nothing logged and nothing said, which is
+       indistinguishable from the app being broken. It was reported as exactly
+       that, repeatedly.
+
+       It also hid from every test written against a future day, which is what
+       made it so expensive to find. */
     const t2=g.time0!=null
       ? Math.max(0,Math.min(23.75,snap(g.time0+(e.clientY-g.y0)/WB_PXH)))
       : snap(time);
@@ -5584,13 +5698,40 @@ function pWireBoard(){
         done(); return;
       }
     }
+    /* Nothing above claimed this gesture. That used to re-render and say
+       nothing, which looks exactly like a drag that snapped back for no
+       reason — the report this instrumentation was added to chase. */
+    pGLog("end",{result:"fell through: no branch handled it",
+      mode:g.mode, kind:g.kind, id:g.id, day:day,
+      taskFound:!!pFindTask(g.id), blockFound:!!pFindBlock(g.id)});
     renderSchedule();
   };
-  board.addEventListener("pointerup",commit);
-  const abort=()=>{ pBoardBusy=false; if(G2){ clearTimeout(G2.timer);
+  /* Any throw inside the commit used to vanish: it aborted the board's
+     pointerup handler before any endpoint could be recorded, left the gesture
+     half-finished, and the next render put the block back — a snap-back with
+     no trace, which is exactly what the logs showed. The error is now recorded
+     and the latch released, so one bad commit cannot wedge every later
+     gesture. It is still rethrown, because it is a real bug and should reach
+     the console too. */
+  const commit=e=>{
+    try{ commitInner(e); }
+    catch(err){
+      pGLog("end",{result:"threw: "+(err&&err.message),
+        where:String((err&&err.stack)||"").split("\n").slice(0,4).join(" | ")});
+      G2=null; pBoardBusy=false;
+      renderSchedule();
+      throw err;
+    }
+  };
+  board.addEventListener("pointerup",e=>{ pGLog("up",{ptr:e.pointerType,
+    hasGesture:!!G2, mode:G2&&G2.mode, armed:!!(G2&&G2.armed), moved:!!(G2&&G2.moved),
+    pidMatch:!!(G2&&e.pointerId===G2.pid)}); commit(e); });
+  const abort=()=>{ pBoardBusy=false;
+    if(G2) pGLog("end",{result:"aborted: pointercancel or Escape",mode:G2.mode,moved:!!G2.moved});
+    if(G2){ clearTimeout(G2.timer);
     if(G2.mode==="newslot"){ if(G2.el) G2.el.remove(); G2=null; return; }
     G2.el.classList.remove("lift"); G2.el.style.transform=""; G2=null; renderSchedule(); } };
-  board.addEventListener("pointercancel",abort);
+  board.addEventListener("pointercancel",e=>{ pGLog("cancel",{ptr:e.pointerType}); abort(); });
   /* the board element is replaced on every render so its own listeners die with
      it — window's do NOT. One module-level hook, overwritten per wiring pass,
      instead of a listener stacking up on every week render. */
@@ -5716,7 +5857,7 @@ function pWireProjGrid(){
 }
 function renderSchedule(){
   pEnsureView();
-  pCareCache={};
+  pCareCache={}; pSessCache=null;
   if(window.ppClearExt) ppClearExt();   // planner data may have changed — the band re-reads it
   pStopTick();
   const ppWrap=$("#view-projplan");
@@ -5988,7 +6129,7 @@ function renderProjectsOverview(){
 }
 function renderPlanner(){
   pEnsureView();
-  pCareCache={};
+  pCareCache={}; pSessCache=null;
   pFillProjectSelect(); pSyncAddKind(); renderProjectsOverview();
   $("#pSleepInput").value=S.planner.sleep;
   $("#pLinkCare").checked=S.planner.linkCare!==false;
@@ -9277,7 +9418,7 @@ function renderAll(){ renderMixSel(); renderDue(); renderHow(); renderMix(); ren
   /* the planner sat outside this list historically — after an import or reset
      its DOM stayed stale until you navigated to it. Caches cleared too, since
      the underlying data may be wholly different now. */
-  pCareCache={}; if(window.ppClearExt) ppClearExt();
+  pCareCache={}; pSessCache=null; if(window.ppClearExt) ppClearExt();
   if(typeof pSelISO!=="undefined"&&pSelISO) try{ renderPlanner(); }catch(e){} }
 
 function renderTaskBar(){
@@ -9349,7 +9490,17 @@ function show(v){
   if(!canX) return showNow(v);
   document.documentElement.dataset.vt="1";
   const tx=document.startViewTransition(()=>showNow(v));
-  tx.finished.finally(()=>{ delete document.documentElement.dataset.vt; });
+  /* .finally() does NOT handle a rejection, it passes it through — so an
+     aborted transition (switching views faster than one settles) left
+     tx.finished rejected with nothing attached, producing a permanent
+     "Uncaught (in promise) InvalidStateError: Transition was aborted" in the
+     console. The abort is harmless: showNow() has already run, so the view is
+     correct and only the animation was dropped. Catching it keeps a real error
+     from hiding behind a noisy expected one. */
+  tx.finished
+    .catch(()=>{})
+    .finally(()=>{ delete document.documentElement.dataset.vt; });
+  if(tx.ready&&tx.ready.catch) tx.ready.catch(()=>{});
 }
 function showNow(v){
   if(v!==curView){ scrollMem[curView]=window.scrollY; curView=v; }
@@ -12513,7 +12664,7 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
     persist(); draw(); pd.close();
     /* the calendar shows these too — repaint it when the editor commits */
     if(typeof renderPlanner==="function"&&typeof curView!=="undefined"&&curView==="planner"){
-      if(typeof pCareCache!=="undefined") pCareCache={};
+      if(typeof pCareCache!=="undefined") pCareCache={}; pSessCache=null;
       if(window.ppClearExt) ppClearExt();
       renderPlanner();
     }
