@@ -5620,7 +5620,14 @@ function pWireBoard(){
           done(); return; } }
       renderSchedule(); return;
     }
-    const {day,time}=geom(e.clientX,e.clientY);
+    let {day,time}=geom(e.clientX,e.clientY);
+    /* geom() can only fail to name a day when the board it measures has no
+       columns — a stale or detached board. Discarding the edit there is the
+       worst option: the drag tracked the cursor, so the user believes it
+       happened, and it silently reverts. Fall back to the day the block was
+       already on, which keeps the vertical (time) part of the drag that we
+       CAN resolve. */
+    if(!day) day=g.day0||pSelISO||pToday();
     /* the past is a record, not a plan — a drop there snaps back.
        Except onto the day the record ALREADY belongs to: saying when that day's
        work happened is not planning the past. Without this, a record carried
@@ -5681,6 +5688,12 @@ function pWireBoard(){
         done(); return;
       }
     }
+    /* Nothing above claimed this gesture. That used to re-render and say
+       nothing, which looks exactly like a drag that snapped back for no
+       reason — the report this instrumentation was added to chase. */
+    pGLog("end",{result:"fell through: no branch handled it",
+      mode:g.mode, kind:g.kind, id:g.id, day:day,
+      taskFound:!!pFindTask(g.id), blockFound:!!pFindBlock(g.id)});
     renderSchedule();
   };
   board.addEventListener("pointerup",e=>{ pGLog("up",{ptr:e.pointerType,
