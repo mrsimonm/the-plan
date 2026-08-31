@@ -120,6 +120,20 @@
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} *{animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important} }
+/* the gradient glass edge, done properly: border-image can carry a
+   gradient but several browsers (Safari chief among them) don't clip it
+   to border-radius — it paints a hard rectangle that sticks out past a
+   rounded corner. This mask-composite technique paints the gradient into
+   a 1px ring using an actual radius-respecting shape (border-radius:
+   inherit on a same-size pseudo-element, masked to cut out everything but
+   the outer 1px), so the ring always follows the corner exactly. */
+.tile::before,.hclock::before,.stat::before,.nav::before,.card::before,.pcard::before,dialog::before{
+  content:""; position:absolute; inset:0; border-radius:inherit; padding:1px;
+  background:var(--glass-edge);
+  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor; mask-composite:exclude;
+  pointer-events:none; z-index:1;
+}
 /* the three soft blobs living behind every glass surface: an element's own
    background always paints beneath its own content, so this is the one
    reliable way to guarantee the blobs sit behind everything without a
@@ -219,7 +233,7 @@ b{color:var(--ink-strong); font-weight:700}
 .tile{display:flex; flex-direction:column; padding:0; overflow:hidden; cursor:pointer;
   background:var(--glass-sheen); backdrop-filter:var(--glass-blur);
   -webkit-backdrop-filter:var(--glass-blur);
-  border:1px solid transparent; border-image:var(--glass-edge) 1; border-radius:var(--r); box-shadow:var(--glass-shadow);
+  position:relative; border-radius:var(--r); box-shadow:var(--glass-shadow);
   color:inherit; font:inherit; text-align:left;
   transition:transform .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s cubic-bezier(.2,.8,.2,1);
   -webkit-tap-highlight-color:transparent}
@@ -816,7 +830,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .hclock{margin:16px auto 0; text-align:center; width:min(260px,72vw); aspect-ratio:1;
   border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center;
   background:var(--glass-sheen); backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
-  border:1px solid transparent; border-image:var(--glass-edge) 1; box-shadow:var(--glass-shadow)}
+  position:relative; box-shadow:var(--glass-shadow)}
 .hclock.resting .hclock-time{color:var(--ink-3)}
 .hclock.idle .hclock-time{color:var(--ink-3)}
 .hclock-phase{display:inline-block; font-family:var(--font);
@@ -987,7 +1001,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .statrow.q{display:grid; grid-template-columns:1fr 1fr; gap:10px}
 @media(min-width:620px){ .statrow.q{grid-template-columns:repeat(4,1fr)} }
 .stat{flex:1 1 90px; background:var(--glass-fill); backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
-  border:1px solid transparent; border-image:var(--glass-edge) 1; box-shadow:var(--glass-shadow); border-radius:var(--r); padding:13px 14px; min-width:0}
+  position:relative; box-shadow:var(--glass-shadow); border-radius:var(--r); padding:13px 14px; min-width:0}
 .stat b{display:block; font-family:var(--font); font-weight:600; font-size:26px;
   line-height:1.1; color:var(--ink)}
 .stat b.good{color:var(--ok)} .stat b.none{color:var(--ink-3)}
@@ -1135,7 +1149,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
     radial-gradient(140px 90px at 92% 120%, rgba(255,255,255,.18), transparent 84%),
     var(--glass-fill-2);
   backdrop-filter:blur(30px) saturate(190%); -webkit-backdrop-filter:blur(30px) saturate(190%);
-  border:1px solid transparent; border-image:var(--glass-edge) 1; border-radius:var(--r-pill);
+  position:relative; border-radius:var(--r-pill);
   box-shadow:var(--glass-shadow);
   overflow-x:auto; overflow-y:hidden; scrollbar-width:none; -webkit-overflow-scrolling:touch;
   scroll-behavior:smooth; scroll-padding-inline:24px; max-width:100%}
@@ -1158,7 +1172,7 @@ main{order:2; flex:1; padding:16px 14px 48px; width:100%; max-width:1060px; marg
    highlight instead of a flat drop shadow */
 .card{background:var(--glass-sheen); backdrop-filter:var(--glass-blur);
   -webkit-backdrop-filter:var(--glass-blur);
-  border:1px solid transparent; border-image:var(--glass-edge) 1; border-radius:var(--r); box-shadow:var(--glass-shadow)}
+  position:relative; border-radius:var(--r); box-shadow:var(--glass-shadow)}
 .pad{padding:18px 20px}
 /* one card, several sections — replaces a stack of separately-bordered cards
    for controls that belong together. Border rides the sibling, not each part,
@@ -1520,7 +1534,7 @@ textarea.desc{min-height:66px; font-family:var(--font); font-size:15px}
 /* plant card */
 .pcard{background:var(--glass-sheen); backdrop-filter:var(--glass-blur);
   -webkit-backdrop-filter:var(--glass-blur);
-  border:1px solid transparent; border-image:var(--glass-edge) 1; border-radius:var(--r); box-shadow:var(--glass-shadow);
+  position:relative; border-radius:var(--r); box-shadow:var(--glass-shadow);
   overflow:hidden; display:flex; flex-direction:column}
 .pcard-head{display:flex; flex-direction:column; gap:2px; min-width:0}
 .pcard-name{font-size:17px; font-weight:500; line-height:1.25;
@@ -1601,7 +1615,7 @@ textarea.desc{min-height:66px; font-family:var(--font); font-size:15px}
 
 /* a glass sheet: centred on desktop, slides up from the bottom on mobile —
    same surface language as every other glass panel, just anchored differently */
-dialog{border:1px solid transparent; border-image:var(--glass-edge) 1; border-radius:var(--r); background:var(--glass-fill-2);
+dialog{position:relative; border-radius:var(--r); background:var(--glass-fill-2);
   backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur); color:var(--ink);
   padding:0; width:min(500px,calc(100vw - 24px)); box-shadow:var(--glass-shadow);
   animation:dlg-in .22s cubic-bezier(.2,.8,.2,1)}
