@@ -2685,13 +2685,17 @@ html{overscroll-behavior-y:none}
           <button type="button" class="btn mini" id="periodNext" aria-label="Next">›</button>
         </div>
         <div id="agenda"></div>
+        <!-- "Coming up" and "Schedules" are two related calendar sections that
+             used to be two separate cards sitting a bare 12px apart — close
+             enough that two sets of rounded corners fought each other,
+             especially on mobile. Merged into one card with a divider,
+             matching the existing .card-sec pattern used elsewhere. -->
+        <div class="pad" style="border-top:1px solid var(--glass-border); padding-top:14px; padding-bottom:0">
+          <span class="eyebrow">Schedules</span></div>
+        <div id="schedList" class="pad" style="padding-top:8px"></div>
       </div>
-      <div>
-        <span class="eyebrow" style="display:block; margin:4px 0 9px">Schedules</span>
-        <div class="card" id="schedList"></div>
-        <p class="hint" style="margin-top:11px">A schedule lines your formulas up week by week. Put a plant on one
-          and its card tells you which formula it's due — the Mix tab stays a mixing guide.</p>
-      </div>
+      <p class="hint" style="margin:0 2px">A schedule lines your formulas up week by week. Put a plant on one
+        and its card tells you which formula it's due — the Mix tab stays a mixing guide.</p>
     </div>
   </section>
 
