@@ -1073,13 +1073,18 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 
 /* the tab bar floats free of the header — its own glass pill, like an iOS
    tab bar, rather than a full-width strip glued under the top bar */
-.navwrap{position:sticky; top:8px; z-index:20; order:1; padding:8px 12px 0}
+.navwrap{position:sticky; top:8px; z-index:20; order:1; padding:8px 12px 0; display:flex; justify-content:center}
+/* round 3: max-width:fit-content let the pill grow wider than the
+   viewport on mobile, pushing its own rounded ends off-screen with no
+   affordance that it could scroll — max-width:100% keeps the pill's
+   edges inside the wrapper's padding always, with the tab list scrolling
+   inside it instead of the whole pill overflowing */
 .nav{display:flex; gap:2px; padding:5px; background:var(--glass-fill);
   backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
   border:1px solid var(--glass-border); border-radius:var(--r-pill);
   box-shadow:var(--glass-shadow);
   overflow-x:auto; overflow-y:hidden; scrollbar-width:none; -webkit-overflow-scrolling:touch;
-  scroll-behavior:smooth; scroll-padding-inline:24px; max-width:fit-content; margin:0 auto}
+  scroll-behavior:smooth; scroll-padding-inline:24px; max-width:100%}
 .nav::-webkit-scrollbar{display:none}
 .nav button{flex:0 0 auto; appearance:none; border:0; cursor:pointer; white-space:nowrap;
   padding:8px 16px; min-height:36px; border-radius:var(--r-pill); background:transparent;

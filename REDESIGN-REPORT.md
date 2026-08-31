@@ -116,3 +116,28 @@ Verified: full add-plant flow, started/stopped the Hours focus timer
    rebuilt — added as a compatibility alias (`--ink-2: var(--ink)`) rather
    than hunting down 75 individual call sites, since the semantic mapping
    is exact (old secondary-text tier → new body-text tier).
+
+### Round 2 — glass consistency
+Critique of round 1's screenshots: several surfaces sat right next to true
+glass cards while themselves being flat, opaque fills — the kind of thing
+that reads as "the same app with new colors" under scrutiny rather than a
+committed material change. Fixed the five worst instances:
+
+1. **Calendar/planner blocks (`.wb-blk`)** — flat `--accent-soft` fill
+   swapped for a translucent glass tint (`color-mix` over `--glass-fill`).
+2. **Academy picto tiles (`.ptile`)** — flat `--surface-2` swapped for
+   `--glass-fill` + `--glass-border`, matching every other tile.
+3. **Stat number tiles** (Hours, Stats) — flat `--sunk` with no border
+   upgraded to full glass, backdrop-filter included (only 2–4 on screen
+   at a time, so the blur cost that ruled it out for calendar blocks
+   doesn't apply here).
+4. **Inputs/selects/textareas** — were on the 24px container radius,
+   which on a ~38px-tall field read as an odd near-stadium shape; moved
+   to the 13px control radius.
+5. **`.sp-pick`, `.sp-add`, `.chip`, `.wk`** — four more control-scale
+   elements still on the container radius; moved to control-scale or
+   full pill depending on whether each reads as a field or a toggle/tag.
+
+Re-screenshotted Daily Planner (calendar block), Academy (tiles + search
+field), and Hours (stat tiles + inputs) at desktop in light mode to confirm
+each fix. Committed as `ca47a44`.
