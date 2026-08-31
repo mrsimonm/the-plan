@@ -1235,6 +1235,11 @@ main{order:2; flex:1; padding:16px 14px 48px; width:100%; max-width:1060px; marg
 
 /* ---------- form atoms ---------- */
 .field{display:flex; flex-direction:column; gap:6px}
+/* same [hidden] bug as .navwrap above (see that comment): an explicit
+   display:flex beats the browser's own [hidden]{display:none} on an
+   equally-specific selector, so a hidden .field otherwise stayed laid out
+   and visible. */
+.field[hidden]{display:none}
 .field > label, .field > .lbl-row > label{font-family:var(--font); font-weight:600; text-transform:uppercase;
   letter-spacing:.09em; font-size:13px; color:var(--ink-2)}
 input,select,textarea{font-family:var(--font); font-size:15px; color:var(--ink);
@@ -1694,6 +1699,7 @@ dialog::backdrop{background:rgba(46,46,42,.32); backdrop-filter:blur(6px); -webk
 .dlg-body{padding:18px; display:flex; flex-direction:column; gap:13px;
   max-height:68vh; max-height:68dvh; overflow-y:auto}
 .dlg-foot{padding:14px 18px; border-top:1px solid var(--glass-border); display:flex; gap:8px; justify-content:flex-end}
+.dlg-foot[hidden]{display:none}
 .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
 .grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px}
 textarea{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:12px; min-height:110px; resize:vertical}
@@ -2792,6 +2798,97 @@ html{overscroll-behavior-y:none}
     </div>
     <div class="stack" id="hpBody"></div>
   </section>
+
+  <!-- ============ TEACHBENCH ============ -->
+  <section class="view" id="view-teachbench" hidden>
+    <div class="sec-head"><h2>Teachbench</h2></div>
+    <div class="stack pstack">
+
+      <div class="card pad">
+        <div class="sec-head" style="margin-bottom:4px">
+          <h2 style="font-size:17px">This week</h2>
+          <div class="qadd-row2" style="gap:6px">
+            <button class="btn mini" type="button" id="tbCalPrev">‹</button>
+            <button class="btn mini" type="button" id="tbCalToday">Today</button>
+            <button class="btn mini" type="button" id="tbCalNext">›</button>
+          </div>
+        </div>
+        <p class="pday-sub" id="tbCalRange" style="margin-bottom:10px"></p>
+        <div id="tbCalDays" class="stack" style="gap:10px"></div>
+      </div>
+
+      <form class="card pad qadd" id="tbAddForm">
+        <input type="text" id="tbAddName" placeholder="Student's name" autocomplete="off">
+        <div class="qadd-row2">
+          <span class="field-label">level</span>
+          <select id="tbAddLevel" class="mono-input"></select>
+          <button class="btn primary mini" type="submit">Add</button>
+        </div>
+      </form>
+
+      <div class="card pad">
+        <div id="tbList" class="stack" style="gap:2px"></div>
+        <p id="tbEmpty" class="pday-sub" hidden>No students yet.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <dialog id="tbEditDlg"><form id="tbEditForm">
+    <h3 class="dlg-head">Edit student</h3>
+    <div class="dlg-body">
+      <div class="field"><label for="tbEditName">Name</label>
+        <input type="text" id="tbEditName" autocomplete="off"></div>
+
+      <div class="field"><label for="tbEditLevel">Level</label>
+        <select id="tbEditLevel"></select></div>
+
+      <div class="field"><label>Regular days</label>
+        <div class="seg segsm" id="tbEditDays">
+          <button type="button" data-day="mon" aria-pressed="false">Mon</button>
+          <button type="button" data-day="tue" aria-pressed="false">Tue</button>
+          <button type="button" data-day="wed" aria-pressed="false">Wed</button>
+          <button type="button" data-day="thu" aria-pressed="false">Thu</button>
+          <button type="button" data-day="fri" aria-pressed="false">Fri</button>
+        </div>
+        <p class="hint">Times aren't editable here yet — just which days.</p></div>
+
+      <div class="field"><label for="tbEditNotes">Notes</label>
+        <textarea id="tbEditNotes" rows="3" placeholder="e.g. struggles with past tense"></textarea></div>
+
+      <p class="pwarn" id="tbEditWarn" hidden></p>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn mini" type="button" id="tbToggleActive"></button>
+      <button class="btn mini" type="button" id="tbEditCancel">Close</button>
+      <button class="btn primary mini" type="submit">Save</button>
+    </div>
+  </form></dialog>
+
+  <dialog id="tbOccDlg"><form id="tbOccForm">
+    <h3 class="dlg-head" id="tbOccTitle">Lesson</h3>
+    <div class="dlg-body">
+      <p class="pday-sub" id="tbOccMeta"></p>
+      <div class="field" id="tbOccRescheduleFields" hidden>
+        <label for="tbOccNewDate">New date</label>
+        <input type="date" id="tbOccNewDate">
+      </div>
+      <div class="field" id="tbOccRescheduleTimeField" hidden>
+        <label for="tbOccNewTime">New time (optional)</label>
+        <input type="time" id="tbOccNewTime">
+      </div>
+      <p class="pwarn" id="tbOccWarn" hidden></p>
+    </div>
+    <div class="dlg-foot" id="tbOccActions">
+      <button class="btn mini" type="button" id="tbOccCancelToggle"></button>
+      <button class="btn mini" type="button" id="tbOccReschedule">Reschedule</button>
+      <button class="btn mini" type="button" id="tbOccClose">Close</button>
+    </div>
+    <div class="dlg-foot" id="tbOccRescheduleActions" hidden>
+      <button class="btn mini" type="button" id="tbOccRescheduleCancel">Back</button>
+      <button class="btn primary mini" type="button" id="tbOccRescheduleConfirm">Move it</button>
+    </div>
+  </form></dialog>
 
   <!-- ============ PLAN ============ -->
   <section class="view" id="view-plan" hidden>
@@ -10888,10 +10985,292 @@ function renderTaskBarFull(containerId){
 }
 const APPS=[{id:"bench",label:"Potting Bench",view:null},
             {id:"planner",label:"Daily Planner",view:"planner"},
-            {id:"hours",label:"Hours",view:"hours"}];
+            {id:"hours",label:"Hours",view:"hours"},
+            {id:"teachbench",label:"Teachbench",view:"teachbench"}];
 const BENCH_VIEWS=["garden","library","mix","plants","plan","cuttings","batch","shelf","log","academy","acadedit","settings","plant","product","sched","formula","stats"];
 const NAV_PARENT={batch:"cuttings", plant:"garden", plants:"library", product:"library",
   sched:"plan", formula:"mix", acadedit:"library", settings:"library", shelf:"library", log:"library", academy:"library"};
+
+/* ============================================================================
+   Teachbench UI — built from this app's own global components (.row, .field,
+   .dlg-head/.dlg-body/.dlg-foot, .seg, .card) rather than the standalone
+   app's own styling, so it inherits the current redesign for free and picks
+   up the app's single teal accent (per the redesign brief: nothing else in
+   the app is coloured its own hue any more, so Teachbench doesn't get one
+   either). All reads/writes go through TB.loadData()/TB.saveData(). */
+
+const TB_COLOR_HEX = {
+  sage:"#8FAE8B", sky:"#7FB3D5", rose:"#D98A9E", plum:"#A583B5",
+  ochre:"#D3A24B", teal:"#5EA3A3", lavender:"#9C9EDB", clay:"#C08863",
+};
+let tbEditId=null;
+let tbCalWeekOffset=0;
+let tbOccContext=null;
+
+function tbFillLevelSelect(sel){
+  if(!sel || sel.dataset.filled) return;
+  sel.innerHTML='<option value="">No level yet</option>'+
+    TB.LEVELS.map(l=>`<option value="${l.value}">${esc(l.label)}</option>`).join("");
+  sel.dataset.filled="1";
+}
+function tbLevelLabel(v){
+  const l=TB.LEVELS.find(x=>x.value===v);
+  return l?l.label:"No level set";
+}
+function tbDayShort(d){
+  const w=TB.WEEKDAYS.find(x=>x.value===d);
+  return w?w.label.slice(0,3):d;
+}
+function tbScheduleSummary(schedule){
+  if(!schedule || !schedule.length) return "no regular day set";
+  return schedule.map(sl=>tbDayShort(sl.day)+(sl.time?" "+sl.time:"")).join(", ");
+}
+function tbStudentById(id){
+  return TB.loadData().students.find(x=>x.id===id) || null;
+}
+
+function renderTeachbench(){
+  tbFillLevelSelect($("#tbAddLevel"));
+  tbFillLevelSelect($("#tbEditLevel"));
+
+  const data=TB.loadData();
+  const students=data.students.slice().sort((a,b)=>
+    a.active!==b.active ? (a.active?-1:1) : a.name.localeCompare(b.name));
+
+  $("#tbEmpty").hidden = students.length>0;
+  $("#tbList").innerHTML = students.map(s=>`
+    <button type="button" class="row" data-tb-edit="${s.id}"${s.active?"":' style="opacity:.55"'}>
+      <span class="row-main">
+        <span class="row-title">
+          <span aria-hidden="true" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${TB_COLOR_HEX[s.color]||"#999"};margin-right:7px"></span>
+          ${esc(s.name)}${s.active?"":" (inactive)"}
+        </span>
+        <span class="row-sub">${esc(tbLevelLabel(s.level))} · ${esc(tbScheduleSummary(s.schedule))}</span>
+      </span>
+      <span class="chev" aria-hidden="true">›</span>
+    </button>`).join("");
+
+  tbRenderWeek();
+}
+
+$("#tbAddForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const nameInput=$("#tbAddName");
+  const name=nameInput.value.trim();
+  if(!name) return;
+  const level=$("#tbAddLevel").value || null;
+  const data=TB.loadData();
+  const student=TB.createStudent(name, [], level, TB.pickStudentColor(data.students));
+  data.students.push(student);
+  TB.saveData(data);
+  nameInput.value="";
+  $("#tbAddLevel").value="";
+  renderTeachbench();
+});
+
+document.addEventListener("click",e=>{
+  const row=e.target.closest("[data-tb-edit]");
+  if(!row) return;
+  const student=tbStudentById(row.dataset.tbEdit);
+  if(!student) return;
+  tbEditId=student.id;
+  $("#tbEditName").value=student.name;
+  $("#tbEditLevel").value=student.level || "";
+  $("#tbEditNotes").value=student.notes || "";
+  $("#tbEditWarn").hidden=true;
+  const days=new Set(student.schedule.map(sl=>sl.day));
+  Array.from(document.querySelectorAll("#tbEditDays [data-day]")).forEach(btn=>{
+    btn.setAttribute("aria-pressed", days.has(btn.dataset.day) ? "true" : "false");
+  });
+  const toggleBtn=$("#tbToggleActive");
+  toggleBtn.textContent = student.active ? "Mark inactive" : "Mark active";
+  $("#tbEditDlg").showModal();
+});
+
+$("#tbEditDays").addEventListener("click",e=>{
+  const btn=e.target.closest("[data-day]");
+  if(!btn) return;
+  btn.setAttribute("aria-pressed", btn.getAttribute("aria-pressed")==="true" ? "false" : "true");
+});
+
+$("#tbEditCancel").addEventListener("click",()=>{ $("#tbEditDlg").close(); });
+
+$("#tbToggleActive").addEventListener("click",()=>{
+  if(!tbEditId) return;
+  const data=TB.loadData();
+  const student=data.students.find(x=>x.id===tbEditId);
+  if(!student) return;
+  student.active=!student.active;
+  TB.saveData(data);
+  $("#tbToggleActive").textContent = student.active ? "Mark inactive" : "Mark active";
+});
+
+$("#tbEditForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  if(!tbEditId) return;
+  const name=$("#tbEditName").value.trim();
+  if(!name){ $("#tbEditWarn").hidden=false; $("#tbEditWarn").textContent="Name can't be empty."; return; }
+  const data=TB.loadData();
+  const student=data.students.find(x=>x.id===tbEditId);
+  if(!student) return;
+  const days=Array.from(document.querySelectorAll("#tbEditDays [data-day]")).filter(b=>b.getAttribute("aria-pressed")==="true").map(b=>b.dataset.day);
+  const oldTimeByDay=new Map(student.schedule.map(sl=>[sl.day, sl.time]));
+  student.name=name;
+  student.level=$("#tbEditLevel").value || null;
+  student.notes=$("#tbEditNotes").value;
+  student.schedule=days.map(day=>({day, time:oldTimeByDay.get(day)||null}));
+  TB.saveData(data);
+  $("#tbEditDlg").close();
+  tbEditId=null;
+  renderTeachbench();
+});
+
+function tbTodayPlain(){
+  const now=new Date();
+  return now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0");
+}
+function tbFormatShortDate(plain){
+  const [y,m,d]=plain.split("-").map(Number);
+  return new Date(y,m-1,d).toLocaleDateString(undefined,{day:"numeric",month:"short"});
+}
+function tbFormatLessonDate(plain){
+  const [y,m,d]=plain.split("-").map(Number);
+  return new Date(y,m-1,d).toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"});
+}
+
+function tbRenderWeek(){
+  const data=TB.loadData();
+  const anchor=TB.addPlainDays(tbTodayPlain(), tbCalWeekOffset*7);
+  const weekStart=TB.startOfWeekPlain(anchor);
+  const weekEnd=TB.addPlainDays(weekStart,4);
+  $("#tbCalRange").textContent=tbFormatShortDate(weekStart)+" – "+tbFormatShortDate(weekEnd);
+
+  const entriesByDate=new Map();
+  for(let i=0;i<5;i++) entriesByDate.set(TB.addPlainDays(weekStart,i), []);
+
+  for(const student of data.students.filter(s=>s.active)){
+    for(const occ of TB.occurrencesForStudent(student, data.lessons, weekStart, 5)){
+      const bucket=entriesByDate.get(occ.date);
+      if(bucket) bucket.push({student, occ});
+    }
+  }
+
+  const today=tbTodayPlain();
+  const dayNames=["Mon","Tue","Wed","Thu","Fri"];
+
+  $("#tbCalDays").innerHTML=Array.from({length:5},(_, i)=>{
+    const date=TB.addPlainDays(weekStart,i);
+    const entries=entriesByDate.get(date);
+    const timed=entries.filter(e=>e.occ.time).sort((a,b)=>a.occ.time.localeCompare(b.occ.time));
+    const untimed=entries.filter(e=>!e.occ.time);
+
+    const block=(e)=>{
+      const struck=e.occ.state==="cancelled";
+      return `<button type="button" class="row" data-tb-occ="${e.student.id}|${e.occ.date}"
+        style="padding:6px 10px; border-left:3px solid ${TB_COLOR_HEX[e.student.color]||"#999"}${struck?"; opacity:.5":""}">
+        <span class="row-main">
+          <span class="row-title" style="font-size:14px${struck?"; text-decoration:line-through":""}">${esc(e.student.name)}</span>
+          <span class="row-sub">${e.occ.time?esc(e.occ.time):"No time set"}${e.occ.state==="rescheduled"?" · Rescheduled":""}${struck?" · Cancelled":""}</span>
+        </span>
+      </button>`;
+    };
+
+    return `<div${date===today?' style="background:var(--accent-soft); border-radius:12px; padding:8px"':""}>
+      <div class="field-label" style="margin-bottom:6px">${dayNames[i]} · ${tbFormatShortDate(date)}</div>
+      ${timed.length===0 && untimed.length===0 ? `<p class="pday-sub">Nothing scheduled</p>` : ""}
+      <div class="stack" style="gap:4px">${timed.map(block).join("")}</div>
+      ${untimed.length>0?`<div class="stack" style="gap:4px; margin-top:4px">${untimed.map(block).join("")}</div>`:""}
+    </div>`;
+  }).join("");
+}
+
+$("#tbCalPrev").addEventListener("click",()=>{ tbCalWeekOffset-=1; tbRenderWeek(); });
+$("#tbCalNext").addEventListener("click",()=>{ tbCalWeekOffset+=1; tbRenderWeek(); });
+$("#tbCalToday").addEventListener("click",()=>{ tbCalWeekOffset=0; tbRenderWeek(); });
+
+function tbShowOccActions(){
+  $("#tbOccRescheduleFields").hidden=true;
+  $("#tbOccRescheduleTimeField").hidden=true;
+  $("#tbOccActions").hidden=false;
+  $("#tbOccRescheduleActions").hidden=true;
+}
+
+document.addEventListener("click",e=>{
+  const blk=e.target.closest("[data-tb-occ]");
+  if(!blk) return;
+  const [studentId, date]=blk.dataset.tbOcc.split("|");
+  const data=TB.loadData();
+  const student=data.students.find(s=>s.id===studentId);
+  if(!student) return;
+  const occ=TB.occurrencesForStudent(student, data.lessons, date, 1)[0];
+  if(!occ) return;
+
+  tbOccContext={studentId, date:occ.date, time:occ.time, lesson:occ.lesson};
+  $("#tbOccTitle").textContent=student.name;
+  const stateNote=occ.state==="cancelled"?" · Cancelled":occ.state==="rescheduled"?" · Rescheduled":"";
+  $("#tbOccMeta").textContent=tbFormatLessonDate(occ.date)+(occ.time?" · "+occ.time:" · No time set")+stateNote;
+  $("#tbOccCancelToggle").textContent=occ.state==="cancelled"?"Restore this lesson":"Cancel this lesson";
+  $("#tbOccNewDate").value=occ.date;
+  $("#tbOccNewTime").value=occ.time||"";
+  $("#tbOccWarn").hidden=true;
+  tbShowOccActions();
+  $("#tbOccDlg").showModal();
+});
+
+function tbWithOccLesson(build){
+  const ctx=tbOccContext;
+  if(!ctx) return null;
+  const data=TB.loadData();
+  if(ctx.lesson){
+    data.lessons=data.lessons.map(l=>l.id===ctx.lesson.id ? build(l) : l);
+  } else {
+    const fresh=build({studentId:ctx.studentId, date:ctx.date, time:ctx.time, state:"normal", originalDate:null, plan:"", notes:"", link:""});
+    data.lessons=[...data.lessons, TB.createLesson(fresh)];
+  }
+  return data;
+}
+
+$("#tbOccCancelToggle").addEventListener("click",()=>{
+  const ctx=tbOccContext;
+  if(!ctx) return;
+  const currentlyCancelled=Boolean(ctx.lesson && ctx.lesson.state==="cancelled");
+  const data=tbWithOccLesson(l=>({...l, state: currentlyCancelled?"normal":"cancelled"}));
+  if(data){ TB.saveData(data); $("#tbOccDlg").close(); tbRenderWeek(); }
+});
+
+$("#tbOccReschedule").addEventListener("click",()=>{
+  $("#tbOccActions").hidden=true;
+  $("#tbOccRescheduleFields").hidden=false;
+  $("#tbOccRescheduleTimeField").hidden=false;
+  $("#tbOccRescheduleActions").hidden=false;
+});
+
+$("#tbOccRescheduleCancel").addEventListener("click", tbShowOccActions);
+
+$("#tbOccRescheduleConfirm").addEventListener("click",()=>{
+  const ctx=tbOccContext;
+  if(!ctx) return;
+  const newDate=$("#tbOccNewDate").value;
+  if(!newDate){ $("#tbOccWarn").hidden=false; $("#tbOccWarn").textContent="Please pick a new date."; return; }
+  const newTime=$("#tbOccNewTime").value || null;
+
+  const data=TB.loadData();
+  let lessons=data.lessons;
+  if(ctx.lesson && ctx.lesson.state==="rescheduled" && ctx.lesson.originalDate){
+    lessons=lessons.map(l=>l.id===ctx.lesson.id ? {...l, date:newDate, time:newTime} : l);
+  } else if(ctx.lesson){
+    lessons=lessons.map(l=>l.id===ctx.lesson.id ? {...l, date:newDate, time:newTime, state:"rescheduled", originalDate:ctx.date} : l);
+  } else {
+    lessons=[...lessons, TB.createLesson({studentId:ctx.studentId, date:newDate, time:newTime, state:"rescheduled", originalDate:ctx.date, plan:"", notes:"", link:""})];
+  }
+  data.lessons=lessons;
+  TB.saveData(data);
+  $("#tbOccDlg").close();
+  tbRenderWeek();
+});
+
+$("#tbOccClose").addEventListener("click",()=>{ $("#tbOccDlg").close(); });
+
 function renderAppMenu(){
   $("#appMenu").innerHTML=APPS.map(a=>
     `<button type="button" role="menuitem" data-app="${a.id}"
@@ -10959,7 +11338,7 @@ function showNow(v){
      own re-render is a no-op rather than a recursion. */
   if(v!=="planner"&&document.documentElement.classList.contains("pfocus")) pSetFocus(false);
   document.querySelectorAll(".nav button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.view===v)));
-  BENCH_VIEWS.concat(["planner","hours","hproject"]).forEach(x=>{ $("#view-"+x).hidden=(x!==v); });
+  BENCH_VIEWS.concat(["planner","hours","hproject","teachbench"]).forEach(x=>{ $("#view-"+x).hidden=(x!==v); });
   /* editor sub-views (product/formula/plant/batch/…) are populated by their
      open* call, not by showNow — relaunching straight into one was a blank
      shell that crashed on the first tap. Remember their parent tab instead. */
@@ -10971,6 +11350,7 @@ function showNow(v){
      steps must be rebuilt against the clamped figure — otherwise the card shows
      ml totals for a 10 L tank while the control above reads 2 L, and whoever is
      holding the jug pours five times the dose. */
+  if(v==="teachbench") renderTeachbench();
   if(v==="mix"){ renderVol(); renderStr(); renderDue(); renderHow(); renderMix(); }
   if(v==="plan"){ anchor=sod(Date.now()); }
   if(v==="shelf") renderShelf(); if(v==="plants") renderSubjects(); if(v==="academy") renderAcademy();
