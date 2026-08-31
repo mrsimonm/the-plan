@@ -1217,6 +1217,8 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 main{order:2; flex:1; padding:16px 14px 48px; width:100%; max-width:1060px; margin:0 auto}
 .view[hidden]{display:none}
 .stack{display:flex; flex-direction:column; gap:12px}
+/* same [hidden] bug as .navwrap/.field/.dlg-foot above */
+.stack[hidden]{display:none}
 .bench{display:flex; flex-direction:column; gap:14px}
 /* the liquid-glass card: translucent fill, blur+saturate, a bright inner
    hairline for the refracted edge, a soft shadow and a specular top
@@ -2801,9 +2803,15 @@ html{overscroll-behavior-y:none}
 
   <!-- ============ TEACHBENCH ============ -->
   <section class="view" id="view-teachbench" hidden>
-    <div class="sec-head"><h2>Teachbench</h2></div>
-    <div class="stack pstack">
+    <div class="sec-head">
+      <h2>Teachbench</h2>
+      <div class="seg segsm" id="tbScopeSeg">
+        <button type="button" data-tbscope="week" aria-pressed="true">This week</button>
+        <button type="button" data-tbscope="students" aria-pressed="false">Students</button>
+      </div>
+    </div>
 
+    <div class="stack pstack" id="tbScopeWeek">
       <div class="card pad">
         <div class="sec-head" style="margin-bottom:4px">
           <h2 style="font-size:17px">This week</h2>
@@ -2816,7 +2824,9 @@ html{overscroll-behavior-y:none}
         <p class="pday-sub" id="tbCalRange" style="margin-bottom:10px"></p>
         <div id="tbCalDays" class="stack" style="gap:10px"></div>
       </div>
+    </div>
 
+    <div class="stack pstack" id="tbScopeStudents" hidden>
       <form class="card pad qadd" id="tbAddForm">
         <input type="text" id="tbAddName" placeholder="Student's name" autocomplete="off">
         <div class="qadd-row2">
@@ -2830,7 +2840,6 @@ html{overscroll-behavior-y:none}
         <div id="tbList" class="stack" style="gap:2px"></div>
         <p id="tbEmpty" class="pday-sub" hidden>No students yet.</p>
       </div>
-
     </div>
   </section>
 
@@ -11006,6 +11015,20 @@ const TB_COLOR_HEX = {
 let tbEditId=null;
 let tbCalWeekOffset=0;
 let tbOccContext=null;
+let tbScope="week";
+
+function tbSetScope(scope){
+  tbScope=scope;
+  document.querySelectorAll("#tbScopeSeg [data-tbscope]").forEach(b=>
+    b.setAttribute("aria-pressed", String(b.dataset.tbscope===scope)));
+  $("#tbScopeWeek").hidden = scope!=="week";
+  $("#tbScopeStudents").hidden = scope!=="students";
+}
+$("#tbScopeSeg").addEventListener("click",e=>{
+  const b=e.target.closest("[data-tbscope]");
+  if(!b) return;
+  tbSetScope(b.dataset.tbscope);
+});
 
 function tbFillLevelSelect(sel){
   if(!sel || sel.dataset.filled) return;
