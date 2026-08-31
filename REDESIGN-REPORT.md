@@ -385,3 +385,37 @@ time (confirmed in round 6 that screenshotting immediately on reload can
 catch a transition mid-flight; not a bug, just bad timing). Result: cards
 now visibly read as bright panels floating above the background in both
 light and dark mode, rather than blending into the gradient wash.
+
+## Round 8 — real frosted texture, spot highlights, glassier tabs
+
+Three asks: (1) actual frosted-glass texture, not just blur; (2) tabs feel
+more glass-like; (3) the round-7 top-band highlight was still "too linear,"
+wanted a few spots instead.
+
+**Texture**: added a fixed SVG-noise grain layer (`feTurbulence`,
+`mix-blend-mode: overlay`, opacity .05 light / .07 dark) sitting above the
+whole app, `pointer-events:none` so it can never intercept a click or drag.
+This is the same technique from the very first `redesign-glass` attempt,
+reintroduced here since this branch never had it — it's what makes surfaces
+read as textured glass rather than just smoothed-over blur.
+
+**Spot highlights, and a real bug caught by the feedback loop**: reworked
+`--glass-sheen` from a linear top-band into a few small radial catch-light
+spots. First attempt used small, high-opacity spots — screenshotting the
+result showed distinct floating white circles inside the cards, not a
+diffuse glow. Diagnosed properly rather than guessing: disabled the grain
+layer via an injected stylesheet to rule it out as the cause, then used
+`document.elementFromPoint()` to confirm the blobs sat exactly where the
+`--glass-sheen` radial-gradient math placed them — the spots were working
+as coded, just too small and too opaque to read as anything but a hard
+circle. Fixed by making them much larger and much lower-opacity with a
+longer fade (peak opacity .6→.28, radius roughly 2–3× larger). Re-screenshot
+confirmed clean, diffuse highlights with no stray blobs.
+
+**Tabs**: given their own heavier version of the material — blur 24px→30px,
+saturate 170%→190%, a brighter pair of spots than the standard recipe —
+since the tab bar is the one glass surface always on screen.
+
+Verified via playwright-cli in both themes, and re-ran the drag regression
+test with the grain layer active to confirm `pointer-events:none` actually
+passes mouse events through to the calendar block underneath (it does).
