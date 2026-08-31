@@ -8,83 +8,111 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
-
 <style>
 :root{
-  --bg:#F4F4F2; --surface:#FFFFFF; --surface-2:#FAFAF9; --sunk:#ECECEA;
-  --line:#E2E2DF; --line-soft:#EDEDEA; --line-strong:#C9C9C4;
-  --ink:#16181A; --ink-2:#5C6166; --ink-3:#8E9499;
-  --accent:#3F6B54; --accent-2:#55806A; --accent-soft:#E8EEEA; --on-accent:#FFFFFF;
-  --amber:#8A6A2F; --amber-soft:#F0EADC;
-  --orange:#B4633A;
-  --track-bg:#E9E9E6; --track-line:rgba(22,24,26,.12); --track-ink:#5C6166;
-  /* the planner board's own rules: --line-soft vanished against the card, so
-     the hour grid and the day separators get their own readable tokens */
-  --grid-line:#C8C8C3; --grid-sep:#A6A6A0;
-  --ok:#3F6B54; --crit:#A34B41; --crit-soft:#F2E4E1;
-  --glass:rgba(255,255,255,.72); --glass-2:rgba(255,255,255,.88);
-  --hair:rgba(255,255,255,.95);
-  --bloom-a:rgba(63,107,84,.05); --bloom-b:rgba(22,24,26,.03);
-  --shadow:0 1px 2px rgba(22,24,26,.05);
-  --shadow-lift:0 2px 8px rgba(22,24,26,.10);
-  --r:12px; --r-sm:8px; --r-xs:5px;
-  --hours-hue:#5B5470;          /* Hours identity, used inside other apps */
+  /* system font only — no decorative or pixel faces anywhere in this app */
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Inter,sans-serif;
+
+  /* retro palette, liquid-glass surfaces: cream canvas, grey-green + teal
+     blobs behind the glass, one accent used only for primary/active state */
+  --bg:#EDEAE0; --surface:#F5F3EA; --surface-2:#E7E4D6; --sunk:#E1DECD;
+  --line:#D9D6C6; --line-soft:rgba(46,46,42,.08); --line-strong:#A9AE9C;
+  --ink-strong:#2E2E2A; --ink:#6E7367; --ink-3:#8D9280;
+  --accent:#5E9E85; --accent-2:#4C8570; --accent-soft:rgba(94,158,133,.14); --on-accent:#FAF8EF;
+  --amber:#9C7C3E; --amber-soft:#EFE6D2;
+  --orange:#B4674A;
+  --track-bg:#E3E0D2; --track-line:rgba(51,54,46,.16); --track-ink:#6E7367;
+  --grid-line:rgba(46,46,42,.10); --grid-sep:rgba(46,46,42,.18);
+  --ok:#5E9E85; --crit:#A24B41; --crit-soft:#F0DFD9;
+
+  /* blobs behind the glass — soft, large, low-opacity */
+  --blob-1:rgba(94,158,133,.20); --blob-2:rgba(169,174,156,.24); --blob-3:rgba(94,158,133,.12);
+
+  /* the liquid-glass recipe: translucent cream fill, a bright inner hairline
+     standing in for a refracted edge, a soft ambient shadow + a specular
+     highlight along the top edge (never a hard drop shadow) */
+  --glass-fill:rgba(237,234,224,.55); --glass-fill-2:rgba(237,234,224,.68);
+  --glass-border:rgba(255,255,255,.55);
+  --glass-shadow:0 12px 40px -8px rgba(46,46,42,.16), inset 0 1px 0 rgba(255,255,255,.65);
+  --glass-blur:blur(24px) saturate(170%);
+
+  --shadow:0 1px 2px rgba(46,46,42,.07);
+  --shadow-lift:0 10px 28px -8px rgba(46,46,42,.22);
+
+  /* shape: large soft radii on containers, tighter on controls, full pill
+     on tabs and primary actions — never one radius for everything */
+  --r:24px; --r-sm:13px; --r-xs:8px; --r-pill:999px;
+  --hours-hue:#7C8F72;          /* Hours identity, used inside other apps */
+  --ink-2:var(--ink);
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#0B0C0C; --surface:#141616; --surface-2:#1A1D1D; --sunk:#0F1111;
-    --line:#262A29; --line-soft:#1E2121; --line-strong:#3A403E;
-    --ink:#ECEEED; --ink-2:#9AA1A0; --ink-3:#6B7271;
-    --accent:#7FA890; --accent-2:#9BBEA9; --accent-soft:#17241D; --on-accent:#0B0C0C;
-    --amber:#C6A468; --amber-soft:#241F14;
-    --orange:#C08155;
-    --track-bg:#202323; --track-line:rgba(236,238,237,.12); --track-ink:#9AA1A0;
-    --grid-line:#383D3C; --grid-sep:#575F5D;
-    --ok:#7FA890; --crit:#C98079; --crit-soft:#2A1D1C;
-    --glass:rgba(20,22,22,.72); --glass-2:rgba(26,29,29,.86);
-    --hair:rgba(255,255,255,.06);
-    --bloom-a:rgba(127,168,144,.05); --bloom-b:rgba(255,255,255,.02);
-    --shadow:0 1px 2px rgba(0,0,0,.45);
-    --shadow-lift:0 2px 8px rgba(0,0,0,.55);
-    --hours-hue:#8E86A6;
+    --bg:#2E2E2A; --surface:#363631; --surface-2:#3D3D37; --sunk:#282824;
+    --line:#48483F; --line-soft:rgba(237,234,224,.08); --line-strong:#5C5F52;
+    --ink-strong:#F3F1E8; --ink:#BDC2AF; --ink-3:#8B9080;
+    --accent:#7CC0A3; --accent-2:#93CDB3; --accent-soft:rgba(124,192,163,.16); --on-accent:#1B1D17;
+    --amber:#C7A968; --amber-soft:#3A331F;
+    --orange:#C58768;
+    --track-bg:#3D3D37; --track-line:rgba(243,241,232,.14); --track-ink:#BDC2AF;
+    --grid-line:rgba(243,241,232,.10); --grid-sep:rgba(243,241,232,.18);
+    --ok:#7CC0A3; --crit:#C9847A; --crit-soft:#3A241F;
+    --blob-1:rgba(124,192,163,.18); --blob-2:rgba(140,145,125,.22); --blob-3:rgba(124,192,163,.10);
+    --glass-fill:rgba(110,115,103,.42); --glass-fill-2:rgba(110,115,103,.55);
+    --glass-border:rgba(255,255,255,.10);
+    --glass-shadow:0 14px 44px -8px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.08);
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+    --shadow-lift:0 10px 28px -8px rgba(0,0,0,.55);
+    --hours-hue:#93A78E;
+    --ink-2:var(--ink);
   }
 }
 :root[data-theme="dark"]{
-  --bg:#0B0C0C; --surface:#141616; --surface-2:#1A1D1D; --sunk:#0F1111;
-  --line:#262A29; --line-soft:#1E2121; --line-strong:#3A403E;
-  --ink:#ECEEED; --ink-2:#9AA1A0; --ink-3:#6B7271;
-  --accent:#7FA890; --accent-2:#9BBEA9; --accent-soft:#17241D; --on-accent:#0B0C0C;
-  --amber:#C6A468; --amber-soft:#241F14;
-  --orange:#C08155;
-  --track-bg:#202323; --track-line:rgba(236,238,237,.12); --track-ink:#9AA1A0;
-  --grid-line:#383D3C; --grid-sep:#575F5D;
-  --ok:#7FA890; --crit:#C98079; --crit-soft:#2A1D1C;
-  --glass:rgba(20,22,22,.72); --glass-2:rgba(26,29,29,.86);
-  --hair:rgba(255,255,255,.06);
-  --bloom-a:rgba(127,168,144,.05); --bloom-b:rgba(255,255,255,.02);
-  --shadow:0 1px 2px rgba(0,0,0,.45);
-  --shadow-lift:0 2px 8px rgba(0,0,0,.55);
-  --hours-hue:#8E86A6;
+  --bg:#2E2E2A; --surface:#363631; --surface-2:#3D3D37; --sunk:#282824;
+  --line:#48483F; --line-soft:rgba(237,234,224,.08); --line-strong:#5C5F52;
+  --ink-strong:#F3F1E8; --ink:#BDC2AF; --ink-3:#8B9080;
+  --accent:#7CC0A3; --accent-2:#93CDB3; --accent-soft:rgba(124,192,163,.16); --on-accent:#1B1D17;
+  --amber:#C7A968; --amber-soft:#3A331F;
+  --orange:#C58768;
+  --track-bg:#3D3D37; --track-line:rgba(243,241,232,.14); --track-ink:#BDC2AF;
+  --grid-line:rgba(243,241,232,.10); --grid-sep:rgba(243,241,232,.18);
+  --ok:#7CC0A3; --crit:#C9847A; --crit-soft:#3A241F;
+  --blob-1:rgba(124,192,163,.18); --blob-2:rgba(140,145,125,.22); --blob-3:rgba(124,192,163,.10);
+  --glass-fill:rgba(110,115,103,.42); --glass-fill-2:rgba(110,115,103,.55);
+  --glass-border:rgba(255,255,255,.10);
+  --glass-shadow:0 14px 44px -8px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.08);
+  --shadow:0 1px 2px rgba(0,0,0,.4);
+  --shadow-lift:0 10px 28px -8px rgba(0,0,0,.55);
+  --hours-hue:#93A78E;
+  --ink-2:var(--ink);
 }
 
 *{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} *{animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important} }
+/* the three soft blobs living behind every glass surface: an element's own
+   background always paints beneath its own content, so this is the one
+   reliable way to guarantee the blobs sit behind everything without a
+   z-index/stacking-context fight against the sticky header and nav */
 body{
   margin:0; background:var(--bg); color:var(--ink);
   background-image:
-    radial-gradient(60vw 40vh at 6% -8%, var(--bloom-a), transparent 70%),
-    radial-gradient(50vw 36vh at 98% 2%, var(--bloom-b), transparent 68%);
+    radial-gradient(46vw 46vh at 10% 8%, var(--blob-1), transparent 68%),
+    radial-gradient(52vw 52vh at 92% 78%, var(--blob-2), transparent 68%),
+    radial-gradient(40vw 40vh at 88% 4%, var(--blob-3), transparent 70%);
   background-attachment:fixed; background-repeat:no-repeat;
-  font-family:"Manrope",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-family:var(--font);
   font-size:15px; line-height:1.5; display:flex; flex-direction:column; min-height:100vh;
   -webkit-text-size-adjust:100%;
 }
-h1,h2,h3{margin:0; font-family:"Space Grotesk",Impact,sans-serif; text-wrap:balance; font-weight:600}
-.num{font-family:"JetBrains Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums}
-.eyebrow{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
-  letter-spacing:.1em; font-size:13px; color:var(--ink-3)}
+h1,h2,h3{margin:0; font-family:var(--font); text-wrap:balance; font-weight:700; letter-spacing:-.02em; color:var(--ink-strong)}
+/* every <b> in this codebase marks a title-weight moment (a plant name, a
+   task title, a card header) even where it isn't a semantic heading — give
+   it the same charcoal as h1–h3 by default; a more specific rule (a status
+   colour, a muted secondary line) still wins where one exists */
+b{color:var(--ink-strong); font-weight:700}
+.num{font-family:var(--font); font-variant-numeric:tabular-nums}
+.eyebrow{font-family:var(--font); font-weight:600; text-transform:uppercase;
+  letter-spacing:.08em; font-size:12px; color:var(--ink-3)}
 
 /* ---------- chrome ---------- */
 .pv-hero{width:100%; aspect-ratio:4/3; object-fit:cover; display:block; background:var(--sunk)}
@@ -107,7 +135,7 @@ h1,h2,h3{margin:0; font-family:"Space Grotesk",Impact,sans-serif; text-wrap:bala
 .cutrow-top:hover{background:var(--surface-2)}
 .cutrow-top .chev{position:absolute; right:12px; top:9px; font-size:19px; color:var(--ink-3)}
 .cutrow-name{font-size:15.5px; font-weight:500; padding-right:20px}
-.cutrow-sub{font-size:12px; color:var(--ink-3); font-family:"JetBrains Mono",ui-monospace,monospace;
+.cutrow-sub{font-size:12px; color:var(--ink-3); font-family:var(--font); font-variant-numeric:tabular-nums;
   line-height:1.45; padding-right:22px}
 .slots{display:flex; flex-wrap:wrap; gap:6px; align-items:center;
   border-top:1px solid var(--line-soft); padding:10px 14px}
@@ -118,13 +146,13 @@ h1,h2,h3{margin:0; font-family:"Space Grotesk",Impact,sans-serif; text-wrap:bala
 .slot.rooted{border-color:var(--accent); color:var(--accent)}
 .slot.potted{border-color:var(--ok); background:var(--ok); color:var(--on-accent)}
 .slot.lost{border-color:var(--crit); color:var(--crit); opacity:.75}
-.slotkey{font-size:10.5px; color:var(--ink-3); font-family:"JetBrains Mono",ui-monospace,monospace; margin-left:2px}
+.slotkey{font-size:10.5px; color:var(--ink-3); font-family:var(--font); font-variant-numeric:tabular-nums; margin-left:2px}
 .cutq{border-top:1px solid var(--line-soft); padding:10px 14px 12px}
 .cutq p{margin:0 0 9px; font-size:13.5px; color:var(--ink-2); line-height:1.45}
 .qbtns{display:flex; gap:6px; flex-wrap:wrap}
 .qbtns .btn{flex:1 1 auto; min-width:0}
 .cutasked{border-top:1px solid var(--line-soft); padding:9px 14px 10px; font-size:12px;
-  color:var(--ink-3); font-family:"JetBrains Mono",ui-monospace,monospace}
+  color:var(--ink-3); font-family:var(--font); font-variant-numeric:tabular-nums}
 .linkish{background:none; border:0; padding:0 0 0 8px; color:var(--accent); cursor:pointer;
   font:inherit; text-decoration:underline}
 .cutdone{display:flex; align-items:center; gap:11px; width:100%; text-align:left; padding:10px 14px;
@@ -132,24 +160,25 @@ h1,h2,h3{margin:0; font-family:"Space Grotesk",Impact,sans-serif; text-wrap:bala
   color:inherit; font:inherit}
 .cutdone:last-child{border-bottom:0}
 .cutdone:hover{background:var(--surface-2)}
-.cutdone-n{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:13px; min-width:38px}
+.cutdone-n{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:13px; min-width:38px}
 .cutdone-n.good{color:var(--ok)} .cutdone-n.bad{color:var(--ink-3)}
 .cutdone-main{flex:1; min-width:0; font-size:14px}
 .cutdone-main small{display:block; font-size:11.5px; color:var(--ink-3);
-  font-family:"JetBrains Mono",ui-monospace,monospace}
+  font-family:var(--font); font-variant-numeric:tabular-nums}
 .cutdone .chev{font-size:19px; color:var(--ink-3)}
 /* the garden: your plants as objects, not rows in a list */
 .grid{display:grid; grid-template-columns:repeat(2,1fr); gap:11px}
 @media (min-width:620px){ .grid{grid-template-columns:repeat(3,1fr)} }
 @media (min-width:900px){ .grid{grid-template-columns:repeat(4,1fr)} }
 .tile{display:flex; flex-direction:column; padding:0; overflow:hidden; cursor:pointer;
-  background:var(--glass-2); backdrop-filter:blur(14px) saturate(130%);
-  -webkit-backdrop-filter:blur(14px) saturate(130%);
-  border:1px solid var(--line-soft); border-radius:var(--r); box-shadow:var(--shadow);
-  color:inherit; font:inherit; text-align:left; transition:transform .14s, box-shadow .14s;
+  background:var(--glass-fill); backdrop-filter:var(--glass-blur);
+  -webkit-backdrop-filter:var(--glass-blur);
+  border:1px solid var(--glass-border); border-radius:var(--r); box-shadow:var(--glass-shadow);
+  color:inherit; font:inherit; text-align:left;
+  transition:transform .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s cubic-bezier(.2,.8,.2,1);
   -webkit-tap-highlight-color:transparent}
-.tile:hover{transform:translateY(-2px); box-shadow:var(--shadow-lift)}
-.tile:active{transform:translateY(0)}
+.tile:hover{transform:translateY(-2px)}
+.tile:active{transform:translateY(0) scale(.99)}
 .tile-img{aspect-ratio:1; width:100%; object-fit:cover; display:block; background:var(--sunk)}
 .tile-ph{aspect-ratio:4/3; display:flex; align-items:center; justify-content:center;
   background:
@@ -157,18 +186,18 @@ h1,h2,h3{margin:0; font-family:"Space Grotesk",Impact,sans-serif; text-wrap:bala
     linear-gradient(150deg,var(--surface-2),var(--sunk));
   font-size:30px}
 .tile-ph svg,.tile-ph .picto{width:34px; height:34px}
-.tile-b{padding:10px 11px 11px; display:flex; flex-direction:column; gap:6px; min-width:0}
+.tile-b{padding:12px 14px 14px; display:flex; flex-direction:column; gap:6px; min-width:0}
 .tile-b b{font-size:14.5px; font-weight:700; letter-spacing:-.01em; line-height:1.25;
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
 .tile-b small{font-size:11px; color:var(--ink-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-.tile .pill{align-self:flex-start; font-size:10.5px; padding:2px 8px}
+.tile .pill{align-self:flex-start; font-size:10.5px; padding:3px 9px}
 
 /* ---------- academy plant index ---------- */
 .acq{width:100%; font:inherit; font-size:14px; padding:10px 13px; border-radius:var(--r-sm);
   border:1px solid var(--line); background:var(--sunk); color:var(--ink); outline:none}
 .acq:focus{border-color:var(--accent); background:var(--surface)}
 .acq::placeholder{color:var(--ink-3)}
-.pgroup{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
+.pgroup{font-family:var(--font); font-weight:600;
   text-transform:uppercase; letter-spacing:.09em; font-size:10.5px; color:var(--ink-3);
   padding:5px 15px 8px}
 .pgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(94px,1fr));
@@ -184,13 +213,13 @@ h1,h2,h3{margin:0; font-family:"Space Grotesk",Impact,sans-serif; text-wrap:bala
 .acopen{margin:0 15px 16px; border:1px solid var(--accent); border-radius:var(--r-sm);
   background:var(--accent-soft); overflow:hidden}
 .ao-head{display:flex; align-items:center; gap:11px; padding:12px 12px 9px}
-.ao-head b{font-family:"Space Grotesk","Manrope",sans-serif; font-size:16px;
+.ao-head b{font-family:var(--font); font-size:16px;
   font-weight:700; letter-spacing:-.01em; flex:1; min-width:0; color:var(--ink)}
 .ao-head .picto{width:42px; height:42px}
 .lore{margin-top:13px; border-top:1px solid var(--line); padding-top:12px;
   display:flex; flex-direction:column; gap:11px}
 .lore-sec p{margin:3px 0 0; font-size:13.5px; line-height:1.5; color:var(--ink-2)}
-.lore-k{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
+.lore-k{font-family:var(--font); font-weight:600;
   text-transform:uppercase; letter-spacing:.07em; font-size:10.5px; color:var(--accent)}
 .pg-list{border-top:1px solid var(--line)}
 .pg-row{border-bottom:1px solid var(--line)}
@@ -198,9 +227,9 @@ h1,h2,h3{margin:0; font-family:"Space Grotesk",Impact,sans-serif; text-wrap:bala
 .pg-head{display:flex; align-items:center; gap:10px; width:100%; background:none; border:0;
   padding:13px 15px; cursor:pointer; text-align:left; color:var(--ink); font:inherit}
 .pg-head:hover{background:var(--sunk)}
-.pg-name{flex:1; min-width:0; font-family:"Space Grotesk","Manrope",sans-serif;
+.pg-name{flex:1; min-width:0; font-family:var(--font);
   font-weight:600; font-size:14.5px}
-.pg-span{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11.5px; color:var(--ink-3);
+.pg-span{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:11.5px; color:var(--ink-3);
   flex:0 0 auto; white-space:nowrap}
 .pg-chev{flex:0 0 auto; width:18px; text-align:center; color:var(--accent); font-size:16px}
 .pg-row.open{background:var(--sunk)}
@@ -208,14 +237,14 @@ h1,h2,h3{margin:0; font-family:"Space Grotesk",Impact,sans-serif; text-wrap:bala
 .pg-body{padding:0 15px 15px; display:flex; flex-direction:column; gap:12px}
 .pg-sec p{margin:3px 0 0; font-size:13.5px; line-height:1.5; color:var(--ink-2)}
 .pg-sec .steplist{margin:5px 0 0}
-.pg-k{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
+.pg-k{font-family:var(--font); font-weight:600;
   text-transform:uppercase; letter-spacing:.07em; font-size:10.5px; color:var(--accent)}
 .sbars{display:flex; flex-direction:column; gap:7px}
 .sbar{display:grid; grid-template-columns:minmax(64px,34%) 1fr auto; align-items:center; gap:9px}
 .sbar-l{font-size:13px; color:var(--ink-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .sbar-t{background:var(--sunk); border-radius:99px; height:8px; overflow:hidden}
 .sbar-t i{display:block; height:100%; background:var(--accent); border-radius:99px}
-.sbar-n{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11.5px; color:var(--ink);
+.sbar-n{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:11.5px; color:var(--ink);
   white-space:nowrap; font-variant-numeric:tabular-nums}
 .sbar-n em{font-style:normal; color:var(--ink-3); margin-left:5px}
 .scols{display:flex; align-items:flex-end; gap:2px; height:64px; padding-top:2px;
@@ -230,11 +259,11 @@ h1,h2,h3{margin:0; font-family:"Space Grotesk",Impact,sans-serif; text-wrap:bala
   stroke-linejoin:round; stroke-linecap:round}
 .spark-a{fill:var(--accent); opacity:.13; stroke:none}
 .spark-ax{display:flex; justify-content:space-between; margin-top:5px;
-  font-family:"JetBrains Mono",ui-monospace,monospace; font-size:10.5px; color:var(--ink-3)}
+  font-family:var(--font); font-variant-numeric:tabular-nums; font-size:10.5px; color:var(--ink-3)}
 .xtag{font-style:normal; font-size:9px; letter-spacing:.08em; color:var(--accent);
   border:1px solid var(--accent); border-radius:99px; padding:1px 6px; margin-left:7px}
 #verBadge{position:fixed; right:9px; bottom:8px; z-index:40;
-  font-family:"JetBrains Mono",ui-monospace,monospace; font-size:9.5px; letter-spacing:.02em;
+  font-family:var(--font); font-variant-numeric:tabular-nums; font-size:9.5px; letter-spacing:.02em;
   color:var(--ink-3); background:var(--surface-2); border:1px solid var(--line);
   border-radius:99px; padding:3px 8px; cursor:pointer; opacity:.55;
   max-width:calc(100vw - 18px); overflow:hidden; white-space:nowrap;
@@ -247,7 +276,7 @@ h1,h2,h3{margin:0; font-family:"Space Grotesk",Impact,sans-serif; text-wrap:bala
   background:var(--surface-2); position:relative; z-index:1; will-change:transform;
   width:100%}
 .swipe-act{position:absolute; left:0; top:0; bottom:0; z-index:0; display:flex; align-items:center;
-  padding-left:16px; font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
+  padding-left:16px; font-family:var(--font); font-weight:600;
   font-size:12.5px; letter-spacing:.05em; text-transform:uppercase;
   color:var(--on-accent); background:var(--accent); width:100%; opacity:.55;
   transition:opacity .12s}
@@ -286,44 +315,21 @@ h1,h2,h3{margin:0; font-family:"Space Grotesk",Impact,sans-serif; text-wrap:bala
    .primary, .pill, .bar-fill) goes blue for free; nothing else in the app
    changes, and --ok/--crit/--amber are left alone since those are semantic,
    not identity. Toggled by adding .theme-planner to <html> in showNow(). */
-html.theme-planner{
-  --accent:#40566E; --accent-2:#586E88; --accent-soft:#E7EAEE; --on-accent:#FFFFFF;
-  --bloom-a:rgba(64,86,110,.05); --bloom-b:rgba(22,24,26,.03);
-}
-@media (prefers-color-scheme: dark){
-  html.theme-planner:not([data-theme="light"]){
-    --accent:#8FA6BF; --accent-2:#A9BCD1; --accent-soft:#1A2029; --on-accent:#0B0C0C;
-    --bloom-a:rgba(143,166,191,.05); --bloom-b:rgba(255,255,255,.02);
-  }
-}
-html.theme-planner[data-theme="dark"]{
-  --accent:#8FA6BF; --accent-2:#A9BCD1; --accent-soft:#1A2029; --on-accent:#0B0C0C;
-  --bloom-a:rgba(143,166,191,.05); --bloom-b:rgba(255,255,255,.02);
-}
-
-/* Hours gets the same scoped-token treatment as the planner, purple instead of
-   blue. Toggled by .theme-hours on <html> in showNow(). */
-html.theme-hours{
-  --accent:#5B5470; --accent-2:#736B8A; --accent-soft:#EAE8EE; --on-accent:#FFFFFF;
-  --bloom-a:rgba(91,84,112,.05); --bloom-b:rgba(22,24,26,.03);
-}
-@media (prefers-color-scheme: dark){
-  html.theme-hours:not([data-theme="light"]){
-    --accent:#8E86A6; --accent-2:#A7A0BC; --accent-soft:#221E2B; --on-accent:#0B0C0C;
-    --bloom-a:rgba(142,134,166,.05); --bloom-b:rgba(255,255,255,.02);
-  }
-}
-html.theme-hours[data-theme="dark"]{
-  --accent:#8E86A6; --accent-2:#A7A0BC; --accent-soft:#221E2B; --on-accent:#0B0C0C;
-  --bloom-a:rgba(142,134,166,.05); --bloom-b:rgba(255,255,255,.02);
-}
+/* the original app gave the planner and Hours their own accent hue (blue,
+   purple) while active. The brief is explicit — "nothing else is coloured"
+   besides the one teal accent — so both scoped themes now just resolve to
+   the same tokens as everywhere else. Left as empty, documented no-ops
+   (rather than deleted) so the .theme-planner/.theme-hours toggle in the
+   app's own JS keeps working without edits to that logic. */
+html.theme-planner{}
+html.theme-hours{}
 
 /* ---------------- planner components ---------------- */
 .qadd{display:flex; flex-direction:column; gap:9px}
 .qadd input[type="text"]{font-size:15px}
 .qadd-row2{display:flex; align-items:center; gap:7px; flex-wrap:wrap}
 .qadd-row2 .btn{margin-left:auto}
-.mono-input{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:13px;
+.mono-input{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:13px;
   color:var(--ink-2); background:var(--surface-2); border:1px solid var(--line);
   border-radius:var(--r-sm); padding:6px 8px; width:auto}
 .mono-input.hrs{width:56px; text-align:right}
@@ -331,15 +337,15 @@ input[type="date"].mono-input{width:132px}
 input[type="time"].mono-input{width:88px}
 
 .pday-head{display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:13px}
-.pday-title{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:700;
+.pday-title{font-family:var(--font); font-weight:700;
   font-size:17px; margin:0}
-.pday-sub{margin:2px 0 0; font-family:"JetBrains Mono",ui-monospace,monospace;
+.pday-sub{margin:2px 0 0; font-family:var(--font); font-variant-numeric:tabular-nums;
   font-size:11.5px; color:var(--ink-3); font-variant-numeric:tabular-nums}
 
 .budget-bar{display:flex; height:48px; border-radius:14px; overflow:hidden; background:var(--sunk)}
 .budget-bar > i{display:flex; flex:0 0 auto; align-items:center; justify-content:center;
   min-width:0; overflow:hidden; padding:0 4px;
-  font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; font-size:11.5px;
+  font-family:var(--font); font-weight:600; font-size:11.5px;
   letter-spacing:.02em; white-space:nowrap}
 .budget-bar > i > span{overflow:hidden; text-overflow:clip}
 .bb-sleep{background:var(--ink-3); color:var(--bg)}
@@ -355,7 +361,7 @@ input[type="time"].mono-input{width:88px}
   flex-wrap:wrap; margin-bottom:11px}
 .pcal-head .segsm{flex:0 0 auto}
 .pcal-nav{display:flex; align-items:center; gap:2px}
-.pcal-month{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:12.5px;
+.pcal-month{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:12.5px;
   color:var(--ink-2); min-width:92px; text-align:center; font-variant-numeric:tabular-nums}
 .ptask{padding:0; border-bottom:1px solid var(--line-soft)}
 .ptask:last-child{border-bottom:0}
@@ -369,7 +375,7 @@ input[type="time"].mono-input{width:88px}
   padding:5px 4px; font-size:14px; color:var(--ink)}
 .ptask-title:focus-visible{outline:2px solid var(--accent); outline-offset:1px; background:var(--sunk)}
 .ptask.done .ptask-title{color:var(--ink-3); text-decoration:line-through}
-.ptask-hrs-ro{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11.5px;
+.ptask-hrs-ro{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:11.5px;
   color:var(--ink-3); flex:0 0 auto; font-variant-numeric:tabular-nums}
 .ptask-caret{flex:0 0 auto; width:16px; text-align:center; color:var(--accent); font-size:15px}
 .ptask-detail{padding:0 14px 12px}
@@ -405,7 +411,7 @@ input[type="time"].mono-input{width:88px}
    three of them for a quarter, and dot-only miniatures once six or twelve
    months have to share the width. */
 .pcal-dow{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:5px}
-.pcal-dow span{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:10px;
+.pcal-dow span{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:10px;
   color:var(--ink-3); text-align:center; text-transform:uppercase}
 .pcal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:4px}
 .pcal-cell{appearance:none; border:1.5px solid transparent; background:var(--sunk); color:var(--ink);
@@ -417,16 +423,16 @@ input[type="time"].mono-input{width:88px}
 .pcal-cell.out{opacity:.25; pointer-events:none}
 .pcal-cell[data-today="1"]{border-color:var(--accent)}
 .pcal-cell[data-today="1"] .pcal-day{background:var(--ink); color:var(--bg); border-radius:5px; padding:0 4px}
-.pcal-day{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11.5px; font-weight:600;
+.pcal-day{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:11.5px; font-weight:600;
   font-variant-numeric:tabular-nums}
 .pcal-dots{display:flex; gap:2px; justify-content:center; min-height:4px; flex-wrap:wrap}
 .pcal-dots i{width:4px; height:4px; border-radius:50%; display:block}
 .pcal-quarter{display:flex; flex-direction:column; gap:22px}
 @media (min-width:760px){ .pcal-quarter{display:grid; grid-template-columns:repeat(3,1fr); gap:16px} }
-.pcal-qmonth-title{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
+.pcal-qmonth-title{font-family:var(--font); font-weight:600;
   font-size:13.5px; margin:0 0 7px}
 .pcal-year{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:16px}
-.pcal-mini-title{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
+.pcal-mini-title{font-family:var(--font); font-weight:600;
   font-size:12px; margin:0 0 5px; text-align:center}
 .pcal-mini-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:2px}
 .pcal-mini-cell{aspect-ratio:1; border-radius:2px; background:var(--sunk); border:0; padding:0;
@@ -459,11 +465,11 @@ input[type="time"].mono-input{width:88px}
   flex:0 0 auto}
 .povw-state.done{color:var(--ok)}
 .povw-state.late{color:var(--crit); font-weight:600}
-.povw-hrs{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11px; color:var(--ink-2);
+.povw-hrs{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:11px; color:var(--ink-2);
   flex:0 0 auto; font-variant-numeric:tabular-nums}
 .povw-bar{height:5px; border-radius:99px; background:var(--sunk); overflow:hidden; margin:7px 0 5px}
 .povw-bar i{display:block; height:100%; background:var(--pc)}
-.povw-meta{display:flex; flex-wrap:wrap; gap:4px 12px; font-family:"JetBrains Mono",ui-monospace,monospace;
+.povw-meta{display:flex; flex-wrap:wrap; gap:4px 12px; font-family:var(--font); font-variant-numeric:tabular-nums;
   font-size:10.5px; color:var(--ink-3)}
 .povw-warn{font-style:normal; color:var(--crit)}
 /* the small Gantt: every bar on one shared window so they can be compared */
@@ -474,12 +480,12 @@ input[type="time"].mono-input{width:88px}
 .povw-tasks{list-style:none; margin:8px 0 0; padding:0; display:flex; flex-direction:column; gap:3px}
 .povw-tasks li{display:flex; align-items:baseline; gap:7px; font-size:12.5px; color:var(--ink-2)}
 .povw-tasks li.done{color:var(--ink-3); text-decoration:line-through}
-.povw-tasks small{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:10px; color:var(--ink-3)}
+.povw-tasks small{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:10px; color:var(--ink-3)}
 .povw-tick{color:var(--accent); flex:0 0 auto; width:10px; text-align:center}
 .wb-newsel{position:absolute; left:1px; right:2px; border-radius:6px; z-index:2;
   background:color-mix(in srgb,var(--accent) 22%,transparent);
   border:1px dashed color-mix(in srgb,var(--accent) 70%,transparent); pointer-events:none}
-.pslot-when{margin:0 0 10px; font-family:"JetBrains Mono",ui-monospace,monospace;
+.pslot-when{margin:0 0 10px; font-family:var(--font); font-variant-numeric:tabular-nums;
   font-size:12px; color:var(--ink-3)}
 .pslot-row{display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:10px}
 /* the kind toggle sits above the title, so switching Task/Event reads as
@@ -570,7 +576,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 /* while a resize is live, say what it will become */
 .wb-blk.rz{z-index:7; box-shadow:var(--shadow-lift)}
 .wb-blk.rz::after{content:attr(data-live); position:absolute; top:-17px; left:50%;
-  transform:translateX(-50%); font-family:"JetBrains Mono",ui-monospace,monospace;
+  transform:translateX(-50%); font-family:var(--font); font-variant-numeric:tabular-nums;
   font-size:9.5px; color:var(--accent); background:var(--surface); padding:0 4px;
   border-radius:3px; white-space:nowrap; z-index:8}
 /* the columns a sideways stretch is about to cover */
@@ -610,7 +616,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
    bands on a long scroll instead of one undifferentiated ribbon */
 .wb-plachta .wb-col.mstart{border-left:2px solid var(--grid-sep)}
 .qadd-kind{align-self:flex-start}
-.pproj-count{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11px;
+.pproj-count{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:11px;
   color:var(--accent); flex:0 0 auto}
 .pstep.done .ptask-title{color:var(--ink-3); text-decoration:line-through}
 .pstep-new .ptask-title{color:var(--ink-2)}
@@ -626,14 +632,14 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
   left:var(--daymark,100%); width:2px; background:var(--ink); opacity:.55}
 .pweek-projs{display:flex; align-items:center; gap:3px; flex:0 0 auto}
 .pweek-pdot{width:8px; height:8px; border-radius:2px; display:block}
-.pweek-pmore{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:9.5px; color:var(--ink-3)}
+.pweek-pmore{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:9.5px; color:var(--ink-3)}
 /* ---- the week board ---- */
 .wb-scroll{overflow-x:auto; margin-top:12px}
 .wb-grid{display:flex; min-width:640px}
 /* sticky so the hour labels stay readable while the week scrolls sideways */
 .wb-gutter{flex:0 0 34px; position:sticky; left:0; z-index:4; background:var(--surface)}
 .wb-gutter span{position:absolute; right:6px; transform:translateY(-6px);
-  font-family:"JetBrains Mono",ui-monospace,monospace; font-size:10.5px; font-weight:500;
+  font-family:var(--font); font-variant-numeric:tabular-nums; font-size:10.5px; font-weight:500;
   color:var(--ink)}
 .wb-col{flex:1 1 0; min-width:86px; border-left:1px solid var(--grid-sep); display:flex; flex-direction:column}
 /* today gets a real frame, not just a tint — inset shadow rather than a border
@@ -642,7 +648,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
   box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent)}
 .wb-head{appearance:none; border:0; background:none; cursor:pointer; font:inherit; color:var(--ink);
   font-size:11.5px; font-weight:500; padding:4px 2px 3px; text-align:center; border-radius:6px}
-.wb-head b{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
+.wb-head b{font-family:var(--font); font-weight:600;
   text-transform:uppercase; letter-spacing:.05em; font-size:10.5px; margin-right:3px}
 .wb-col.today .wb-head{color:var(--accent); font-weight:700}
 .wb-head:hover{background:var(--sunk)}
@@ -656,7 +662,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
   background:color-mix(in srgb,var(--pc) 26%,var(--surface)); border-left:3px solid var(--pc)}
 .wb-pchip b{font-size:9.5px; font-weight:600; line-height:1.2; color:var(--ink);
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0}
-.wb-pchip small{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:8.5px;
+.wb-pchip small{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:8.5px;
   color:var(--ink-2); flex:0 0 auto}
 .wb-pchip.lift{box-shadow:var(--shadow-lift); opacity:.9; cursor:grabbing; z-index:6}
 /* the same project drawn as a grid block: its own colour, the chip's gestures */
@@ -664,7 +670,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
   border-left:3px solid var(--pc); cursor:grab; touch-action:none; user-select:none}
 .wb-blk.wb-proj:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
 .wb-pchip.sizing::after,.wb-blk.sizing::after{content:attr(data-live); position:absolute; top:-16px; left:50%;
-  transform:translateX(-50%); font-family:"JetBrains Mono",ui-monospace,monospace;
+  transform:translateX(-50%); font-family:var(--font); font-variant-numeric:tabular-nums;
   font-size:9px; color:var(--accent); white-space:nowrap}
 .wb-phandle{position:absolute; right:-3px; top:0; bottom:0; width:9px; cursor:ew-resize}
 .wb-phandle::after{content:""; position:absolute; right:3px; top:50%; transform:translateY(-50%);
@@ -681,12 +687,16 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .wb-now.today{border-top:2px solid var(--crit)}
 .wb-now.today::before{content:""; position:absolute; left:-4px; top:-5px; width:8px; height:8px;
   border-radius:50%; background:var(--crit)}
-.wb-blk{position:absolute; border-radius:6px; overflow:hidden; padding:2px 6px; z-index:1;
-  background:var(--accent-soft); border-left:3px solid var(--accent); cursor:grab;
+/* glass, not a flat fill — translucent tint over the grid rather than a
+   backdrop-filter blur per block (dozens can be on screen at once, and blur
+   belongs on fixed/sticky surfaces, not repeated absolutely-positioned ones) */
+.wb-blk{position:absolute; border-radius:var(--r-xs); overflow:hidden; padding:2px 6px; z-index:1;
+  background:var(--accent-soft); border:1px solid var(--glass-border); border-left:3px solid var(--accent);
+  box-shadow:0 1px 3px rgba(46,46,42,.08); cursor:grab;
   -webkit-tap-highlight-color:transparent; touch-action:none; user-select:none}
 .wb-blk b{display:block; font-size:10.5px; font-weight:600; line-height:1.25; color:var(--ink);
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-.wb-blk span{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:9px; color:var(--ink-2)}
+.wb-blk span{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:9px; color:var(--ink-2)}
 .wb-blk.wb-hrs{border-left-color:var(--hours-hue); background:color-mix(in srgb,var(--hours-hue) 26%,var(--surface));
   /* not draggable, so it must not inherit .wb-blk's touch-action:none —
      a finger landing on tracked work still has to be able to scroll */
@@ -704,7 +714,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .wb-traychip{display:inline-flex; align-items:center; gap:6px; padding:5px 11px; border-radius:999px;
   border:1.5px dashed var(--accent); color:var(--ink); font-size:12.5px; font-weight:500;
   cursor:grab; -webkit-tap-highlight-color:transparent; touch-action:none; user-select:none; background:var(--surface-2)}
-.wb-traychip small{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:10px; color:var(--ink-3)}
+.wb-traychip small{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:10px; color:var(--ink-3)}
 .wb-traychip.lift{opacity:.75; box-shadow:var(--shadow-lift); cursor:grabbing}
 .wb-traychip.late{border-color:var(--crit)}
 .wb-traychip.late small{color:var(--crit)}
@@ -718,7 +728,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .plink-row{display:flex; align-items:center; gap:9px; padding:5px 0; font-size:13.5px; cursor:pointer}
 .plink-row input[type="checkbox"]{width:auto; accent-color:var(--accent)}
 .plink-pace{margin-left:auto; display:flex; align-items:center; gap:5px}
-.plink-pace em{font-style:normal; font-family:"JetBrains Mono",ui-monospace,monospace;
+.plink-pace em{font-style:normal; font-family:var(--font); font-variant-numeric:tabular-nums;
   font-size:10.5px; color:var(--ink-3)}
 .pwarn{margin:9px 0 0; font-size:13px; color:var(--amber); background:var(--amber-soft);
   border-radius:var(--r-sm); padding:8px 11px}
@@ -736,35 +746,38 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .pweek-row:hover{border-color:var(--line-strong)}
 .pweek-row[aria-pressed="true"]{border-color:var(--accent); background:var(--accent-soft)}
 .pweek-row[data-today="1"] .pweek-day b{color:var(--accent)}
-.pweek-day{flex:0 0 62px; font-family:"JetBrains Mono",ui-monospace,monospace; font-size:12.5px; color:var(--ink-2)}
+.pweek-day{flex:0 0 62px; font-family:var(--font); font-variant-numeric:tabular-nums; font-size:12.5px; color:var(--ink-2)}
 .pweek-day b{color:var(--ink); font-size:13.5px}
 .pweek-load{flex:1; height:6px; border-radius:99px; background:var(--line); overflow:hidden}
 .pweek-load i{display:block; height:100%; background:var(--accent)}
 .pweek-row[data-over="1"] .pweek-load i{background:var(--crit)}
-.pweek-free{flex:0 0 auto; font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11px; color:var(--ink-3)}
+.pweek-free{flex:0 0 auto; font-family:var(--font); font-variant-numeric:tabular-nums; font-size:11px; color:var(--ink-3)}
 .pweek-row[data-over="1"] .pweek-free{color:var(--crit); font-weight:600}
 
 /* ---- hours: project timer ---- */
 .hactive{border:1.5px solid var(--accent)}
 .hactive-row{display:flex; align-items:center; justify-content:space-between; gap:10px}
 .hactive-name{display:flex; align-items:center; gap:8px; background:none; border:0; padding:0;
-  cursor:pointer; color:var(--ink); font-family:"Space Grotesk","Manrope",sans-serif;
+  cursor:pointer; color:var(--ink); font-family:var(--font);
   font-weight:700; font-size:15px; text-align:left}
 .hdot{width:9px; height:9px; border-radius:3px; flex:0 0 auto}
-/* the clock is the one place this app shouts — it has to be readable across a
-   room, which is the whole point of a visible timer */
-.hclock{margin-top:12px; text-align:center}
+/* the clock is the one place this app shouts — a single glass disc, giant
+   thin numerals, one teal action. It has to be readable across a room. */
+.hclock{margin:16px auto 0; text-align:center; width:min(260px,72vw); aspect-ratio:1;
+  border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  background:var(--glass-fill); backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
+  border:1px solid var(--glass-border); box-shadow:var(--glass-shadow)}
 .hclock.resting .hclock-time{color:var(--ink-3)}
 .hclock.idle .hclock-time{color:var(--ink-3)}
-.hclock-phase{display:inline-block; font-family:"Space Grotesk","Manrope",sans-serif;
+.hclock-phase{display:inline-block; font-family:var(--font);
   font-weight:600; text-transform:uppercase; letter-spacing:.09em; font-size:11px;
-  color:var(--accent); margin-bottom:2px}
-.hclock-time{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:44px; font-weight:600;
-  color:var(--accent); font-variant-numeric:tabular-nums; letter-spacing:.01em; line-height:1.1}
-.hclock-bar{height:5px; border-radius:99px; background:var(--line); overflow:hidden; margin:9px auto 0; max-width:260px}
+  color:var(--accent); margin-bottom:4px}
+.hclock-time{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:clamp(38px,9vw,52px); font-weight:200;
+  color:var(--accent); letter-spacing:.01em; line-height:1.1}
+.hclock-bar{height:4px; border-radius:99px; background:var(--line); overflow:hidden; margin:10px auto 0; max-width:70%}
 .hclock-bar i{display:block; height:100%; background:var(--accent); transition:width .9s linear}
-.hclock-sub{margin-top:6px; font-family:"JetBrains Mono",ui-monospace,monospace;
-  font-size:11.5px; color:var(--ink-3); font-variant-numeric:tabular-nums}
+.hclock-sub{margin-top:6px; font-family:var(--font); font-variant-numeric:tabular-nums;
+  font-size:11.5px; color:var(--ink-3)}
 /* ---- the moving timeline ---- */
 .hribbon{position:relative; margin:16px 0 2px; height:62px}
 .hrb-win{position:absolute; inset:0; overflow:hidden; border-radius:8px;
@@ -779,7 +792,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
    left-to-right timeline instead of a top-to-bottom one */
 .hrb-tick{position:absolute; top:0; bottom:0; width:1px; background:var(--track-line)}
 .hrb-tick i{position:absolute; left:3px; bottom:2px; font-style:normal;
-  font-family:"JetBrains Mono",ui-monospace,monospace; font-size:9px;
+  font-family:var(--font); font-variant-numeric:tabular-nums; font-size:9px;
   color:var(--track-ink); white-space:nowrap}
 /* bottom is pinned well above the tick labels in every block state (below,
    `.live` only grows upward) so a block can never paint over an hour label */
@@ -787,7 +800,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
   display:flex; align-items:center; justify-content:center;
   background:color-mix(in srgb,var(--accent) 22%,var(--surface));
   border:1px solid color-mix(in srgb,var(--accent) 34%,transparent)}
-.hrb-b i{font-style:normal; font-family:"Space Grotesk","Manrope",sans-serif;
+.hrb-b i{font-style:normal; font-family:var(--font);
   font-weight:600; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em;
   color:var(--ink-2); white-space:nowrap; padding:0 5px}
 .hrb-short,.hrb-long{top:17px; bottom:17px}
@@ -823,18 +836,18 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
   cursor:pointer; font:inherit; color:var(--ink); max-width:100%}
 .hlane-chip i{width:9px; height:9px; border-radius:3px; background:var(--pc); flex:0 0 auto}
 .hlane-chip b{font-size:12.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-.hlane-chip small{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:10.5px;
+.hlane-chip small{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:10.5px;
   color:var(--ink-2); white-space:nowrap}
 .hlane-chip:hover{border-color:var(--accent)}
 .hlane-chip:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
-.hlane-free{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:10.5px; color:var(--ink-3);
+.hlane-free{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:10.5px; color:var(--ink-3);
   margin-left:auto; white-space:nowrap}
 /* the day-scoped project row under the routine — same block look as FOCUS,
    but a fixed day-fraction layout instead of a scrolling now-anchored one,
    since planned project hours carry no time-of-day to position them by */
 .hproj-nav{display:flex; align-items:center; justify-content:center; gap:10px; margin:16px 0 8px}
 .hproj-nav .btn{min-height:28px; padding:0 10px; font-size:13px}
-.hproj-day-label{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:12px;
+.hproj-day-label{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:12px;
   color:var(--ink-2); min-width:104px; text-align:center}
 .hproj-track-wrap{position:relative; height:54px; border-radius:8px; overflow:hidden;
   background:var(--track-bg); border:1px solid var(--line-soft)}
@@ -844,7 +857,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
   display:flex; align-items:center; justify-content:center;
   background:color-mix(in srgb,var(--pc,var(--accent)) 24%,var(--surface));
   border:1px solid color-mix(in srgb,var(--pc,var(--accent)) 38%,transparent)}
-.hrb-proj i{font-style:normal; font-family:"Space Grotesk","Manrope",sans-serif;
+.hrb-proj i{font-style:normal; font-family:var(--font);
   font-weight:600; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em;
   color:var(--ink-2); white-space:nowrap; padding:0 5px; overflow:hidden; text-overflow:ellipsis}
 .hproj-empty{padding:13px 2px; font-size:12.5px; color:var(--ink-3); text-align:center}
@@ -860,13 +873,13 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .hproj-txt{min-width:0}
 .hproj-txt b{display:block; font-size:14px; font-weight:600; overflow:hidden;
   text-overflow:ellipsis; white-space:nowrap}
-.hproj-txt small{display:block; font-family:"JetBrains Mono",ui-monospace,monospace;
+.hproj-txt small{display:block; font-family:var(--font); font-variant-numeric:tabular-nums;
   font-size:11px; color:var(--ink-3); margin-top:1px;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-.hproj-total{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:12.5px; color:var(--ink-2);
+.hproj-total{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:12.5px; color:var(--ink-2);
   flex:0 0 auto; font-variant-numeric:tabular-nums}
 .hset-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px}
-.hset-grid .field span{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
+.hset-grid .field span{font-family:var(--font); font-weight:600;
   text-transform:uppercase; letter-spacing:.09em; font-size:11px; color:var(--ink-2)}
 .hset-grid .mono-input{width:100%}
 .hcolors{display:flex; gap:7px; flex-wrap:wrap}
@@ -878,10 +891,10 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .hms-text{flex:1; min-width:0; background:none; border:0; border-radius:6px; padding:4px;
   font-size:13.5px; color:var(--ink)}
 .hms-text:focus-visible{outline:2px solid var(--accent); outline-offset:1px; background:var(--sunk)}
-.hms-count{font-style:normal; font-family:"JetBrains Mono",ui-monospace,monospace;
+.hms-count{font-style:normal; font-family:var(--font); font-variant-numeric:tabular-nums;
   font-size:11px; color:var(--accent); margin-left:5px}
 .hsess{display:flex; align-items:center; gap:9px; padding:8px 14px; border-bottom:1px solid var(--line-soft);
-  font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11.5px}
+  font-family:var(--font); font-variant-numeric:tabular-nums; font-size:11.5px}
 .hsess:last-child{border-bottom:0}
 .hsess-when{color:var(--ink-2); flex:1; min-width:0}
 .hsess-mode{color:var(--ink-3)}
@@ -892,18 +905,18 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 
 .langsel{display:flex; border:1px solid var(--line); border-radius:999px; overflow:hidden;
   background:var(--surface-2); flex:none}
-.langsel button{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:10.5px;
+.langsel button{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:10.5px;
   font-weight:700; letter-spacing:.05em; padding:5px 8px; border:0; background:transparent;
   color:var(--ink-3); cursor:pointer; -webkit-tap-highlight-color:transparent; transition:.14s}
 .langsel button:hover{color:var(--ink)}
 .langsel button[aria-pressed="true"]{background:var(--accent); color:var(--on-accent)}
 .duestrip{display:flex; flex-direction:column}
 .duehead{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px 8px}
-.duehead b{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:700; font-size:15px}
+.duehead b{font-family:var(--font); font-weight:700; font-size:15px}
 .duerow{display:flex; align-items:center; gap:10px; padding:9px 14px; border-top:1px solid var(--line-soft)}
 .duerow-t{flex:1; min-width:0; font-size:13.5px}
 .duerow-t small{display:block; font-size:11.5px; color:var(--ink-3);
-  font-family:"JetBrains Mono",ui-monospace,monospace}
+  font-family:var(--font); font-variant-numeric:tabular-nums}
 .allclear{padding:16px 14px; display:flex; align-items:center; gap:11px}
 .allclear span{font-size:22px}
 .allclear div{font-size:13.5px; color:var(--ink-2); line-height:1.45}
@@ -924,11 +937,11 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .statrow.q{display:grid; grid-template-columns:1fr 1fr; gap:10px}
 @media(min-width:620px){ .statrow.q{grid-template-columns:repeat(4,1fr)} }
 .stat{flex:1 1 90px; background:var(--sunk); border-radius:var(--r); padding:11px 12px; min-width:0}
-.stat b{display:block; font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; font-size:26px;
+.stat b{display:block; font-family:var(--font); font-weight:600; font-size:26px;
   line-height:1.1; color:var(--ink)}
 .stat b.good{color:var(--ok)} .stat b.none{color:var(--ink-3)}
 .stat span{display:block; margin-top:2px; font-size:11px; text-transform:uppercase;
-  letter-spacing:.06em; color:var(--ink-3); font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600}
+  letter-spacing:.06em; color:var(--ink-3); font-family:var(--font); font-weight:600}
 .track{display:flex; align-items:center; gap:0; margin:2px 0 4px}
 .track i{flex:1; height:3px; background:var(--line)}
 .track b{width:11px; height:11px; border-radius:50%; background:var(--line); flex:0 0 auto;
@@ -937,7 +950,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .track b.now{background:var(--accent); box-shadow:0 0 0 3px rgba(125,211,229,.22)}
 .track i.on{background:var(--accent)}
 .tracklab{display:flex; justify-content:space-between; font-size:10.5px; color:var(--ink-3);
-  font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase; letter-spacing:.06em}
+  font-family:var(--font); font-weight:600; text-transform:uppercase; letter-spacing:.06em}
 .cutcounts{display:flex; gap:7px; flex-wrap:wrap}
 .cutcounts .btn{flex:1 1 0; min-width:82px}
 .steplist{counter-reset:cs; padding:0; margin:0; list-style:none}
@@ -945,11 +958,11 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
   font-size:13.5px; line-height:1.6; color:var(--ink-2); margin-bottom:11px; align-items:start}
 .steplist li > span{min-width:0}
 .steplist b{color:var(--ink)}
-.steplist li::before{content:counter(cs); font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11.5px;
+.steplist li::before{content:counter(cs); font-family:var(--font); font-variant-numeric:tabular-nums; font-size:11.5px;
   color:var(--accent); padding-top:3px}
 .tagrow{display:flex; flex-wrap:wrap; gap:6px}
 .tag2{appearance:none; cursor:pointer; border-radius:999px; padding:5px 11px;
-  font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11.5px; line-height:1.3;
+  font-family:var(--font); font-variant-numeric:tabular-nums; font-size:11.5px; line-height:1.3;
   border:1px solid var(--line); background:var(--surface-2); color:var(--ink-2);
   -webkit-tap-highlight-color:transparent; transition:background .12s, border-color .12s, color .12s}
 .tag2:hover{background:var(--sunk)}
@@ -960,18 +973,18 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .chipinfo.ok{border-color:var(--ok); color:var(--ok)}
 .pline-v.bad{color:var(--crit)} .pline-v.good{color:var(--ok)}
 .chipinfo{border:1px solid var(--line); border-radius:999px; padding:4px 10px; font-size:11.5px;
-  color:var(--ink-2); font-family:"JetBrains Mono",ui-monospace,monospace}
+  color:var(--ink-2); font-family:var(--font); font-variant-numeric:tabular-nums}
 .strip{display:flex; gap:8px; overflow-x:auto; padding:12px 15px; scrollbar-width:none}
 .strip::-webkit-scrollbar{display:none}
 .shot{flex:0 0 auto; width:96px; cursor:pointer; background:none; border:0; padding:0; text-align:left}
 .shot img{width:96px; height:96px; object-fit:cover; border-radius:var(--r-sm); display:block;
   border:1px solid var(--line)}
 .shot small{display:block; margin-top:5px; font-size:10.5px; color:var(--ink-3);
-  font-family:"JetBrains Mono",ui-monospace,monospace}
-.shot b{display:block; font-size:11px; color:var(--accent); font-family:"JetBrains Mono",ui-monospace,monospace}
+  font-family:var(--font); font-variant-numeric:tabular-nums}
+.shot b{display:block; font-size:11px; color:var(--accent); font-family:var(--font); font-variant-numeric:tabular-nums}
 .spark{width:100%; height:58px; display:block; margin:2px 0 4px}
 .growth{padding:0 15px 14px; font-size:12.5px; color:var(--ink-3);
-  font-family:"JetBrains Mono",ui-monospace,monospace}
+  font-family:var(--font); font-variant-numeric:tabular-nums}
 .pcard-thumb{width:56px; height:56px; border-radius:var(--r-sm); object-fit:cover; flex:0 0 auto;
   border:1px solid var(--line)}
 .pcard-thumb.none{display:flex; align-items:center; justify-content:center; background:var(--sunk);
@@ -990,7 +1003,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .acrow{display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center; margin-bottom:11px}
 .acitem{border-top:1px solid var(--line-soft); padding-top:11px; margin-top:11px}
 /* these hold prose, not data — mono is the wrong face for them */
-#view-acadedit textarea{font-family:"Manrope",sans-serif; font-size:13.5px; line-height:1.55}
+#view-acadedit textarea{font-family:var(--font); font-size:13.5px; line-height:1.55}
 #acDo,#acDont{min-height:130px}
 .acitem textarea{min-height:120px}
 .acitem .acrow{margin-top:8px}
@@ -1011,7 +1024,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .appmenu button[aria-current="true"]{color:var(--accent); font-weight:500}
 .rules{display:grid; gap:16px}
 @media (min-width:560px){ .rules{grid-template-columns:1fr 1fr} }
-.rule-col h4{margin:0 0 9px; font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
+.rule-col h4{margin:0 0 9px; font-family:var(--font); font-weight:600;
   text-transform:uppercase; letter-spacing:.08em; font-size:13px}
 .rule-do h4{color:var(--ok)} .rule-dont h4{color:var(--crit)}
 .rule-col ul{list-style:none; margin:0; padding:0; display:grid; gap:9px}
@@ -1024,7 +1037,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .acad-sec .fold{border-top:1px solid var(--line-soft); padding:0 15px}
 /* questions are sentences, not labels — uppercase is unreadable at this length */
 .acad-sec .fold > summary{padding:13px 0; min-height:44px; text-transform:none; letter-spacing:0;
-  font-family:"Manrope",sans-serif; font-weight:500; font-size:14.5px; color:var(--ink);
+  font-family:var(--font); font-weight:500; font-size:14.5px; color:var(--ink);
   line-height:1.45; align-items:flex-start}
 .acad-sec .fold > summary::before{color:var(--accent); margin-right:2px}
 .acad-sec .fold[open] > summary{color:var(--accent)}
@@ -1032,69 +1045,72 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .acad-sec .fold p:last-child{margin-bottom:14px}
 .acad-sec .fold b{color:var(--ink)}
 .blankapp{padding:60px 20px; text-align:center; color:var(--ink-3)}
-.blankapp h2{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+.blankapp h2{font-family:var(--font); font-weight:600; text-transform:uppercase;
   letter-spacing:.08em; font-size:17px; color:var(--ink-2); margin:0 0 7px}
 .blankapp p{margin:0; font-size:14px}
 .top{display:flex; align-items:center; gap:10px; padding:10px 16px; order:0;
-  position:sticky; top:0; z-index:30; background:var(--glass);
-  backdrop-filter:blur(22px) saturate(160%); -webkit-backdrop-filter:blur(22px) saturate(160%);
-  border-bottom:1px solid var(--line-soft); box-shadow:inset 0 1px 0 var(--hair)}
-.mark{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:800; font-size:19px;
+  position:sticky; top:0; z-index:30; background:var(--glass-fill);
+  backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
+  border-bottom:1px solid var(--glass-border)}
+.mark{font-family:var(--font); font-weight:700; font-size:18px;
   letter-spacing:-.02em; text-transform:none; line-height:1; white-space:nowrap;
-  overflow:hidden; text-overflow:ellipsis; min-width:0}
+  overflow:hidden; text-overflow:ellipsis; min-width:0; color:var(--ink-strong)}
 .mark span{color:var(--accent)}
 .who{margin-left:auto; display:flex; align-items:center; gap:7px; flex:0 0 auto}
 .who select{width:auto; max-width:112px; padding:5px 8px; font-size:13px; background:var(--surface-2)}
 .sync{display:inline-flex; align-items:center; gap:5px; white-space:nowrap;
-  font-family:"JetBrains Mono",ui-monospace,monospace; font-size:11px; color:var(--ink-3);
+  font-family:var(--font); font-variant-numeric:tabular-nums; font-size:11px; color:var(--ink-3);
   border:1px solid var(--line); border-radius:999px; padding:3px 9px 3px 7px}
 .sync i{width:6px; height:6px; border-radius:50%; background:currentColor; flex:0 0 auto}
 .sync[data-s="saving"]{color:var(--amber); border-color:var(--amber)}
 .sync[data-s="saved"]{color:var(--ok); border-color:var(--ok)}
 .sync[data-s="readonly"],.sync[data-s="error"]{color:var(--crit); border-color:var(--crit)}
 
-.nav{display:flex; gap:4px; padding:8px 10px; background:none; border-bottom:1px solid var(--line-soft);
+/* the tab bar floats free of the header — its own glass pill, like an iOS
+   tab bar, rather than a full-width strip glued under the top bar */
+.navwrap{position:sticky; top:8px; z-index:20; order:1; padding:8px 12px 0}
+.nav{display:flex; gap:2px; padding:5px; background:var(--glass-fill);
+  backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
+  border:1px solid var(--glass-border); border-radius:var(--r-pill);
+  box-shadow:var(--glass-shadow);
   overflow-x:auto; overflow-y:hidden; scrollbar-width:none; -webkit-overflow-scrolling:touch;
-  scroll-behavior:smooth; scroll-padding-inline:24px}
+  scroll-behavior:smooth; scroll-padding-inline:24px; max-width:fit-content; margin:0 auto}
 .nav::-webkit-scrollbar{display:none}
-/* tabs read as soft pills rather than an underlined strip */
 .nav button{flex:0 0 auto; appearance:none; border:0; cursor:pointer; white-space:nowrap;
-  padding:9px 15px; min-height:38px; border-radius:999px; background:transparent;
-  color:var(--ink-3); font-family:"Manrope",sans-serif; font-weight:600;
-  letter-spacing:-.01em; font-size:14px; transition:background .16s, color .16s}
-.nav button:hover{color:var(--ink-2); background:var(--surface-2)}
-.nav button[aria-selected="true"]{color:var(--on-accent); background:var(--accent);
-  box-shadow:0 2px 8px rgba(21,128,61,.28)}
+  padding:8px 16px; min-height:36px; border-radius:var(--r-pill); background:transparent;
+  color:var(--ink-3); font-family:var(--font); font-weight:600;
+  letter-spacing:-.01em; font-size:14px; transition:background .2s cubic-bezier(.2,.8,.2,1), color .2s}
+.nav button:hover{color:var(--ink)}
+.nav button[aria-selected="true"]{color:var(--on-accent); background:var(--accent)}
 .nav button:focus-visible{outline:2px solid var(--accent); outline-offset:-3px}
-/* a hint that there's more to the right, without a scrollbar sitting there */
-.navwrap{position:sticky; top:46px; z-index:20; order:1; background:var(--glass);
-  backdrop-filter:blur(22px) saturate(160%); -webkit-backdrop-filter:blur(22px) saturate(160%)}
-.navwrap::after{content:""; position:absolute; top:0; right:0; bottom:1px; width:28px;
-  pointer-events:none; background:linear-gradient(to right,transparent,var(--bg))}
+.navwrap::after{display:none}
 
-main{order:2; flex:1; padding:14px 13px 44px; width:100%; max-width:1060px; margin:0 auto}
+main{order:2; flex:1; padding:16px 14px 48px; width:100%; max-width:1060px; margin:0 auto}
 .view[hidden]{display:none}
-.stack{display:flex; flex-direction:column; gap:11px}
+.stack{display:flex; flex-direction:column; gap:12px}
 .bench{display:flex; flex-direction:column; gap:14px}
-.card{background:var(--glass-2); backdrop-filter:blur(14px) saturate(130%);
-  -webkit-backdrop-filter:blur(14px) saturate(130%);
-  border:1px solid var(--line-soft); border-radius:var(--r); box-shadow:var(--shadow); box-shadow:var(--shadow)}
-.pad{padding:14px 15px}
+/* the liquid-glass card: translucent fill, blur+saturate, a bright inner
+   hairline for the refracted edge, a soft shadow and a specular top
+   highlight instead of a flat drop shadow */
+.card{background:var(--glass-fill); backdrop-filter:var(--glass-blur);
+  -webkit-backdrop-filter:var(--glass-blur);
+  border:1px solid var(--glass-border); border-radius:var(--r); box-shadow:var(--glass-shadow)}
+.pad{padding:18px 20px}
 /* one card, several sections — replaces a stack of separately-bordered cards
    for controls that belong together. Border rides the sibling, not each part,
    so the first section never draws a floating line above nothing. */
 .card-sec{padding:14px 15px}
 .card-sec + .card-sec{border-top:1px solid var(--line-soft)}
 .sec-head{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px}
-.sec-head h2{font-size:22px; font-family:"Space Grotesk","Manrope",sans-serif; font-weight:700; letter-spacing:-.02em}
+.sec-head h2{font-size:22px; font-family:var(--font); font-weight:700; letter-spacing:-.02em}
 
 /* ---------- form atoms ---------- */
 .field{display:flex; flex-direction:column; gap:6px}
-.field > label, .field > .lbl-row > label{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+.field > label, .field > .lbl-row > label{font-family:var(--font); font-weight:600; text-transform:uppercase;
   letter-spacing:.09em; font-size:13px; color:var(--ink-2)}
-input,select,textarea{font-family:"Manrope",sans-serif; font-size:15px; color:var(--ink);
+input,select,textarea{font-family:var(--font); font-size:15px; color:var(--ink);
   background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r); padding:9px 10px; width:100%}
-input[type="number"]{font-family:"JetBrains Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums}
+input[type="number"]{font-family:var(--font); font-variant-numeric:tabular-nums; font-variant-numeric:tabular-nums}
 input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{
   outline:2px solid var(--accent); outline-offset:1px}
 .hint{font-size:12px; color:var(--ink-3); line-height:1.45}
@@ -1112,7 +1128,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 .sp-add{flex:0 0 auto; width:38px; height:38px; display:flex; align-items:center; justify-content:center;
   appearance:none; cursor:pointer; padding:0; line-height:1;
   border:1px solid var(--line); border-radius:var(--r); background:var(--surface); color:var(--ink-2);
-  font-family:"Space Grotesk","Manrope",sans-serif; font-size:21px; font-weight:600;
+  font-family:var(--font); font-size:21px; font-weight:600;
   transition:border-color .12s, color .12s, background .12s}
 .sp-add:hover{border-color:var(--accent); color:var(--accent)}
 .sp-add[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--on-accent)}
@@ -1123,11 +1139,11 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
    and smaller, on its own band, with the names indented beneath it. */
 .sp-g{position:sticky; top:0; z-index:1; padding:9px 12px 7px; background:var(--sunk);
   border-top:1px solid var(--line); border-bottom:1px solid var(--line);
-  font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+  font-family:var(--font); font-weight:600; text-transform:uppercase;
   letter-spacing:.11em; font-size:10.5px; color:var(--accent)}
 .sp-g:first-child{border-top:0}
 .sp-o{display:flex; align-items:center; gap:8px; width:100%; text-align:left; border:0; background:none;
-  color:var(--ink); font-family:"Manrope",sans-serif; font-size:14.5px; padding:9px 12px 9px 17px; cursor:pointer;
+  color:var(--ink); font-family:var(--font); font-size:14.5px; padding:9px 12px 9px 17px; cursor:pointer;
   border-bottom:1px solid var(--line-soft); -webkit-tap-highlight-color:transparent;
   transition:background .12s}
 .sp-o:last-child{border-bottom:0}
@@ -1140,15 +1156,17 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 .sp-o mark{background:var(--accent-soft); color:var(--accent); border-radius:3px}
 .sp-none{padding:15px 12px; text-align:center; color:var(--ink-3); font-size:13px}
 
-.btn{appearance:none; cursor:pointer; border:1px solid var(--line); border-radius:999px;
-  background:var(--surface); font-family:"Manrope",sans-serif; font-weight:600; letter-spacing:-.01em;
-  color:var(--ink); border-radius:var(--r); padding:8px 14px; font-family:"Space Grotesk","Manrope",sans-serif;
-  font-weight:600; font-size:14px; text-transform:uppercase; letter-spacing:.08em; white-space:nowrap}
-.btn:hover{border-color:var(--accent); color:var(--accent)}
+.btn{appearance:none; cursor:pointer; border:1px solid var(--glass-border); border-radius:var(--r-pill);
+  background:var(--glass-fill); backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
+  color:var(--ink-strong); font-family:var(--font);
+  font-weight:600; font-size:14px; text-transform:none; letter-spacing:-.005em; white-space:nowrap; padding:9px 16px;
+  transition:transform .15s cubic-bezier(.2,.8,.2,1), background .15s, color .15s}
+.btn:hover{color:var(--accent)}
+.btn:active:not([disabled]){transform:scale(.96)}
 .btn.primary{background:var(--accent); border-color:var(--accent); color:var(--on-accent);
-  box-shadow:0 2px 10px rgba(21,128,61,.26)}
-.btn.primary:hover{opacity:.9; color:var(--on-accent)}
-.btn.mini{padding:5px 9px; font-size:13px}
+  box-shadow:0 4px 14px -2px rgba(94,158,133,.4)}
+.btn.primary:hover{background:var(--accent-2); color:var(--on-accent)}
+.btn.mini{padding:6px 11px; font-size:13px}
 /* Edit is a different kind of action from the buttons beside it: Watered and
    Fed record something that happened, Edit changes the plant itself. Set
    apart rather than shouted — its own end of the row, and the accent. */
@@ -1162,7 +1180,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 .chips{display:flex; flex-wrap:wrap; gap:6px}
 .chip{appearance:none; cursor:pointer; background:var(--surface-2); color:var(--ink-2);
   border:1px solid var(--line); border-radius:var(--r); padding:5px 11px;
-  font-family:"JetBrains Mono",ui-monospace,monospace; font-size:13px}
+  font-family:var(--font); font-variant-numeric:tabular-nums; font-size:13px}
 .chip[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--on-accent)}
 /* one tidy row each: equal columns, no orphaned chip on a line of its own */
 .chips.fill{display:flex; flex-wrap:nowrap; gap:5px}
@@ -1170,14 +1188,14 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 .steppers{margin-top:2px}
 .howfold{padding:0 15px}
 .fold.howfold > summary{padding:14px 0; min-height:46px; text-transform:none; letter-spacing:0;
-  font-family:"Manrope",sans-serif; font-weight:500; font-size:14px; color:var(--ink-2);
+  font-family:var(--font); font-weight:500; font-size:14px; color:var(--ink-2);
   line-height:1.45; align-items:flex-start}
 .fold.howfold > summary::before{color:var(--accent); margin-right:2px}
 .fold.howfold[open] > summary{color:var(--accent)}
 .howfold p{margin:0 0 11px; font-size:13.5px; line-height:1.6; color:var(--ink-2)}
 .howfold p:last-child{margin-bottom:15px}
 .howfold b{color:var(--ink)}
-.howfold .sums{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:12.5px; color:var(--ink-3);
+.howfold .sums{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:12.5px; color:var(--ink-3);
   background:var(--sunk); border-radius:var(--r); padding:11px 13px; margin:0 0 13px; line-height:1.7}
 .howfold .sums em{font-style:normal; color:var(--accent)}
 .duecard{display:flex; flex-direction:column; gap:10px}
@@ -1187,21 +1205,22 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 .duecard small{display:block; margin-top:4px; font-size:12px; color:var(--ink-3)}
 .mixhead{display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap;
   padding:11px 15px; background:var(--sunk); border-bottom:1px solid var(--line);
-  font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+  font-family:var(--font); font-weight:600; text-transform:uppercase;
   letter-spacing:.09em; font-size:13px; color:var(--ink-2)}
 .mixhead b{color:var(--accent); font-weight:600}
 /* segmented control — formula vs one product */
-.seg{display:flex; gap:0; border:1px solid var(--line); border-radius:var(--r); overflow:hidden; background:var(--surface-2)}
-.seg button{flex:1 1 0; appearance:none; border:0; background:none; cursor:pointer; min-height:38px;
-  color:var(--ink-3); font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; font-size:14px;
-  text-transform:uppercase; letter-spacing:.07em; transition:background .12s, color .12s;
+.seg{display:flex; gap:2px; padding:3px; border:1px solid var(--glass-border); border-radius:var(--r-pill);
+  overflow:hidden; background:var(--glass-fill); backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur)}
+.seg button{flex:1 1 0; appearance:none; border:0; background:none; cursor:pointer; min-height:34px;
+  border-radius:var(--r-pill); color:var(--ink-3); font-family:var(--font); font-weight:600; font-size:13.5px;
+  text-transform:none; letter-spacing:0; transition:background .18s cubic-bezier(.2,.8,.2,1), color .18s;
   -webkit-tap-highlight-color:transparent}
-.seg button + button{border-left:1px solid var(--line)}
+.seg button + button{border-left:0}
 .seg button[aria-pressed="true"]{background:var(--accent); color:var(--on-accent)}
 .seg button:focus-visible{outline:2px solid var(--accent); outline-offset:-3px}
 
 /* week rows in the schedule editor */
-.vol-unit{flex:0 0 auto; font-family:"JetBrains Mono",ui-monospace,monospace; font-size:15px; color:var(--ink-3)}
+.vol-unit{flex:0 0 auto; font-family:var(--font); font-variant-numeric:tabular-nums; font-size:15px; color:var(--ink-3)}
 /* a long pill with its stops written inside — the fill reads like a water level */
 .pslider{position:relative; height:48px; margin-top:11px; border-radius:999px;
   background:var(--surface-2); border:1px solid var(--line); overflow:hidden}
@@ -1216,13 +1235,13 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 .ps-ticks{position:absolute; inset:0; pointer-events:none; z-index:1}
 .ps-tick{position:absolute; top:50%; transform:translate(-50%,-50%); white-space:nowrap; z-index:1;
   padding:4px 8px; border-radius:999px;
-  font-family:"JetBrains Mono",ui-monospace,monospace; font-size:12px; color:var(--ink-3);
+  font-family:var(--font); font-variant-numeric:tabular-nums; font-size:12px; color:var(--ink-3);
   transition:opacity .1s}
 /* a stop steps aside when the travelling chip reaches it */
 .ps-tick.hid{opacity:0}
 .ps-mark{position:absolute; top:50%; left:0; transform:translate(-50%,-50%); z-index:2;
   padding:4px 9px; border-radius:999px; white-space:nowrap; pointer-events:none;
-  font-family:"JetBrains Mono",ui-monospace,monospace; font-size:12px; font-weight:600;
+  font-family:var(--font); font-variant-numeric:tabular-nums; font-size:12px; font-weight:600;
   color:var(--accent); background:var(--surface); box-shadow:0 0 0 1px var(--accent);
   transition:left .07s linear}
 .ps-track input[type=range]{position:absolute; inset:0; width:100%; height:100%; margin:0;
@@ -1236,17 +1255,17 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 
 .pnav{display:flex; align-items:center; gap:8px; padding:12px 14px 4px}
 .pnav .btn{min-width:38px; font-size:17px; padding:0 10px}
-.pnav b{flex:1; min-width:0; text-align:center; font-family:"Space Grotesk","Manrope",sans-serif;
+.pnav b{flex:1; min-width:0; text-align:center; font-family:var(--font);
   font-weight:600; text-transform:uppercase; letter-spacing:.06em; font-size:14px; color:var(--ink-2)}
 
 .aday{padding:8px 14px; background:var(--sunk); border-top:1px solid var(--line);
-  font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+  font-family:var(--font); font-weight:600; text-transform:uppercase;
   letter-spacing:.08em; font-size:12.5px; color:var(--ink-2)}
 .arow{display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:center;
   padding:10px 14px; border-bottom:1px solid var(--line-soft)}
 .arow:last-child{border-bottom:0}
 .arow-name{display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-weight:500}
-.arow-sub{grid-column:1; font-size:12px; color:var(--ink-3); font-family:"JetBrains Mono",ui-monospace,monospace}
+.arow-sub{grid-column:1; font-size:12px; color:var(--ink-3); font-family:var(--font); font-variant-numeric:tabular-nums}
 .arow .btn{grid-column:2; grid-row:1/-1}
 .arow.soon{opacity:.55}
 .arow.done .arow-name{color:var(--ink-2)}
@@ -1258,7 +1277,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
   background:none; color:var(--ink); font:inherit; cursor:pointer; transition:background .12s}
 .wrow:last-child{border-bottom:0}
 .wrow:hover{background:var(--surface-2)}
-.wrow-d{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+.wrow-d{font-family:var(--font); font-weight:600; text-transform:uppercase;
   letter-spacing:.05em; font-size:13px; color:var(--ink-3)}
 .wrow.today .wrow-d{color:var(--accent)}
 .wrow.late .wrow-d{color:var(--crit)}
@@ -1267,12 +1286,12 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 
 /* month: a square per day, coloured when something is due */
 .mgrid{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; padding:12px 14px 14px}
-.mhead{text-align:center; font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; font-size:11px;
+.mhead{text-align:center; font-family:var(--font); font-weight:600; font-size:11px;
   text-transform:uppercase; letter-spacing:.06em; color:var(--ink-3); padding-bottom:3px}
 .mcell{aspect-ratio:1; min-height:38px; display:flex; flex-direction:column; gap:3px;
   align-items:center; justify-content:center; padding:0; cursor:pointer;
   border:1px solid var(--line-soft); border-radius:var(--r-sm); background:var(--surface-2);
-  font-family:"JetBrains Mono",ui-monospace,monospace; font-size:12.5px; color:var(--ink-2);
+  font-family:var(--font); font-variant-numeric:tabular-nums; font-size:12.5px; color:var(--ink-2);
   transition:background .12s, border-color .12s}
 .mcell:hover{background:var(--sunk)}
 /* square cells suit a phone; on a wide grid they'd be 100px tall */
@@ -1286,7 +1305,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 .mdots i.w.done{background:none; border:1.5px solid var(--accent)}
 .mdots i.f.done{background:none; border:1.5px solid var(--amber)}
 .noplants{border-top:1px solid var(--line)}
-.dsec{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+.dsec{font-family:var(--font); font-weight:600; text-transform:uppercase;
   letter-spacing:.08em; font-size:12.5px; color:var(--ink-3); margin:0 0 7px}
 .trow{display:grid; grid-template-columns:auto 1fr auto; gap:2px 10px; align-items:center;
   padding:8px 0; border-bottom:1px solid var(--line-soft)}
@@ -1299,7 +1318,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 .trow.done .tbox{background:var(--ok); border-color:var(--ok)}
 .ttext{min-width:0; overflow-wrap:anywhere}
 .trow.done .ttext{text-decoration:line-through; color:var(--ink-3)}
-.tmeta{grid-column:2; font-size:11.5px; color:var(--ink-3); font-family:"JetBrains Mono",ui-monospace,monospace}
+.tmeta{grid-column:2; font-size:11.5px; color:var(--ink-3); font-family:var(--font); font-variant-numeric:tabular-nums}
 .tdel{grid-column:3; grid-row:1/-1; appearance:none; border:0; background:none; cursor:pointer;
   color:var(--ink-3); font-size:16px; padding:6px 4px; border-radius:4px}
 .tdel:hover{color:var(--crit)}
@@ -1328,10 +1347,10 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 .wkrow{display:grid; grid-template-columns:26px 1fr auto; gap:7px 9px; align-items:center;
   padding:11px 14px; border-bottom:1px solid var(--line-soft)}
 .wkrow:last-child{border-bottom:0}
-.wkrow-n{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:13px; color:var(--ink-3)}
+.wkrow-n{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:13px; color:var(--ink-3)}
 .wkrow .wl{grid-column:2/4; font-size:13px}
 .wkrow .wx{min-width:34px; padding:2px 8px}
-.mixsub{font-family:"Manrope",sans-serif; font-weight:400; text-transform:none;
+.mixsub{font-family:var(--font); font-weight:400; text-transform:none;
   letter-spacing:0; font-size:12.5px; color:var(--ink-3); display:block; margin-top:2px}
 .lbl-row{display:flex; align-items:center; justify-content:space-between; gap:10px}
 .lbl-acts{display:flex; gap:6px}
@@ -1341,9 +1360,9 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 .weekbar{display:flex; flex-wrap:wrap; gap:5px; margin-top:7px}
 .wk{appearance:none; cursor:pointer; background:var(--surface-2); color:var(--ink-2);
   border:1px solid var(--line); border-radius:var(--r); padding:6px 10px; min-height:34px;
-  font-family:"JetBrains Mono",ui-monospace,monospace; font-size:13px; transition:background .12s, border-color .12s, color .12s}
+  font-family:var(--font); font-variant-numeric:tabular-nums; font-size:13px; transition:background .12s, border-color .12s, color .12s}
 .wk[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--on-accent)}
-.wk small{display:block; font-size:10.5px; opacity:.8; font-family:"Manrope",sans-serif;
+.wk small{display:block; font-size:10.5px; opacity:.8; font-family:var(--font);
   max-width:74px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .chip.step-btn{font-weight:500}
 .chip.step-btn.minus{color:var(--ink-3)}
@@ -1353,7 +1372,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 /* the volume is a readout, not a form field — no box, just the number */
 .vol-row{display:flex; gap:5px; align-items:baseline; justify-content:center; padding:2px 0 4px}
 .vol-row input{border:0; background:none; padding:0 1px; min-width:0;
-  font-family:"Space Grotesk","Manrope",sans-serif; font-size:38px; font-weight:600; line-height:1.05;
+  font-family:var(--font); font-size:38px; font-weight:600; line-height:1.05;
   text-align:right; color:var(--ink); border-radius:0}
 .vol-row input:focus{outline:none; box-shadow:0 3px 0 var(--accent)}
 
@@ -1366,20 +1385,20 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 .step.done .step-name{text-decoration:line-through}
 .step[data-key]{cursor:pointer; -webkit-tap-highlight-color:transparent}
 .step[data-key]:active{background:var(--sunk)}
-.step-no{grid-row:1/-1; font-family:"JetBrains Mono",ui-monospace,monospace; font-size:13px; color:var(--ink-3);
+.step-no{grid-row:1/-1; font-family:var(--font); font-variant-numeric:tabular-nums; font-size:13px; color:var(--ink-3);
   padding-top:3px; user-select:none; align-self:stretch}
 .step-no b{display:flex; align-items:center; justify-content:center; width:24px; height:24px;
   border:1px solid var(--line); border-radius:50%; font-weight:500}
 .step.done .step-no b{background:var(--ok); border-color:var(--ok); color:var(--surface); }
-.step-cat{grid-column:2; font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
+.step-cat{grid-column:2; font-family:var(--font); font-weight:600;
   text-transform:uppercase; letter-spacing:.08em; font-size:12px; color:var(--accent)}
 .step-name{grid-column:2; font-weight:500; line-height:1.3}
 .step-rule{grid-column:2; font-size:12.5px; color:var(--ink-3); line-height:1.45; margin-top:3px}
 .steps.terse .step-rule{display:none}
 .step-desc{grid-column:2; font-size:13px; color:var(--ink-2); line-height:1.45; margin-top:4px}
 .row-desc{font-size:13px; color:var(--ink-2); line-height:1.45}
-textarea.desc{min-height:66px; font-family:"Manrope",sans-serif; font-size:15px}
-.step-amt{grid-column:3; grid-row:1/span 2; text-align:right; font-family:"JetBrains Mono",ui-monospace,monospace;
+textarea.desc{min-height:66px; font-family:var(--font); font-size:15px}
+.step-amt{grid-column:3; grid-row:1/span 2; text-align:right; font-family:var(--font); font-variant-numeric:tabular-nums;
   font-variant-numeric:tabular-nums; font-size:26px; font-weight:600; color:var(--amber);
   line-height:1; white-space:nowrap}
 .step-amt em{font-style:normal; font-size:14px; font-weight:500; margin-left:2px}
@@ -1392,9 +1411,9 @@ textarea.desc{min-height:66px; font-family:"Manrope",sans-serif; font-size:15px}
 .readout{display:grid; grid-template-columns:repeat(auto-fit,minmax(64px,1fr)); border-top:1px solid var(--line)}
 .cell{padding:10px 6px 11px; text-align:center; border-right:1px solid var(--line-soft)}
 .cell:last-child{border-right:0}
-.cell b{display:block; font-family:"JetBrains Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums;
+.cell b{display:block; font-family:var(--font); font-variant-numeric:tabular-nums; font-variant-numeric:tabular-nums;
   font-size:16px; font-weight:500}
-.cell span{font-family:"Space Grotesk","Manrope",sans-serif; text-transform:uppercase; letter-spacing:.08em;
+.cell span{font-family:var(--font); text-transform:uppercase; letter-spacing:.08em;
   font-size:11px; color:var(--ink-3)}
 
 .note{display:flex; gap:9px; padding:11px 13px; font-size:13px; line-height:1.45; border-radius:var(--r);
@@ -1415,16 +1434,16 @@ textarea.desc{min-height:66px; font-family:"Manrope",sans-serif; font-size:15px}
 .row:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
 .row-main{flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:2px}
 .row-title{font-weight:500; display:flex; align-items:center; gap:7px; flex-wrap:wrap}
-.row-sub{font-size:12.5px; color:var(--ink-3); font-family:"JetBrains Mono",ui-monospace,monospace}
+.row-sub{font-size:12.5px; color:var(--ink-3); font-family:var(--font); font-variant-numeric:tabular-nums}
 .chev{flex:0 0 auto; font-size:22px; line-height:1; color:var(--ink-3); transition:color .12s, transform .12s}
 .row:hover .chev{color:var(--accent); transform:translateX(2px)}
-.tag{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+.tag{font-family:var(--font); font-weight:600; text-transform:uppercase;
   letter-spacing:.07em; font-size:11px; padding:2px 7px; border-radius:2px;
   background:var(--sunk); color:var(--ink-2)}
 .tag.cat{background:var(--accent-soft); color:var(--accent)}
 .tag.check{background:var(--amber-soft); color:var(--amber)}
 .tag.bio{background:transparent; color:var(--ok); border:1px solid currentColor}
-.pill{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+.pill{font-family:var(--font); font-weight:600; text-transform:uppercase;
   letter-spacing:.07em; font-size:12px; padding:3px 9px; border-radius:999px;
   border:1px solid currentColor; white-space:nowrap}
 /* three tiers of urgency, not one style in three colours — late is the only
@@ -1435,9 +1454,9 @@ textarea.desc{min-height:66px; font-family:"Manrope",sans-serif; font-size:15px}
 .empty{padding:24px 16px; text-align:center; color:var(--ink-3); font-size:14px}
 
 /* plant card */
-.pcard{background:var(--glass-2); backdrop-filter:blur(14px) saturate(130%);
-  -webkit-backdrop-filter:blur(14px) saturate(130%);
-  border:1px solid var(--line-soft); border-radius:var(--r); box-shadow:var(--shadow);
+.pcard{background:var(--glass-fill); backdrop-filter:var(--glass-blur);
+  -webkit-backdrop-filter:var(--glass-blur);
+  border:1px solid var(--glass-border); border-radius:var(--r); box-shadow:var(--glass-shadow);
   overflow:hidden; display:flex; flex-direction:column}
 .pcard-head{display:flex; flex-direction:column; gap:2px; min-width:0}
 .pcard-name{font-size:17px; font-weight:500; line-height:1.25;
@@ -1448,9 +1467,9 @@ textarea.desc{min-height:66px; font-family:"Manrope",sans-serif; font-size:15px}
 .pcard-body{padding:12px 15px; display:flex; flex-direction:column; gap:9px;
   border-top:1px solid var(--line-soft)}
 .pline{display:flex; align-items:center; gap:10px; min-width:0}
-.pline-k{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+.pline-k{font-family:var(--font); font-weight:600; text-transform:uppercase;
   letter-spacing:.08em; font-size:12px; color:var(--ink-2); width:44px; flex:0 0 auto}
-.pline-v{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:12.5px; color:var(--ink-2);
+.pline-v{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:12.5px; color:var(--ink-2);
   min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .pline .pill{flex:0 0 auto; min-width:76px; text-align:center}
 .pline-k{flex:0 0 auto}
@@ -1471,12 +1490,12 @@ textarea.desc{min-height:66px; font-family:"Manrope",sans-serif; font-size:15px}
 .pcard .btn-row{margin:0}
 
 /* log */
-.day{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600; text-transform:uppercase;
+.day{font-family:var(--font); font-weight:600; text-transform:uppercase;
   letter-spacing:.09em; font-size:12px; color:var(--ink-3); padding:11px 14px 5px;
   border-bottom:1px solid var(--line-soft); background:var(--sunk)}
 .ev{display:grid; grid-template-columns:46px 1fr auto; gap:2px 10px;
   padding:9px 14px; border-bottom:1px solid var(--line-soft); font-size:14px; align-items:start}
-.ev-type{grid-area:1/1; font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
+.ev-type{grid-area:1/1; font-family:var(--font); font-weight:600;
   text-transform:uppercase; letter-spacing:.07em; font-size:12px}
 .ev-type.water{color:var(--accent)} .ev-type.task{color:var(--ok)}
 .ev-type.chore{color:var(--ink-2)}
@@ -1489,7 +1508,7 @@ textarea.desc{min-height:66px; font-family:"Manrope",sans-serif; font-size:15px}
 .ev-main{grid-area:1/2; min-width:0; display:-webkit-box; -webkit-line-clamp:2;
   -webkit-box-orient:vertical; overflow:hidden; line-height:1.3}
 .ev-who{grid-area:1/3; font-size:12px; color:var(--ink-3);
-  font-family:"JetBrains Mono",ui-monospace,monospace; white-space:nowrap; text-align:right}
+  font-family:var(--font); font-variant-numeric:tabular-nums; white-space:nowrap; text-align:right}
 .ev-del{appearance:none; border:0; background:none; cursor:pointer; color:var(--ink-3);
   font-size:16px; line-height:1; padding:7px 9px; margin:-7px -6px -7px 2px; border-radius:4px;
   opacity:0; transition:opacity .12s, color .12s}
@@ -1502,10 +1521,10 @@ textarea.desc{min-height:66px; font-family:"Manrope",sans-serif; font-size:15px}
 .lu{display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--line-soft)}
 .lu:last-child{border-bottom:0}
 .lu-name{flex:1; min-width:0; font-size:14px}
-.lu-name small{display:block; color:var(--ink-3); font-size:11.5px; font-family:"JetBrains Mono",ui-monospace,monospace}
+.lu-name small{display:block; color:var(--ink-3); font-size:11.5px; font-family:var(--font); font-variant-numeric:tabular-nums}
 .lu-flag:not(:empty){color:var(--amber); margin-top:1px}
 .lu input[type="number"]{width:74px; padding:5px 7px; text-align:right; font-size:14px}
-.lu-unit{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:12px; color:var(--ink-3); width:34px}
+.lu-unit{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:12px; color:var(--ink-3); width:34px}
 .sw{position:relative; width:42px; height:24px; flex:0 0 auto}
 .sw input{position:absolute; opacity:0; width:100%; height:100%; margin:0; cursor:pointer}
 .sw i{position:absolute; inset:0; background:var(--sunk); border:1px solid var(--line);
@@ -1516,18 +1535,29 @@ textarea.desc{min-height:66px; font-family:"Manrope",sans-serif; font-size:15px}
 .sw input:checked + i::after{transform:translateX(18px); background:var(--on-accent)}
 .sw input:focus-visible + i{outline:2px solid var(--accent); outline-offset:2px}
 
-dialog{border:1px solid var(--line); border-radius:var(--r); background:var(--surface); color:var(--ink);
-  padding:0; width:min(500px,calc(100vw - 24px)); box-shadow:var(--shadow)}
-dialog::backdrop{background:rgba(6,14,13,.55)}
-.dlg-head{padding:13px 17px; border-bottom:1px solid var(--line); font-size:19px}
-.dlg-body{padding:17px; display:flex; flex-direction:column; gap:13px; max-height:68vh; overflow-y:auto}
-.dlg-foot{padding:12px 17px; border-top:1px solid var(--line); display:flex; gap:8px; justify-content:flex-end}
+/* a glass sheet: centred on desktop, slides up from the bottom on mobile —
+   same surface language as every other glass panel, just anchored differently */
+dialog{border:1px solid var(--glass-border); border-radius:var(--r); background:var(--glass-fill-2);
+  backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur); color:var(--ink);
+  padding:0; width:min(500px,calc(100vw - 24px)); box-shadow:var(--glass-shadow);
+  animation:dlg-in .22s cubic-bezier(.2,.8,.2,1)}
+dialog::backdrop{background:rgba(46,46,42,.32); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px)}
+@keyframes dlg-in{ from{opacity:0; transform:translateY(6px) scale(.98)} to{opacity:1; transform:none} }
+@media (max-width:640px){
+  dialog{position:fixed; inset:auto 0 0 0; margin:0; width:100%; max-height:88vh;
+    border-radius:var(--r) var(--r) 0 0; animation:dlg-in-sheet .26s cubic-bezier(.2,.8,.2,1)}
+  @keyframes dlg-in-sheet{ from{transform:translateY(100%)} to{transform:translateY(0)} }
+}
+@media (prefers-reduced-motion: reduce){ dialog{animation:none} }
+.dlg-head{padding:16px 18px; border-bottom:1px solid var(--glass-border); font-size:19px}
+.dlg-body{padding:18px; display:flex; flex-direction:column; gap:13px; max-height:68vh; overflow-y:auto}
+.dlg-foot{padding:14px 18px; border-top:1px solid var(--glass-border); display:flex; gap:8px; justify-content:flex-end}
 .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
 .grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px}
-textarea{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:12px; min-height:110px; resize:vertical}
+textarea{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:12px; min-height:110px; resize:vertical}
 .fold{border-top:1px solid var(--line-soft); padding-top:12px}
 .fold > summary{cursor:pointer; list-style:none; padding:8px 0; min-height:34px; display:flex;
-  align-items:center; font-family:"Space Grotesk","Manrope",sans-serif;
+  align-items:center; font-family:var(--font);
   font-weight:600; text-transform:uppercase; letter-spacing:.08em; font-size:13px; color:var(--ink-2)}
 .fold > summary::-webkit-details-marker{display:none}
 .fold > summary::before{content:"+ "; color:var(--ink-3)}
@@ -1577,7 +1607,7 @@ textarea{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:12px; mi
 .tb-top{display:flex; align-items:baseline; gap:6px; flex:0 0 auto}
 .tb-label{font-size:11px; text-transform:uppercase; letter-spacing:.1em;
   font-weight:700; color:var(--ink-3)}
-.tb-pct{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:700;
+.tb-pct{font-family:var(--font); font-weight:700;
   font-size:13px; line-height:1; color:var(--ink-2); font-variant-numeric:tabular-nums}
 .task-bar-full .bar{flex:1; height:6px; background:var(--sunk); border-radius:999px; overflow:hidden; min-width:40px}
 .task-bar-full .bar-fill{height:100%; background:var(--accent); border-radius:999px;
@@ -1610,7 +1640,7 @@ input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none; margin:0}
 
 /* lineup meta reads better in the text face; mono is for figures */
-.lu-name small{font-family:"Manrope",sans-serif; font-size:12px; line-height:1.35}
+.lu-name small{font-family:var(--font); font-size:12px; line-height:1.35}
 .lu{gap:11px}
 
 html{overscroll-behavior-y:none}
@@ -1632,19 +1662,19 @@ html{overscroll-behavior-y:none}
 #view-projplan{
   --labw:252px; --dw:26px; --rowh:54px;
   --past:rgba(20,23,28,.055);
-  --cap-1:#A5D2D6; --cap-2:#6FB6BD; --cap-3:#E4B45E; --cap-4:#C4584A;
+  --cap-1:#B7CDBB; --cap-2:#8FB6A2; --cap-3:#E3C98B; --cap-4:#D9A187;
   --fs-micro:.66rem; --fs-label:.7rem; --fs-small:.8rem; --fs-ui:.875rem;
   --fs-stat:1.15rem; --fs-title:1.35rem;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]) #view-projplan{
     --past:rgba(255,255,255,.05);
-    --cap-1:#2B5559; --cap-2:#3E8B93; --cap-3:#9A7430; --cap-4:#93382E;
+    --cap-1:#3A4F3D; --cap-2:#2F5647; --cap-3:#6E5626; --cap-4:#6B3B2C;
   }
 }
 :root[data-theme="dark"] #view-projplan{
   --past:rgba(255,255,255,.05);
-  --cap-1:#2B5559; --cap-2:#3E8B93; --cap-3:#9A7430; --cap-4:#93382E;
+  --cap-1:#3A4F3D; --cap-2:#2F5647; --cap-3:#6E5626; --cap-4:#6B3B2C;
 }
 @media (max-width:720px){ #view-projplan{ --labw:170px } }
 @media (max-width: 720px) { :root { --labw: 170px; } 
@@ -1775,7 +1805,7 @@ html{overscroll-behavior-y:none}
     padding: 2rem 1.6rem;
   }
 #view-projplan .ppempty.show{ display: flex; }
-#view-projplan .ppempty h2{ margin: 0; font-family: "Space Grotesk","Manrope",sans-serif; font-weight: 600; font-size: var(--fs-title); }
+#view-projplan .ppempty h2{ margin: 0; font-family: var(--font); font-weight: 600; font-size: var(--fs-title); }
 #view-projplan .ppempty p{ margin: 0; color: var(--ink-2); max-width: 60ch; line-height: 1.6; }
 #view-projplan .foot{ font-size: var(--fs-small); color: var(--ink-2); line-height: 1.65; max-width: 78ch; }
 #view-projplan .foot b{ font-weight: 600; }
@@ -6542,7 +6572,7 @@ document.querySelector("#view-planner").addEventListener("input",e=>{
    pomodoro breaks free. Nothing but timestamps is persisted while running, so
    a reload mid-session picks the clock back up exactly where it was rather
    than losing or double-counting time. */
-const HCOLORS=["#6D28D9","#0EA5E9","#059669","#D97706","#DC2626","#DB2777"];
+const HCOLORS=["#5E9E85","#A9AE9C","#6E7367","#9C7C3E","#B4674A","#8B6E8F"];
 const HMODES=["stopwatch","pomodoro","timer"];
 let hProjId=null, hShowArch=false, hTick=null;
 

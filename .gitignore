@@ -7,3 +7,8 @@ potting-bench-netlify.zip
 
 # macOS
 .DS_Store
+
+# Redesign QA screenshots and playwright-cli session artifacts —
+# local review material, not part of the app.
+/redesign-screens/
+/.playwright-cli/
