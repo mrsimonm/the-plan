@@ -423,6 +423,29 @@ input[type="time"].mono-input{width:88px}
 .pcal-nav{display:flex; align-items:center; gap:2px}
 .pcal-month{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:12.5px;
   color:var(--ink-2); min-width:92px; text-align:center; font-variant-numeric:tabular-nums}
+/* Plachta search — a plain field plus an Upcoming/Past segmented toggle,
+   with results as a simple clickable list rather than a dropdown, so it
+   reads as part of the board rather than a floating overlay */
+.ppl-search{margin-bottom:11px}
+.ppl-search-row{display:flex; gap:8px; align-items:center}
+.ppl-input{flex:1 1 auto; min-width:0}
+#pplWhenSeg{flex:0 0 auto; width:auto}
+#pplWhenSeg button{padding:6px 12px}
+.ppl-results{margin-top:8px; max-height:280px; overflow-y:auto;
+  border:1px solid var(--glass-border); border-radius:var(--r-sm); background:var(--glass-fill)}
+.ppl-row{display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+  padding:9px 12px; border:0; border-bottom:1px solid var(--line-soft); background:none;
+  color:inherit; font:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent}
+.ppl-row:last-child{border-bottom:0}
+.ppl-row:hover{background:var(--surface-2)}
+.ppl-row-when{flex:0 0 auto; font-family:var(--font); font-size:11.5px; color:var(--ink-3);
+  min-width:64px}
+.ppl-row-when.overdue{color:var(--crit)}
+.ppl-row-title{flex:1 1 auto; min-width:0; font-weight:600; overflow:hidden;
+  text-overflow:ellipsis; white-space:nowrap}
+.ppl-row-kind{flex:0 0 auto; font-size:11px; color:var(--ink-3); text-transform:uppercase;
+  letter-spacing:.05em}
+.ppl-empty{padding:14px 12px; text-align:center; color:var(--ink-3); font-size:13.5px}
 .ptask{padding:0; border-bottom:1px solid var(--line-soft)}
 .ptask:last-child{border-bottom:0}
 .ptask.done{display:flex; align-items:center; gap:8px; padding:10px 14px}
@@ -2423,6 +2446,19 @@ html{overscroll-behavior-y:none}
           <span class="pcal-month" id="pGridLabel"></span>
           <button type="button" class="btn mini" id="pGridNext" aria-label="Next">›</button>
         </span>
+      </div>
+      <!-- Plachta-only for now: search your tasks and events by title, scoped
+           to upcoming or past. Shown/hidden in renderSchedule() alongside the
+           other scope-specific controls above. -->
+      <div id="pPlachtaSearch" class="ppl-search" style="display:none">
+        <div class="ppl-search-row">
+          <input type="text" id="pplQuery" class="ppl-input" placeholder="Search this calendar…" autocomplete="off">
+          <div class="seg segsm" id="pplWhenSeg">
+            <button type="button" data-pplwhen="upcoming" aria-pressed="true">Upcoming</button>
+            <button type="button" data-pplwhen="past" aria-pressed="false">Past</button>
+          </div>
+        </div>
+        <div id="pplResults" class="ppl-results" hidden></div>
       </div>
       <div id="pScheduleBody"></div>
 <div id="view-projplan" hidden>
@@ -6055,6 +6091,7 @@ function renderSchedule(){
   pCareCache={}; pSessCache=null;
   if(window.ppClearExt) ppClearExt();   // planner data may have changed — the band re-reads it
   pStopTick();
+  $("#pPlachtaSearch").style.display="none";  // shown again below only for Plachta
   const ppWrap=$("#view-projplan");
   document.querySelectorAll("#pScopeSeg [data-pscope]").forEach(b=>
     b.setAttribute("aria-pressed",String(b.dataset.pscope===pScope)));
@@ -6097,6 +6134,7 @@ function renderSchedule(){
   $("#pScheduleBody").hidden=false;
   $("#pBoardNav").style.display="";
   if(pScope==="plachta"){
+    $("#pPlachtaSearch").style.display="";
     if(!pPlachtaAnchor) pPlachtaAnchor=pToday();
     const pdays=pPlachtaDays(pPlachtaAnchor);
     $("#pBoardLabel").textContent=pBoardLabel("month",[pPlachtaAnchor]);
@@ -6495,6 +6533,60 @@ window.addEventListener("keydown",e=>{
 $("#pScopeSeg").addEventListener("click",e=>{
   const b=e.target.closest("[data-pscope]"); if(!b) return;
   pScope=b.dataset.pscope; pWinShift=0; renderSchedule();
+});
+
+/* ---------------- Plachta search ----------------
+   Title search over tasks and events (S.planner.tasks — kind "task",
+   "event" or "quick"; all carry a concrete `due` date, unlike the
+   recurring block templates in S.planner.blocks, which is why those are
+   left out here). Scoped to Plachta only for now, per request. */
+let pplWhen="upcoming";
+function pplMatches(q){
+  const today=pToday();
+  return (S.planner.tasks||[])
+    .filter(tk=>tk.due && (tk.title||"").toLowerCase().includes(q))
+    .filter(tk=>pplWhen==="upcoming" ? tk.due>=today : tk.due<today)
+    .sort((a,b)=>{
+      const ka=a.due+" "+(a.time||"00:00"), kb=b.due+" "+(b.time||"00:00");
+      return pplWhen==="upcoming" ? ka.localeCompare(kb) : kb.localeCompare(ka);
+    })
+    .slice(0,40);
+}
+function pplRender(){
+  const q=$("#pplQuery").value.trim().toLowerCase();
+  const box=$("#pplResults");
+  if(!q){ box.hidden=true; box.innerHTML=""; return; }
+  const hits=pplMatches(q);
+  box.hidden=false;
+  box.innerHTML=hits.length?hits.map(tk=>{
+    /* in the Past bucket, a task nobody ever ticked off is worth flagging —
+       an Event in the past is just a record and is never "overdue" */
+    const overdue=pplWhen==="past"&&tk.kind==="task"&&!tk.done;
+    const when=pDueLabel(tk.due)+(tk.time?" · "+tk.time:"");
+    return `<button type="button" class="ppl-row" data-pplgo="${tk.due}">
+      <span class="ppl-row-when${overdue?" overdue":""}">${esc(when)}</span>
+      <span class="ppl-row-title">${esc(tk.title||t("Untitled"))}</span>
+      <span class="ppl-row-kind">${esc(tk.kind==="event"?t("Event"):t("Task"))}</span>
+    </button>`;
+  }).join(""):`<p class="ppl-empty">${esc(t("No matches."))}</p>`;
+}
+/* jump Plachta's continuous canvas to a given date and centre it there —
+   renderSchedule()'s own centring only defaults to today, so this always
+   re-centres explicitly afterwards rather than hoping the default is right */
+function pplJumpTo(iso){
+  pScope="plachta"; pPlachtaAnchor=iso; renderSchedule(); pPlachtaCentre(iso);
+}
+$("#pplQuery").addEventListener("input",pplRender);
+$("#pplWhenSeg").addEventListener("click",e=>{
+  const b=e.target.closest("[data-pplwhen]"); if(!b) return;
+  pplWhen=b.dataset.pplwhen;
+  document.querySelectorAll("#pplWhenSeg [data-pplwhen]").forEach(x=>
+    x.setAttribute("aria-pressed",String(x===b)));
+  pplRender();
+});
+$("#pplResults").addEventListener("click",e=>{
+  const b=e.target.closest("[data-pplgo]"); if(!b) return;
+  pplJumpTo(b.dataset.pplgo);
 });
 
 $("#pLinkCare").addEventListener("change",e=>{ S.planner.linkCare=e.target.checked; touch(); renderPlanner(); });
