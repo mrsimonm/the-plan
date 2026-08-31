@@ -2806,12 +2806,15 @@ html{overscroll-behavior-y:none}
     <div class="sec-head">
       <h2>Teachbench</h2>
       <div class="seg segsm" id="tbScopeSeg">
-        <button type="button" data-tbscope="week" aria-pressed="true">This week</button>
-        <button type="button" data-tbscope="students" aria-pressed="false">Students</button>
+        <button type="button" data-tbscope="students" aria-pressed="true">Students</button>
+        <button type="button" data-tbscope="week" aria-pressed="false">Week</button>
+        <button type="button" data-tbscope="tasks" aria-pressed="false">Tasks</button>
+        <button type="button" data-tbscope="words" aria-pressed="false">Words</button>
+        <button type="button" data-tbscope="search" aria-pressed="false">Search</button>
       </div>
     </div>
 
-    <div class="stack pstack" id="tbScopeWeek">
+    <div class="stack pstack" id="tbScopeWeek" hidden>
       <div class="card pad">
         <div class="sec-head" style="margin-bottom:4px">
           <h2 style="font-size:17px">This week</h2>
@@ -2826,7 +2829,7 @@ html{overscroll-behavior-y:none}
       </div>
     </div>
 
-    <div class="stack pstack" id="tbScopeStudents" hidden>
+    <div class="stack pstack" id="tbScopeStudents">
       <form class="card pad qadd" id="tbAddForm">
         <input type="text" id="tbAddName" placeholder="Student's name" autocomplete="off">
         <div class="qadd-row2">
@@ -2841,7 +2844,114 @@ html{overscroll-behavior-y:none}
         <p id="tbEmpty" class="pday-sub" hidden>No students yet.</p>
       </div>
     </div>
+
+    <!-- ---- Tasks (materials library) ---- -->
+    <div class="stack pstack" id="tbScopeTasks" hidden>
+      <div class="seg segsm" id="tbTaskSubSeg">
+        <button type="button" data-tbtasksub="library" aria-pressed="true">Library</button>
+        <button type="button" data-tbtasksub="bystudent" aria-pressed="false">By student</button>
+      </div>
+
+      <div class="stack" id="tbTaskLibrary">
+        <form class="card pad qadd" id="tbMatForm">
+          <input type="text" id="tbMatTitle" placeholder="Task title" autocomplete="off">
+          <div class="qadd-row2">
+            <span class="field-label">type</span>
+            <select id="tbMatType" class="mono-input"></select>
+            <span class="field-label">skill</span>
+            <select id="tbMatSkill" class="mono-input"></select>
+          </div>
+          <div class="qadd-row2">
+            <span class="field-label">level</span>
+            <select id="tbMatLevel" class="mono-input"></select>
+            <input type="text" id="tbMatTopic" class="mono-input" placeholder="Topic (optional)" style="flex:1; min-width:100px">
+          </div>
+          <div class="field" id="tbMatBodyField">
+            <label for="tbMatBody">Content — one word or phrase per line</label>
+            <textarea id="tbMatBody" rows="3"></textarea>
+          </div>
+          <div class="stack" id="tbMatUrlFields" style="gap:9px" hidden>
+            <div class="field"><label for="tbMatUrl">Web address</label><input type="text" id="tbMatUrl" placeholder="https://…"></div>
+            <div class="field"><label for="tbMatNote">Note (optional)</label><input type="text" id="tbMatNote"></div>
+          </div>
+          <p class="pwarn" id="tbMatWarn" hidden></p>
+          <div class="qadd-row2"><button class="btn primary mini" type="submit">Add task</button></div>
+        </form>
+
+        <div class="card pad">
+          <div class="qadd-row2" style="flex-wrap:wrap; gap:6px">
+            <input type="text" id="tbMatSearch" class="mono-input" placeholder="Search title / topic" style="flex:1; min-width:120px">
+            <select id="tbMatFilterLevel" class="mono-input"></select>
+            <select id="tbMatFilterSkill" class="mono-input"></select>
+            <select id="tbMatFilterType" class="mono-input"></select>
+          </div>
+        </div>
+
+        <div id="tbMatGroups" class="stack" style="gap:14px"></div>
+      </div>
+
+      <div class="stack" id="tbTaskByStudent" hidden>
+        <div class="card pad"><select id="tbMatStudentSel" class="mono-input" style="width:100%"></select></div>
+        <div class="card pad">
+          <div class="sec-head"><h2 style="font-size:15px">Assigned tasks</h2>
+            <button class="btn mini" type="button" id="tbMatAssignBtn">Add tasks</button></div>
+          <div id="tbMatAssignedList" class="stack" style="gap:10px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---- Words (vocabulary) ---- -->
+    <div class="stack pstack" id="tbScopeWords" hidden>
+      <p class="pday-sub">Coming soon.</p>
+    </div>
+
+    <!-- ---- Search ---- -->
+    <div class="stack pstack" id="tbScopeSearch" hidden>
+      <p class="pday-sub">Coming soon.</p>
+    </div>
   </section>
+
+  <dialog id="tbMatEditDlg"><form id="tbMatEditForm">
+    <h3 class="dlg-head">Edit task</h3>
+    <div class="dlg-body">
+      <div class="field"><label for="tbMatEditTitle">Title</label><input type="text" id="tbMatEditTitle"></div>
+      <div class="qadd-row2">
+        <span class="field-label">type</span>
+        <select id="tbMatEditType" class="mono-input"></select>
+        <span class="field-label">skill</span>
+        <select id="tbMatEditSkill" class="mono-input"></select>
+      </div>
+      <div class="field"><label for="tbMatEditLevel">Level</label><select id="tbMatEditLevel"></select></div>
+      <div class="field"><label for="tbMatEditTopic">Topic</label><input type="text" id="tbMatEditTopic"></div>
+      <div class="field" id="tbMatEditBodyField">
+        <label for="tbMatEditBody">Content</label>
+        <textarea id="tbMatEditBody" rows="3"></textarea>
+      </div>
+      <div class="stack" id="tbMatEditUrlFields" style="gap:9px" hidden>
+        <div class="field"><label for="tbMatEditUrl">Web address</label><input type="text" id="tbMatEditUrl"></div>
+        <div class="field"><label for="tbMatEditNote">Note (optional)</label><input type="text" id="tbMatEditNote"></div>
+      </div>
+      <p class="pwarn" id="tbMatEditWarn" hidden></p>
+      <p class="pday-sub" id="tbMatEditUsage"></p>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn mini" type="button" id="tbMatDelete">Delete…</button>
+      <button class="btn mini" type="button" id="tbMatEditCancel">Close</button>
+      <button class="btn primary mini" type="submit">Save</button>
+    </div>
+  </form></dialog>
+
+  <dialog id="tbMatPickerDlg"><form id="tbMatPickerForm">
+    <h3 class="dlg-head">Add tasks</h3>
+    <div class="dlg-body">
+      <input type="text" id="tbMatPickerSearch" class="mono-input" placeholder="Search title / topic" style="width:100%">
+      <div id="tbMatPickerGroups" class="stack" style="gap:12px"></div>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn mini" type="button" id="tbMatPickerCancel">Cancel</button>
+      <button class="btn primary mini" type="submit">Save</button>
+    </div>
+  </form></dialog>
 
   <dialog id="tbEditDlg"><form id="tbEditForm">
     <h3 class="dlg-head">Edit student</h3>
@@ -11015,14 +11125,17 @@ const TB_COLOR_HEX = {
 let tbEditId=null;
 let tbCalWeekOffset=0;
 let tbOccContext=null;
-let tbScope="week";
+let tbScope="students";
+const TB_SCOPES=["students","week","tasks","words","search"];
 
 function tbSetScope(scope){
   tbScope=scope;
   document.querySelectorAll("#tbScopeSeg [data-tbscope]").forEach(b=>
     b.setAttribute("aria-pressed", String(b.dataset.tbscope===scope)));
-  $("#tbScopeWeek").hidden = scope!=="week";
-  $("#tbScopeStudents").hidden = scope!=="students";
+  TB_SCOPES.forEach(s=>{ $("#tbScope"+s[0].toUpperCase()+s.slice(1)).hidden = s!==scope; });
+  if(scope==="tasks") tbRenderTasks();
+  if(scope==="words" && window.tbRenderWords) tbRenderWords();
+  if(scope==="search" && window.tbRenderSearch) tbRenderSearch();
 }
 $("#tbScopeSeg").addEventListener("click",e=>{
   const b=e.target.closest("[data-tbscope]");
@@ -11293,6 +11406,305 @@ $("#tbOccRescheduleConfirm").addEventListener("click",()=>{
 });
 
 $("#tbOccClose").addEventListener("click",()=>{ $("#tbOccDlg").close(); });
+
+/* ============================================================================
+   Teachbench — Tasks (materials library) */
+
+function tbFillSelectOnce(sel, list, noneLabel){
+  if(!sel || sel.dataset.filled) return;
+  sel.innerHTML=(noneLabel!=null?`<option value="">${esc(noneLabel)}</option>`:"")+
+    list.map(x=>`<option value="${x.value}">${esc(x.label)}</option>`).join("");
+  sel.dataset.filled="1";
+}
+function tbMatTypeLabel(v){ const t=TB.MATERIAL_TYPES.find(x=>x.value===v); return t?t.label:v; }
+function tbMatSkillLabel(v){ const c=TB.MATERIAL_CATEGORIES.find(x=>x.value===v); return c?c.label:v; }
+function tbMaterialUsageCount(data, id){ return data.studentMaterials.filter(sm=>sm.materialId===id).length; }
+
+function tbSyncTypeFields(typeVal, bodyFieldEl, urlFieldsEl){
+  const isLink=TB.isLinkType(typeVal);
+  bodyFieldEl.hidden=isLink;
+  urlFieldsEl.hidden=!isLink;
+}
+
+let tbMatFilter={search:"", level:"", skill:"", type:""};
+let tbMatSubview="library";
+let tbMatEditId=null;
+let tbMatByStudentId=null;
+let tbMatPickerStudentId=null;
+let tbMatPickerChecked=new Set();
+
+$("#tbTaskSubSeg").addEventListener("click",e=>{
+  const b=e.target.closest("[data-tbtasksub]"); if(!b) return;
+  tbMatSubview=b.dataset.tbtasksub;
+  document.querySelectorAll("#tbTaskSubSeg [data-tbtasksub]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
+  $("#tbTaskLibrary").hidden=tbMatSubview!=="library";
+  $("#tbTaskByStudent").hidden=tbMatSubview!=="bystudent";
+  if(tbMatSubview==="bystudent") tbRenderMatByStudent();
+});
+
+function tbRenderTasks(){
+  tbFillSelectOnce($("#tbMatType"), TB.MATERIAL_TYPES, null);
+  tbFillSelectOnce($("#tbMatSkill"), TB.MATERIAL_CATEGORIES, null);
+  tbFillSelectOnce($("#tbMatLevel"), TB.LEVELS, "Any level");
+  tbFillSelectOnce($("#tbMatEditType"), TB.MATERIAL_TYPES, null);
+  tbFillSelectOnce($("#tbMatEditSkill"), TB.MATERIAL_CATEGORIES, null);
+  tbFillSelectOnce($("#tbMatEditLevel"), TB.LEVELS, "Any level");
+  tbFillSelectOnce($("#tbMatFilterLevel"), TB.LEVELS, "Any level");
+  tbFillSelectOnce($("#tbMatFilterSkill"), TB.MATERIAL_CATEGORIES, "Any skill");
+  tbFillSelectOnce($("#tbMatFilterType"), TB.MATERIAL_TYPES, "Any type");
+  tbSyncTypeFields($("#tbMatType").value||"text", $("#tbMatBodyField"), $("#tbMatUrlFields"));
+  tbRenderMatLibrary();
+  if(tbMatSubview==="bystudent") tbRenderMatByStudent();
+}
+
+$("#tbMatType").addEventListener("change",()=>tbSyncTypeFields($("#tbMatType").value, $("#tbMatBodyField"), $("#tbMatUrlFields")));
+$("#tbMatEditType").addEventListener("change",()=>tbSyncTypeFields($("#tbMatEditType").value, $("#tbMatEditBodyField"), $("#tbMatEditUrlFields")));
+
+function tbReadMaterialFields(prefix){
+  const title=$("#"+prefix+"Title").value.trim();
+  const type=$("#"+prefix+"Type").value||"text";
+  const skill=$("#"+prefix+"Skill").value||"other";
+  const level=$("#"+prefix+"Level").value||null;
+  const topic=$("#"+prefix+"Topic").value.trim();
+  const isLink=TB.isLinkType(type);
+  const body=isLink?"":$("#"+prefix+"Body").value;
+  const url=isLink?$("#"+prefix+"Url").value.trim():"";
+  const note=isLink?$("#"+prefix+"Note").value.trim():"";
+  if(!title) return {error:"Please add a title."};
+  if(isLink){
+    const safe=TB.safeUrl(url);
+    if(!safe) return {error:"Please add a valid web address (http:// or https://)."};
+    return {fields:{title, type, category:skill, level, topic, body:"", url:safe, note}};
+  }
+  if(!body.trim()) return {error:"Please add some content."};
+  return {fields:{title, type, category:skill, level, topic, body, url:"", note:""}};
+}
+
+$("#tbMatForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const r=tbReadMaterialFields("tbMat");
+  if(r.error){ $("#tbMatWarn").hidden=false; $("#tbMatWarn").textContent=r.error; return; }
+  $("#tbMatWarn").hidden=true;
+  const data=TB.loadData();
+  data.materials.push(TB.createMaterial(r.fields));
+  TB.saveData(data);
+  $("#tbMatForm").reset();
+  tbSyncTypeFields("text", $("#tbMatBodyField"), $("#tbMatUrlFields"));
+  tbRenderMatLibrary();
+});
+
+["tbMatSearch","tbMatFilterLevel","tbMatFilterSkill","tbMatFilterType"].forEach(id=>{
+  $("#"+id).addEventListener("input",()=>{
+    tbMatFilter={search:$("#tbMatSearch").value.trim().toLowerCase(), level:$("#tbMatFilterLevel").value, skill:$("#tbMatFilterSkill").value, type:$("#tbMatFilterType").value};
+    tbRenderMatLibrary();
+  });
+});
+
+function tbMatMatchesFilter(m){
+  if(tbMatFilter.level && m.level!==tbMatFilter.level) return false;
+  if(tbMatFilter.skill && m.category!==tbMatFilter.skill) return false;
+  if(tbMatFilter.type && m.type!==tbMatFilter.type) return false;
+  if(tbMatFilter.search){
+    const hay=(m.title+" "+m.topic).toLowerCase();
+    if(!hay.includes(tbMatFilter.search)) return false;
+  }
+  return true;
+}
+
+function tbMaterialRow(data, m){
+  const usage=tbMaterialUsageCount(data, m.id);
+  const badges=[tbMatTypeLabel(m.type), m.level?tbLevelLabel(m.level):null, m.topic||null, usage?`${usage} student${usage===1?"":"s"}`:null].filter(Boolean);
+  const body=TB.isLinkType(m.type)
+    ? (TB.safeUrl(m.url) ? `<a href="${esc(m.url)}" target="_blank" rel="noopener" style="color:var(--accent)">${esc(m.url)}</a>${m.note?` — ${esc(m.note)}`:""}` : `<span class="pwarn" style="display:inline">Unsafe or missing link</span>`)
+    : (m.body ? esc(m.body).replace(/\n/g,"<br>") : "No content yet.");
+  return `<button type="button" class="row" data-tb-mat-edit="${m.id}" style="align-items:flex-start">
+    <span class="row-main">
+      <span class="row-title">${esc(m.title||"Untitled")} <span class="tag cat">${esc(badges.join(" · "))}</span></span>
+      <span class="row-sub">${body}</span>
+    </span>
+    <span class="chev" aria-hidden="true">›</span>
+  </button>`;
+}
+
+function tbRenderMatLibrary(){
+  const data=TB.loadData();
+  const filtered=data.materials.filter(tbMatMatchesFilter);
+  const groups=TB.MATERIAL_CATEGORIES.map(cat=>{
+    const items=filtered.filter(m=>m.category===cat.value);
+    if(!items.length) return "";
+    return `<div><div class="field-label" style="margin-bottom:6px">${esc(cat.label)}</div>
+      <div class="stack" style="gap:4px">${items.map(m=>tbMaterialRow(data,m)).join("")}</div></div>`;
+  }).join("");
+  $("#tbMatGroups").innerHTML = groups || (data.materials.length
+    ? `<p class="pday-sub">Nothing matches those filters.</p>`
+    : `<p class="pday-sub">No tasks yet — add one above.</p>`);
+}
+
+document.addEventListener("click",e=>{
+  const btn=e.target.closest("[data-tb-mat-edit]");
+  if(!btn) return;
+  const data=TB.loadData();
+  const m=data.materials.find(x=>x.id===btn.dataset.tbMatEdit);
+  if(!m) return;
+  tbMatEditId=m.id;
+  $("#tbMatEditTitle").value=m.title;
+  $("#tbMatEditType").value=m.type;
+  $("#tbMatEditSkill").value=m.category;
+  $("#tbMatEditLevel").value=m.level||"";
+  $("#tbMatEditTopic").value=m.topic||"";
+  $("#tbMatEditBody").value=m.body||"";
+  $("#tbMatEditUrl").value=m.url||"";
+  $("#tbMatEditNote").value=m.note||"";
+  tbSyncTypeFields(m.type, $("#tbMatEditBodyField"), $("#tbMatEditUrlFields"));
+  $("#tbMatEditWarn").hidden=true;
+  const usage=tbMaterialUsageCount(data, m.id);
+  $("#tbMatEditUsage").textContent = usage ? `Assigned to ${usage} student${usage===1?"":"s"}.` : "Not assigned to anyone yet.";
+  $("#tbMatDelete").textContent="Delete…";
+  $("#tbMatEditDlg").showModal();
+});
+
+$("#tbMatEditCancel").addEventListener("click",()=>{ $("#tbMatEditDlg").close(); });
+
+$("#tbMatEditForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  if(!tbMatEditId) return;
+  const r=tbReadMaterialFields("tbMatEdit");
+  if(r.error){ $("#tbMatEditWarn").hidden=false; $("#tbMatEditWarn").textContent=r.error; return; }
+  const data=TB.loadData();
+  data.materials=data.materials.map(m=>m.id===tbMatEditId ? {...m, ...r.fields} : m);
+  TB.saveData(data);
+  $("#tbMatEditDlg").close();
+  tbMatEditId=null;
+  tbRenderMatLibrary();
+  if(tbMatSubview==="bystudent") tbRenderMatByStudent();
+});
+
+$("#tbMatDelete").addEventListener("click",()=>{
+  if(!tbMatEditId) return;
+  const data=TB.loadData();
+  const usage=tbMaterialUsageCount(data, tbMatEditId);
+  if($("#tbMatDelete").textContent==="Delete…"){
+    $("#tbMatDelete").textContent = usage
+      ? `Really delete? ${usage} student${usage===1?"":"s"} will lose it too.`
+      : "Really delete?";
+    return;
+  }
+  data.materials=data.materials.filter(m=>m.id!==tbMatEditId);
+  data.studentMaterials=data.studentMaterials.filter(sm=>sm.materialId!==tbMatEditId);
+  TB.saveData(data);
+  $("#tbMatEditDlg").close();
+  tbMatEditId=null;
+  tbRenderMatLibrary();
+  if(tbMatSubview==="bystudent") tbRenderMatByStudent();
+});
+
+function tbActiveFirstStudents(data){
+  return data.students.slice().sort((a,b)=>
+    a.active!==b.active ? (a.active?-1:1) : a.name.localeCompare(b.name));
+}
+
+function tbRenderAssignedMaterials(hostSel, data, studentId){
+  const links=data.studentMaterials.filter(sm=>sm.studentId===studentId);
+  const byId=new Map(data.materials.map(m=>[m.id,m]));
+  const groups=TB.MATERIAL_CATEGORIES.map(cat=>{
+    const items=links.filter(l=>{ const m=byId.get(l.materialId); return m && m.category===cat.value; });
+    if(!items.length) return "";
+    return `<div><div class="field-label" style="margin-bottom:6px">${esc(cat.label)}</div>
+      <div class="stack" style="gap:4px">${items.map(l=>{
+        const m=byId.get(l.materialId);
+        const done=l.status==="done";
+        const linkBit=TB.isLinkType(m.type) && TB.safeUrl(m.url) ? ` — <a href="${esc(m.url)}" target="_blank" rel="noopener" style="color:var(--accent)">open</a>` : "";
+        return `<label class="row" style="cursor:pointer">
+          <input type="checkbox" data-tb-mat-toggle="${studentId}|${m.id}" ${done?"checked":""} style="width:18px;height:18px;flex:0 0 auto">
+          <span class="row-main">
+            <span class="row-title" style="${done?"text-decoration:line-through; opacity:.6":""}">${esc(m.title)} <span class="tag cat">${esc(tbMatTypeLabel(m.type))}</span></span>
+            <span class="row-sub">${done && l.doneDate ? "Done "+tbFormatShortDate(l.doneDate.slice(0,10)) : "Assigned"}${linkBit}</span>
+          </span>
+        </label>`;
+      }).join("")}</div></div>`;
+  }).join("");
+  hostSel.innerHTML = groups || `<p class="pday-sub">No tasks assigned yet.</p>`;
+}
+
+document.addEventListener("change",e=>{
+  const cb=e.target.closest("[data-tb-mat-toggle]");
+  if(!cb) return;
+  const [studentId, materialId]=cb.dataset.tbMatToggle.split("|");
+  const data=TB.loadData();
+  data.studentMaterials=data.studentMaterials.map(sm=>{
+    if(sm.studentId!==studentId || sm.materialId!==materialId) return sm;
+    return cb.checked ? {...sm, status:"done", doneDate:new Date().toISOString()} : {...sm, status:"assigned", doneDate:null};
+  });
+  TB.saveData(data);
+  if(tbMatSubview==="bystudent") tbRenderMatByStudent();
+});
+
+function tbRenderMatByStudent(){
+  const data=TB.loadData();
+  const students=tbActiveFirstStudents(data);
+  const sel=$("#tbMatStudentSel");
+  if(!students.length){
+    sel.innerHTML="";
+    $("#tbMatAssignedList").innerHTML=`<p class="pday-sub">Add a student first.</p>`;
+    $("#tbMatAssignBtn").disabled=true;
+    return;
+  }
+  $("#tbMatAssignBtn").disabled=false;
+  if(!tbMatByStudentId || !students.some(s=>s.id===tbMatByStudentId)) tbMatByStudentId=students[0].id;
+  sel.innerHTML=students.map(s=>`<option value="${s.id}" ${s.id===tbMatByStudentId?"selected":""}>${esc(s.name)}${s.active?"":" (inactive)"}</option>`).join("");
+  tbRenderAssignedMaterials($("#tbMatAssignedList"), data, tbMatByStudentId);
+}
+$("#tbMatStudentSel").addEventListener("change",()=>{
+  tbMatByStudentId=$("#tbMatStudentSel").value;
+  tbRenderMatByStudent();
+});
+
+function tbOpenMaterialPicker(studentId){
+  tbMatPickerStudentId=studentId;
+  const data=TB.loadData();
+  tbMatPickerChecked=new Set(data.studentMaterials.filter(sm=>sm.studentId===studentId).map(sm=>sm.materialId));
+  $("#tbMatPickerSearch").value="";
+  tbRenderMatPicker();
+  $("#tbMatPickerDlg").showModal();
+}
+$("#tbMatAssignBtn").addEventListener("click",()=>{ if(tbMatByStudentId) tbOpenMaterialPicker(tbMatByStudentId); });
+
+function tbRenderMatPicker(){
+  const data=TB.loadData();
+  const q=$("#tbMatPickerSearch").value.trim().toLowerCase();
+  const items=data.materials.filter(m=>!q || (m.title+" "+m.topic).toLowerCase().includes(q));
+  const groups=TB.MATERIAL_CATEGORIES.map(cat=>{
+    const list=items.filter(m=>m.category===cat.value);
+    if(!list.length) return "";
+    return `<div><div class="field-label" style="margin-bottom:6px">${esc(cat.label)}</div>
+      <div class="stack" style="gap:4px">${list.map(m=>`
+        <label class="row" style="cursor:pointer">
+          <input type="checkbox" data-tb-mat-pick="${m.id}" ${tbMatPickerChecked.has(m.id)?"checked":""} style="width:18px;height:18px;flex:0 0 auto">
+          <span class="row-main"><span class="row-title">${esc(m.title)} <span class="tag cat">${esc(tbMatTypeLabel(m.type))}</span></span></span>
+        </label>`).join("")}</div></div>`;
+  }).join("");
+  $("#tbMatPickerGroups").innerHTML = groups || `<p class="pday-sub">No tasks in the library yet.</p>`;
+}
+$("#tbMatPickerSearch").addEventListener("input", tbRenderMatPicker);
+document.addEventListener("change",e=>{
+  const cb=e.target.closest("[data-tb-mat-pick]");
+  if(!cb) return;
+  if(cb.checked) tbMatPickerChecked.add(cb.dataset.tbMatPick); else tbMatPickerChecked.delete(cb.dataset.tbMatPick);
+});
+$("#tbMatPickerCancel").addEventListener("click",()=>{ $("#tbMatPickerDlg").close(); });
+$("#tbMatPickerForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const studentId=tbMatPickerStudentId;
+  if(!studentId) return;
+  const data=TB.loadData();
+  const existing=new Map(data.studentMaterials.filter(sm=>sm.studentId===studentId).map(sm=>[sm.materialId, sm]));
+  const kept=[...tbMatPickerChecked].map(id=> existing.get(id) || TB.createStudentMaterial(studentId, id));
+  data.studentMaterials=data.studentMaterials.filter(sm=>sm.studentId!==studentId).concat(kept);
+  TB.saveData(data);
+  $("#tbMatPickerDlg").close();
+  tbMatPickerStudentId=null;
+  if(tbMatSubview==="bystudent") tbRenderMatByStudent();
+});
 
 function renderAppMenu(){
   $("#appMenu").innerHTML=APPS.map(a=>
