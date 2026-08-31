@@ -353,3 +353,35 @@ it better" — I didn't propose alternatives beyond the direction implemented
 (e.g., a second accent hue for a true two-accent system, or per-section
 themed gradients rather than one global wash). Worth raising as an open
 question rather than assuming this is the final direction.
+
+## Round 7 — separating the glass panels from the background
+
+Direct feedback on round 6: the panel sheen used the same diagonal
+direction and accent tint as the background blobs, so cards read as a
+continuation of the gradient rather than a distinct floating layer —
+colour-wise and shape-wise separation was asked for specifically.
+
+**Skill used**: `ecc:liquid-glass-design` (Apple's iOS 26 Liquid Glass
+patterns). Its SwiftUI/UIKit code doesn't translate to CSS, but its core
+principle does: glass is a *material* with its own light reflection —
+`.glassEffect(.regular.tint(color))` applies a tint to the glass itself,
+independent of whatever content sits behind it. That's precisely what was
+missing: the CSS sheen was inheriting the background's hue and direction
+instead of having its own.
+
+**Fix**: `--glass-sheen` no longer mixes in `--accent` at all — it's now a
+plain white highlight banded across the top edge only (180deg, distinct
+from the background blobs' diagonal flow), simulating light falling on the
+glass from above rather than colour bleeding through it. `--glass-fill`
+opacity raised (.55→.68 light, similarly in dark) so panels read as a
+denser, more opaque material sitting *on* the colour rather than nearly as
+transparent as the colour itself. Border and ambient shadow strengthened
+to match with shape-wise separation (a more visible "elevated" panel, not
+just a colour change).
+
+Verified via playwright-cli: Daily Planner, Garden/Library, in both
+themes — screenshotted after letting the tab-switch cross-fade settle this
+time (confirmed in round 6 that screenshotting immediately on reload can
+catch a transition mid-flight; not a bug, just bad timing). Result: cards
+now visibly read as bright panels floating above the background in both
+light and dark mode, rather than blending into the gradient wash.
