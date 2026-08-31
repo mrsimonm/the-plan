@@ -618,3 +618,103 @@ the mix panel's displayed amount settles correctly and immediately on a
 simulated drag+release with a real product selected; same timing check
 on the Strength slider. Re-ran the calendar drag regression test
 (unrelated code path) to confirm nothing else broke.
+
+## Round 15 — a beta feedback batch: settings, calendars, dialogs, nav
+
+A larger, unsorted batch of beta-tester feedback, triaged into five
+separate fixes.
+
+**1. Settings was duplicated in two places.** The header gear icon (next
+to the Potting Bench / Daily Planner / Hours switcher) jumped straight
+into editing the Academy guide — the single most niche setting in the
+app — ahead of every real one, and a second, full settings page (mixing
+readings, appearance, action days, daily task reset, people & data,
+backup/export) lived buried inside Library → Shelf, of all places,
+because that's simply where it was first written. Rebuilt as one
+`view-settings` screen reached the same way from any of the three apps:
+three top-level `<details>` categories, one per module (Potting Bench /
+Daily Planner / Hours), each opening on whichever app you came from and
+the other two collapsed. Editing the Academy guide moved inside the
+Potting Bench category as its own nested, collapsed `<details>` — closed
+by default, so it only "rolls out" when someone actually goes looking
+for it, per the request. Hours' settings card (currency, rate, Pomodoro
+lengths) moved out of the Hours view itself into the Hours category for
+the same reason. Every moved field kept its existing id, so none of the
+code that reads or writes it needed to change — this was a markup
+relocation, not a rewrite. `settingsBtn`'s Back button returns to
+whatever view was open before Settings, tracked in `settingsReturnView`.
+
+**2. A tapped hour on the Daily Planner grid silently lost its time.**
+Clicking an empty hour slot on the day board correctly opened the "New"
+dialog pre-filled with that time (confirmed live — e.g. 09:45) — but
+`pSlotCreate()` hard-coded a Task's `time` to `""` regardless of what
+was in the field:
+`time:isEvent?$("#pSlotTime").value||"09:00":""`. Only Events read the
+field; a Task always saved empty and fell back to the untimed "drag onto
+an hour to give it a time" tray, even though it was created BY tapping
+an hour. This is very likely what read as "the calendar is not correctly
+interactive" — the one direct way to plan a task at a specific time
+silently didn't work. Fixed to
+`time:isEvent?($("#pSlotTime").value||"09:00"):($("#pSlotTime").value||"")`,
+which still lets a Task be genuinely timeless (an empty field still
+saves empty) but no longer discards a time that was actually given.
+Verified via playwright-cli: created a task for a genuinely future date
+(today is 31 August; the first test used the 14th, which is *last*
+month's the-31st-relative past and was overdue by design — re-tested
+against 10 September) by clicking a grid hour, confirmed `time:"14:00"`
+in the saved record, and confirmed it now renders as a positioned block
+on the grid at 14:00 instead of dropping into the tray. Separately audited
+the drag/tap gesture state machine (`G2`) for the reported "freezes after
+tapping a task" — it already wraps every pointerup commit in try/catch
+and unconditionally clears the gesture state even on a throw (an earlier,
+already-shipped fix, per its own code comment), so no dangling state that
+would explain a permanent freeze was found there; the time-save bug is
+the concrete, reproducible fix from this pass.
+
+**3. Dialogs could open off-centre or half off-screen on a phone.**
+`dialog{position:relative; ...}` was added in an earlier round only so a
+gradient-edge pseudo-element had a positioning context — but every dialog
+in the app opens with `.showModal()`, and `dialog:modal` already gets
+`position:fixed` centred by auto margins from the browser itself, which
+already satisfies that same requirement. An explicit `position:relative`
+on top of that fights the browser's own centring on any engine that
+honours the author rule, which is consistent with "the phone window opens
+in random places, not centred." Removed the override; verified centring
+and the gradient edge both still render correctly, in Chromium and in a
+newly-installed WebKit engine, at both a phone width and a landscape/tablet
+width that crosses the 640px breakpoint. Also switched the mobile bottom
+sheet's `max-height` (and the scrollable body's) from `vh` to `dvh`
+(`vh` kept as the fallback) — `vh` sizes against the full layout viewport
+even once the on-screen keyboard is up, which is the likely cause of
+"cannot see the whole window" when adding a task on a phone; `dvh`
+tracks the actual visible area.
+
+**4. The Potting Bench tab strip stayed visible — and clickable — while
+using Daily Planner or Hours.** `setApp()` sets `.navwrap.hidden = true`
+outside Potting Bench, but `.navwrap{display:flex}` is an author rule of
+equal CSS specificity to the browser's built-in `[hidden]{display:none}`,
+and author rules always outrank user-agent ones regardless of source
+order — so the tab strip kept its layout, sat visibly (confirmed via a
+non-zero bounding rect and `pointer-events:auto`) behind whatever the
+other app's glass panels didn't fully cover, and could still be tapped.
+This is almost certainly the reported "nav bar... merges weirdly."
+Fixed with an explicit `.navwrap[hidden]{display:none}`. Verified: the
+strip is now genuinely `display:none` on Daily Planner and Hours, and
+still shows normally back on Potting Bench.
+
+**5. The tab strip clipped its own last tab with no hint it scrolled.**
+Six tabs (Garden/Bench/Grow/Diary/Library/Stats) don't fit a phone's
+width in one row; Round 3 fixed the pill overflowing the viewport by
+making the strip scroll internally, but that left "Stats" hard-cut at
+the edge with zero affordance that swiping would reveal it — confirmed
+live (`scrollWidth` 487px vs. `clientWidth` 369px, no visual cue at all).
+Added edge fades via `mask-image` on `.nav` itself (not a colour-matched
+overlay, so it blends correctly over the blurred glass and whichever
+blob-gradient background sits behind it in either theme), toggled by a
+`navUpdateFade()` scroll listener plus a `ResizeObserver` so a language
+switch or viewport change re-evaluates it too. Verified both edges
+appear and disappear correctly as the strip is scrolled to each end.
+
+All five verified live via playwright-cli against the running app; no
+JavaScript data model or behaviour changed except the one-line time-field
+fix in #2, which is a bug fix, not a redesign change.

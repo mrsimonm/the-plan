@@ -1166,6 +1166,14 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 /* the tab bar floats free of the header — its own glass pill, like an iOS
    tab bar, rather than a full-width strip glued under the top bar */
 .navwrap{position:sticky; top:8px; z-index:20; order:1; padding:8px 12px 0; display:flex; justify-content:center}
+/* setApp() sets .navwrap.hidden when the Daily Planner or Hours app is active
+   — the tab strip only belongs to Potting Bench. An explicit display:flex on
+   an equally-specific class selector otherwise beats the browser's own
+   [hidden]{display:none}, because author rules outrank the user-agent
+   stylesheet regardless of source order: the strip stayed laid out, visible,
+   and genuinely clickable through the glass blur of whatever sat on top of
+   it, on every screen in the other two apps. */
+.navwrap[hidden]{display:none}
 /* round 3: max-width:fit-content let the pill grow wider than the
    viewport on mobile, pushing its own rounded ends off-screen with no
    affordance that it could scroll — max-width:100% keeps the pill's
@@ -1184,7 +1192,19 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
   position:relative; border-radius:var(--r-pill);
   box-shadow:var(--glass-shadow);
   overflow-x:auto; overflow-y:hidden; scrollbar-width:none; -webkit-overflow-scrolling:touch;
-  scroll-behavior:smooth; scroll-padding-inline:24px; max-width:100%}
+  scroll-behavior:smooth; scroll-padding-inline:24px; max-width:100%;
+  /* on a narrow phone the tab strip can hold more labels than fit — it scrolls,
+     but a hard-clipped last tab (Stats, most often) read as broken rather than
+     scrollable, with nothing hinting more sat off-screen. These fade to nothing
+     at whichever edge still has content, and vanish (0px) at an edge that
+     doesn't — toggled by the scroll listener below. A true mask, not a
+     background-colour overlay, so it still blends over the blurred glass and
+     whatever blob gradient sits behind it, in either theme. */
+  --fade-l:0px; --fade-r:0px;
+  mask-image:linear-gradient(to right, transparent, black var(--fade-l), black calc(100% - var(--fade-r)), transparent);
+  -webkit-mask-image:linear-gradient(to right, transparent, black var(--fade-l), black calc(100% - var(--fade-r)), transparent)}
+.nav.ov-l{--fade-l:22px}
+.nav.ov-r{--fade-r:22px}
 .nav::-webkit-scrollbar{display:none}
 .nav button{flex:0 0 auto; appearance:none; border:0; cursor:pointer; white-space:nowrap;
   padding:8px 16px; min-height:36px; border-radius:var(--r-pill); background:transparent;
@@ -1193,7 +1213,6 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .nav button:hover{color:var(--ink)}
 .nav button[aria-selected="true"]{color:var(--on-accent); background:var(--accent)}
 .nav button:focus-visible{outline:2px solid var(--accent); outline-offset:-3px}
-.navwrap::after{display:none}
 
 main{order:2; flex:1; padding:16px 14px 48px; width:100%; max-width:1060px; margin:0 auto}
 .view[hidden]{display:none}
@@ -1646,21 +1665,34 @@ textarea.desc{min-height:66px; font-family:var(--font); font-size:15px}
 .sw input:focus-visible + i{outline:2px solid var(--accent); outline-offset:2px}
 
 /* a glass sheet: centred on desktop, slides up from the bottom on mobile —
-   same surface language as every other glass panel, just anchored differently */
-dialog{position:relative; border-radius:var(--r); background:var(--glass-fill-2);
+   same surface language as every other glass panel, just anchored differently.
+   No author `position` here on purpose: every dialog opens with showModal(),
+   so `dialog:modal`'s own UA default (position:fixed, centred by auto margins)
+   already does the centring — and already establishes the positioned context
+   the ::before gradient-edge ring needs. Overriding it to `relative` used to
+   fight that default on browsers that honour the author rule over the UA one,
+   which is how a dialog could open off-centre or half off-screen instead of
+   centred — reported as "the phone window opens in random places". */
+dialog{border-radius:var(--r); background:var(--glass-fill-2);
   backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur); color:var(--ink);
   padding:0; width:min(500px,calc(100vw - 24px)); box-shadow:var(--glass-shadow);
   animation:dlg-in .22s cubic-bezier(.2,.8,.2,1)}
 dialog::backdrop{background:rgba(46,46,42,.32); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px)}
 @keyframes dlg-in{ from{opacity:0; transform:translateY(6px) scale(.98)} to{opacity:1; transform:none} }
 @media (max-width:640px){
-  dialog{position:fixed; inset:auto 0 0 0; margin:0; width:100%; max-height:88vh;
+  /* dvh tracks the visual viewport once the on-screen keyboard is up; vh does
+     not, and stayed sized against the full layout height, so a sheet anchored
+     to the bottom could extend under the keyboard with no way to reach its
+     own Save button. vh stays as the fallback for the browsers without dvh. */
+  dialog{position:fixed; inset:auto 0 0 0; margin:0; width:100%;
+    max-height:88vh; max-height:88dvh;
     border-radius:var(--r) var(--r) 0 0; animation:dlg-in-sheet .26s cubic-bezier(.2,.8,.2,1)}
   @keyframes dlg-in-sheet{ from{transform:translateY(100%)} to{transform:translateY(0)} }
 }
 @media (prefers-reduced-motion: reduce){ dialog{animation:none} }
 .dlg-head{padding:16px 18px; border-bottom:1px solid var(--glass-border); font-size:19px}
-.dlg-body{padding:18px; display:flex; flex-direction:column; gap:13px; max-height:68vh; overflow-y:auto}
+.dlg-body{padding:18px; display:flex; flex-direction:column; gap:13px;
+  max-height:68vh; max-height:68dvh; overflow-y:auto}
 .dlg-foot{padding:14px 18px; border-top:1px solid var(--glass-border); display:flex; gap:8px; justify-content:flex-end}
 .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
 .grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px}
@@ -1675,11 +1707,27 @@ textarea{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:1
 .fold > summary:hover{color:var(--accent)}
 .fold > summary:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
 
+/* the three top-level Settings categories, one per module — closed by
+   default so opening Settings never dumps every field on screen at once,
+   which is the complaint the whole page exists to fix */
+.setcat{border-radius:var(--r); background:var(--glass-fill-2);
+  backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
+  border:1px solid var(--glass-border); overflow:hidden}
+.setcat > summary{cursor:pointer; list-style:none; display:flex; align-items:center;
+  justify-content:space-between; gap:10px; padding:15px 16px; font-family:var(--font);
+  font-weight:700; font-size:16px; letter-spacing:-.01em; color:var(--ink)}
+.setcat > summary::-webkit-details-marker{display:none}
+.setcat > summary:hover{color:var(--accent)}
+.setcat > summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+.setcat .chev{transition:transform .16s cubic-bezier(.2,.8,.2,1)}
+.setcat[open] > summary .chev{transform:rotate(90deg)}
+.setcat-body{padding:2px 14px 16px}
+.setcat-body .sec-head:first-child h2{margin-top:2px}
+
 
 @media (min-width:820px){
   .nav{max-width:1060px; margin:0 auto; width:100%; overflow:visible}
   .nav button{padding:12px 20px}
-  .navwrap::after{display:none}
   main{padding:22px 16px 60px}
   .bench{display:grid; gap:20px; align-items:start;
     grid-template-columns:minmax(290px,.85fr) 1.15fr;
@@ -1975,7 +2023,7 @@ html{overscroll-behavior-y:none}
 </style>
 
 <header class="top">
-  <button class="gear" id="acadEditBtn" aria-label="Edit the guide" title="Edit the guide">⚙</button>
+  <button class="gear" id="settingsBtn" aria-label="Settings" title="Settings">⚙</button>
   <div class="brandwrap">
     <button class="brand" id="appBtn" aria-haspopup="true" aria-expanded="false">
       <h1 class="mark" id="appName" data-no-i18n>Potting<span>·</span>Bench</h1>
@@ -2098,115 +2146,6 @@ html{overscroll-behavior-y:none}
     <p class="hint" style="margin:10px 2px 22px">
       Order in this list is mixing order, not alphabetical — it follows each product's category.
     </p>
-    <div class="sec-head"><h2 style="font-size:18px">Settings</h2></div>
-    <div class="card pad" style="margin-bottom:14px">
-      <div class="stack">
-        <label class="lu" style="border:0; padding:0">
-          <span class="sw"><input id="advToggle" type="checkbox"><i></i></span>
-          <span class="lu-name">Advanced readings<small>Shows ppm, EC, TDS and the pH target while mixing</small></span>
-        </label>
-        <div class="field" id="scaleField">
-          <label for="ppmScale">Your meter's TDS scale</label>
-          <select id="ppmScale">
-            <option value="500">500 (NaCl — most US meters)</option>
-            <option value="640">640 (KCl — many EU meters)</option>
-            <option value="700">700 (442 — Truncheon and similar)</option>
-          </select>
-          <p class="hint">Only changes the TDS number, never EC or the doses. If your meter reads a different
-            ppm than this app for the same water, this is the setting to change.</p>
-        </div>
-        <label class="lu" style="border:0; padding:0">
-          <span class="sw"><input id="expertToggle" type="checkbox"><i></i></span>
-          <span class="lu-name">Expert statistics<small>Adds interval adherence, consistency and water-volume analysis to the Stats tab</small></span>
-        </label>
-        <p class="hint" style="margin:0">Both are per device — you can have them on and the other phone off.</p>
-      </div>
-    </div>
-    <div class="sec-head"><h2 style="font-size:18px">Appearance</h2></div>
-    <div class="card pad">
-      <div class="stack">
-        <div class="field">
-          <label for="themeToggle">Color scheme</label>
-          <select id="themeToggle">
-            <option value="null">System (follow device setting)</option>
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-          </select>
-          <p class="hint">Choose your preferred look, or follow your device's system setting.</p>
-        </div>
-      </div>
-    </div>
-    <div class="sec-head"><h2 style="font-size:18px">Action days</h2></div>
-    <div class="card pad" style="margin-bottom:14px">
-      <div class="stack">
-        <label class="lu" style="border:0; padding:0">
-          <span class="sw"><input id="actDaysOn" type="checkbox"><i></i></span>
-          <span class="lu-name">Water and feed on set days<small>Everything due nearby moves to the closest of these days</small></span>
-        </label>
-        <div id="actDaysBody">
-          <div class="field">
-            <label>Which days</label>
-            <div id="actDayPicker" class="btn-row" style="gap:6px"></div>
-            <p class="hint" id="actDaysHint" style="margin:8px 0 0"></p>
-          </div>
-          <div class="field" style="margin-top:13px">
-            <label>How the plants sit</label>
-            <div id="actDayLoad" class="stack" style="gap:6px"></div>
-            <div class="btn-row" style="margin-top:9px">
-              <button class="btn mini" type="button" id="actSpread">Spread plants evenly</button>
-            </div>
-            <p class="hint" style="margin:8px 0 0">A plant keeps its day until you move it. Anything that
-              runs properly late still shows up straight away — action days are the plan, not a cage.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="sec-head"><h2 style="font-size:18px">Daily tasks</h2></div>
-    <div class="card pad">
-      <div class="stack">
-        <div class="field">
-          <label for="dayStartHour">Day resets at</label>
-          <select id="dayStartHour">
-            <option value="4">4 AM</option>
-            <option value="0">Midnight (11:59 PM)</option>
-            <option value="6">6 AM</option>
-            <option value="8">8 AM</option>
-            <option value="12">Noon</option>
-          </select>
-          <p class="hint">Changes when your daily task counter resets. If you often do tasks after midnight, try 4 AM instead of midnight.</p>
-        </div>
-        <p class="hint" style="margin:0">Per device — every device can have a different reset time.</p>
-      </div>
-    </div>
-    <div class="sec-head"><h2 style="font-size:18px">People &amp; data</h2></div>
-    <div class="card pad">
-      <div class="stack">
-        <button type="button" class="btn" id="peopleOpen" style="align-self:flex-start">Manage people</button>
-        <p class="hint" id="shareHint" style="margin:0"></p>
-        <details class="fold">
-          <summary>Move data to the other device</summary>
-          <div class="stack" style="margin-top:12px">
-            <textarea id="dataBox" spellcheck="false" aria-label="Your data as text"></textarea>
-            <div class="btn-row">
-              <button class="btn" id="copyData">Copy</button>
-              <button class="btn" id="importData">Paste in &amp; replace</button>
-            </div>
-          </div>
-        </details>
-        <div class="xfer">
-          <span class="eyebrow" style="display:block; margin-bottom:8px">Backup &amp; transfer</span>
-          <p class="hint" style="margin:0 0 10px">Export writes everything — plants, shelf, formulas,
-            schedules, the whole log — to one file. Import replaces what is on this device with it.</p>
-          <div class="btn-row">
-            <button class="btn primary" type="button" id="exportFile">Export to file</button>
-            <button class="btn" type="button" id="importFile">Import from file</button>
-          </div>
-          <input type="file" id="importPicker" accept="application/json,.json" hidden>
-          <p class="hint" id="xferMsg" style="margin:9px 0 0" role="status" aria-live="polite"></p>
-        </div>
-        <div class="btn-row"><button class="btn danger" id="resetData">Reset everything</button></div>
-      </div>
-    </div>
   </section>
 
   <!-- ============ PRODUCT EDITOR (sub-page of Shelf) ============ -->
@@ -2636,7 +2575,7 @@ html{overscroll-behavior-y:none}
   <!-- ============ ACADEMY EDITOR ============ -->
   <section class="view" id="view-acadedit" hidden>
     <div class="sec-head"><h2>Edit the guide</h2>
-      <button class="btn" id="acadBack">← Academy</button></div>
+      <button class="btn" id="acadBack">← Settings</button></div>
     <div class="stack">
       <div class="card pad"><div class="stack">
         <div class="field"><label for="acDo">Do — one per line</label>
@@ -2652,6 +2591,171 @@ html{overscroll-behavior-y:none}
         <button class="btn primary" id="acSave">Save guide</button>
         <button class="btn danger" id="acReset" style="margin-left:auto">Reset to the original</button>
       </div>
+    </div>
+  </section>
+
+  <!-- ============ SETTINGS (one place, one category per module) ============ -->
+  <section class="view" id="view-settings" hidden>
+    <div class="sec-head"><h2>Settings</h2>
+      <button class="btn" id="setBack">← Back</button></div>
+    <div class="stack">
+      <details class="setcat" id="setCatBench">
+        <summary><span class="setcat-t">Potting Bench</span><span class="chev" aria-hidden="true">›</span></summary>
+        <div class="stack setcat-body">
+          <div class="sec-head"><h2 style="font-size:18px">Mixing</h2></div>
+          <div class="card pad" style="margin-bottom:14px">
+            <div class="stack">
+              <label class="lu" style="border:0; padding:0">
+                <span class="sw"><input id="advToggle" type="checkbox"><i></i></span>
+                <span class="lu-name">Advanced readings<small>Shows ppm, EC, TDS and the pH target while mixing</small></span>
+              </label>
+              <div class="field" id="scaleField">
+                <label for="ppmScale">Your meter's TDS scale</label>
+                <select id="ppmScale">
+                  <option value="500">500 (NaCl — most US meters)</option>
+                  <option value="640">640 (KCl — many EU meters)</option>
+                  <option value="700">700 (442 — Truncheon and similar)</option>
+                </select>
+                <p class="hint">Only changes the TDS number, never EC or the doses. If your meter reads a different
+                  ppm than this app for the same water, this is the setting to change.</p>
+              </div>
+              <label class="lu" style="border:0; padding:0">
+                <span class="sw"><input id="expertToggle" type="checkbox"><i></i></span>
+                <span class="lu-name">Expert statistics<small>Adds interval adherence, consistency and water-volume analysis to the Stats tab</small></span>
+              </label>
+              <p class="hint" style="margin:0">Both are per device — you can have them on and the other phone off.</p>
+            </div>
+          </div>
+          <div class="sec-head"><h2 style="font-size:18px">Appearance</h2></div>
+          <div class="card pad">
+            <div class="stack">
+              <div class="field">
+                <label for="themeToggle">Color scheme</label>
+                <select id="themeToggle">
+                  <option value="null">System (follow device setting)</option>
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                </select>
+                <p class="hint">Choose your preferred look, or follow your device's system setting.</p>
+              </div>
+            </div>
+          </div>
+          <div class="sec-head"><h2 style="font-size:18px">Action days</h2></div>
+          <div class="card pad" style="margin-bottom:14px">
+            <div class="stack">
+              <label class="lu" style="border:0; padding:0">
+                <span class="sw"><input id="actDaysOn" type="checkbox"><i></i></span>
+                <span class="lu-name">Water and feed on set days<small>Everything due nearby moves to the closest of these days</small></span>
+              </label>
+              <div id="actDaysBody">
+                <div class="field">
+                  <label>Which days</label>
+                  <div id="actDayPicker" class="btn-row" style="gap:6px"></div>
+                  <p class="hint" id="actDaysHint" style="margin:8px 0 0"></p>
+                </div>
+                <div class="field" style="margin-top:13px">
+                  <label>How the plants sit</label>
+                  <div id="actDayLoad" class="stack" style="gap:6px"></div>
+                  <div class="btn-row" style="margin-top:9px">
+                    <button class="btn mini" type="button" id="actSpread">Spread plants evenly</button>
+                  </div>
+                  <p class="hint" style="margin:8px 0 0">A plant keeps its day until you move it. Anything that
+                    runs properly late still shows up straight away — action days are the plan, not a cage.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="sec-head"><h2 style="font-size:18px">Daily tasks</h2></div>
+          <div class="card pad">
+            <div class="stack">
+              <div class="field">
+                <label for="dayStartHour">Day resets at</label>
+                <select id="dayStartHour">
+                  <option value="4">4 AM</option>
+                  <option value="0">Midnight (11:59 PM)</option>
+                  <option value="6">6 AM</option>
+                  <option value="8">8 AM</option>
+                  <option value="12">Noon</option>
+                </select>
+                <p class="hint">Changes when your daily task counter resets. If you often do tasks after midnight, try 4 AM instead of midnight.</p>
+              </div>
+              <p class="hint" style="margin:0">Per device — every device can have a different reset time.</p>
+            </div>
+          </div>
+          <div class="sec-head"><h2 style="font-size:18px">People &amp; data</h2></div>
+          <div class="card pad">
+            <div class="stack">
+              <button type="button" class="btn" id="peopleOpen" style="align-self:flex-start">Manage people</button>
+              <p class="hint" id="shareHint" style="margin:0"></p>
+              <details class="fold">
+                <summary>Move data to the other device</summary>
+                <div class="stack" style="margin-top:12px">
+                  <textarea id="dataBox" spellcheck="false" aria-label="Your data as text"></textarea>
+                  <div class="btn-row">
+                    <button class="btn" id="copyData">Copy</button>
+                    <button class="btn" id="importData">Paste in &amp; replace</button>
+                  </div>
+                </div>
+              </details>
+              <div class="xfer">
+                <span class="eyebrow" style="display:block; margin-bottom:8px">Backup &amp; transfer</span>
+                <p class="hint" style="margin:0 0 10px">Export writes everything — plants, shelf, formulas,
+                  schedules, the whole log — to one file. Import replaces what is on this device with it.</p>
+                <div class="btn-row">
+                  <button class="btn primary" type="button" id="exportFile">Export to file</button>
+                  <button class="btn" type="button" id="importFile">Import from file</button>
+                </div>
+                <input type="file" id="importPicker" accept="application/json,.json" hidden>
+                <p class="hint" id="xferMsg" style="margin:9px 0 0" role="status" aria-live="polite"></p>
+              </div>
+              <div class="btn-row"><button class="btn danger" id="resetData">Reset everything</button></div>
+            </div>
+          </div>
+          <!-- collapsed by default, and nested one level deeper still — editing
+               the guide is rare, and used to be the very first thing the header
+               gear showed, ahead of any actual setting. It only opens now when
+               someone actually goes looking for it. -->
+          <details class="fold" id="setAcadFold">
+            <summary>Edit the plant-care guide</summary>
+            <div class="stack" style="margin-top:12px">
+              <p class="hint" style="margin:0 0 10px">Rewrite the Do/Don't list and the Q&amp;A sections shown
+                in the Academy — your own words, in place of the built-in guidance.</p>
+              <button type="button" class="btn" id="setAcadOpen">Edit the guide →</button>
+            </div>
+          </details>
+        </div>
+      </details>
+
+      <details class="setcat" id="setCatPlanner">
+        <summary><span class="setcat-t">Daily Planner</span><span class="chev" aria-hidden="true">›</span></summary>
+        <div class="stack setcat-body">
+          <p class="hint" style="margin:4px 2px">Sleep and linked-time settings live on the Planner's own Day
+            card, since they change how today reads at a glance — open Daily Planner to adjust them.</p>
+        </div>
+      </details>
+
+      <details class="setcat" id="setCatHours">
+        <summary><span class="setcat-t">Hours</span><span class="chev" aria-hidden="true">›</span></summary>
+        <div class="stack setcat-body">
+          <div class="card pad">
+            <div class="hset-grid">
+              <label class="field"><span>Currency</span>
+                <input type="text" id="hsCurrency" class="mono-input" maxlength="4"></label>
+              <label class="field"><span>Default rate</span>
+                <input type="number" id="hsDefaultRate" class="mono-input hrs" min="0" step="1"></label>
+              <label class="field"><span>Focus</span>
+                <input type="number" id="hsWork" class="mono-input hrs" min="1" max="120"></label>
+              <label class="field"><span>Short break</span>
+                <input type="number" id="hsShort" class="mono-input hrs" min="1" max="60"></label>
+              <label class="field"><span>Long break</span>
+                <input type="number" id="hsLong" class="mono-input hrs" min="1" max="60"></label>
+              <label class="field"><span>Long every</span>
+                <input type="number" id="hsCycle" class="mono-input hrs" min="2" max="12"></label>
+            </div>
+            <p class="hint" style="margin:9px 0 0">Pomodoro lengths in minutes. Breaks never count toward a project's time.</p>
+          </div>
+        </div>
+      </details>
     </div>
   </section>
 
@@ -2677,25 +2781,6 @@ html{overscroll-behavior-y:none}
       </div>
       <div id="hProjectList"></div>
       <p class="empty" id="hProjectEmpty" hidden>No projects yet — add one above and start the clock.</p>
-    </div>
-
-    <div class="card pad">
-      <span class="eyebrow" style="display:block; margin-bottom:11px">Settings</span>
-      <div class="hset-grid">
-        <label class="field"><span>Currency</span>
-          <input type="text" id="hsCurrency" class="mono-input" maxlength="4"></label>
-        <label class="field"><span>Default rate</span>
-          <input type="number" id="hsDefaultRate" class="mono-input hrs" min="0" step="1"></label>
-        <label class="field"><span>Focus</span>
-          <input type="number" id="hsWork" class="mono-input hrs" min="1" max="120"></label>
-        <label class="field"><span>Short break</span>
-          <input type="number" id="hsShort" class="mono-input hrs" min="1" max="60"></label>
-        <label class="field"><span>Long break</span>
-          <input type="number" id="hsLong" class="mono-input hrs" min="1" max="60"></label>
-        <label class="field"><span>Long every</span>
-          <input type="number" id="hsCycle" class="mono-input hrs" min="2" max="12"></label>
-      </div>
-      <p class="hint" style="margin:9px 0 0">Pomodoro lengths in minutes. Breaks never count toward a project's time.</p>
     </div>
   </section>
 
@@ -4924,7 +5009,7 @@ function pSlotCreate(kind){
   const title=$("#pSlotText").value.trim()||t("Untitled task");
   const isEvent=kind==="event";
   S.planner.tasks.push({id:uid(),title,due:pSlotDay,
-    time:isEvent?$("#pSlotTime").value||"09:00":"",
+    time:isEvent?($("#pSlotTime").value||"09:00"):($("#pSlotTime").value||""),
     /* the dialog's buttons are plain buttons in a form-less dialog, so the
        input's min= is never validated — clamp here or an Event can be minted
        with 0h and then render nowhere at all */
@@ -9311,8 +9396,23 @@ function openAcadEdit(){
   renderAcadSections();
   show("acadedit");
 }
-$("#acadEditBtn").addEventListener("click",openAcadEdit);
-$("#acadBack").addEventListener("click",async()=>{ renderAcademy(); show("academy"); });
+/* One settings screen, reached the same way from any of the three apps —
+   the header gear is always on screen, so it opens this instead of jumping
+   straight into editing the Academy guide, which used to be the ONLY thing
+   the gear did and the first thing anyone saw, ahead of every real setting.
+   Settings itself changes nothing about which app or view was showing
+   underneath it, so Back can just return there. */
+let settingsReturnView=null;
+function openSettings(){
+  settingsReturnView=curView;
+  const cat={bench:"setCatBench",planner:"setCatPlanner",hours:"setCatHours"}[L.app]||"setCatBench";
+  ["setCatBench","setCatPlanner","setCatHours"].forEach(id=>{ $("#"+id).open=(id===cat); });
+  show("settings");
+}
+$("#settingsBtn").addEventListener("click",openSettings);
+$("#setBack").addEventListener("click",()=>show(settingsReturnView||"garden"));
+$("#setAcadOpen").addEventListener("click",openAcadEdit);
+$("#acadBack").addEventListener("click",async()=>{ show("settings"); });
 $("#acAddSec").addEventListener("click",async()=>{
   captureAcad();
   editAcad.sections.push({t:"",items:[{q:"",a:[]}]});
@@ -9782,9 +9882,9 @@ function renderTaskBarFull(containerId){
 const APPS=[{id:"bench",label:"Potting Bench",view:null},
             {id:"planner",label:"Daily Planner",view:"planner"},
             {id:"hours",label:"Hours",view:"hours"}];
-const BENCH_VIEWS=["garden","library","mix","plants","plan","cuttings","batch","shelf","log","academy","acadedit","plant","product","sched","formula","stats"];
+const BENCH_VIEWS=["garden","library","mix","plants","plan","cuttings","batch","shelf","log","academy","acadedit","settings","plant","product","sched","formula","stats"];
 const NAV_PARENT={batch:"cuttings", plant:"garden", plants:"library", product:"library",
-  sched:"plan", formula:"mix", acadedit:"library", shelf:"library", log:"library", academy:"library"};
+  sched:"plan", formula:"mix", acadedit:"library", settings:"library", shelf:"library", log:"library", academy:"library"};
 function renderAppMenu(){
   $("#appMenu").innerHTML=APPS.map(a=>
     `<button type="button" role="menuitem" data-app="${a.id}"
@@ -9890,11 +9990,28 @@ function showNow(v){
     nav.scrollLeft=Math.max(0,sel.offsetLeft-(nav.clientWidth-sel.offsetWidth)/2);
     nav.style.scrollBehavior=prev;
   }
+  navUpdateFade();
   requestAnimationFrame(()=>window.scrollTo({top:["product","sched","formula","acadedit","plant","batch"].includes(v)?0:(scrollMem[v]||0)}));
 }
 
 /* ---------------- events: mix ---------------- */
 document.querySelectorAll(".nav button").forEach(b=>b.addEventListener("click",()=>show(b.dataset.view)));
+
+/* edge fades for the scrollable tab strip — see the .nav rule for why. A
+   ResizeObserver catches everything a plain resize listener would miss: the
+   language switch changing label widths, a tab's text re-rendering, the
+   viewport rotating — anything that can turn "fits" into "doesn't" or back. */
+function navUpdateFade(){
+  const nav=document.querySelector(".nav"); if(!nav) return;
+  nav.classList.toggle("ov-l", nav.scrollLeft>2);
+  nav.classList.toggle("ov-r", nav.scrollLeft<nav.scrollWidth-nav.clientWidth-2);
+}
+(()=>{
+  const nav=document.querySelector(".nav"); if(!nav) return;
+  nav.addEventListener("scroll", navUpdateFade, {passive:true});
+  if(typeof ResizeObserver!=="undefined") new ResizeObserver(navUpdateFade).observe(nav);
+  navUpdateFade();
+})();
 
 $("#vol").addEventListener("input",async e=>{
   const R=volRange(), raw=+e.target.value||0;
