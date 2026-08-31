@@ -2954,7 +2954,10 @@ html{overscroll-behavior-y:none}
 
     <!-- ---- Search ---- -->
     <div class="stack pstack" id="tbScopeSearch" hidden>
-      <p class="pday-sub">Coming soon.</p>
+      <div class="card pad">
+        <input type="text" id="tbSearchInput" class="mono-input" placeholder="Search students, words, lessons, tasks…" style="width:100%">
+      </div>
+      <div id="tbSearchResults" class="stack" style="gap:14px"></div>
     </div>
 
     <div class="stack pstack" id="tbScopeDetail" hidden>
@@ -12416,6 +12419,71 @@ function tbRenderStudentDetail(){
   tbRenderStudentWords($("#tbDetailWords"), data, student.id, {showReviewed:true});
   tbRenderAssignedMaterials($("#tbDetailTasks"), data, student.id);
 }
+
+/* ============================================================================
+   Teachbench — Search */
+
+function tbSearchGroup(title, rows){
+  if(!rows.length) return "";
+  return `<div><div class="field-label" style="margin-bottom:6px">${esc(title)} · ${rows.length}</div>
+    <div class="stack" style="gap:4px">${rows.join("")}</div></div>`;
+}
+
+function tbRenderSearch(){
+  const q=($("#tbSearchInput").value||"").trim().toLowerCase();
+  const host=$("#tbSearchResults");
+  if(q.length<2){ host.innerHTML=`<p class="pday-sub">Type at least two letters.</p>`; return; }
+
+  const data=TB.loadData();
+
+  const students=data.students.filter(s=>
+    s.name.toLowerCase().includes(q) || (s.notes||"").toLowerCase().includes(q) || tbLevelLabel(s.level).toLowerCase().includes(q)
+  ).sort((a,b)=>a.name.localeCompare(b.name)).map(s=>`
+    <button type="button" class="row" data-tb-search-student="${s.id}">
+      <span class="row-main"><span class="row-title">${esc(s.name)}</span>
+        <span class="row-sub">${esc(tbLevelLabel(s.level))}</span></span>
+      <span class="chev" aria-hidden="true">›</span>
+    </button>`);
+
+  const byOwner=(w)=>{
+    if(w.ownerId){ const o=data.students.find(s=>s.id===w.ownerId); return "Private · "+(o?o.name:"?"); }
+    const names=data.studentWords.filter(sw=>sw.wordId===w.id).map(sw=>{ const s=data.students.find(x=>x.id===sw.studentId); return s?s.name:null; }).filter(Boolean);
+    return names.length ? names.join(", ") : "In the bank, unassigned";
+  };
+  const words=data.words.filter(w=>
+    w.term.toLowerCase().includes(q) || (w.definition||"").toLowerCase().includes(q) || (w.example||"").toLowerCase().includes(q)
+  ).sort((a,b)=>a.term.localeCompare(b.term)).map(w=>`
+    <div class="row" style="cursor:default"><span class="row-main"><span class="row-title">${esc(w.term)}</span>
+      <span class="row-sub">${esc(byOwner(w))}</span></span></div>`);
+
+  const lessons=data.lessons.filter(l=>
+    (l.plan||"").toLowerCase().includes(q) || (l.notes||"").toLowerCase().includes(q)
+  ).sort((a,b)=>(b.date||"").localeCompare(a.date||"")).map(l=>{
+    const s=data.students.find(x=>x.id===l.studentId);
+    const firstLine=(l.plan||"").split("\n")[0]||"No plan";
+    return `<button type="button" class="row" data-tb-search-lesson="${l.id}">
+      <span class="row-main"><span class="row-title">${l.date?esc(tbFormatShortDate(l.date)):"No date"} · ${esc(s?s.name:"?")}</span>
+        <span class="row-sub">${esc(firstLine)}</span></span>
+      <span class="chev" aria-hidden="true">›</span>
+    </button>`;
+  });
+
+  const materials=data.materials.filter(m=>
+    m.title.toLowerCase().includes(q) || (m.body||"").toLowerCase().includes(q) || (m.note||"").toLowerCase().includes(q) || (m.topic||"").toLowerCase().includes(q)
+  ).sort((a,b)=>a.title.localeCompare(b.title)).map(m=>`
+    <div class="row" style="cursor:default"><span class="row-main"><span class="row-title">${esc(m.title)}</span>
+      <span class="row-sub">${esc(tbMatTypeLabel(m.type))} · ${esc(tbMatSkillLabel(m.category))}</span></span></div>`);
+
+  const blocks=[tbSearchGroup("Students",students), tbSearchGroup("Words",words), tbSearchGroup("Lessons",lessons), tbSearchGroup("Tasks",materials)].filter(Boolean).join("");
+  host.innerHTML = blocks || `<p class="pday-sub">Nothing matches "${esc($("#tbSearchInput").value.trim())}".</p>`;
+}
+$("#tbSearchInput").addEventListener("input", tbRenderSearch);
+document.addEventListener("click",e=>{
+  const s=e.target.closest("[data-tb-search-student]");
+  if(s){ tbOpenStudentDetail(s.dataset.tbSearchStudent); return; }
+  const l=e.target.closest("[data-tb-search-lesson]");
+  if(l){ tbOpenLessonDialog(l.dataset.tbSearchLesson, null); }
+});
 
 function renderAppMenu(){
   $("#appMenu").innerHTML=APPS.map(a=>
