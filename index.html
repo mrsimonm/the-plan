@@ -2902,7 +2902,54 @@ html{overscroll-behavior-y:none}
 
     <!-- ---- Words (vocabulary) ---- -->
     <div class="stack pstack" id="tbScopeWords" hidden>
-      <p class="pday-sub">Coming soon.</p>
+      <div class="seg segsm" id="tbWordSubSeg">
+        <button type="button" data-tbwordsub="bank" aria-pressed="true">Bank</button>
+        <button type="button" data-tbwordsub="bystudent" aria-pressed="false">By student</button>
+        <button type="button" data-tbwordsub="review" aria-pressed="false">Review</button>
+      </div>
+
+      <div class="stack" id="tbWordBank">
+        <form class="card pad qadd" id="tbWordForm">
+          <input type="text" id="tbWordTerm" placeholder="Word or phrase" autocomplete="off">
+          <input type="text" id="tbWordDef" class="mono-input" placeholder="Definition / translation (optional)" style="width:100%">
+          <textarea id="tbWordExample" rows="2" placeholder="Example sentence (optional)"></textarea>
+          <div class="qadd-row2">
+            <span class="field-label">list</span>
+            <select id="tbWordList" class="mono-input"></select>
+            <button class="btn primary mini" type="submit">Add word</button>
+          </div>
+        </form>
+
+        <form class="card pad qadd" id="tbListForm">
+          <div class="qadd-row2">
+            <input type="text" id="tbListName" placeholder="New list name" autocomplete="off" style="flex:1">
+            <button class="btn mini" type="submit">Add list</button>
+          </div>
+        </form>
+
+        <div id="tbWordGroups" class="stack" style="gap:14px"></div>
+      </div>
+
+      <div class="stack" id="tbWordByStudent" hidden>
+        <div class="card pad"><select id="tbWordStudentSel" class="mono-input" style="width:100%"></select></div>
+        <div class="card pad">
+          <div class="sec-head"><h2 style="font-size:15px">Vocabulary</h2>
+            <button class="btn mini" type="button" id="tbWordPickBtn">Add from bank</button></div>
+          <form class="qadd" id="tbWordQuickForm" style="margin-bottom:10px">
+            <div class="qadd-row2">
+              <input type="text" id="tbWordQuickTerm" class="mono-input" placeholder="Word" style="flex:1">
+              <input type="text" id="tbWordQuickDef" class="mono-input" placeholder="Definition (optional)" style="flex:1">
+              <button class="btn mini" type="submit">+ private word</button>
+            </div>
+          </form>
+          <div id="tbWordAssignedList" class="stack" style="gap:10px"></div>
+        </div>
+      </div>
+
+      <div class="stack" id="tbWordReview" hidden>
+        <p class="hint">Words marked "Learning" that have not been looked at for a week or more. Setting a status counts as looking at it.</p>
+        <div id="tbWordReviewList" class="stack" style="gap:14px"></div>
+      </div>
     </div>
 
     <!-- ---- Search ---- -->
@@ -2949,6 +2996,47 @@ html{overscroll-behavior-y:none}
     </div>
     <div class="dlg-foot">
       <button class="btn mini" type="button" id="tbMatPickerCancel">Cancel</button>
+      <button class="btn primary mini" type="submit">Save</button>
+    </div>
+  </form></dialog>
+
+  <dialog id="tbWordEditDlg"><form id="tbWordEditForm">
+    <h3 class="dlg-head">Edit word</h3>
+    <div class="dlg-body">
+      <div class="field"><label for="tbWordEditTerm">Term</label><input type="text" id="tbWordEditTerm"></div>
+      <div class="field"><label for="tbWordEditDef">Definition</label><input type="text" id="tbWordEditDef"></div>
+      <div class="field"><label for="tbWordEditExample">Example</label><textarea id="tbWordEditExample" rows="2"></textarea></div>
+      <div class="field" id="tbWordEditListField"><label for="tbWordEditList">List</label><select id="tbWordEditList"></select></div>
+      <p class="pday-sub" id="tbWordEditOwnerNote" hidden></p>
+      <p class="pday-sub" id="tbWordEditUsage"></p>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn mini" type="button" id="tbWordDelete">Delete…</button>
+      <button class="btn mini" type="button" id="tbWordEditCancel">Close</button>
+      <button class="btn primary mini" type="submit">Save</button>
+    </div>
+  </form></dialog>
+
+  <dialog id="tbWordPickerDlg"><form id="tbWordPickerForm">
+    <h3 class="dlg-head">Add from bank</h3>
+    <div class="dlg-body">
+      <div id="tbWordPickerGroups" class="stack" style="gap:12px"></div>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn mini" type="button" id="tbWordPickerCancel">Cancel</button>
+      <button class="btn primary mini" type="submit">Save</button>
+    </div>
+  </form></dialog>
+
+  <dialog id="tbListEditDlg"><form id="tbListEditForm">
+    <h3 class="dlg-head">Edit list</h3>
+    <div class="dlg-body">
+      <div class="field"><label for="tbListEditName">List name</label><input type="text" id="tbListEditName"></div>
+      <p class="pday-sub" id="tbListEditUsage"></p>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn mini" type="button" id="tbListDelete">Delete…</button>
+      <button class="btn mini" type="button" id="tbListEditCancel">Close</button>
       <button class="btn primary mini" type="submit">Save</button>
     </div>
   </form></dialog>
@@ -11705,6 +11793,379 @@ $("#tbMatPickerForm").addEventListener("submit",e=>{
   tbMatPickerStudentId=null;
   if(tbMatSubview==="bystudent") tbRenderMatByStudent();
 });
+
+/* ============================================================================
+   Teachbench — Words (vocabulary) */
+
+const TB_WORD_STATUS_ORDER=["learning","not_started","learned"];
+function tbWordStatusLabel(v){ const s=TB.WORD_STATUSES.find(x=>x.value===v); return s?s.label:v; }
+function tbWordUsageCount(data, wordId){ return data.studentWords.filter(sw=>sw.wordId===wordId).length; }
+function tbListName(data, listId){ const l=data.vocabLists.find(x=>x.id===listId); return l?l.name:null; }
+
+let tbWordSubview="bank";
+let tbWordEditId=null;
+let tbWordByStudentId=null;
+let tbWordPickerStudentId=null;
+let tbWordPickerChecked=new Set();
+let tbWordOpenIds=new Set();
+
+function tbFillWordListSelect(sel, noneLabel){
+  const data=TB.loadData();
+  const cur=sel.value;
+  sel.innerHTML=`<option value="">${esc(noneLabel)}</option>`+
+    data.vocabLists.map(l=>`<option value="${l.id}">${esc(l.name)}</option>`).join("");
+  if([...sel.options].some(o=>o.value===cur)) sel.value=cur;
+}
+
+$("#tbWordSubSeg").addEventListener("click",e=>{
+  const b=e.target.closest("[data-tbwordsub]"); if(!b) return;
+  tbWordSubview=b.dataset.tbwordsub;
+  document.querySelectorAll("#tbWordSubSeg [data-tbwordsub]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
+  $("#tbWordBank").hidden=tbWordSubview!=="bank";
+  $("#tbWordByStudent").hidden=tbWordSubview!=="bystudent";
+  $("#tbWordReview").hidden=tbWordSubview!=="review";
+  if(tbWordSubview==="bystudent") tbRenderWordByStudent();
+  if(tbWordSubview==="review") tbRenderWordReview();
+});
+
+function tbRenderWords(){
+  tbFillWordListSelect($("#tbWordList"), "No list");
+  tbFillWordListSelect($("#tbWordEditList"), "No list");
+  tbRenderWordBank();
+  if(tbWordSubview==="bystudent") tbRenderWordByStudent();
+  if(tbWordSubview==="review") tbRenderWordReview();
+}
+
+$("#tbWordForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const term=$("#tbWordTerm").value.trim();
+  if(!term) return;
+  const data=TB.loadData();
+  data.words.push(TB.createWord({term, definition:$("#tbWordDef").value.trim(), example:$("#tbWordExample").value.trim(), listId:$("#tbWordList").value||null, ownerId:null}));
+  TB.saveData(data);
+  $("#tbWordForm").reset();
+  tbRenderWordBank();
+});
+
+$("#tbListForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const name=$("#tbListName").value.trim();
+  if(!name) return;
+  const data=TB.loadData();
+  data.vocabLists.push(TB.createVocabList(name));
+  TB.saveData(data);
+  $("#tbListName").value="";
+  tbFillWordListSelect($("#tbWordList"), "No list");
+  tbRenderWordBank();
+});
+
+/* Shared word-row component: used by the Bank list, By-student list, and
+   Review list alike. `link` is a studentWords row (or a synthetic one with
+   status:null for a bank word with no per-student link, in the Bank view). */
+function tbBuildWordRow(data, word, link, opts){
+  opts=opts||{};
+  const due = link ? TB.isDueForReview(link, Date.now()) : false;
+  const rowKey = word.id+"|"+(link?link.studentId:"");
+  const open = tbWordOpenIds.has(rowKey);
+  const usage = tbWordUsageCount(data, word.id);
+  const statusBit = link ? `
+    <span class="tag cat">${esc(tbWordStatusLabel(link.status))}</span>
+    ${due?'<span class="tag check">review</span>':""}
+    <select class="mono-input" data-tb-word-status="${word.id}|${link.studentId}" style="margin-left:6px">
+      ${TB.WORD_STATUSES.map(s=>`<option value="${s.value}" ${s.value===link.status?"selected":""}>${esc(s.label)}</option>`).join("")}
+    </select>` : (usage?`<span class="tag cat">${usage} student${usage===1?"":"s"}</span>`:"");
+  return `<div class="row" style="flex-direction:column; align-items:stretch; cursor:default">
+    <button type="button" data-tb-word-toggle="${rowKey}" class="row" style="padding:0">
+      <span class="row-main">
+        <span class="row-title">${esc(word.term)} ${word.ownerId?'<span class="tag check">private</span>':""}</span>
+      </span>
+      ${statusBit}
+    </button>
+    ${open?`<div class="stack" style="gap:6px; margin-top:8px; padding-left:2px">
+      <p class="pday-sub">${word.definition?esc(word.definition):(word.example?"":"No definition or example yet.")}</p>
+      ${word.example?`<p class="pday-sub">"${esc(word.example)}"</p>`:""}
+      <div class="qadd-row2">
+        <button type="button" class="btn mini" data-tb-word-edit="${word.id}">Edit word</button>
+        ${(due && opts.showReviewed && link)?`<button type="button" class="btn mini" data-tb-word-reviewed="${word.id}|${link.studentId}">Reviewed today</button>`:""}
+      </div>
+    </div>`:""}
+  </div>`;
+}
+
+document.addEventListener("click",e=>{
+  const t=e.target.closest("[data-tb-word-toggle]");
+  if(!t) return;
+  const key=t.dataset.tbWordToggle;
+  if(tbWordOpenIds.has(key)) tbWordOpenIds.delete(key); else tbWordOpenIds.add(key);
+  if(tbWordSubview==="bank") tbRenderWordBank();
+  if(tbWordSubview==="bystudent") tbRenderWordByStudent();
+  if(tbWordSubview==="review") tbRenderWordReview();
+});
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-tb-word-reviewed]");
+  if(!b) return;
+  const [wordId, studentId]=b.dataset.tbWordReviewed.split("|");
+  const data=TB.loadData();
+  data.studentWords=data.studentWords.map(sw=> sw.wordId===wordId&&sw.studentId===studentId ? {...sw, reviewedAt:new Date().toISOString()} : sw);
+  TB.saveData(data);
+  if(tbWordSubview==="review") tbRenderWordReview();
+  if(tbWordSubview==="bystudent") tbRenderWordByStudent();
+});
+document.addEventListener("change",e=>{
+  const sel=e.target.closest("[data-tb-word-status]");
+  if(!sel) return;
+  const [wordId, studentId]=sel.dataset.tbWordStatus.split("|");
+  const data=TB.loadData();
+  const now=new Date().toISOString();
+  data.studentWords=data.studentWords.map(sw=>{
+    if(sw.wordId!==wordId || sw.studentId!==studentId) return sw;
+    const wasLearned=sw.status==="learned";
+    const next={...sw, status:sel.value, updatedAt:now, reviewedAt:now};
+    if(wasLearned && sel.value!=="learned"){ next.lapses=(sw.lapses||0)+1; next.lapsedAt=now; }
+    return next;
+  });
+  TB.saveData(data);
+  if(tbWordSubview==="bystudent") tbRenderWordByStudent();
+  if(tbWordSubview==="review") tbRenderWordReview();
+});
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-tb-word-edit]");
+  if(!b) return;
+  tbOpenWordEdit(b.dataset.tbWordEdit);
+});
+
+function tbOpenWordEdit(wordId){
+  const data=TB.loadData();
+  const w=data.words.find(x=>x.id===wordId);
+  if(!w) return;
+  tbWordEditId=w.id;
+  $("#tbWordEditTerm").value=w.term;
+  $("#tbWordEditDef").value=w.definition||"";
+  $("#tbWordEditExample").value=w.example||"";
+  tbFillWordListSelect($("#tbWordEditList"), "No list");
+  $("#tbWordEditList").value=w.listId||"";
+  $("#tbWordEditListField").hidden=Boolean(w.ownerId);
+  $("#tbWordEditOwnerNote").hidden=!w.ownerId;
+  if(w.ownerId){
+    const owner=data.students.find(s=>s.id===w.ownerId);
+    $("#tbWordEditOwnerNote").textContent=`Private word belonging to ${owner?owner.name:"a student"}. It is never offered to other students.`;
+  }
+  const usage=tbWordUsageCount(data, w.id);
+  $("#tbWordEditUsage").textContent = usage ? `Held by ${usage} student${usage===1?"":"s"}.` : "Not held by anyone yet.";
+  $("#tbWordDelete").textContent="Delete…";
+  $("#tbWordEditDlg").showModal();
+}
+$("#tbWordEditCancel").addEventListener("click",()=>{ $("#tbWordEditDlg").close(); });
+$("#tbWordEditForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  if(!tbWordEditId) return;
+  const data=TB.loadData();
+  const w=data.words.find(x=>x.id===tbWordEditId);
+  if(!w) return;
+  data.words=data.words.map(x=>x.id!==tbWordEditId ? x : {
+    ...x,
+    term:$("#tbWordEditTerm").value.trim(),
+    definition:$("#tbWordEditDef").value.trim(),
+    example:$("#tbWordEditExample").value.trim(),
+    listId: w.ownerId ? null : ($("#tbWordEditList").value||null),
+  });
+  TB.saveData(data);
+  $("#tbWordEditDlg").close();
+  tbWordEditId=null;
+  tbRenderWordBank();
+  if(tbWordSubview==="bystudent") tbRenderWordByStudent();
+  if(tbWordSubview==="review") tbRenderWordReview();
+});
+$("#tbWordDelete").addEventListener("click",()=>{
+  if(!tbWordEditId) return;
+  const data=TB.loadData();
+  const usage=tbWordUsageCount(data, tbWordEditId);
+  if($("#tbWordDelete").textContent==="Delete…"){
+    $("#tbWordDelete").textContent = usage
+      ? `Really delete? ${usage} student${usage===1?"":"s"} lose their progress on it too.`
+      : "Really delete?";
+    return;
+  }
+  data.words=data.words.filter(w=>w.id!==tbWordEditId);
+  data.studentWords=data.studentWords.filter(sw=>sw.wordId!==tbWordEditId);
+  TB.saveData(data);
+  $("#tbWordEditDlg").close();
+  tbWordEditId=null;
+  tbRenderWordBank();
+  if(tbWordSubview==="bystudent") tbRenderWordByStudent();
+  if(tbWordSubview==="review") tbRenderWordReview();
+});
+
+function tbRenderWordBank(){
+  const data=TB.loadData();
+  const bank=data.words.filter(w=>!w.ownerId);
+  const groups=data.vocabLists.map(list=>{
+    const items=bank.filter(w=>w.listId===list.id);
+    if(!items.length) return "";
+    return `<div><div class="sec-head" style="margin-bottom:6px"><span class="field-label">${esc(list.name)}</span>
+      <button type="button" class="btn mini" data-tb-list-edit="${list.id}">Rename</button></div>
+      <div class="stack" style="gap:4px">${items.map(w=>tbBuildWordRow(data,w,null)).join("")}</div></div>`;
+  }).join("");
+  const unsorted=bank.filter(w=>!w.listId);
+  const unsortedBlock = unsorted.length ? `<div><div class="field-label" style="margin-bottom:6px">Unsorted</div>
+    <div class="stack" style="gap:4px">${unsorted.map(w=>tbBuildWordRow(data,w,null)).join("")}</div></div>` : "";
+  $("#tbWordGroups").innerHTML = (groups+unsortedBlock) || `<p class="pday-sub">No words yet — add one above.</p>`;
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-tb-list-edit]");
+  if(!b) return;
+  const data=TB.loadData();
+  const list=data.vocabLists.find(x=>x.id===b.dataset.tbListEdit);
+  if(!list) return;
+  $("#tbListEditName").value=list.name;
+  $("#tbListEditName").dataset.listId=list.id;
+  const count=data.words.filter(w=>w.listId===list.id).length;
+  $("#tbListEditUsage").textContent=count?`${count} word${count===1?"":"s"} in this list.`:"No words in this list yet.";
+  $("#tbListDelete").textContent="Delete…";
+  $("#tbListEditDlg").showModal();
+});
+$("#tbListEditCancel").addEventListener("click",()=>{ $("#tbListEditDlg").close(); });
+$("#tbListEditForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const id=$("#tbListEditName").dataset.listId;
+  const name=$("#tbListEditName").value.trim();
+  if(!id || !name) return;
+  const data=TB.loadData();
+  data.vocabLists=data.vocabLists.map(l=>l.id===id?{...l,name}:l);
+  TB.saveData(data);
+  $("#tbListEditDlg").close();
+  tbFillWordListSelect($("#tbWordList"), "No list");
+  tbRenderWordBank();
+});
+$("#tbListDelete").addEventListener("click",()=>{
+  const id=$("#tbListEditName").dataset.listId;
+  if(!id) return;
+  if($("#tbListDelete").textContent==="Delete…"){
+    $("#tbListDelete").textContent="Really delete? Its words become unsorted.";
+    return;
+  }
+  const data=TB.loadData();
+  data.vocabLists=data.vocabLists.filter(l=>l.id!==id);
+  data.words=data.words.map(w=>w.listId===id?{...w,listId:null}:w);
+  TB.saveData(data);
+  $("#tbListEditDlg").close();
+  tbFillWordListSelect($("#tbWordList"), "No list");
+  tbRenderWordBank();
+});
+
+function tbRenderStudentWords(hostSel, data, studentId, opts){
+  const links=data.studentWords.filter(sw=>sw.studentId===studentId);
+  const byId=new Map(data.words.map(w=>[w.id,w]));
+  const groups=TB_WORD_STATUS_ORDER.map(status=>{
+    const items=links.filter(l=>l.status===status).sort((a,b)=>{
+      const dueA=TB.isDueForReview(a,Date.now()), dueB=TB.isDueForReview(b,Date.now());
+      if(dueA!==dueB) return dueA?-1:1;
+      const wa=byId.get(a.wordId), wb=byId.get(b.wordId);
+      return (wa?wa.term:"").localeCompare(wb?wb.term:"");
+    });
+    if(!items.length) return "";
+    return `<div><div class="field-label" style="margin-bottom:6px">${esc(tbWordStatusLabel(status))}</div>
+      <div class="stack" style="gap:4px">${items.map(l=>{ const w=byId.get(l.wordId); return w?tbBuildWordRow(data,w,l,opts):""; }).join("")}</div></div>`;
+  }).join("");
+  hostSel.innerHTML = groups || `<p class="pday-sub">No words yet.</p>`;
+}
+
+function tbRenderWordByStudent(){
+  const data=TB.loadData();
+  const students=tbActiveFirstStudents(data);
+  const sel=$("#tbWordStudentSel");
+  if(!students.length){
+    sel.innerHTML="";
+    $("#tbWordAssignedList").innerHTML=`<p class="pday-sub">Add a student first.</p>`;
+    $("#tbWordPickBtn").disabled=true;
+    return;
+  }
+  $("#tbWordPickBtn").disabled=false;
+  if(!tbWordByStudentId || !students.some(s=>s.id===tbWordByStudentId)) tbWordByStudentId=students[0].id;
+  sel.innerHTML=students.map(s=>`<option value="${s.id}" ${s.id===tbWordByStudentId?"selected":""}>${esc(s.name)}${s.active?"":" (inactive)"}</option>`).join("");
+  tbRenderStudentWords($("#tbWordAssignedList"), data, tbWordByStudentId, {showReviewed:true});
+}
+$("#tbWordStudentSel").addEventListener("change",()=>{ tbWordByStudentId=$("#tbWordStudentSel").value; tbRenderWordByStudent(); });
+
+$("#tbWordQuickForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const term=$("#tbWordQuickTerm").value.trim();
+  if(!term || !tbWordByStudentId) return;
+  const now=new Date().toISOString();
+  const data=TB.loadData();
+  const w=TB.createWord({term, definition:$("#tbWordQuickDef").value.trim(), example:"", listId:null, ownerId:tbWordByStudentId});
+  data.words.push(w);
+  data.studentWords.push(TB.createStudentWord(tbWordByStudentId, w.id, "learning", now));
+  TB.saveData(data);
+  $("#tbWordQuickForm").reset();
+  tbRenderWordByStudent();
+});
+
+function tbOpenWordPicker(studentId){
+  tbWordPickerStudentId=studentId;
+  const data=TB.loadData();
+  tbWordPickerChecked=new Set(data.studentWords.filter(sw=>sw.studentId===studentId && !data.words.find(w=>w.id===sw.wordId && w.ownerId)).map(sw=>sw.wordId));
+  tbRenderWordPicker();
+  $("#tbWordPickerDlg").showModal();
+}
+$("#tbWordPickBtn").addEventListener("click",()=>{ if(tbWordByStudentId) tbOpenWordPicker(tbWordByStudentId); });
+
+function tbRenderWordPicker(){
+  const data=TB.loadData();
+  const bank=data.words.filter(w=>!w.ownerId);
+  const groups=data.vocabLists.map(list=>{
+    const items=bank.filter(w=>w.listId===list.id);
+    if(!items.length) return "";
+    return `<div><div class="field-label" style="margin-bottom:6px">${esc(list.name)}</div>
+      <div class="stack" style="gap:4px">${items.map(w=>`
+        <label class="row" style="cursor:pointer">
+          <input type="checkbox" data-tb-word-pick="${w.id}" ${tbWordPickerChecked.has(w.id)?"checked":""} style="width:18px;height:18px;flex:0 0 auto">
+          <span class="row-main"><span class="row-title">${esc(w.term)}</span></span>
+        </label>`).join("")}</div></div>`;
+  }).join("");
+  const unsorted=bank.filter(w=>!w.listId);
+  const unsortedBlock = unsorted.length ? `<div><div class="field-label" style="margin-bottom:6px">Unsorted</div>
+    <div class="stack" style="gap:4px">${unsorted.map(w=>`
+      <label class="row" style="cursor:pointer">
+        <input type="checkbox" data-tb-word-pick="${w.id}" ${tbWordPickerChecked.has(w.id)?"checked":""} style="width:18px;height:18px;flex:0 0 auto">
+        <span class="row-main"><span class="row-title">${esc(w.term)}</span></span>
+      </label>`).join("")}</div></div>` : "";
+  $("#tbWordPickerGroups").innerHTML = (groups+unsortedBlock) || `<p class="pday-sub">No words in the bank yet.</p>`;
+}
+document.addEventListener("change",e=>{
+  const cb=e.target.closest("[data-tb-word-pick]");
+  if(!cb) return;
+  if(cb.checked) tbWordPickerChecked.add(cb.dataset.tbWordPick); else tbWordPickerChecked.delete(cb.dataset.tbWordPick);
+});
+$("#tbWordPickerCancel").addEventListener("click",()=>{ $("#tbWordPickerDlg").close(); });
+$("#tbWordPickerForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const studentId=tbWordPickerStudentId;
+  if(!studentId) return;
+  const data=TB.loadData();
+  const privateLinks=data.studentWords.filter(sw=>sw.studentId===studentId && data.words.find(w=>w.id===sw.wordId && w.ownerId));
+  const existing=new Map(data.studentWords.filter(sw=>sw.studentId===studentId).map(sw=>[sw.wordId, sw]));
+  const now=new Date().toISOString();
+  const kept=[...tbWordPickerChecked].map(id=> existing.get(id) || TB.createStudentWord(studentId, id, "not_started", now));
+  data.studentWords=data.studentWords.filter(sw=>sw.studentId!==studentId).concat(privateLinks).concat(kept);
+  TB.saveData(data);
+  $("#tbWordPickerDlg").close();
+  tbWordPickerStudentId=null;
+  tbRenderWordByStudent();
+});
+
+function tbRenderWordReview(){
+  const data=TB.loadData();
+  const students=data.students.filter(s=>s.active).slice().sort((a,b)=>a.name.localeCompare(b.name));
+  const byId=new Map(data.words.map(w=>[w.id,w]));
+  const blocks=students.map(s=>{
+    const due=data.studentWords.filter(sw=>sw.studentId===s.id && TB.isDueForReview(sw, Date.now()));
+    if(!due.length) return "";
+    return `<div><div class="field-label" style="margin-bottom:6px">${esc(s.name)} · ${due.length}</div>
+      <div class="stack" style="gap:4px">${due.map(l=>{ const w=byId.get(l.wordId); return w?tbBuildWordRow(data,w,l,{showReviewed:true}):""; }).join("")}</div></div>`;
+  }).join("");
+  $("#tbWordReviewList").innerHTML = blocks || `<p class="pday-sub">Nothing is overdue. Words appear here once they have been left alone for 7 days.</p>`;
+}
 
 function renderAppMenu(){
   $("#appMenu").innerHTML=APPS.map(a=>
