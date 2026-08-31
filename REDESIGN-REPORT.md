@@ -522,3 +522,41 @@ Log, the fullscreen planner focus mode are still unchecked from earlier
 rounds too) — if there's another specific spot this is still happening,
 a screenshot or view name would let me fix that one directly rather than
 me guessing again.
+
+## Round 12 — search in Plachta (a real feature, not a visual pass)
+
+First functional addition in this whole redesign, scoped to Plachta only
+per request. A search field plus an Upcoming/Past segmented toggle now
+sits above Plachta's continuous canvas (hidden for every other scope).
+
+**Data scope, decided deliberately**: searches `S.planner.tasks` (covers
+both one-off tasks and events — anything with a concrete `due` date) by
+title, filtered to upcoming (`due>=today`) or past (`due<today`), sorted
+nearest-first in whichever direction, capped at 40 results. Left
+`S.planner.blocks` (recurring templates like "Sleep") out on purpose —
+those recur on a weekly pattern rather than carrying one due date, so
+"upcoming vs. past" doesn't map onto them the same way. In the Past
+bucket, a task nobody ever marked done is flagged in the existing
+`--crit` red — a genuinely missed thing, distinct from a past Event
+(just a record) or a completed task.
+
+Clicking a result re-centres Plachta on that date. This needed its own
+explicit call (`pPlachtaAnchor = iso; renderSchedule(); pPlachtaCentre
+(iso)`) rather than just setting the anchor — `renderSchedule()`'s own
+centring logic only defaults to today or preserves whatever scroll
+position was already there, so without the explicit re-centre afterward
+the jump would silently land on the wrong day.
+
+**A debugging note worth keeping**: while testing this, a drag on an
+unrelated calendar block appeared to stop working — dragging a 22:00
+task downward did nothing. Traced it down before assuming a regression:
+the block was near the bottom of the 24-hour grid with nowhere further
+to go, and dragging the same block *upward* worked immediately. Not a
+bug, but confirms the value of tracing rather than guessing when
+something looks broken.
+
+Verified via playwright-cli: created a task, searched for it, clicked
+through to confirm the canvas re-centres correctly; toggled Past/Upcoming
+and confirmed the empty state; searched an existing event to confirm
+Task/Event labels render correctly for both kinds. Checked desktop,
+mobile, light, and dark.
