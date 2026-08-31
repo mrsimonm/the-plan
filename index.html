@@ -25,11 +25,11 @@
   --grid-line:rgba(46,46,42,.10); --grid-sep:rgba(46,46,42,.18);
   --ok:#5E9E85; --crit:#A24B41; --crit-soft:#F0DFD9;
 
-  /* blobs behind the glass — four now instead of three, more saturated and
-     with two new hues (gold, terracotta) so the wash reads as colour, not
-     just a faint tint — this is what "luxurious" meant: visible, not shy */
-  --blob-1:rgba(94,158,133,.42); --blob-2:rgba(169,174,156,.36);
-  --blob-3:rgba(196,163,95,.34); --blob-4:rgba(180,103,74,.24);
+  /* blobs behind the glass — richer and more saturated again: not just
+     more opaque this time but punchier hues (less washed-out), so light
+     mode reads as genuinely colourful rather than a tinted neutral */
+  --blob-1:rgba(72,164,128,.48); --blob-2:rgba(163,170,148,.4);
+  --blob-3:rgba(206,157,68,.4); --blob-4:rgba(192,88,56,.3);
 
   /* the liquid-glass recipe: translucent cream fill (denser than the
      background wash, so panels read as a distinct frosted material sitting
@@ -39,8 +39,14 @@
      edge (never a hard drop shadow) */
   --glass-fill:rgba(237,234,224,.68); --glass-fill-2:rgba(237,234,224,.80);
   --glass-border:rgba(255,255,255,.6);
-  --glass-shadow:0 16px 44px -10px rgba(46,46,42,.22), inset 0 1px 0 rgba(255,255,255,.7);
+  --glass-shadow:0 16px 44px -10px rgba(46,46,42,.22), 0 0 0 1px rgba(46,46,42,.05), inset 0 1px 0 rgba(255,255,255,.7), inset 0 -1px 0 rgba(46,46,42,.04);
   --glass-blur:blur(24px) saturate(170%);
+  /* the "sexy edge" — real glass doesn't have a flat one-colour border, it
+     has a rim that catches light unevenly: bright where light hits it,
+     almost invisible where it doesn't. A gradient border (via
+     border-image, not border-color, since border-color can't be a
+     gradient) reproduces that instead of a uniform hairline. */
+  --glass-edge:linear-gradient(155deg, rgba(255,255,255,.95) 0%, rgba(255,255,255,.15) 30%, rgba(255,255,255,.08) 55%, rgba(255,255,255,.55) 100%);
   /* the glass's own reflection — a few small catch-light spots, not one
      even band. Real frosted/sandblasted glass never reflects light as a
      clean linear sweep; it glints in a handful of irregular points. Never
@@ -81,7 +87,8 @@
     --blob-3:rgba(196,163,95,.16); --blob-4:rgba(180,103,74,.12);
     --glass-fill:rgba(33,58,45,.68); --glass-fill-2:rgba(33,58,45,.80);
     --glass-border:rgba(255,255,255,.14);
-    --glass-shadow:0 14px 44px -8px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.08);
+    --glass-shadow:0 14px 44px -8px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.1), inset 0 -1px 0 rgba(0,0,0,.2);
+    --glass-edge:linear-gradient(155deg, rgba(255,255,255,.35) 0%, rgba(255,255,255,.04) 30%, rgba(255,255,255,.02) 55%, rgba(255,255,255,.18) 100%);
     --shadow:0 1px 2px rgba(0,0,0,.4);
     --shadow-lift:0 10px 28px -8px rgba(0,0,0,.6);
     --hours-hue:#8FBFA0;
@@ -102,7 +109,8 @@
   --blob-3:rgba(196,163,95,.16); --blob-4:rgba(180,103,74,.12);
   --glass-fill:rgba(33,58,45,.68); --glass-fill-2:rgba(33,58,45,.80);
   --glass-border:rgba(255,255,255,.14);
-  --glass-shadow:0 14px 44px -8px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.08);
+  --glass-shadow:0 14px 44px -8px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.1), inset 0 -1px 0 rgba(0,0,0,.2);
+  --glass-edge:linear-gradient(155deg, rgba(255,255,255,.35) 0%, rgba(255,255,255,.04) 30%, rgba(255,255,255,.02) 55%, rgba(255,255,255,.18) 100%);
   --shadow:0 1px 2px rgba(0,0,0,.4);
   --shadow-lift:0 10px 28px -8px rgba(0,0,0,.6);
   --hours-hue:#8FBFA0;
@@ -211,7 +219,7 @@ b{color:var(--ink-strong); font-weight:700}
 .tile{display:flex; flex-direction:column; padding:0; overflow:hidden; cursor:pointer;
   background:var(--glass-sheen); backdrop-filter:var(--glass-blur);
   -webkit-backdrop-filter:var(--glass-blur);
-  border:1px solid var(--glass-border); border-radius:var(--r); box-shadow:var(--glass-shadow);
+  border:1px solid transparent; border-image:var(--glass-edge) 1; border-radius:var(--r); box-shadow:var(--glass-shadow);
   color:inherit; font:inherit; text-align:left;
   transition:transform .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s cubic-bezier(.2,.8,.2,1);
   -webkit-tap-highlight-color:transparent}
@@ -808,7 +816,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .hclock{margin:16px auto 0; text-align:center; width:min(260px,72vw); aspect-ratio:1;
   border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center;
   background:var(--glass-sheen); backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
-  border:1px solid var(--glass-border); box-shadow:var(--glass-shadow)}
+  border:1px solid transparent; border-image:var(--glass-edge) 1; box-shadow:var(--glass-shadow)}
 .hclock.resting .hclock-time{color:var(--ink-3)}
 .hclock.idle .hclock-time{color:var(--ink-3)}
 .hclock-phase{display:inline-block; font-family:var(--font);
@@ -979,7 +987,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .statrow.q{display:grid; grid-template-columns:1fr 1fr; gap:10px}
 @media(min-width:620px){ .statrow.q{grid-template-columns:repeat(4,1fr)} }
 .stat{flex:1 1 90px; background:var(--glass-fill); backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
-  border:1px solid var(--glass-border); box-shadow:var(--glass-shadow); border-radius:var(--r); padding:13px 14px; min-width:0}
+  border:1px solid transparent; border-image:var(--glass-edge) 1; box-shadow:var(--glass-shadow); border-radius:var(--r); padding:13px 14px; min-width:0}
 .stat b{display:block; font-family:var(--font); font-weight:600; font-size:26px;
   line-height:1.1; color:var(--ink)}
 .stat b.good{color:var(--ok)} .stat b.none{color:var(--ink-3)}
@@ -1127,7 +1135,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
     radial-gradient(140px 90px at 92% 120%, rgba(255,255,255,.18), transparent 84%),
     var(--glass-fill-2);
   backdrop-filter:blur(30px) saturate(190%); -webkit-backdrop-filter:blur(30px) saturate(190%);
-  border:1px solid var(--glass-border); border-radius:var(--r-pill);
+  border:1px solid transparent; border-image:var(--glass-edge) 1; border-radius:var(--r-pill);
   box-shadow:var(--glass-shadow);
   overflow-x:auto; overflow-y:hidden; scrollbar-width:none; -webkit-overflow-scrolling:touch;
   scroll-behavior:smooth; scroll-padding-inline:24px; max-width:100%}
@@ -1150,7 +1158,7 @@ main{order:2; flex:1; padding:16px 14px 48px; width:100%; max-width:1060px; marg
    highlight instead of a flat drop shadow */
 .card{background:var(--glass-sheen); backdrop-filter:var(--glass-blur);
   -webkit-backdrop-filter:var(--glass-blur);
-  border:1px solid var(--glass-border); border-radius:var(--r); box-shadow:var(--glass-shadow)}
+  border:1px solid transparent; border-image:var(--glass-edge) 1; border-radius:var(--r); box-shadow:var(--glass-shadow)}
 .pad{padding:18px 20px}
 /* one card, several sections — replaces a stack of separately-bordered cards
    for controls that belong together. Border rides the sibling, not each part,
@@ -1512,7 +1520,7 @@ textarea.desc{min-height:66px; font-family:var(--font); font-size:15px}
 /* plant card */
 .pcard{background:var(--glass-sheen); backdrop-filter:var(--glass-blur);
   -webkit-backdrop-filter:var(--glass-blur);
-  border:1px solid var(--glass-border); border-radius:var(--r); box-shadow:var(--glass-shadow);
+  border:1px solid transparent; border-image:var(--glass-edge) 1; border-radius:var(--r); box-shadow:var(--glass-shadow);
   overflow:hidden; display:flex; flex-direction:column}
 .pcard-head{display:flex; flex-direction:column; gap:2px; min-width:0}
 .pcard-name{font-size:17px; font-weight:500; line-height:1.25;
@@ -1593,7 +1601,7 @@ textarea.desc{min-height:66px; font-family:var(--font); font-size:15px}
 
 /* a glass sheet: centred on desktop, slides up from the bottom on mobile —
    same surface language as every other glass panel, just anchored differently */
-dialog{border:1px solid var(--glass-border); border-radius:var(--r); background:var(--glass-fill-2);
+dialog{border:1px solid transparent; border-image:var(--glass-edge) 1; border-radius:var(--r); background:var(--glass-fill-2);
   backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur); color:var(--ink);
   padding:0; width:min(500px,calc(100vw - 24px)); box-shadow:var(--glass-shadow);
   animation:dlg-in .22s cubic-bezier(.2,.8,.2,1)}
