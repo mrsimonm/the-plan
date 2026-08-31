@@ -3192,6 +3192,1013 @@ html{overscroll-behavior-y:none}
 
 <script>
 "use strict";
+
+/* ============================================================================
+   Teachbench data layer, ported into the big app as a self-contained
+   namespace (TB) rather than ES module exports, since this app is one
+   classic <script> tag, not modules. Everything below is verbatim from
+   Teachbench's js/storage.js with only the export keywords stripped — same
+   functions, same behaviour, same localStorage key ("teachbench.data"), so
+   it can never read or write anything belonging to Hours/Planner/Potting
+   Bench's own `L` state. */
+const TB = (() => {
+  /* Teachbench — storage.
+     This is the ONLY file that talks to localStorage. Everything else asks this
+     file to load or save. That way, if we later move to a different kind of
+     storage (a file, a server, a proper database), we rewrite this file and
+     nothing else.
+
+     localStorage is a small box of text the browser keeps on the device, tied
+     to this site. It survives reloads and closing the browser. It is per-device
+     and per-browser: it does NOT sync between a laptop and a phone.
+
+     Everything lives under ONE key. That matters: some changes touch two lists
+     at once (deleting a topic also removes every student's tick for it), and a
+     single write either fully succeeds or fully fails. Two separate writes
+     could half-succeed and leave the data inconsistent. */
+
+  const STORAGE_KEY = 'teachbench.data';
+
+  /* Version 1 stored only students, under its own key. loadData() upgrades that
+     old shape automatically the first time it runs. */
+  const LEGACY_STUDENTS_KEY = 'teachbench.students';
+  const SCHEMA_VERSION = 12;
+
+  const WEEKDAYS = [
+    { value: 'mon', label: 'Monday' },
+    { value: 'tue', label: 'Tuesday' },
+    { value: 'wed', label: 'Wednesday' },
+    { value: 'thu', label: 'Thursday' },
+    { value: 'fri', label: 'Friday' },
+  ];
+
+  /* The Task Library's "skill" tag. This used to be two separate, near-
+     identical category lists — one for the old Topics feature, one for
+     Materials — kept as a single list now that Topics has been folded into
+     the Task Library (see the migration in normaliseData below). */
+  const MATERIAL_CATEGORIES = [
+    { value: 'grammar', label: 'Grammar' },
+    { value: 'vocab', label: 'Vocab' },
+    { value: 'reading', label: 'Reading' },
+    { value: 'listening', label: 'Listening' },
+    { value: 'speaking', label: 'Speaking' },
+    { value: 'other', label: 'Other' },
+  ];
+
+  /* Vocabulary status: not started, being learned, or learned. */
+  const WORD_STATUSES = [
+    { value: 'not_started', label: 'Not started' },
+    { value: 'learning', label: 'Learning' },
+    { value: 'learned', label: 'Learned' },
+  ];
+
+  /* Removed status. A word in this state is treated as learned when read back
+     — it genuinely was known, which is closer to the truth than "not started"
+     — but the value is still recognised here so old data does not get
+     silently dropped by the "must be a real status" check below. */
+  const RETIRED_KNOWN_STATUS = 'known';
+
+  /* A "learning" word not looked at for this long is surfaced for review. */
+  const REVIEW_AFTER_DAYS = 7;
+
+  /* A small, curated palette so every student's colour is deliberately chosen
+     rather than an arbitrary hex value a teacher might pick badly. Each entry
+     is a token; the actual colour (with a light/dark variant) lives in
+     css/styles.css as --student-<token>, so the palette can be retuned without
+     touching this file. */
+  const STUDENT_COLORS = [
+    'sage', 'sky', 'rose', 'plum', 'ochre', 'teal', 'lavender', 'clay',
+  ];
+
+  /* Spreads colours evenly across the roster: whichever colour the fewest
+     current students have, picking the earliest in palette order on a tie.
+     Used both to auto-assign a new student's colour and, during normalise, to
+     fill in colours for students saved before this feature existed. */
+  function pickStudentColor(existingStudents) {
+    const counts = new Map(STUDENT_COLORS.map((color) => [color, 0]));
+    for (const student of existingStudents) {
+      if (student.color && counts.has(student.color)) {
+        counts.set(student.color, counts.get(student.color) + 1);
+      }
+    }
+
+    let best = STUDENT_COLORS[0];
+    let bestCount = Infinity;
+    for (const color of STUDENT_COLORS) {
+      const count = counts.get(color);
+      if (count < bestCount) {
+        bestCount = count;
+        best = color;
+      }
+    }
+    return best;
+  }
+
+  /* CEFR levels, the scale English teachers actually use, plus the half-levels
+     teachers use in practice for a student sitting between two bands. */
+  const LEVELS = [
+    { value: 'a1', label: 'A1 Beginner' },
+    { value: 'a1p', label: 'A1+ Beginner+' },
+    { value: 'a2', label: 'A2 Elementary' },
+    { value: 'a2p', label: 'A2+ Elementary+' },
+    { value: 'b1', label: 'B1 Intermediate' },
+    { value: 'b1p', label: 'B1+ Intermediate+' },
+    { value: 'b2', label: 'B2 Upper-intermediate' },
+    { value: 'b2p', label: 'B2+ Upper-intermediate+' },
+    { value: 'c1', label: 'C1 Advanced' },
+    { value: 'c1p', label: 'C1+ Advanced+' },
+    { value: 'c2', label: 'C2 Proficient' },
+  ];
+
+  /* "text" holds its content in the app (a word list, a short passage); the
+     other four are all a link somewhere else, differing only in what they
+     point at — kept as separate values (rather than one generic "link") so
+     the finder can filter by what kind of thing a task actually is. */
+  const MATERIAL_TYPES = [
+    { value: 'text', label: 'Plain text' },
+    { value: 'doc', label: 'Document' },
+    { value: 'web', label: 'Web page' },
+    { value: 'audio', label: 'Audio' },
+    { value: 'video', label: 'Video' },
+  ];
+
+  function isLinkType(type) {
+    return type !== 'text';
+  }
+
+  const WEEKDAY_VALUES = WEEKDAYS.map((day) => day.value);
+  const MATERIAL_CATEGORY_VALUES = MATERIAL_CATEGORIES.map((category) => category.value);
+  const MATERIAL_TYPE_VALUES = MATERIAL_TYPES.map((type) => type.value);
+  const LEVEL_VALUES = LEVELS.map((level) => level.value);
+  const WORD_STATUS_VALUES = WORD_STATUSES.map((status) => status.value);
+
+  /* Only http(s) addresses are ever turned into a clickable link. Other schemes
+     (javascript:, data:, file:) can run code or reach local files when tapped,
+     so they are refused rather than displayed as a link.
+
+     A bare address like "drive.google.com/..." is accepted by assuming https,
+     which is what someone pasting from the address bar expects. */
+  function safeUrl(raw) {
+    if (typeof raw !== 'string') return null;
+
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
+
+    // A scheme may legally contain dots, so "example.com:8080/x" parses as a
+    // scheme rather than a host. Only skip the https retry when the text really
+    // does name a scheme, which "://" is the practical test for.
+    const attempts = trimmed.includes('://') ? [trimmed] : [trimmed, 'https://' + trimmed];
+
+    for (const candidate of attempts) {
+      let parsed;
+      try {
+        parsed = new URL(candidate);
+      } catch (err) {
+        continue;
+      }
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') return parsed.href;
+    }
+
+    return null;
+  }
+
+  /* ---- making new records --------------------------------------------- */
+
+  function createId() {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+    return 's-' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+  }
+
+  /* `schedule` holds zero or more regular weekly slots — a student can have a
+     Tuesday 16:00 and a Thursday 17:30 slot, or none yet. `time` is HH:MM
+     24-hour or null when the day is set but no time has been chosen. Order
+     always follows WEEKDAYS (Mon..Fri), not the order slots were picked in, so
+     the roster badge and the calendar never disagree on which comes "first". */
+  function createStudent(name, schedule, level, color) {
+    return {
+      id: createId(),
+      name: String(name).trim(),
+      schedule: normaliseSchedule(schedule),
+      level: LEVEL_VALUES.includes(level) ? level : null,
+      color: STUDENT_COLORS.includes(color) ? color : STUDENT_COLORS[0],
+      // General observations about the learner — "struggles with past tense",
+      // "prefers business English examples". Deliberately separate from any
+      // vocabulary or lesson record.
+      notes: '',
+      active: true,
+    };
+  }
+
+  function isPlainTime(value) {
+    return typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+  }
+
+  /* Accepts the current { day, time } shape, the older bare-day-string array
+     ("weekdays"), or the oldest single day string ("weekday") — whichever a
+     record happens to carry — and always returns the clean, deduped,
+     Mon-Fri-ordered array of slots. One day appears at most once; if more than
+     one entry names the same day, the first valid time found for it wins. */
+  function normaliseSchedule(value) {
+    const list = Array.isArray(value) ? value : value ? [value] : [];
+
+    const timeByDay = new Map();
+    for (const entry of list) {
+      let day = null;
+      let time = null;
+
+      if (typeof entry === 'string') {
+        day = entry;
+      } else if (entry && typeof entry === 'object') {
+        day = entry.day;
+        time = isPlainTime(entry.time) ? entry.time : null;
+      }
+
+      if (!WEEKDAY_VALUES.includes(day)) continue;
+      if (!timeByDay.has(day)) timeByDay.set(day, time);
+    }
+
+    return WEEKDAY_VALUES.filter((day) => timeByDay.has(day)).map((day) => ({
+      day,
+      time: timeByDay.get(day),
+    }));
+  }
+
+  /* A task is either a word list / text kept in the app (type "text"), or a
+     link to something living elsewhere — a document, web page, audio or video
+     (types "doc" / "web" / "audio" / "video"), typically Google Drive. Files
+     are deliberately not uploaded or stored here — only the address.
+
+     `category` is the task's "skill" tag (vocab/grammar/reading/listening/
+     speaking/other) — kept as the field name `category` for continuity with
+     how it has always been stored, even though the UI now labels it "Skill".
+     `level` (CEFR, optional) and `topic` (a free-text label like "Travel",
+     optional) are the finder's other two filters. */
+  function createMaterial(fields) {
+    const type = MATERIAL_TYPE_VALUES.includes(fields.type) ? fields.type : 'text';
+
+    return {
+      id: createId(),
+      title: String(fields.title == null ? '' : fields.title).trim(),
+      type,
+      category: MATERIAL_CATEGORY_VALUES.includes(fields.category) ? fields.category : 'other',
+      level: LEVEL_VALUES.includes(fields.level) ? fields.level : null,
+      topic: String(fields.topic == null ? '' : fields.topic).trim(),
+      body: String(fields.body == null ? '' : fields.body),
+      url: String(fields.url == null ? '' : fields.url).trim(),
+      note: String(fields.note == null ? '' : fields.note).trim(),
+    };
+  }
+
+  function createStudentMaterial(studentId, materialId) {
+    return { studentId, materialId, status: 'assigned', doneDate: null };
+  }
+
+  /* A named group of shared words, e.g. "Kitchen basics". */
+  function createVocabList(name) {
+    return { id: createId(), name: String(name == null ? '' : name).trim() };
+  }
+
+  /* One vocabulary entry.
+
+     ownerId null  -> lives in the shared bank, assignable to any number of
+                      students.
+     ownerId set   -> personal to that one student, never offered to others. */
+  function createWord(fields) {
+    return {
+      id: createId(),
+      term: String(fields.term == null ? '' : fields.term).trim(),
+      definition: String(fields.definition == null ? '' : fields.definition).trim(),
+      example: String(fields.example == null ? '' : fields.example).trim(),
+      listId: typeof fields.listId === 'string' && fields.listId ? fields.listId : null,
+      ownerId: typeof fields.ownerId === 'string' && fields.ownerId ? fields.ownerId : null,
+    };
+  }
+
+  function createStudentWord(studentId, wordId, status, nowIso) {
+    const value = WORD_STATUS_VALUES.includes(status) ? status : 'not_started';
+    return {
+      studentId,
+      wordId,
+      status: value,
+      updatedAt: nowIso,
+      reviewedAt: nowIso,
+      // How many times this word has fallen back after being marked learned.
+      // That regression is the closest thing to a real "struggled with it"
+      // signal the app can observe without asking the teacher to tag anything.
+      lapses: 0,
+      lapsedAt: null,
+    };
+  }
+
+  /* True when a word is being learned and has not been looked at recently.
+     `now` is passed in rather than read here so callers stay testable. */
+  function isDueForReview(link, now) {
+    if (!link || link.status !== 'learning') return false;
+
+    const last = link.reviewedAt || link.updatedAt;
+    if (!last) return true;
+
+    const stamp = new Date(last).getTime();
+    if (Number.isNaN(stamp)) return true;
+
+    return (now - stamp) / 86400000 >= REVIEW_AFTER_DAYS;
+  }
+
+  const LESSON_STATES = ['normal', 'rescheduled', 'cancelled'];
+
+  /* One lesson for one student. `date` is a plain YYYY-MM-DD day, not a moment
+     in time — a lesson belongs to a date on the teacher's calendar, and storing
+     it as a timestamp would make it drift across timezones. `time` is HH:MM
+     24-hour or null.
+
+     `state`:
+       normal      - happens as shown at date/time.
+       cancelled   - date/time is the slot that will NOT happen. Kept (not
+                     deleted) so the calendar can show it struck through rather
+                     than silently vanishing.
+       rescheduled - date/time is the NEW slot. `originalDate` names the date
+                     whose regular projection this replaces, so that date shows
+                     nothing rather than a lingering duplicate of the pattern.
+
+     Documents are not uploaded, matching the materials decision: a lesson holds
+     pasted text and an optional link to something living elsewhere. */
+  function createLesson(fields) {
+    return {
+      id: createId(),
+      studentId: fields.studentId,
+      date: isPlainDate(fields.date) ? fields.date : '',
+      time: isPlainTime(fields.time) ? fields.time : null,
+      state: LESSON_STATES.includes(fields.state) ? fields.state : 'normal',
+      originalDate: isPlainDate(fields.originalDate) ? fields.originalDate : null,
+      plan: String(fields.plan == null ? '' : fields.plan).trim(),
+      notes: String(fields.notes == null ? '' : fields.notes),
+      link: String(fields.link == null ? '' : fields.link).trim(),
+    };
+  }
+
+  function isPlainDate(value) {
+    return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
+  }
+
+  function emptyData() {
+    return {
+      students: [],
+      materials: [],
+      studentMaterials: [],
+      vocabLists: [],
+      words: [],
+      studentWords: [],
+      lessons: [],
+    };
+  }
+
+  /* ---- checking data read back from storage ---------------------------- */
+
+  /* Anything read back is treated as untrusted: it may have been written by an
+     older version of the app, or hand-edited. Reshape it into exactly what the
+     app expects, or drop it. */
+
+  function normaliseStudent(entry) {
+    if (!entry || typeof entry !== 'object') return null;
+
+    const name = typeof entry.name === 'string' ? entry.name.trim() : '';
+    if (!name) return null;
+
+    // Three possible shapes, oldest to newest: a single `weekday` string; a
+    // `weekdays` array of bare day strings (no times); a `schedule` array of
+    // { day, time }. Checking `schedule` first means a record from any era, or
+    // a hand-edited one carrying more than one, always lands on the same shape.
+    const schedule = normaliseSchedule(
+      Array.isArray(entry.schedule)
+        ? entry.schedule
+        : Array.isArray(entry.weekdays)
+          ? entry.weekdays
+          : entry.weekday
+    );
+
+    return {
+      id: typeof entry.id === 'string' && entry.id ? entry.id : createId(),
+      name,
+      schedule,
+      level: LEVEL_VALUES.includes(entry.level) ? entry.level : null,
+      // null here means "needs a colour" — normaliseData fills every null in
+      // after all students are built, since picking one evenly needs to see
+      // the colours already claimed by the rest of the roster.
+      color: STUDENT_COLORS.includes(entry.color) ? entry.color : null,
+      notes: typeof entry.notes === 'string' ? entry.notes : '',
+      // Anything not explicitly false counts as active, so data written before
+      // this field existed still behaves sensibly.
+      active: entry.active !== false,
+    };
+  }
+
+  /* Reads the old, now-retired Topics shape. Used only by the one-time
+     migration in normaliseData that folds every Topic into the Task Library —
+     nothing creates a Topic any more. */
+  function normaliseTopic(entry) {
+    if (!entry || typeof entry !== 'object') return null;
+
+    const name = typeof entry.name === 'string' ? entry.name.trim() : '';
+    if (!name) return null;
+
+    return {
+      id: typeof entry.id === 'string' && entry.id ? entry.id : createId(),
+      name,
+      category: MATERIAL_CATEGORY_VALUES.includes(entry.category) ? entry.category : MATERIAL_CATEGORY_VALUES[0],
+    };
+  }
+
+  /* Migrates the old two-value type (a bare word list vs. a link to anything)
+     to the current five-value one. An old "link" cannot know which of the new
+     four link kinds it was, so it becomes "web" — the most generic reading,
+     and the teacher can retag it from Edit at any time. */
+  function migrateMaterialType(type) {
+    if (MATERIAL_TYPE_VALUES.includes(type)) return type;
+    if (type === 'vocab') return 'text';
+    if (type === 'link') return 'web';
+    return 'text';
+  }
+
+  function normaliseMaterial(entry) {
+    if (!entry || typeof entry !== 'object') return null;
+
+    const title = typeof entry.title === 'string' ? entry.title.trim() : '';
+    if (!title) return null;
+
+    const type = migrateMaterialType(entry.type);
+
+    return {
+      id: typeof entry.id === 'string' && entry.id ? entry.id : createId(),
+      title,
+      type,
+      category: MATERIAL_CATEGORY_VALUES.includes(entry.category) ? entry.category : 'other',
+      level: LEVEL_VALUES.includes(entry.level) ? entry.level : null,
+      topic: typeof entry.topic === 'string' ? entry.topic.trim() : '',
+      // Both kinds' fields are kept even though only one is in use, so that
+      // changing a task's type never silently destroys what was typed —
+      // switch back and the word list or the link is still there. Only the
+      // fields matching the current type are ever shown.
+      body: typeof entry.body === 'string' ? entry.body : '',
+      url: typeof entry.url === 'string' ? entry.url.trim() : '',
+      note: typeof entry.note === 'string' ? entry.note.trim() : '',
+    };
+  }
+
+  function normaliseLesson(entry, studentIds) {
+    if (!entry || typeof entry !== 'object') return null;
+
+    // A lesson with no student is meaningless; drop it rather than orphan it.
+    if (!studentIds.has(entry.studentId)) return null;
+
+    const state = LESSON_STATES.includes(entry.state) ? entry.state : 'normal';
+
+    return {
+      id: typeof entry.id === 'string' && entry.id ? entry.id : createId(),
+      studentId: entry.studentId,
+      date: isPlainDate(entry.date) ? entry.date : '',
+      time: isPlainTime(entry.time) ? entry.time : null,
+      state,
+      // originalDate only means anything for a reschedule; carrying it on any
+      // other state would be stale data confusing a future read.
+      originalDate: state === 'rescheduled' && isPlainDate(entry.originalDate) ? entry.originalDate : null,
+      plan: typeof entry.plan === 'string' ? entry.plan.trim() : '',
+      notes: typeof entry.notes === 'string' ? entry.notes : '',
+      link: typeof entry.link === 'string' ? entry.link.trim() : '',
+    };
+  }
+
+  function normaliseVocabList(entry) {
+    if (!entry || typeof entry !== 'object') return null;
+
+    const name = typeof entry.name === 'string' ? entry.name.trim() : '';
+    if (!name) return null;
+
+    return {
+      id: typeof entry.id === 'string' && entry.id ? entry.id : createId(),
+      name,
+    };
+  }
+
+  function normaliseWord(entry, listIds, studentIds) {
+    if (!entry || typeof entry !== 'object') return null;
+
+    const term = typeof entry.term === 'string' ? entry.term.trim() : '';
+    if (!term) return null;
+
+    return {
+      id: typeof entry.id === 'string' && entry.id ? entry.id : createId(),
+      term,
+      definition: typeof entry.definition === 'string' ? entry.definition.trim() : '',
+      example: typeof entry.example === 'string' ? entry.example.trim() : '',
+      listId: listIds.has(entry.listId) ? entry.listId : null,
+      // A personal word whose student is gone becomes a shared bank word rather
+      // than vanishing, so the teacher never silently loses vocabulary.
+      ownerId: studentIds.has(entry.ownerId) ? entry.ownerId : null,
+    };
+  }
+
+  function normaliseStudentWord(entry, studentIds, wordsById) {
+    if (!entry || typeof entry !== 'object') return null;
+
+    if (!studentIds.has(entry.studentId)) return null;
+
+    const word = wordsById.get(entry.wordId);
+    if (!word) return null;
+
+    // A personal word belongs to exactly one student; a link from anyone else
+    // would make it visible where it should not be.
+    if (word.ownerId && word.ownerId !== entry.studentId) return null;
+
+    const status =
+      entry.status === RETIRED_KNOWN_STATUS
+        ? 'learned'
+        : WORD_STATUS_VALUES.includes(entry.status)
+          ? entry.status
+          : 'not_started';
+
+    const lapses = Number.isFinite(entry.lapses) && entry.lapses > 0 ? Math.floor(entry.lapses) : 0;
+
+    return {
+      studentId: entry.studentId,
+      wordId: entry.wordId,
+      status,
+      updatedAt: typeof entry.updatedAt === 'string' ? entry.updatedAt : null,
+      reviewedAt: typeof entry.reviewedAt === 'string' ? entry.reviewedAt : null,
+      lapses,
+      lapsedAt: lapses > 0 && typeof entry.lapsedAt === 'string' ? entry.lapsedAt : null,
+    };
+  }
+
+  function normaliseStudentMaterial(entry, studentIds, materialIds) {
+    if (!entry || typeof entry !== 'object') return null;
+
+    if (!studentIds.has(entry.studentId) || !materialIds.has(entry.materialId)) return null;
+
+    const status = entry.status === 'done' ? 'done' : 'assigned';
+
+    return {
+      studentId: entry.studentId,
+      materialId: entry.materialId,
+      status,
+      doneDate: status === 'done' && typeof entry.doneDate === 'string' ? entry.doneDate : null,
+    };
+  }
+
+  function normaliseStudentTopic(entry, studentIds, topicIds) {
+    if (!entry || typeof entry !== 'object') return null;
+
+    // A link to a student or topic that no longer exists is meaningless, so
+    // drop it rather than carrying an orphan around forever.
+    if (!studentIds.has(entry.studentId) || !topicIds.has(entry.topicId)) return null;
+
+    const status = entry.status === 'done' ? 'done' : 'todo';
+
+    return {
+      studentId: entry.studentId,
+      topicId: entry.topicId,
+      status,
+      // doneDate only means something for a finished topic. Kept even though
+      // nothing reads it yet: spaced review will need it later.
+      doneDate: status === 'done' && typeof entry.doneDate === 'string' ? entry.doneDate : null,
+    };
+  }
+
+  function asArray(value) {
+    return Array.isArray(value) ? value : [];
+  }
+
+  /* Gives every colourless student (data saved before this feature existed) a
+     colour, one at a time in roster order, so each pick sees the colours
+     already claimed by the students before it and the whole group ends up
+     spread across the palette rather than piled on STUDENT_COLORS[0]. */
+  function fillMissingColors(students) {
+    const result = [];
+    for (const student of students) {
+      result.push(student.color ? student : { ...student, color: pickStudentColor(result) });
+    }
+    return result;
+  }
+
+  /* A retired Topic becomes a plain-text Task tagged with its old category as
+     the skill; a retired StudentTopic becomes the matching StudentMaterial
+     link (todo -> assigned, done -> done, doneDate carried over). Nothing
+     creates a Topic any more, so once this has run once, the old arrays read
+     back empty and this is a no-op on every later load. */
+  function migrateTopicsIntoMaterials(topics, studentTopics) {
+    const materialByTopicId = new Map(
+      topics.map((topic) => [
+        topic.id,
+        {
+          id: topic.id,
+          title: topic.name,
+          type: 'text',
+          category: topic.category,
+          level: null,
+          topic: '',
+          body: '',
+          url: '',
+          note: '',
+        },
+      ])
+    );
+
+    const migratedMaterials = [...materialByTopicId.values()];
+
+    const migratedLinks = studentTopics
+      .filter((link) => materialByTopicId.has(link.topicId))
+      .map((link) => ({
+        studentId: link.studentId,
+        materialId: link.topicId,
+        status: link.status === 'done' ? 'done' : 'assigned',
+        doneDate: link.doneDate,
+      }));
+
+    return { migratedMaterials, migratedLinks };
+  }
+
+  function normaliseData(raw) {
+    const source = raw && typeof raw === 'object' ? raw : {};
+
+    const students = fillMissingColors(
+      asArray(source.students).map(normaliseStudent).filter(Boolean)
+    );
+
+    const oldTopics = asArray(source.topics).map(normaliseTopic).filter(Boolean);
+    const oldTopicIds = new Set(oldTopics.map((topic) => topic.id));
+    const oldStudentIds = new Set(students.map((student) => student.id));
+    const oldStudentTopics = [];
+    for (const entry of asArray(source.studentTopics)) {
+      const link = normaliseStudentTopic(entry, oldStudentIds, oldTopicIds);
+      if (link) oldStudentTopics.push(link);
+    }
+    const { migratedMaterials, migratedLinks } = migrateTopicsIntoMaterials(oldTopics, oldStudentTopics);
+
+    const materials = [
+      ...migratedMaterials,
+      ...asArray(source.materials).map(normaliseMaterial).filter(Boolean),
+    ];
+    const vocabLists = asArray(source.vocabLists).map(normaliseVocabList).filter(Boolean);
+
+    const studentIds = new Set(students.map((student) => student.id));
+    const materialIds = new Set(materials.map((material) => material.id));
+    const listIds = new Set(vocabLists.map((list) => list.id));
+
+    const words = asArray(source.words)
+      .map((entry) => normaliseWord(entry, listIds, studentIds))
+      .filter(Boolean);
+    const wordsById = new Map(words.map((word) => [word.id, word]));
+
+    // ...and likewise any given material at most once — the migrated topic
+    // links go through the same normaliser and the same dedup as everything
+    // else, so a topic that somehow existed alongside a same-id material
+    // cannot produce two links for one student.
+    const seenMaterials = new Set();
+    const studentMaterials = [];
+
+    for (const entry of [...migratedLinks, ...asArray(source.studentMaterials)]) {
+      const link = normaliseStudentMaterial(entry, studentIds, materialIds);
+      if (!link) continue;
+
+      const key = link.studentId + '|' + link.materialId;
+      if (seenMaterials.has(key)) continue;
+      seenMaterials.add(key);
+
+      studentMaterials.push(link);
+    }
+
+    // ...and any given word at most once per student.
+    const seenWords = new Set();
+    const studentWords = [];
+
+    for (const entry of asArray(source.studentWords)) {
+      const link = normaliseStudentWord(entry, studentIds, wordsById);
+      if (!link) continue;
+
+      const key = link.studentId + '|' + link.wordId;
+      if (seenWords.has(key)) continue;
+      seenWords.add(key);
+
+      studentWords.push(link);
+    }
+
+    const lessons = asArray(source.lessons)
+      .map((entry) => normaliseLesson(entry, studentIds))
+      .filter(Boolean);
+
+    return {
+      students,
+      materials,
+      studentMaterials,
+      vocabLists,
+      words,
+      studentWords,
+      lessons,
+    };
+  }
+
+  /* ---- reading and writing --------------------------------------------- */
+
+  function readRaw(key) {
+    try {
+      return localStorage.getItem(key);
+    } catch (err) {
+      // Some browser privacy settings make localStorage throw on access.
+      console.error('[Teachbench] Could not read storage:', err);
+      return null;
+    }
+  }
+
+  function parseJson(raw, label) {
+    try {
+      return JSON.parse(raw);
+    } catch (err) {
+      console.error('[Teachbench] ' + label + ' was not valid JSON, ignoring it:', err);
+      return null;
+    }
+  }
+
+  /* Version 1 kept a bare list of students under its own key. */
+  function readLegacyData() {
+    const raw = readRaw(LEGACY_STUDENTS_KEY);
+    if (!raw) return null;
+
+    const parsed = parseJson(raw, 'Older stored data');
+    if (!parsed) return null;
+
+    const students = Array.isArray(parsed) ? parsed : parsed.students;
+    if (!Array.isArray(students)) return null;
+
+    return normaliseData({ students });
+  }
+
+  /* Always returns every list, never null, so callers never have to check.
+     Broken or missing data yields empty lists — which is also how a version 2
+     record (students and topics, no materials) upgrades itself: the missing
+     lists simply read as empty. */
+  function loadData() {
+    const raw = readRaw(STORAGE_KEY);
+
+    if (raw) {
+      const parsed = parseJson(raw, 'Stored data');
+      return parsed ? normaliseData(parsed.data || parsed) : emptyData();
+    }
+
+    const legacy = readLegacyData();
+    if (!legacy) return emptyData();
+
+    // One-time upgrade: rewrite in the new shape, then retire the old key so
+    // this does not run again. If the write fails, leave the old key alone.
+    if (saveData(legacy)) {
+      try {
+        localStorage.removeItem(LEGACY_STUDENTS_KEY);
+      } catch (err) {
+        console.error('[Teachbench] Could not remove the old storage key:', err);
+      }
+    }
+
+    return legacy;
+  }
+
+  /* Returns the data that was actually written, or null when the save failed.
+     Callers should check: storage can be full or blocked, and silently losing a
+     student would be worse than an error message.
+
+     The returned value is the cleaned-up one, so callers can adopt it and stay
+     exactly in step with what is on disk. */
+  function saveData(data) {
+    const cleaned = normaliseData(data);
+
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ version: SCHEMA_VERSION, data: cleaned })
+      );
+      return cleaned;
+    } catch (err) {
+      console.error('[Teachbench] Could not save:', err);
+      return null;
+    }
+  }
+
+  /* ---- backup: export and import ----------------------------------------
+     The exported file is a superset of what saveData() writes to
+     localStorage: the same versioned { data } wrapper, plus a marker so an
+     unrelated JSON file can be told apart from a real backup, and a timestamp
+     for the human reading the file list. */
+
+  const BACKUP_MARKER = 'teachbench-backup';
+
+  /* `nowIso` is passed in rather than read here (as with createStudentWord),
+     so this function has no hidden dependency on the clock and stays testable
+     with a fixed timestamp. */
+  function buildBackup(data, nowIso) {
+    return {
+      app: BACKUP_MARKER,
+      schemaVersion: SCHEMA_VERSION,
+      exportedAt: nowIso,
+      data: normaliseData(data),
+    };
+  }
+
+  /* Checks a file's text before anything touches storage. Returns
+     { ok: true, data, schemaVersion, exportedAt, counts } for a file that is
+     at least structurally a Teachbench backup — normaliseData() will still
+     clean out any garbled entries inside it, the same tolerant treatment any
+     stored data gets — or { ok: false, reason } in plain language for anything
+     that cannot be trusted enough to try. Never writes anything. */
+  function parseBackup(raw) {
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (err) {
+      return { ok: false, reason: 'That file is not valid JSON, so it cannot be read as a backup.' };
+    }
+
+    if (!parsed || typeof parsed !== 'object') {
+      return { ok: false, reason: 'That file does not contain a Teachbench backup.' };
+    }
+
+    if (parsed.app !== BACKUP_MARKER) {
+      return { ok: false, reason: 'That file does not look like a Teachbench backup.' };
+    }
+
+    if (!parsed.data || typeof parsed.data !== 'object') {
+      return { ok: false, reason: 'That backup file is damaged — it is missing its data.' };
+    }
+
+    const data = normaliseData(parsed.data);
+
+    return {
+      ok: true,
+      data,
+      schemaVersion: Number.isFinite(parsed.schemaVersion) ? parsed.schemaVersion : null,
+      exportedAt: typeof parsed.exportedAt === 'string' ? parsed.exportedAt : null,
+      counts: {
+        students: data.students.length,
+        words: data.words.length,
+        lessons: data.lessons.length,
+        materials: data.materials.length,
+      },
+    };
+  }
+
+  /* ---- schedule + lessons: computing what actually happens when -----------
+     This is the one place that reconciles a student's recurring weekly
+     schedule with their actual dated Lesson records — cancellations,
+     reschedules, and lessons that simply have plan/notes written for a
+     regular slot. Both the calendar and "next lesson" read from here, so the
+     two can never disagree about what a given date holds. */
+
+  /* Builds a plain YYYY-MM-DD date `days` after `date`, entirely from the
+     date's own parts rather than parsing — parsing "2026-08-30" reads it as
+     UTC midnight and can land on the wrong day in western timezones. */
+  function addPlainDays(date, days) {
+    const [year, month, day] = date.split('-').map(Number);
+    const next = new Date(year, month - 1, day);
+    next.setDate(next.getDate() + days);
+    const y = next.getFullYear();
+    const m = String(next.getMonth() + 1).padStart(2, '0');
+    const d = String(next.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + d;
+  }
+
+  function plainDaysBetween(from, to) {
+    const [fy, fm, fd] = from.split('-').map(Number);
+    const [ty, tm, td] = to.split('-').map(Number);
+    const a = new Date(fy, fm - 1, fd).getTime();
+    const b = new Date(ty, tm - 1, td).getTime();
+    return Math.round((b - a) / 86400000);
+  }
+
+  /* The Monday of the week containing `date` (works from any weekday). */
+  function startOfWeekPlain(date) {
+    const [year, month, day] = date.split('-').map(Number);
+    const jsDay = new Date(year, month - 1, day).getDay(); // 0 Sun .. 6 Sat
+    const isoDay = jsDay === 0 ? 7 : jsDay; // 1 Mon .. 7 Sun
+    return addPlainDays(date, -(isoDay - 1));
+  }
+
+  /* 'mon'..'fri' for a plain date, or null for a weekend. */
+  function weekdayOfPlainDate(date) {
+    const [year, month, day] = date.split('-').map(Number);
+    const jsDay = new Date(year, month - 1, day).getDay(); // 0 Sun .. 6 Sat
+    const index = jsDay - 1; // 0 Mon .. 4 Fri, or -1 / 5 for the weekend
+    return index >= 0 && index < WEEKDAY_VALUES.length ? WEEKDAY_VALUES[index] : null;
+  }
+
+  function occurrenceSortKey(occurrence) {
+    return occurrence.date + ' ' + (occurrence.time || '00:00');
+  }
+
+  /* Every occurrence a student has between `startDate` and `daysAhead` days
+     after it: the regular weekly pattern, enriched or overridden by any
+     Lesson record that falls on the same date, plus any lesson (an extra
+     booking, or a reschedule's destination) that lands on a date the pattern
+     never runs. Sorted chronologically. Each entry is
+     { date, time, state, lesson } — `lesson` is null for a plain, untouched
+     projection of the pattern. */
+  function occurrencesForStudent(student, lessons, startDate, daysAhead) {
+    const mine = lessons.filter((lesson) => lesson.studentId === student.id);
+    const lessonByDate = new Map(mine.map((lesson) => [lesson.date, lesson]));
+
+    // A reschedule's origin date shows nothing — the lesson itself appears at
+    // its new date instead, picked up in the second pass below.
+    const vacatedDates = new Set(
+      mine.filter((lesson) => lesson.state === 'rescheduled' && lesson.originalDate).map((lesson) => lesson.originalDate)
+    );
+
+    const slotByDay = new Map(student.schedule.map((slot) => [slot.day, slot]));
+    const occurrences = [];
+    const coveredDates = new Set();
+
+    for (let i = 0; i < daysAhead; i++) {
+      const date = addPlainDays(startDate, i);
+      const slot = slotByDay.get(weekdayOfPlainDate(date));
+      if (!slot) continue;
+      if (vacatedDates.has(date)) continue;
+
+      coveredDates.add(date);
+      const lesson = lessonByDate.get(date) || null;
+      occurrences.push({
+        date,
+        time: (lesson && lesson.time) || slot.time,
+        state: lesson ? lesson.state : 'normal',
+        lesson,
+      });
+    }
+
+    for (const lesson of mine) {
+      if (!lesson.date || coveredDates.has(lesson.date)) continue;
+      const offset = plainDaysBetween(startDate, lesson.date);
+      if (offset < 0 || offset >= daysAhead) continue;
+
+      occurrences.push({ date: lesson.date, time: lesson.time, state: lesson.state, lesson });
+    }
+
+    occurrences.sort((a, b) => occurrenceSortKey(a).localeCompare(occurrenceSortKey(b)));
+    return occurrences;
+  }
+
+  /* The next thing on this student's calendar from `today`/`nowTime` onward —
+     whichever comes first among the regular pattern, a reschedule, or an extra
+     lesson, skipping anything cancelled. Looks up to `daysAhead` (default 60)
+     days out; returns null if nothing is found in that window, which in
+     practice only happens for a student with no schedule and no upcoming
+     lessons at all. */
+  function nextOccurrenceForStudent(student, lessons, today, nowTime, daysAhead) {
+    const window = daysAhead || 60;
+
+    return (
+      occurrencesForStudent(student, lessons, today, window)
+        .filter((occurrence) => occurrence.state !== 'cancelled')
+        .find(
+          (occurrence) =>
+            // An occurrence with no time set is never treated as already past —
+            // there is no way to know it happened earlier today, and wrongly
+            // skipping to next week would hide a lesson that has not happened
+            // yet.
+            occurrence.date > today ||
+            (occurrence.date === today && (!occurrence.time || occurrence.time >= nowTime))
+        ) || null
+    );
+  }
+  return {
+    WEEKDAYS,
+    MATERIAL_CATEGORIES,
+    WORD_STATUSES,
+    REVIEW_AFTER_DAYS,
+    STUDENT_COLORS,
+    pickStudentColor,
+    LEVELS,
+    MATERIAL_TYPES,
+    isLinkType,
+    safeUrl,
+    createId,
+    createStudent,
+    isPlainTime,
+    createMaterial,
+    createStudentMaterial,
+    createVocabList,
+    createWord,
+    createStudentWord,
+    isDueForReview,
+    LESSON_STATES,
+    createLesson,
+    emptyData,
+    loadData,
+    saveData,
+    buildBackup,
+    parseBackup,
+    addPlainDays,
+    startOfWeekPlain,
+    weekdayOfPlainDate,
+    occurrencesForStudent,
+    nextOccurrenceForStudent
+  };
+})();
+
 const KEY="pottingbench.v2", LOCAL_KEY="pottingbench.local";
 const P2O5_TO_P=0.4364, K2O_TO_K=0.8301;
 const MINERAL_F=1.7;   // counter-ions the label doesn't name (nitrate, sulphate...)
