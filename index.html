@@ -606,7 +606,16 @@ input[type="time"].mono-input{width:88px}
 html.pfocus, html.pfocus body{overflow:hidden}
 html.pfocus .top,html.pfocus .navwrap,html.pfocus #view-planner > .stack > .card:not(.pfocus-card),
 html.pfocus #view-planner .sec-head{display:none}
-.pfocus-card{position:fixed; inset:0; z-index:60; margin:0; border-radius:0;
+/* .card (added in an earlier round) now sets position:relative for its own
+   gradient-edge pseudo-element, and .card/.pfocus-card land on the same
+   fullscreen element — same specificity, so whichever rule comes later in
+   the file wins regardless of which one actually belongs here. Bumped to
+   two classes so this always wins: without it, the "fill the screen"
+   button silently stopped filling the screen, quietly clipping the bottom
+   of the 24-hour grid inside a now-not-actually-fixed, not-actually-full-
+   height box instead of the true fixed fullscreen overlay this is supposed
+   to be. */
+.card.pfocus-card{position:fixed; inset:0; z-index:60; margin:0; border-radius:0;
   overflow:auto; background:var(--surface); padding:14px 16px 20px;
   padding-top:max(14px,env(safe-area-inset-top))}
 .pfocus-btn{flex:0 0 auto}
