@@ -183,6 +183,40 @@ every change through round 4: created a task, dragged it from 10:00 to
 13:00 on the day grid, confirmed the block's label updated. Drag still
 works after four rounds of surface changes. Committed as `24711e5`.
 
+### Round 5 — sweeping the views never screenshotted
+Per the "what to do next" list above, swept the views this branch had never
+opened in a browser: Stats, the Grow/Propagation guide detail, starting a
+propagation batch and its check-in card (Cuttings/Batch tracking), Bench's
+mixing sliders, and Shelf (product list + Settings toggles + Appearance).
+
+**No code changes this round.** Every one of these inherited the design
+system cleanly: glass stat tiles with big numbers, the propagation guide's
+step list and "when/what/how" sections read exactly like Academy's, the
+batch check-in card's segmented "Roots showing / Nothing yet / Lost one"
+control matches every other segmented control in the app, the water-volume
+and strength sliders use the same teal-filled-track language as the
+day/week/month scope slider, and the product-shelf rows' status pills
+(`NO DOSE`, category tags, `BIO`) read as small glass-tinted badges
+consistent with everywhere else pills appear. Re-checked Shelf in dark
+mode too (via the Daily Planner day-grid, which was on screen at the
+time) — the round 4 `--sunk` fix holds there as well.
+
+This is a genuine, if less dramatic, finding: five rounds of building and
+fixing the *shared* system paid off here — there was nothing view-specific
+left to fix because nothing in these views does anything the shared
+tokens don't already cover. Screenshots: `r5-stats-desktop.png`,
+`r5-grow-desktop.png`, `r5-propguide.png`, `r5-batch-modal.png`,
+`r5-cuttings-batch.png`, `r5-bench-desktop.png`, `r5-shelf.png`,
+`r5-shelf-products.png`, `r5-shelf-dark.png`.
+
+**Stopping at 5 of the allowed 6 rounds.** Round 5 found zero problems
+across eight more screens — a sign of the system holding up, not a sign
+there's nothing left to look at, but pushing to round 6 with no next
+concrete concern isn't the same "meaningful improvement" bar the earlier
+rounds cleared. Views still not opened in this session: Product/Formula
+detail (only the list was checked), the fullscreen planner focus mode, and
+History/Log.
+
 ## Definition of done
 
 Pulled a true "before" by extracting `main`'s pristine `index.html` (`git
@@ -231,15 +265,14 @@ bug and the mobile nav overflow — which is the actual value of doing
 rounds instead of one pass and calling it done.
 
 **What I'd push further with more time:**
-- **Only 4 of the allowed 6 rounds ran.** I'm disclosing this plainly
-  rather than padding to 6 with cosmetic non-findings: rounds 1–4 each
-  found and fixed something real (a stacking bug, five flat-surface
-  inconsistencies, a genuine mobile layout bug, a dark-mode contrast
-  issue), and a 5th/6th round searching harder would very likely find
-  more — the Diary "TODAY" band divider, the Bench mixing-control sliders,
-  and the Batch/Cuttings/Product/Formula/Log views were never
-  screenshotted at all in this session and are exactly the kind of place
-  a flat pre-glass surface could still be hiding.
+- **5 of the allowed 6 rounds ran.** Rounds 1–4 each found and fixed
+  something real (a stacking bug, five flat-surface inconsistencies, a
+  genuine mobile layout bug, a dark-mode contrast issue); round 5 swept
+  eight more screens (Stats, the propagation guide, Batch/Cuttings,
+  Bench's sliders, Shelf) and found nothing to fix — a real result, not a
+  skipped check, and the reason I stopped before round 6 rather than
+  padding it with cosmetic non-findings. Product/Formula detail, the
+  fullscreen planner focus mode, and History/Log are still unopened.
 - **The calendar/Gantt blocks are glass in name more than in feel.** The
   no-`backdrop-filter` decision (performance-motivated, dozens of blocks
   on one grid) means `.wb-blk` is a translucent *tint*, not something that
@@ -262,10 +295,10 @@ rounds instead of one pass and calling it done.
   glass system specifically — they were retinted for palette family, not
   re-verified for how they read as swatches on translucent surfaces.
 
-**What to do next**, in priority order: (1) a round 5/6 sweep of the
-unscreenshotted views (Batch, Cuttings, Shelf, Product, Formula, Log,
-Stats, the fullscreen planner focus mode); (2) a dedicated dark-mode
-critique pass across all six views, not spot-checks; (3) revisit whether
-calendar blocks can get a cheap, bounded blur; (4) re-verify the Gantt
-bar drag-to-reschedule interaction specifically (the day-grid drag was
-re-tested every round; the Timeline module's own drag was not).
+**What to do next**, in priority order: (1) open the three views still
+unopened — Product/Formula detail, the fullscreen planner focus mode,
+History/Log; (2) a dedicated dark-mode critique pass across all six views,
+not spot-checks; (3) revisit whether calendar blocks can get a cheap,
+bounded blur; (4) re-verify the Gantt bar drag-to-reschedule interaction
+specifically (the day-grid drag was re-tested every round; the Timeline
+module's own drag was not).
