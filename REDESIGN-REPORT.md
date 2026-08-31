@@ -584,3 +584,37 @@ with room to spare, instead of being unreachable.
 Also confirmed: exiting focus mode still works, the normal (non-
 fullscreen) day view was never affected by this bug and still isn't, and
 drag-and-drop on a calendar block still works after the fix.
+
+## Round 14 — beta feedback: laggy Water Volume / Strength sliders
+
+First direct beta-tester bug report handled in this redesign. Reported
+as "the slider is ~300ms behind the finger" on Bench's Water Volume
+control — a real performance bug, not a visual one.
+
+**Root cause**: a dragged `<input type=range>` fires `input` on every
+pixel of movement — dozens of times a second — and the handler was
+calling `renderMix()` (a full innerHTML rebuild of the ingredient/step
+list) synchronously on every single tick. `renderVol()` was doing the
+same thing to the tick marks via `buildTicks()`, even though tick
+positions are static within the current range and only actually change
+on a mode switch (Formula/One product, spray vs. pot). Two full DOM
+rebuilds per pixel of drag is exactly what a ~300ms lag looks like.
+
+**Fix**: `renderVol()` gained an optional `liveOnly` flag — every
+existing call site still calls it with no argument and gets the
+identical full repaint, zero behaviour change. Only the slider's own
+`input` handler passes `liveOnly=true`, skipping the tick rebuild while
+still updating the number and the slider's visual position every tick.
+The expensive `renderMix()`+`saveLocal()` calls are debounced to 60ms of
+quiet and flushed immediately on `change` (fires once, when the drag
+ends) so releasing the slider never waits out an extra debounce window
+on top of the drag itself. Applied the identical fix to the Strength
+slider, which had the same `renderMix()`-on-every-tick pattern even
+though nobody had reported it yet.
+
+Verified via playwright-cli: measured 20 simulated rapid `input` events
+at 0.175ms/tick (down from two full DOM rebuilds per tick); confirmed
+the mix panel's displayed amount settles correctly and immediately on a
+simulated drag+release with a real product selected; same timing check
+on the Strength slider. Re-ran the calendar drag regression test
+(unrelated code path) to confirm nothing else broke.
