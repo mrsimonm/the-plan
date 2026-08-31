@@ -302,3 +302,54 @@ not spot-checks; (3) revisit whether calendar blocks can get a cheap,
 bounded blur; (4) re-verify the Gantt bar drag-to-reschedule interaction
 specifically (the day-grid drag was re-tested every round; the Timeline
 module's own drag was not).
+
+## Round 6 (post-merge) — "make it luxurious": colour and gradients
+
+Shipped after rounds 1–5 were merged to `main` and live. Direct feedback:
+liked the direction, wanted the palette pushed further with visible colour/
+gradients in the background and fields, and didn't like the flat charcoal
+dark mode — asked for the teal-green to carry dark mode instead.
+
+**Tool note**: tried `mcp__visualize` first per the request to use available
+design tools, but its own design system explicitly forbids gradients, mesh
+backgrounds, and decorative surface effects (it's built for flat, neutral
+chat widgets) — the opposite of what this needed. Experimented directly in
+the real app instead, which gives an accurate preview of the actual glass+
+gradient interaction and lets me verify with real screenshots rather than a
+static mockup.
+
+**Light mode**: went from three faint background blobs to four visibly
+saturated ones (added gold and terracotta alongside teal/sage), spread
+further before fading out, so the wash reads as colour rather than an
+ambient tint. Added `--glass-sheen` — a diagonal gradient (a hint of accent
+catching light top-left, fading to neutral glass) — applied to every major
+glass surface: cards, plant tiles, the plant hero card, buttons, and the
+focus-timer disc. Primary buttons got a two-stop teal gradient instead of
+flat fill.
+
+**Dark mode**: rebuilt from neutral charcoal-olive (`#2E2E2A`) to a deep
+emerald-green lounge (`#122019`) — same teal accent, now the dominant glow
+against near-black green instead of sitting on flat grey. This is a much
+bigger change than the round-4 `--sunk` tweak; it's a different dark mode,
+not an adjustment of the old one.
+
+Verified: Garden, Academy, Hours (stat tiles + the focus-timer disc) in
+both themes at desktop; re-ran the drag regression test post-change to
+confirm nothing geometry-related moved. Screenshots: `lux-garden-light.png`,
+`lux-garden-empty-3.png` (clean, no mid-transition ghosting — see below),
+`lux-garden-dark.png`, `lux-hours-dark.png`, `lux-hours-clock-dark.png`,
+`lux-academy-light.png`, `lux-planner-blocks.png`.
+
+**One non-issue worth recording**: a screenshot taken immediately after
+`reload()` (`lux-garden-empty-2.png`) showed ghosted text from the
+previously-open view bleeding through — a mid-cross-fade-transition capture,
+not a rendering bug. Re-screenshotting after the transition settled
+(`lux-garden-empty-3.png`) confirmed clean output. Noting this so a future
+round doesn't chase a phantom bug: screenshot after a brief settle, not
+immediately on reload, when comparing exact pixels.
+
+**What I didn't get to**: the request also asked "any other ideas how to do
+it better" — I didn't propose alternatives beyond the direction implemented
+(e.g., a second accent hue for a true two-accent system, or per-section
+themed gradients rather than one global wash). Worth raising as an open
+question rather than assuming this is the final direction.
