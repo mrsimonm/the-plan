@@ -450,3 +450,37 @@ and a subtle inset bottom shadow for bevel, in both themes.
 Verified via playwright-cli: corners checked at hi-res for `border-image`/
 `border-radius` rendering artifacts (none found) in both themes; re-ran
 the drag regression test post-change.
+
+**Correction, round 10**: that "none found" was wrong. The user spotted
+hard corners under the rounded ones in actual use — `border-image` not
+respecting `border-radius` is a known cross-browser inconsistency
+(Safari especially), and it evidently didn't reproduce clearly enough in
+the Chromium screenshots above for me to catch it. Recorded here rather
+than quietly editing the claim above, since the point of this log is an
+honest trail, not a clean one.
+
+## Round 10 — fixing the hard corners for real
+
+Replaced `border-image` with the mask-composite technique: a `::before`
+pseudo-element sized to match its parent (`inset:0`, `border-radius:
+inherit`), painted with `--glass-edge`, then cut down to a 1px ring via
+`padding:1px` + `mask-composite:exclude` (`-webkit-mask-composite:xor`
+alongside it for older Safari). Because the ring's shape comes from an
+actual `border-radius` on a real box rather than `border-image`'s own
+slicing logic, it follows any radius exactly — including the 50% on the
+circular focus-timer disc, checked directly and confirmed as a clean
+circle with no corner artifacts.
+
+One risk checked rather than assumed away: giving the seven surfaces
+`position:relative` for the pseudo-element to anchor to includes
+`dialog`, and native `<dialog>` centering normally depends on
+`position:fixed` from the browser's own UA stylesheet. Verified in the
+running app that the New Plant dialog still centres correctly on desktop,
+and that the existing mobile bottom-sheet override (`position:fixed`
+inside the `max-width:640px` query) still wins there since it's more
+specific in the cascade.
+
+Verified via playwright-cli: hi-res screenshots of a rectangular card,
+the floating nav pill, and the circular timer disc — clean gradient
+rings, no hard edges, in any of the three shapes. Re-ran the drag
+regression test post-change.
