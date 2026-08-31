@@ -3719,17 +3719,29 @@ function sizeVolInput(){
   volMirror.textContent=(el.value||String(L.vol||0));
   el.style.width=Math.max(20,Math.max(a,volMirror.offsetWidth)+8)+"px";
 }
-function renderVol(){
+/* liveOnly (used while the range input is actively being dragged) skips
+   the two expensive parts — rebuilding the tick marks' innerHTML and
+   resetting the slider's min/max/step — since neither changes mid-drag,
+   only when the volume RANGE itself changes (switching formula/product,
+   spray vs. pot). A dragged <input type=range> fires "input" on every
+   pixel of movement; rebuilding tick DOM on every one of those was why
+   the slider visibly lagged behind the finger. Every other call site
+   still calls renderVol() with no argument and gets the full repaint,
+   unchanged. */
+function renderVol(liveOnly){
   const R=volRange();
   if(L.vol>R.max) L.vol=R.max;
   if(L.vol<R.min) L.vol=R.min;
   L.vol=Math.round(L.vol/R.step)*R.step;
   L.vol=Math.round(L.vol*1000)/1000;
   const sl=$("#volSlide");
-  sl.min=R.min; sl.max=R.max; sl.step=R.step; sl.value=L.vol;
-  buildTicks("volPill",R.labels.map(v=>({label:fmtL(v,R===SPRAY_RANGE),pos:(v-R.min)/(R.max-R.min)*100})));
-  $("#volPill .ps-notches").style.setProperty("--gap",
-    ((R===SPRAY_RANGE?0.25:0.5)/(R.max-R.min)*100).toFixed(4)+"%");
+  if(!liveOnly){
+    sl.min=R.min; sl.max=R.max; sl.step=R.step;
+    buildTicks("volPill",R.labels.map(v=>({label:fmtL(v,R===SPRAY_RANGE),pos:(v-R.min)/(R.max-R.min)*100})));
+    $("#volPill .ps-notches").style.setProperty("--gap",
+      ((R===SPRAY_RANGE?0.25:0.5)/(R.max-R.min)*100).toFixed(4)+"%");
+  }
+  sl.value=L.vol;
   const asMl=R===SPRAY_RANGE&&L.vol<1;
   $(".vol-unit").textContent=asMl?"ml":"L";
   $("#vol").value=asMl?Math.round(L.vol*1000):L.vol;
@@ -9889,14 +9901,32 @@ $("#vol").addEventListener("input",async e=>{
   L.vol=Math.max(R.min,R===SPRAY_RANGE&&raw>=10?raw/1000:raw);   // typed in ml on the small scale
   renderVol(); renderMix(); saveLocal();
 });
+/* the slider's own visual feedback (renderVol(true) / renderStr()) runs on
+   every "input" tick so it never feels behind the finger; the expensive
+   part — re-mixing and re-rendering the whole ingredient list — is
+   debounced to once every 60ms of quiet, then flushed immediately on
+   "change" (fires once, when the drag actually ends) so letting go never
+   waits out an extra debounce window on top of the drag itself. */
+let volMixT=null;
 $("#volSlide").addEventListener("input",async e=>{
   const R=volRange();
   L.vol=Math.round(+e.target.value/R.step)*R.step;
   L.vol=Math.round(L.vol*1000)/1000;
-  renderVol(); renderMix(); saveLocal();
+  renderVol(true);
+  clearTimeout(volMixT);
+  volMixT=setTimeout(()=>{ renderMix(); saveLocal(); },60);
 });
+$("#volSlide").addEventListener("change",async()=>{
+  clearTimeout(volMixT); volMixT=null; renderMix(); saveLocal();
+});
+let strMixT=null;
 $("#strSlide").addEventListener("input",async e=>{
-  L.strength=+e.target.value; renderStr(); renderMix(); saveLocal();
+  L.strength=+e.target.value; renderStr();
+  clearTimeout(strMixT);
+  strMixT=setTimeout(()=>{ renderMix(); saveLocal(); },60);
+});
+$("#strSlide").addEventListener("change",async()=>{
+  clearTimeout(strMixT); strMixT=null; renderMix(); saveLocal();
 });
 $("#mixMode").addEventListener("click",async e=>{
   const b=e.target.closest("[data-mode]"); if(!b||b.dataset.mode===L.mode) return;
