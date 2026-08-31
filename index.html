@@ -23,7 +23,7 @@
   --track-bg:#E9E9E6; --track-line:rgba(22,24,26,.12); --track-ink:#5C6166;
   /* the planner board's own rules: --line-soft vanished against the card, so
      the hour grid and the day separators get their own readable tokens */
-  --grid-line:#DCDCD8; --grid-sep:#C2C2BD;
+  --grid-line:#C8C8C3; --grid-sep:#A6A6A0;
   --ok:#3F6B54; --crit:#A34B41; --crit-soft:#F2E4E1;
   --glass:rgba(255,255,255,.72); --glass-2:rgba(255,255,255,.88);
   --hair:rgba(255,255,255,.95);
@@ -42,7 +42,7 @@
     --amber:#C6A468; --amber-soft:#241F14;
     --orange:#C08155;
     --track-bg:#202323; --track-line:rgba(236,238,237,.12); --track-ink:#9AA1A0;
-    --grid-line:#282C2B; --grid-sep:#3C4241;
+    --grid-line:#383D3C; --grid-sep:#575F5D;
     --ok:#7FA890; --crit:#C98079; --crit-soft:#2A1D1C;
     --glass:rgba(20,22,22,.72); --glass-2:rgba(26,29,29,.86);
     --hair:rgba(255,255,255,.06);
@@ -60,7 +60,7 @@
   --amber:#C6A468; --amber-soft:#241F14;
   --orange:#C08155;
   --track-bg:#202323; --track-line:rgba(236,238,237,.12); --track-ink:#9AA1A0;
-  --grid-line:#282C2B; --grid-sep:#3C4241;
+  --grid-line:#383D3C; --grid-sep:#575F5D;
   --ok:#7FA890; --crit:#C98079; --crit-soft:#2A1D1C;
   --glass:rgba(20,22,22,.72); --glass-2:rgba(26,29,29,.86);
   --hair:rgba(255,255,255,.06);
@@ -633,14 +633,15 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 /* sticky so the hour labels stay readable while the week scrolls sideways */
 .wb-gutter{flex:0 0 34px; position:sticky; left:0; z-index:4; background:var(--surface)}
 .wb-gutter span{position:absolute; right:6px; transform:translateY(-6px);
-  font-family:"JetBrains Mono",ui-monospace,monospace; font-size:9.5px; color:var(--ink-2)}
+  font-family:"JetBrains Mono",ui-monospace,monospace; font-size:10.5px; font-weight:500;
+  color:var(--ink)}
 .wb-col{flex:1 1 0; min-width:86px; border-left:1px solid var(--grid-sep); display:flex; flex-direction:column}
 /* today gets a real frame, not just a tint — inset shadow rather than a border
    so the column keeps its flex width and the grid stays aligned */
 .wb-col.today{background:color-mix(in srgb, var(--accent) 7%, transparent);
   box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent)}
-.wb-head{appearance:none; border:0; background:none; cursor:pointer; font:inherit; color:var(--ink-2);
-  font-size:11px; padding:4px 2px 3px; text-align:center; border-radius:6px}
+.wb-head{appearance:none; border:0; background:none; cursor:pointer; font:inherit; color:var(--ink);
+  font-size:11.5px; font-weight:500; padding:4px 2px 3px; text-align:center; border-radius:6px}
 .wb-head b{font-family:"Space Grotesk","Manrope",sans-serif; font-weight:600;
   text-transform:uppercase; letter-spacing:.05em; font-size:10.5px; margin-right:3px}
 .wb-col.today .wb-head{color:var(--accent); font-weight:700}
@@ -4591,8 +4592,9 @@ function pBoardLabel(scope,days){
 /* Day, Week and Month are one board — hours down, days across — that just
    gets more day-columns; the day-count-1 case IS the day view, not a
    separate implementation, so it carries every feature the old day
-   timeline had (auto-fit hour window, live countdown, clash warnings,
-   untimed care jobs) rather than losing them when folded in. */
+   timeline had (live countdown, clash warnings, untimed care jobs) rather
+   than losing them when folded in. Every width shows the full 24 hours; the
+   auto-fitting hour window this used to mention is gone. */
 /* A project carries a day-level hour budget with no time-of-day, so on a clock
    grid it has nowhere of its own to sit. Rather than leave it floating in a
    chip strip above the board, pack it into the day's first free gap from
@@ -5094,12 +5096,41 @@ function pPlachtaViewDay(){
    re-runs work the slide has not invalidated. */
 function pPlachtaPaint(at){
   const days=pPlachtaDays(pPlachtaAnchor);
-  $("#pScheduleBody").innerHTML=pBoardHtml(days,pDatelessStripHtml(),{fullDay:true,plachta:true});
+  $("#pScheduleBody").innerHTML=pBoardHtml(days,pDatelessStripHtml(),{plachta:true});
   pWireBoard(); pWireDatelessStrip(); pWirePlachta();
   $("#pBoardLabel").textContent=pBoardLabel("month",[pPlachtaAnchor]);
   const el=document.querySelector("#pWeekBoard .wb-scroll");
   if(el&&at){ const i=days.indexOf(at.day); if(i>=0) el.scrollLeft=i*PLACHTA_COLW+at.offset; }
   pPlachtaArmTick(days);
+}
+/* The board is wider than the phone it is read on, so it opened at its left
+   edge — day one of the period — and today could be a whole screen away. Put
+   today under the eye instead, centred where there is room to centre it.
+   Silently does nothing when the range has no today in it, which is correct:
+   a week you navigated to deliberately should stay where you put it. */
+/* which scope+range the board was last scrolled for. renderSchedule runs
+   after every edit, not just on navigation, so without this the board would
+   re-centre on today the moment you touched a block on any other day. */
+let pBoardShown="";
+function pBoardShowToday(){
+  const el=document.querySelector("#pWeekBoard .wb-scroll"); if(!el) return;
+  const col=el.querySelector('.wb-col[data-wbday="'+pToday()+'"]');
+  if(!col) return;
+  const max=el.scrollWidth-el.clientWidth;
+  if(max<=0) return;                       // the whole range already fits
+  const gut=el.querySelector(".wb-gutter");
+  const gw=gut?gut.offsetWidth:0;
+  /* measured off rects rather than offsetLeft: the column's offsetParent is
+     whatever happens to be positioned above it, which is not this scroller */
+  const cr=col.getBoundingClientRect(), sr=el.getBoundingClientRect();
+  if(!cr.width||!sr.width) return;         // laid out at zero size, nothing to do
+  /* the gutter is sticky over the left edge, so the room a column really has
+     is the scrollport minus it. A column wider than that room cannot be
+     centred, so it gets aligned to the left instead of overshooting. */
+  const room=el.clientWidth-gw;
+  const slack=Math.max(0,(room-cr.width)/2);
+  const delta=(cr.left-sr.left-gw)-slack;
+  el.scrollLeft=Math.max(0,Math.min(el.scrollLeft+delta,max));
 }
 /* centre a given day in the viewport */
 function pPlachtaCentre(iso){
@@ -5111,39 +5142,18 @@ function pPlachtaCentre(iso){
 }
 function pBoardHtml(days,topStrip,opts){
   const byDay=days.map(d=>pPlaceProjects(pBudgetOf(d).items));
-  /* window: wide enough for everything timed, but a lone day starts from a
-     plainer waking-hours default than a multi-day board would need */
-  const fullDay=!!(opts&&opts.fullDay);
-  let startH=fullDay?0:(days.length===1?6:7), endH=fullDay?24:(days.length===1?24:21);
-  if(!fullDay) byDay.forEach(items=>items.forEach(it=>{
-    if(!(it.time&&it.hours>0)) return;
-    const [h,m]=it.time.split(":").map(Number);
-    startH=Math.min(startH,Math.floor(h+m/60));
-    endH=Math.max(endH,Math.ceil(h+m/60+it.hours));
-  }));
-  /* Plachta always shows the whole 24 hours: its point is a continuous canvas,
-     and a window that resized itself per scroll position would make the rows
-     jump as you moved through time. */
-  /* if today is on the board, keep the current hour inside the window — an
-     early-morning or late-night "now" outside the default 7–21 range would
-     otherwise leave the now-line with nowhere to draw */
+  /* Every board shows the whole 24 hours. It used to open on a 7-21 window
+     that grew to fit whatever happened to be timed and slid up and down on the
+     wheel, which meant the hours outside it did not exist on the board at all:
+     a 06:00 watering or a 22:30 block had nowhere to draw, and a stretch with
+     nothing in it looked identical to one that was merely out of frame. The
+     window was also why the wheel swallowed scrolls over the grid.
+     maxShift stays, pinned to 0, because the wheel handler reads it off the
+     board and 0 means "there is nowhere to shift to, let the page have it". */
+  const startH=0, endH=24, maxShift=0;
+  pWinShift=0;
   const nowFrac=(()=>{ const n=new Date(); return n.getHours()+n.getMinutes()/60; })();
-  const hasToday=days.includes(pToday());
-  if(hasToday&&!fullDay){
-    startH=Math.min(startH,Math.floor(nowFrac));
-    endH=Math.max(endH,Math.ceil(nowFrac));
-  }
-  startH=Math.max(0,startH); endH=Math.min(24,Math.max(endH,startH+6));
-  /* the wheel slides the window without resizing it, so the grid keeps its
-     height and only the hours on show change. maxShift is how far it can
-     actually travel before hitting midnight — published on the board so the
-     wheel handler stops swallowing scrolls once nothing more can move, which
-     would otherwise trap the page between the visual end and the raw cap. */
-  const winSpan=endH-startH;
-  const maxShift=Math.max(0,24-winSpan-startH);
-  if(fullDay) pWinShift=0;
-  if(pWinShift>maxShift) pWinShift=maxShift;
-  if(pWinShift){ startH=startH+pWinShift; endH=startH+winSpan; }
+  const hasToday=days.includes(pToday());   // gates the now-line, further down
   const H=(endH-startH)*WB_PXH;
   const label=d=>{ const x=pParseISO(d);
     return `<b>${esc((L.lang==="cs"?DOW_CS:DOW_LONG)[x.getDay()].slice(0,3))}</b> ${x.getDate()}`; };
@@ -5985,7 +5995,7 @@ function renderSchedule(){
        to day one instead of centring on today */
     const prev=document.querySelector("#pWeekBoard.wb-plachta .wb-scroll");
     const keep=prev?prev.scrollLeft:null;
-    $("#pScheduleBody").innerHTML=pBoardHtml(pdays,pDatelessStripHtml(),{fullDay:true,plachta:true});
+    $("#pScheduleBody").innerHTML=pBoardHtml(pdays,pDatelessStripHtml(),{plachta:true});
     pWireBoard(); pWireDatelessStrip(); pWirePlachta();
     const el=document.querySelector("#pWeekBoard .wb-scroll");
     if(el){ if(keep!=null) el.scrollLeft=keep; else pPlachtaCentre(pToday()); }
@@ -5997,15 +6007,31 @@ function renderSchedule(){
   /* the Anytime strip rides above every board width, not just Day: a dateless
      task was invisible in Week and Month, which is the same "I made it and it
      is not on the calendar" complaint in a different scope */
+  /* innerHTML replacement resets scrollLeft, so decide deliberately what the
+     board should be looking at: today when you have just arrived or navigated,
+     and exactly where you left it when this render is only the aftermath of an
+     edit you made on some other day. */
+  const shownKey=pScope+"|"+days[0]+"|"+days[days.length-1];
+  const prevScroll=document.querySelector("#pWeekBoard .wb-scroll");
+  const keepLeft=prevScroll?prevScroll.scrollLeft:null;
   $("#pScheduleBody").innerHTML=pBoardHtml(days,pDatelessStripHtml());
   pWireBoard(); pWireDatelessStrip();
+  if(shownKey!==pBoardShown){ pBoardShown=shownKey; pBoardShowToday(); }
+  else { const el=document.querySelector("#pWeekBoard .wb-scroll");
+         if(el&&keepLeft!=null) el.scrollLeft=keepLeft; }
   /* only a range that includes today moves; anything else is a static
      picture — nothing in the board holds focus, so a full repaint is safe */
   if(days.includes(pToday())) pTick=setInterval(()=>{
     if(curView!=="planner"||pScope==="timeline"){ pStopTick(); return; }
     if(pBoardBusy) return;                 // never repaint mid-gesture
+    /* replacing innerHTML resets scrollLeft, so the tick used to drag the
+       board back to day one every thirty seconds while you were reading it */
+    const prev=document.querySelector("#pWeekBoard .wb-scroll");
+    const keep=prev?prev.scrollLeft:null;
     $("#pScheduleBody").innerHTML=pBoardHtml(pDaysFor(pScope,pSelISO),pDatelessStripHtml());
     pWireBoard(); pWireDatelessStrip();
+    const el=document.querySelector("#pWeekBoard .wb-scroll");
+    if(el&&keep!=null) el.scrollLeft=keep;
   },30000);
 }
 /* ---- overbooking warning, shown while you are still typing ----
