@@ -560,3 +560,27 @@ through to confirm the canvas re-centres correctly; toggled Past/Upcoming
 and confirmed the empty state; searched an existing event to confirm
 Task/Event labels render correctly for both kinds. Checked desktop,
 mobile, light, and dark.
+
+## Round 13 — fullscreen focus mode was clipping the 24-hour grid
+
+Real regression, from round 10. That round added `position:relative`
+straight onto the shared `.card` rule, for the gradient-edge pseudo-
+element. The calendar's "fill the screen" button toggles a `.pfocus-card`
+class onto that same element — same specificity as `.pfocus-card`'s own
+`position:fixed`, so source order decides, and `.card` sits later in the
+file. `position:relative` silently won, and "fullscreen" quietly stopped
+being fullscreen: `getBoundingClientRect()` on the card showed
+`{x:206,y:22,width:1028,height:950.75}` in a 1440×900 viewport — nothing
+like `position:fixed;inset:0`. The bottom of the 24-hour grid had nowhere
+to go and no way to scroll to it.
+
+**Fix**: raised `.pfocus-card`'s selector to `.card.pfocus-card` (two
+classes) so it always wins over plain `.card` regardless of file order.
+Confirmed the same way the bug was found: the card's rect is now exactly
+`{0,0,1440,900}`, and `scrollHeight` (949) now correctly exceeds
+`clientHeight` (900) — scrolled to the bottom and watched hour 23 render
+with room to spare, instead of being unreachable.
+
+Also confirmed: exiting focus mode still works, the normal (non-
+fullscreen) day view was never affected by this bug and still isn't, and
+drag-and-drop on a calendar block still works after the fix.
