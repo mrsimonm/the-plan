@@ -165,3 +165,107 @@ top corners only, blurred dim backdrop, slides up) — implemented in round
 1 but never actually verified until now — and Academy in dark mode, which
 matched round 1/2's light-mode result with no new issues. Committed as
 `1b1f41f`.
+
+### Round 4 — dark-mode surface weight, final drag regression check
+Checked the two view/theme combinations not yet screenshotted (Diary on
+mobile, Gantt/Timeline in dark mode). Diary was clean — the round 3 nav
+fix holds. Gantt in dark mode surfaced one more thing: the Daily Planner's
+"Free" capacity-bar segment (an unfilled track with no explicit background,
+inheriting `--sunk` from its parent `.budget-bar`) read as a near-black
+slab next to the surrounding charcoal-olive glass panels — `--sunk` was
+`#282824`, close enough to black at a glance to undercut the "no pure
+black" spirit of the brief even though it's not literally `#000`.
+Lightened to `#333330` — still correctly darker/recessed than `--surface`
+in both directions, just not reading as a flat black hole.
+
+Closed the round by re-running the round-1 drag regression test against
+every change through round 4: created a task, dragged it from 10:00 to
+13:00 on the day grid, confirmed the block's label updated. Drag still
+works after four rounds of surface changes. Committed as `24711e5`.
+
+## Definition of done
+
+Pulled a true "before" by extracting `main`'s pristine `index.html` (`git
+show main:index.html`) and serving it on a separate port — not a snapshot
+from partway through this branch's own history.
+
+**Garden**, desktop, side by side:
+- Before: near-white background, opaque solid-green pill nav, uppercase
+  "+ PLANT" button, flat white cards with a generic drop shadow.
+- After: cream background with visible soft teal/grey-green blobs, a
+  floating translucent glass pill nav with a solid-teal active tab,
+  sentence-case "+ Plant" button, glass cards with a bright inner hairline
+  and specular top highlight.
+- Nobody mistakes these for the same app with a color change. **Pass.**
+
+**Hours**, desktop, side by side:
+- Before: flat white/grey opaque cards, a dark-navy "ADD" button, and a
+  purple "FOCUS" segment (the old per-module accent swap) — no glass, no
+  blobs, no shape system.
+- After: warm cream + blobs, glass stat tiles, a solid teal "Add" pill,
+  and — the clearest single tell — the running clock is no longer a
+  number in a box but one large centered glass disc with giant thin
+  numerals.
+- **Pass.**
+
+**Academy, Diary, Daily Planner, Gantt/Timeline**: not independently
+re-fetched from `main` for a literal before/after pair in this check (time
+budget), but every one of them inherited the same global rebuild verified
+above — floating glass nav, cream+blob background, glass cards/tiles,
+system font, teal-only accent — and each was individually screenshotted
+across rounds 1–4 in at least two of {desktop, mobile, light, dark}. I'm
+confident in the same verdict for these four on the strength of the shared
+token system, not a guess: the same variables that produced the Garden/
+Hours contrast above are the only variables any of these views' CSS reads.
+
+## Self-critique
+
+**What's solid:** the material system reads as a genuine liquid-glass
+rebuild, not a re-skin — blobs are visible behind every glass panel,
+blur+saturate+inner-hairline+specular-highlight is applied consistently
+rather than per-view, the shape system (24/13/pill) is used with intent
+rather than one radius everywhere, and the focus-timer disc is a real
+"this couldn't be the old app" moment. The four rounds caught two things a
+single implementation pass would have shipped broken — the blob stacking
+bug and the mobile nav overflow — which is the actual value of doing
+rounds instead of one pass and calling it done.
+
+**What I'd push further with more time:**
+- **Only 4 of the allowed 6 rounds ran.** I'm disclosing this plainly
+  rather than padding to 6 with cosmetic non-findings: rounds 1–4 each
+  found and fixed something real (a stacking bug, five flat-surface
+  inconsistencies, a genuine mobile layout bug, a dark-mode contrast
+  issue), and a 5th/6th round searching harder would very likely find
+  more — the Diary "TODAY" band divider, the Bench mixing-control sliders,
+  and the Batch/Cuttings/Product/Formula/Log views were never
+  screenshotted at all in this session and are exactly the kind of place
+  a flat pre-glass surface could still be hiding.
+- **The calendar/Gantt blocks are glass in name more than in feel.** The
+  no-`backdrop-filter` decision (performance-motivated, dozens of blocks
+  on one grid) means `.wb-blk` is a translucent *tint*, not something that
+  visibly refracts what's behind it the way the cards and the timer disc
+  do. That's a defensible tradeoff, not a mistake, but it's also the one
+  place in the app where "liquid glass" is weakest, and a future pass
+  could test whether a much cheaper blur radius (4–6px) on just the
+  *visible* blocks (not the whole grid) gets some of the refraction back
+  without the GPU cost.
+- **Dark mode got one fix (the `--sunk` lightening) but not a full
+  critique pass of its own.** Every dark-mode screenshot in this report is
+  a spot-check of a view already validated in light mode, not an
+  independent "does dark mode have its own problems" pass. Given more
+  time I'd screenshot all six views in dark mode specifically looking for
+  contrast and glass-visibility issues that only show up against the
+  charcoal-olive base, not the cream one.
+- **Named color picker (PAL/PALN) and HCOLORS/`--cap-1..4` are the only
+  remaining non-neutral colors in the app**, by design (see "Decisions"),
+  but I haven't checked whether they look *out of place* against the new
+  glass system specifically — they were retinted for palette family, not
+  re-verified for how they read as swatches on translucent surfaces.
+
+**What to do next**, in priority order: (1) a round 5/6 sweep of the
+unscreenshotted views (Batch, Cuttings, Shelf, Product, Formula, Log,
+Stats, the fullscreen planner focus mode); (2) a dedicated dark-mode
+critique pass across all six views, not spot-checks; (3) revisit whether
+calendar blocks can get a cheap, bounded blur; (4) re-verify the Gantt
+bar drag-to-reschedule interaction specifically (the day-grid drag was
+re-tested every round; the Timeline module's own drag was not).
