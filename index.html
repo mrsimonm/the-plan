@@ -2956,7 +2956,79 @@ html{overscroll-behavior-y:none}
     <div class="stack pstack" id="tbScopeSearch" hidden>
       <p class="pday-sub">Coming soon.</p>
     </div>
+
+    <div class="stack pstack" id="tbScopeDetail" hidden>
+      <button type="button" class="btn mini" id="tbDetailBack">← All students</button>
+
+      <div class="card pad">
+        <h2 id="tbDetailName" style="margin:0 0 4px"></h2>
+        <p class="pday-sub" id="tbDetailMeta"></p>
+        <button type="button" class="btn mini" id="tbDetailEdit" style="margin-top:10px">Edit details</button>
+      </div>
+
+      <div class="card pad">
+        <div class="sec-head" style="margin-bottom:4px"><h2 style="font-size:15px">At a glance</h2></div>
+        <div id="tbDetailSummary" class="stack" style="gap:8px"></div>
+      </div>
+
+      <div class="card pad">
+        <div class="sec-head" style="margin-bottom:4px"><h2 style="font-size:15px">Notes</h2></div>
+        <p class="hint" style="margin-top:0">General observations — separate from vocabulary and lessons.</p>
+        <textarea id="tbDetailNotes" rows="3" placeholder="e.g. struggles with past tense"></textarea>
+        <div class="qadd-row2" style="margin-top:8px">
+          <button type="button" class="btn mini" id="tbDetailNotesSave">Save note</button>
+          <span class="pday-sub" id="tbDetailNotesSaved" hidden>Saved</span>
+        </div>
+      </div>
+
+      <div class="card pad">
+        <div class="sec-head"><h2 style="font-size:15px">Lessons</h2>
+          <button type="button" class="btn primary mini" id="tbDetailAddLesson">New lesson</button></div>
+        <div id="tbDetailLessons" class="stack" style="gap:10px"></div>
+      </div>
+
+      <div class="card pad">
+        <div class="sec-head"><h2 style="font-size:15px">Vocabulary</h2>
+          <button type="button" class="btn primary mini" id="tbDetailAddWords">Add from bank</button></div>
+        <form class="qadd" id="tbDetailQuickWordForm" style="margin-bottom:10px">
+          <div class="qadd-row2">
+            <input type="text" id="tbDetailQuickTerm" class="mono-input" placeholder="New word…" style="flex:1">
+            <input type="text" id="tbDetailQuickDef" class="mono-input" placeholder="Meaning (optional)" style="flex:1">
+            <button class="btn mini" type="submit">Add</button>
+          </div>
+        </form>
+        <div id="tbDetailWords" class="stack" style="gap:10px"></div>
+      </div>
+
+      <div class="card pad">
+        <div class="sec-head"><h2 style="font-size:15px">Tasks</h2>
+          <button type="button" class="btn primary mini" id="tbDetailAddTasks">Add tasks</button></div>
+        <div id="tbDetailTasks" class="stack" style="gap:10px"></div>
+      </div>
+    </div>
   </section>
+
+  <dialog id="tbLessonDlg"><form id="tbLessonForm">
+    <h3 class="dlg-head" id="tbLessonDlgTitle">Lesson</h3>
+    <div class="dlg-body">
+      <div class="qadd-row2">
+        <div class="field" style="flex:1"><label for="tbLessonDate">Date</label><input type="date" id="tbLessonDate" required></div>
+        <div class="field" style="flex:1"><label for="tbLessonTime">Time</label><input type="time" id="tbLessonTime"></div>
+      </div>
+      <div class="field"><label for="tbLessonPlan">What's planned</label>
+        <textarea id="tbLessonPlan" rows="3" placeholder="e.g. Review past simple; kitchen vocabulary"></textarea></div>
+      <div class="field"><label for="tbLessonNotes">Notes and pasted material</label>
+        <textarea id="tbLessonNotes" rows="4" placeholder="Paste a text, exercise or anything else."></textarea></div>
+      <div class="field"><label for="tbLessonLink">Document link (optional)</label>
+        <input type="text" id="tbLessonLink" placeholder="drive.google.com/…"></div>
+      <p class="pwarn" id="tbLessonWarn" hidden></p>
+    </div>
+    <div class="dlg-foot" id="tbLessonActions">
+      <button class="btn mini" type="button" id="tbLessonDelete">Delete…</button>
+      <button class="btn mini" type="button" id="tbLessonCancel">Cancel</button>
+      <button class="btn primary mini" type="submit">Save</button>
+    </div>
+  </form></dialog>
 
   <dialog id="tbMatEditDlg"><form id="tbMatEditForm">
     <h3 class="dlg-head">Edit task</h3>
@@ -11215,16 +11287,30 @@ let tbCalWeekOffset=0;
 let tbOccContext=null;
 let tbScope="students";
 const TB_SCOPES=["students","week","tasks","words","search"];
+let tbDetailStudentId=null;
 
 function tbSetScope(scope){
   tbScope=scope;
+  $("#tbScopeSeg").hidden=false;
+  $("#tbScopeDetail").hidden=true;
   document.querySelectorAll("#tbScopeSeg [data-tbscope]").forEach(b=>
     b.setAttribute("aria-pressed", String(b.dataset.tbscope===scope)));
   TB_SCOPES.forEach(s=>{ $("#tbScope"+s[0].toUpperCase()+s.slice(1)).hidden = s!==scope; });
+  if(scope==="students") renderTeachbench();
+  if(scope==="week") tbRenderWeek();
   if(scope==="tasks") tbRenderTasks();
   if(scope==="words" && window.tbRenderWords) tbRenderWords();
   if(scope==="search" && window.tbRenderSearch) tbRenderSearch();
 }
+function tbOpenStudentDetail(id){
+  tbDetailStudentId=id;
+  $("#tbScopeSeg").hidden=true;
+  TB_SCOPES.forEach(s=>{ $("#tbScope"+s[0].toUpperCase()+s.slice(1)).hidden=true; });
+  $("#tbScopeDetail").hidden=false;
+  tbRenderStudentDetail();
+}
+$("#tbDetailBack").addEventListener("click",()=>{ tbSetScope("students"); renderTeachbench(); });
+$("#tbDetailEdit").addEventListener("click",()=>{ if(tbDetailStudentId) tbOpenEditDialog(tbDetailStudentId); });
 $("#tbScopeSeg").addEventListener("click",e=>{
   const b=e.target.closest("[data-tbscope]");
   if(!b) return;
@@ -11292,10 +11378,8 @@ $("#tbAddForm").addEventListener("submit",e=>{
   renderTeachbench();
 });
 
-document.addEventListener("click",e=>{
-  const row=e.target.closest("[data-tb-edit]");
-  if(!row) return;
-  const student=tbStudentById(row.dataset.tbEdit);
+function tbOpenEditDialog(id){
+  const student=tbStudentById(id);
   if(!student) return;
   tbEditId=student.id;
   $("#tbEditName").value=student.name;
@@ -11309,6 +11393,11 @@ document.addEventListener("click",e=>{
   const toggleBtn=$("#tbToggleActive");
   toggleBtn.textContent = student.active ? "Mark inactive" : "Mark active";
   $("#tbEditDlg").showModal();
+}
+document.addEventListener("click",e=>{
+  const row=e.target.closest("[data-tb-edit]");
+  if(!row) return;
+  tbOpenStudentDetail(row.dataset.tbEdit);
 });
 
 $("#tbEditDays").addEventListener("click",e=>{
@@ -11345,13 +11434,19 @@ $("#tbEditForm").addEventListener("submit",e=>{
   student.schedule=days.map(day=>({day, time:oldTimeByDay.get(day)||null}));
   TB.saveData(data);
   $("#tbEditDlg").close();
+  const wasDetail=tbDetailStudentId===tbEditId;
   tbEditId=null;
   renderTeachbench();
+  if(wasDetail) tbRenderStudentDetail();
 });
 
 function tbTodayPlain(){
   const now=new Date();
   return now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0");
+}
+function tbNowTimePlain(){
+  const now=new Date();
+  return String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0");
 }
 function tbFormatShortDate(plain){
   const [y,m,d]=plain.split("-").map(Number);
@@ -11528,6 +11623,7 @@ $("#tbTaskSubSeg").addEventListener("click",e=>{
   $("#tbTaskLibrary").hidden=tbMatSubview!=="library";
   $("#tbTaskByStudent").hidden=tbMatSubview!=="bystudent";
   if(tbMatSubview==="bystudent") tbRenderMatByStudent();
+  if(tbDetailStudentId) tbRenderStudentDetail();
 });
 
 function tbRenderTasks(){
@@ -11543,6 +11639,7 @@ function tbRenderTasks(){
   tbSyncTypeFields($("#tbMatType").value||"text", $("#tbMatBodyField"), $("#tbMatUrlFields"));
   tbRenderMatLibrary();
   if(tbMatSubview==="bystudent") tbRenderMatByStudent();
+  if(tbDetailStudentId) tbRenderStudentDetail();
 }
 
 $("#tbMatType").addEventListener("change",()=>tbSyncTypeFields($("#tbMatType").value, $("#tbMatBodyField"), $("#tbMatUrlFields")));
@@ -11665,6 +11762,7 @@ $("#tbMatEditForm").addEventListener("submit",e=>{
   tbMatEditId=null;
   tbRenderMatLibrary();
   if(tbMatSubview==="bystudent") tbRenderMatByStudent();
+  if(tbDetailStudentId) tbRenderStudentDetail();
 });
 
 $("#tbMatDelete").addEventListener("click",()=>{
@@ -11684,6 +11782,7 @@ $("#tbMatDelete").addEventListener("click",()=>{
   tbMatEditId=null;
   tbRenderMatLibrary();
   if(tbMatSubview==="bystudent") tbRenderMatByStudent();
+  if(tbDetailStudentId) tbRenderStudentDetail();
 });
 
 function tbActiveFirstStudents(data){
@@ -11725,6 +11824,7 @@ document.addEventListener("change",e=>{
   });
   TB.saveData(data);
   if(tbMatSubview==="bystudent") tbRenderMatByStudent();
+  if(tbDetailStudentId) tbRenderStudentDetail();
 });
 
 function tbRenderMatByStudent(){
@@ -11792,6 +11892,7 @@ $("#tbMatPickerForm").addEventListener("submit",e=>{
   $("#tbMatPickerDlg").close();
   tbMatPickerStudentId=null;
   if(tbMatSubview==="bystudent") tbRenderMatByStudent();
+  if(tbDetailStudentId) tbRenderStudentDetail();
 });
 
 /* ============================================================================
@@ -11825,6 +11926,7 @@ $("#tbWordSubSeg").addEventListener("click",e=>{
   $("#tbWordByStudent").hidden=tbWordSubview!=="bystudent";
   $("#tbWordReview").hidden=tbWordSubview!=="review";
   if(tbWordSubview==="bystudent") tbRenderWordByStudent();
+  if(tbDetailStudentId) tbRenderStudentDetail();
   if(tbWordSubview==="review") tbRenderWordReview();
 });
 
@@ -11833,6 +11935,7 @@ function tbRenderWords(){
   tbFillWordListSelect($("#tbWordEditList"), "No list");
   tbRenderWordBank();
   if(tbWordSubview==="bystudent") tbRenderWordByStudent();
+  if(tbDetailStudentId) tbRenderStudentDetail();
   if(tbWordSubview==="review") tbRenderWordReview();
 }
 
@@ -11899,6 +12002,7 @@ document.addEventListener("click",e=>{
   if(tbWordOpenIds.has(key)) tbWordOpenIds.delete(key); else tbWordOpenIds.add(key);
   if(tbWordSubview==="bank") tbRenderWordBank();
   if(tbWordSubview==="bystudent") tbRenderWordByStudent();
+  if(tbDetailStudentId) tbRenderStudentDetail();
   if(tbWordSubview==="review") tbRenderWordReview();
 });
 document.addEventListener("click",e=>{
@@ -11910,6 +12014,7 @@ document.addEventListener("click",e=>{
   TB.saveData(data);
   if(tbWordSubview==="review") tbRenderWordReview();
   if(tbWordSubview==="bystudent") tbRenderWordByStudent();
+  if(tbDetailStudentId) tbRenderStudentDetail();
 });
 document.addEventListener("change",e=>{
   const sel=e.target.closest("[data-tb-word-status]");
@@ -11926,6 +12031,7 @@ document.addEventListener("change",e=>{
   });
   TB.saveData(data);
   if(tbWordSubview==="bystudent") tbRenderWordByStudent();
+  if(tbDetailStudentId) tbRenderStudentDetail();
   if(tbWordSubview==="review") tbRenderWordReview();
 });
 document.addEventListener("click",e=>{
@@ -11974,6 +12080,7 @@ $("#tbWordEditForm").addEventListener("submit",e=>{
   tbWordEditId=null;
   tbRenderWordBank();
   if(tbWordSubview==="bystudent") tbRenderWordByStudent();
+  if(tbDetailStudentId) tbRenderStudentDetail();
   if(tbWordSubview==="review") tbRenderWordReview();
 });
 $("#tbWordDelete").addEventListener("click",()=>{
@@ -11993,6 +12100,7 @@ $("#tbWordDelete").addEventListener("click",()=>{
   tbWordEditId=null;
   tbRenderWordBank();
   if(tbWordSubview==="bystudent") tbRenderWordByStudent();
+  if(tbDetailStudentId) tbRenderStudentDetail();
   if(tbWordSubview==="review") tbRenderWordReview();
 });
 
@@ -12165,6 +12273,148 @@ function tbRenderWordReview(){
       <div class="stack" style="gap:4px">${due.map(l=>{ const w=byId.get(l.wordId); return w?tbBuildWordRow(data,w,l,{showReviewed:true}):""; }).join("")}</div></div>`;
   }).join("");
   $("#tbWordReviewList").innerHTML = blocks || `<p class="pday-sub">Nothing is overdue. Words appear here once they have been left alone for 7 days.</p>`;
+}
+
+/* ============================================================================
+   Teachbench — Student detail page */
+
+function tbRenderSummary(host, data, student){
+  const links=data.studentWords.filter(sw=>sw.studentId===student.id);
+  const learned=links.filter(l=>l.status==="learned").length;
+  const total=links.length;
+  const dueCount=links.filter(l=>TB.isDueForReview(l, Date.now())).length;
+  const pct = total ? Math.round((learned/total)*100) : 0;
+  const byId=new Map(data.words.map(w=>[w.id,w]));
+  const lapsed=links.filter(l=>l.lapses>0).sort((a,b)=>(b.lapsedAt||"").localeCompare(a.lapsedAt||"")).slice(0,5);
+  const next=TB.nextOccurrenceForStudent(student, data.lessons, tbTodayPlain(), tbNowTimePlain());
+
+  host.innerHTML=`
+    <div class="qadd-row2" style="gap:20px">
+      <div><b style="font-size:20px">${learned} / ${total}</b><div class="pday-sub">words learned</div></div>
+      <div><b style="font-size:20px" class="${dueCount?'stat-warn':''}" style="${dueCount?'color:var(--amber)':''}">${dueCount}</b><div class="pday-sub">need review</div></div>
+    </div>
+    <div role="img" aria-label="${pct}% learned" style="height:8px; border-radius:99px; background:var(--glass-border); overflow:hidden">
+      <div style="height:100%; width:${pct}%; background:linear-gradient(135deg, var(--accent-2), var(--accent))"></div>
+    </div>
+    <p class="pday-sub">${lapsed.length ? "Slipped back: "+lapsed.map(l=>esc((byId.get(l.wordId)||{}).term||"?")).join(", ") : "No words have slipped back yet."}</p>
+    <p class="pday-sub">${next ? "Next lesson: "+tbFormatLessonDate(next.date)+(next.time?" · "+next.time:"")+(next.state==="rescheduled"?" (rescheduled)":"") : "No upcoming lesson scheduled."}</p>`;
+}
+
+function tbRenderDetailLessons(host, data, studentId){
+  const mine=data.lessons.filter(l=>l.studentId===studentId);
+  const today=tbTodayPlain();
+  const upcoming=mine.filter(l=>!l.date || l.date>=today).sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));
+  const past=mine.filter(l=>l.date && l.date<today).sort((a,b)=>b.date.localeCompare(a.date));
+  const row=(l)=>{
+    const badge=l.state==="cancelled"?' <span class="tag check">cancelled</span>':l.state==="rescheduled"?' <span class="tag cat">rescheduled</span>':"";
+    const firstLine=(l.plan||"").split("\n")[0]||"No plan";
+    return `<button type="button" class="row" data-tb-lesson-open="${l.id}">
+      <span class="row-main">
+        <span class="row-title">${l.date?esc(tbFormatLessonDate(l.date)):"No date"}${l.time?" · "+esc(l.time):""}${badge}</span>
+        <span class="row-sub">${esc(firstLine)}</span>
+      </span>
+      <span class="chev" aria-hidden="true">›</span>
+    </button>`;
+  };
+  const section=(title,list)=> list.length ? `<div><div class="field-label" style="margin-bottom:6px">${title}</div>
+    <div class="stack" style="gap:4px">${list.map(row).join("")}</div></div>` : "";
+  host.innerHTML = (section("Upcoming",upcoming)+section("Past",past)) || `<p class="pday-sub">No lessons yet.</p>`;
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-tb-lesson-open]");
+  if(!b) return;
+  tbOpenLessonDialog(b.dataset.tbLessonOpen, null);
+});
+$("#tbDetailAddLesson").addEventListener("click",()=>{ if(tbDetailStudentId) tbOpenLessonDialog(null, tbDetailStudentId); });
+
+let tbLessonEditId=null;
+let tbLessonNewStudentId=null;
+function tbOpenLessonDialog(lessonId, newStudentId){
+  const data=TB.loadData();
+  tbLessonEditId=lessonId;
+  tbLessonNewStudentId=newStudentId;
+  const l = lessonId ? data.lessons.find(x=>x.id===lessonId) : null;
+  $("#tbLessonDlgTitle").textContent = l ? "Lesson" : "New lesson";
+  $("#tbLessonDate").value = l ? (l.date||"") : tbTodayPlain();
+  $("#tbLessonTime").value = l ? (l.time||"") : "";
+  $("#tbLessonPlan").value = l ? (l.plan||"") : "";
+  $("#tbLessonNotes").value = l ? (l.notes||"") : "";
+  $("#tbLessonLink").value = l ? (l.link||"") : "";
+  $("#tbLessonWarn").hidden=true;
+  $("#tbLessonDelete").hidden=!l;
+  $("#tbLessonDelete").textContent="Delete…";
+  $("#tbLessonDlg").showModal();
+}
+$("#tbLessonCancel").addEventListener("click",()=>{ $("#tbLessonDlg").close(); });
+$("#tbLessonForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const date=$("#tbLessonDate").value;
+  if(!date){ $("#tbLessonWarn").hidden=false; $("#tbLessonWarn").textContent="Please pick a date."; return; }
+  const fields={date, time:$("#tbLessonTime").value||null, plan:$("#tbLessonPlan").value, notes:$("#tbLessonNotes").value, link:$("#tbLessonLink").value.trim()};
+  const data=TB.loadData();
+  if(tbLessonEditId){
+    data.lessons=data.lessons.map(l=>l.id===tbLessonEditId ? {...l, ...fields} : l);
+  } else if(tbLessonNewStudentId){
+    data.lessons.push(TB.createLesson({studentId:tbLessonNewStudentId, ...fields, state:"normal", originalDate:null}));
+  }
+  TB.saveData(data);
+  $("#tbLessonDlg").close();
+  tbLessonEditId=null; tbLessonNewStudentId=null;
+  if(tbDetailStudentId) tbRenderStudentDetail();
+  if(tbScope==="week") tbRenderWeek();
+});
+$("#tbLessonDelete").addEventListener("click",()=>{
+  if(!tbLessonEditId) return;
+  if($("#tbLessonDelete").textContent==="Delete…"){ $("#tbLessonDelete").textContent="Really delete this lesson?"; return; }
+  const data=TB.loadData();
+  data.lessons=data.lessons.filter(l=>l.id!==tbLessonEditId);
+  TB.saveData(data);
+  $("#tbLessonDlg").close();
+  tbLessonEditId=null;
+  if(tbDetailStudentId) tbRenderStudentDetail();
+  if(tbScope==="week") tbRenderWeek();
+});
+
+$("#tbDetailAddWords").addEventListener("click",()=>{ if(tbDetailStudentId) tbOpenWordPicker(tbDetailStudentId); });
+$("#tbDetailAddTasks").addEventListener("click",()=>{ if(tbDetailStudentId) tbOpenMaterialPicker(tbDetailStudentId); });
+
+$("#tbDetailQuickWordForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const term=$("#tbDetailQuickTerm").value.trim();
+  if(!term || !tbDetailStudentId) return;
+  const now=new Date().toISOString();
+  const data=TB.loadData();
+  const w=TB.createWord({term, definition:$("#tbDetailQuickDef").value.trim(), example:"", listId:null, ownerId:tbDetailStudentId});
+  data.words.push(w);
+  data.studentWords.push(TB.createStudentWord(tbDetailStudentId, w.id, "learning", now));
+  TB.saveData(data);
+  $("#tbDetailQuickWordForm").reset();
+  tbRenderStudentDetail();
+});
+
+let tbDetailNotesFocused=false;
+$("#tbDetailNotes").addEventListener("focus",()=>{ tbDetailNotesFocused=true; });
+$("#tbDetailNotes").addEventListener("blur",()=>{ tbDetailNotesFocused=false; });
+$("#tbDetailNotesSave").addEventListener("click",()=>{
+  if(!tbDetailStudentId) return;
+  const data=TB.loadData();
+  data.students=data.students.map(s=>s.id===tbDetailStudentId ? {...s, notes:$("#tbDetailNotes").value} : s);
+  TB.saveData(data);
+  $("#tbDetailNotesSaved").hidden=false;
+  setTimeout(()=>{ $("#tbDetailNotesSaved").hidden=true; }, 2000);
+});
+
+function tbRenderStudentDetail(){
+  const data=TB.loadData();
+  const student=data.students.find(s=>s.id===tbDetailStudentId);
+  if(!student){ tbSetScope("students"); return; }
+  $("#tbDetailName").innerHTML=`<span aria-hidden="true" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${TB_COLOR_HEX[student.color]||"#999"};margin-right:8px"></span>${esc(student.name)}`;
+  $("#tbDetailMeta").textContent = `${tbScheduleSummary(student.schedule)} · ${tbLevelLabel(student.level)}${student.active?"":" · Inactive"}`;
+  tbRenderSummary($("#tbDetailSummary"), data, student);
+  if(!tbDetailNotesFocused) $("#tbDetailNotes").value=student.notes||"";
+  tbRenderDetailLessons($("#tbDetailLessons"), data, student.id);
+  tbRenderStudentWords($("#tbDetailWords"), data, student.id, {showReviewed:true});
+  tbRenderAssignedMaterials($("#tbDetailTasks"), data, student.id);
 }
 
 function renderAppMenu(){
