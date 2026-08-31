@@ -419,3 +419,34 @@ since the tab bar is the one glass surface always on screen.
 Verified via playwright-cli in both themes, and re-ran the drag regression
 test with the grain layer active to confirm `pointer-events:none` actually
 passes mouse events through to the calendar block underneath (it does).
+
+## Round 9 — richer colour, and the actual reason Apple's glass edges look classy
+
+Two asks: more colour in light mode, and address that the edges "don't
+look as classy" as Apple's own liquid glass.
+
+**Colour**: light-mode blob RGB values shifted to punchier hues (not just
+higher opacity) — e.g. the teal blob went from `rgba(94,158,133)` to
+`rgba(72,164,128)` — plus opacity raised again across all four. Reads as
+genuinely colourful now rather than a tinted neutral.
+
+**Edges — the actual answer to "how do they do it"**: a flat CSS
+`border-color` can only ever be one solid colour. Real glass doesn't have
+a uniform-colour rim — light catches one side and barely touches the
+other. That unevenness *is* the classy part; a single-colour hairline
+border, however bright, can never reproduce it. Fixed by adding
+`--glass-edge`, a gradient applied via `border-image` (the only way to put
+a gradient on a border) — bright top-left, dimming through the middle,
+brightening slightly again bottom-right — on the seven highest-visibility
+surfaces (cards, tiles, the timer disc, stat tiles, the nav, plant hero
+card, dialogs). Left buttons/chips/segmented controls/calendar blocks on
+the simpler flat hairline — too many on screen for the gradient to read
+as anything, and `border-image` carries a small per-element cost.
+
+Also strengthened `--glass-shadow` with a crisp outer 1px ring (the old
+pure-white inner highlight could nearly vanish against a light background)
+and a subtle inset bottom shadow for bevel, in both themes.
+
+Verified via playwright-cli: corners checked at hi-res for `border-image`/
+`border-radius` rendering artifacts (none found) in both themes; re-ran
+the drag regression test post-change.
