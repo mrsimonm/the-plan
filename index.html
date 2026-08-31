@@ -2716,6 +2716,17 @@ html{overscroll-behavior-y:none}
                 <input type="file" id="importPicker" accept="application/json,.json" hidden>
                 <p class="hint" id="xferMsg" style="margin:9px 0 0" role="status" aria-live="polite"></p>
               </div>
+              <div class="xfer">
+                <span class="eyebrow" style="display:block; margin-bottom:8px">Plants &amp; fertiliser only</span>
+                <p class="hint" style="margin:0 0 10px">Export just the plants and the fertiliser shelf — no formulas,
+                  schedules or log — to one small file. Import adds them to what's already here; nothing existing is replaced.</p>
+                <div class="btn-row">
+                  <button class="btn primary" type="button" id="exportFilePlants">Export plants &amp; fertiliser</button>
+                  <button class="btn" type="button" id="importFilePlants">Import plants &amp; fertiliser</button>
+                </div>
+                <input type="file" id="importPickerPlants" accept="application/json,.json" hidden>
+                <p class="hint" id="xferMsgPlants" style="margin:9px 0 0" role="status" aria-live="polite"></p>
+              </div>
               <div class="btn-row"><button class="btn danger" id="resetData">Reset everything</button></div>
             </div>
           </div>
@@ -14235,6 +14246,93 @@ $("#importPicker").addEventListener("change",e=>{
   e.target.value="";                      // so re-picking the same file fires again
 });
 
+/* ---------------- plants & fertiliser only (partial transfer) ----------------
+   Same file mechanics as the full backup above, but scoped to just the shelf
+   and the garden — the pair someone filling in a fresh device actually has —
+   and MERGED in on import rather than replacing anything, since the receiving
+   device usually already has its own formulas, schedules and log. */
+const XFER_PLANTS_TAG="potting-bench-plants";
+function xferSayPlants(msg,bad){
+  const el=$("#xferMsgPlants"); if(!el) return;
+  el.textContent=msg;
+  el.style.color=bad?"var(--crit)":"var(--ok)";
+}
+function xferPlantsPayload(){
+  const subjects=S.subjects.filter(x=>x.module==="plants");
+  const ids=new Set(subjects.map(x=>x.id));
+  const routines=S.routines.filter(r=>ids.has(r.subjectId));
+  return JSON.stringify({
+    app:XFER_PLANTS_TAG, ver:BUILD.ver, build:BUILD.n,
+    exported:new Date().toISOString(), by:userName(L.me),
+    data:{products:S.products, subjects, routines}
+  },null,1);
+}
+async function exportPlantsToFile(){
+  const json=xferPlantsPayload();
+  const name=`potting-bench-plants-${ymd(Date.now())}.json`;
+  try{
+    if(window.claude && typeof window.claude.use==="function"){
+      const d=await window.claude.use("downloads");
+      if(d){ await d.save({filename:name, data:json});
+        xferSayPlants(t("Exported.")+" "+name); return; }
+    }
+  }catch(e){ /* declined or unavailable — fall through */ }
+  try{
+    const url=URL.createObjectURL(new Blob([json],{type:"application/json"}));
+    const a=document.createElement("a");
+    a.href=url; a.download=name; a.style.display="none";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+    xferSayPlants(t("Exported.")+" "+name); return;
+  }catch(e){ /* fall through */ }
+  $("#dataBox").value=json;
+  xferSayPlants(t("This device won't let a page save files. The text below has it all — copy that across instead."),true);
+}
+function readImportPlants(file){
+  if(!file) return;
+  if(file.size>4e6) return xferSayPlants(t("That file is too big to be Potting Bench data."),true);
+  const rd=new FileReader();
+  rd.onerror=()=>xferSayPlants(t("Couldn't read that file."),true);
+  rd.onload=async()=>{
+    let parsed;
+    try{ parsed=JSON.parse(rd.result); }
+    catch(e){ return xferSayPlants(t("That file isn't valid JSON."),true); }
+    const d=(parsed&&parsed.data&&typeof parsed.data==="object")?parsed.data:parsed;
+    const products=Array.isArray(d&&d.products)?d.products:[];
+    const subjects=Array.isArray(d&&d.subjects)?d.subjects.filter(x=>x&&x.module==="plants"):[];
+    const routines=Array.isArray(d&&d.routines)?d.routines:[];
+    if(!products.length&&!subjects.length) return xferSayPlants(t("That doesn't look like Potting Bench data."),true);
+    const detail=`${subjects.length} ${t("plants")}, ${products.length} fertiliser`;
+    if(!await ask(`${t("Add this to what's already here?")}\n\n${detail}\n\n${t("Nothing existing will be changed or removed.")}`,
+                  t("Add"))) { xferSayPlants(t("Import cancelled.")); return; }
+    try{
+      /* fresh ids for every incoming record, so merging a file from another
+         device can never collide with — or silently overwrite — anything
+         that already exists here */
+      const idMap={};
+      const newSubjects=subjects.map(x=>{
+        const id=uid(); idMap[x.id]=id;
+        return Object.assign({},x,{id,schedId:null});
+      });
+      const newProducts=products.map(x=>Object.assign({},x,{id:uid()}));
+      const newRoutines=routines.filter(r=>idMap[r.subjectId])
+        .map(r=>Object.assign({},r,{id:uid(),subjectId:idMap[r.subjectId]}));
+      S.subjects.push(...newSubjects);
+      S.products.push(...newProducts);
+      S.routines.push(...newRoutines);
+      touch(); saveLocal(); renderWho(); renderAll();
+      xferSayPlants(`${t("Imported.")} ${detail}`);
+    }catch(e){ xferSayPlants(t("Import failed — the file parsed but the data wouldn't load."),true); }
+  };
+  rd.readAsText(file);
+}
+$("#exportFilePlants").addEventListener("click",exportPlantsToFile);
+$("#importFilePlants").addEventListener("click",()=>$("#importPickerPlants").click());
+$("#importPickerPlants").addEventListener("change",e=>{
+  readImportPlants(e.target.files&&e.target.files[0]);
+  e.target.value="";
+});
+
 $("#resetData").addEventListener("click",async()=>{
   if(!await ask("Reset everything — products, lineups, plants, the whole log, the planner and all tracked hours — back to the starting point?")) return;
   S=seed(); photosTouched(); L.formulaId=null; L.productId=null; L.mode="formula"; L.done={}; touch(); saveLocal(); renderWho(); renderAll();
@@ -14633,6 +14731,13 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "That file is too big to be Potting Bench data.":"Ten soubor je moc velký na data z Potting Bench.",
 "Import failed — the file parsed but the data wouldn't load.":"Import selhal — soubor se načetl, ale data se nepodařilo použít.",
 "This device won't let a page save files. The text below has it all — copy that across instead.":"Tohle zařízení nedovolí stránce ukládat soubory. Text níž obsahuje všechno — zkopíruj radši ten.",
+"Plants & fertiliser only":"Jen rostliny a hnojiva",
+"Export just the plants and the fertiliser shelf — no formulas, schedules or log — to one small file. Import adds them to what's already here; nothing existing is replaced.":"Exportuje jen rostliny a polici s hnojivy — bez receptur, rozvrhů nebo záznamů — do jednoho malého souboru. Import je přidá k tomu, co už tu je; nic stávajícího se nezmění.",
+"Export plants & fertiliser":"Exportovat rostliny a hnojiva",
+"Import plants & fertiliser":"Importovat rostliny a hnojiva",
+"Add this to what's already here?":"Přidat tohle k tomu, co už tu je?",
+"Nothing existing will be changed or removed.":"Nic stávajícího se nezmění ani neodstraní.",
+"Add":"Přidat",
 /* ---- statistics ---- */
 "Statistics":"Statistiky","Stats":"Statistiky",
 "The garden right now":"Zahrada právě teď","plants":"rostlin","overdue":"po termínu",
