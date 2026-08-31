@@ -141,3 +141,27 @@ committed material change. Fixed the five worst instances:
 Re-screenshotted Daily Planner (calendar block), Academy (tiles + search
 field), and Hours (stat tiles + inputs) at desktop in light mode to confirm
 each fix. Committed as `ca47a44`.
+
+### Round 3 — a real bug, not a polish nit
+Screenshotted Garden on mobile for the first time since round 1 and found
+the floating pill nav was overflowing the viewport: `.nav` used
+`max-width:fit-content`, so the pill grew as wide as its full six-tab
+content — wider than a 390px phone screen. The pill's own rounded ends
+were pushed off-screen with no visible affordance that it could scroll; at
+rest the screenshot just showed a clipped rectangle with "Bench" cut down
+to "nch". This is the kind of thing that would have shipped invisibly if
+mobile hadn't been screenshotted again after round 1.
+
+Fixed: `.navwrap` becomes a centering flex container, `.nav` gets
+`max-width:100%` instead of `fit-content`. Confirmed via
+`getBoundingClientRect()` that the nav's own box (`left:12, right:378`)
+now sits fully inside a 390px viewport, with `scrollWidth` (487) exceeding
+`clientWidth` (364) — content scrolls *inside* the pill, the pill itself
+never overflows.
+
+Also used this round to check two spec requirements not yet screenshotted:
+the New Plant modal correctly renders as a bottom sheet on mobile (rounded
+top corners only, blurred dim backdrop, slides up) — implemented in round
+1 but never actually verified until now — and Academy in dark mode, which
+matched round 1/2's light-mode result with no new issues. Committed as
+`1b1f41f`.
