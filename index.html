@@ -696,6 +696,16 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .wb-adtask.quick{cursor:default; touch-action:auto}
 .wb-adtask.done{opacity:.5}
 .wb-adtask.done:not(:hover){text-decoration:line-through; text-decoration-thickness:1px}
+/* An unassigned Project chip: dashed border marks it as not really placed
+   yet (unlike a Task chip's solid one), and it isn't grabbable in this pass
+   — tap opens the day dialog, where a real time can be set on purpose. */
+.wb-adtask.wb-adproj{cursor:pointer; touch-action:auto;
+  border-style:dashed; border-color:color-mix(in srgb,var(--pc) 45%,transparent);
+  background:color-mix(in srgb,var(--pc) 14%,var(--surface))}
+.wb-adtask.wb-adproj:hover{border-color:var(--pc)}
+.wb-adtask.wb-adproj small{font-family:var(--font); font-variant-numeric:tabular-nums;
+  color:var(--ink-2)}
+.wb-adprojdot{width:7px; height:7px; flex:0 0 auto; border-radius:50%; background:var(--pc)}
 /* Plachta: columns are a fixed width so the canvas scrolls rather than
    squeezing, and so the scroll maths can trust a known column pitch */
 /* max-content, not 0: a sticky box is clamped to its containing block, so a
@@ -6399,13 +6409,12 @@ function pBoardLabel(scope,days){
    timeline had (live countdown, clash warnings, untimed care jobs) rather
    than losing them when folded in. Every width shows the full 24 hours; the
    auto-fitting hour window this used to mention is gone. */
-/* A project carries a day-level hour budget with no time-of-day, so on a clock
-   grid it has nowhere of its own to sit. Rather than leave it floating in a
-   chip strip above the board, pack it into the day's first free gap from
-   PROJ_ANCHOR on so it reads as a real block like everything else. The times
-   invented here are presentation only — pBudgetOf's totals are computed before
-   this runs and never see them, so the day's arithmetic is unchanged. */
-const PROJ_ANCHOR=9;
+/* A project carries a day-level hour budget with no time-of-day, so on a
+   clock grid it has nowhere of its own to sit UNTIL something (a drag, or
+   the day dialog) gives it a real one via ppSetDayTime — see pPlaceProjects.
+   Before that, it surfaces as unassigned in the all-day strip rather than
+   being packed into whatever hour happens to be free; a project silently
+   filling the next open gap read as the app scheduling your day for you. */
 const pSnapQ=v=>Math.round(v/WB_SNAP)*WB_SNAP;
 /* how far the wheel has pushed the visible hour window past what the day's
    contents alone would show. Ephemeral: which hours you happen to be looking
@@ -6421,43 +6430,30 @@ function pPlaceProjects(items,iso){
   const busy=items.filter(it=>it.time&&it.hours>0&&it.kind!=="care")
     .map(it=>{ const [h,m]=it.time.split(":").map(Number); return {s:h+m/60,e:h+m/60+it.hours}; });
   const placed=new Map();
-  let cursor=PROJ_ANCHOR;
   projs.forEach(p=>{
     /* Once someone has dragged this project's day to a real clock slot,
-       that slot is what draws it — the invented placement below is only
-       ever a fallback for a day nobody has positioned yet. */
+       that slot is what draws it. A day with no slot of its own — most
+       often one that just lost its old time, e.g. because a shorter
+       project's schedule shifted it off the day it used to occupy — used
+       to get one INVENTED by walking a cursor forward to the next free
+       gap, which silently dropped it into whatever hour happened to be
+       open. That reads as the app randomly scheduling your work. It's
+       marked unassigned instead: pBoardHtml puts it in the all-day strip
+       rather than the hour grid, and nothing claims a slot on your behalf. */
     const fixed=iso&&window.ppDayTimeOf?ppDayTimeOf(p.id,iso):null;
-    if(fixed){
-      const [fh,fm]=fixed.split(":").map(Number);
-      const s=Math.max(0,Math.min(fh+fm/60,24-Math.min(p.hours,24)));
-      const clash=busy.some(b=>b.e>s&&b.s<s+p.hours);
-      placed.set(p,{time:hhmm(s),clash});
-      busy.push({s,e:s+p.hours});
-      return;
-    }
-    let s=Math.max(cursor,PROJ_ANCHOR);
-    /* step past whatever already occupies the slot; bounded by the number of
-       busy intervals so a pathological overlap set can't spin here */
-    for(let guard=0;guard<=busy.length;guard++){
-      const hit=busy.find(b=>b.e>s&&b.s<s+p.hours);
-      if(!hit) break;
-      s=hit.e;
-    }
-    /* keep the block inside the day rather than clamping its START — clamping
-       to a fixed 23:75 pushed long stacks back into the very interval the walk
-       above had just cleared, and let the tail paint past the bottom of the
-       track. A day with more booked than it holds genuinely overlaps; say so
-       with the same clash flag a double-booked hour gets. */
-    s=Math.max(0,Math.min(s,24-Math.min(p.hours,24)));
+    if(!fixed){ placed.set(p,{unassigned:true}); return; }
+    const [fh,fm]=fixed.split(":").map(Number);
+    const s=Math.max(0,Math.min(fh+fm/60,24-Math.min(p.hours,24)));
     const clash=busy.some(b=>b.e>s&&b.s<s+p.hours);
     placed.set(p,{time:hhmm(s),clash});
     busy.push({s,e:s+p.hours});
-    cursor=s+p.hours;
   });
-  return items.map(it=>placed.has(it)
-    ? Object.assign({},it,placed.get(it).clash?{time:placed.get(it).time,clash:true}
-                                             :{time:placed.get(it).time})
-    : it);
+  return items.map(it=>{
+    if(!placed.has(it)) return it;
+    const pl=placed.get(it);
+    return pl.unassigned?Object.assign({},it,{unassigned:true})
+      :Object.assign({},it,pl.clash?{time:pl.time,clash:true}:{time:pl.time});
+  });
 }
 /* Tasks with no day at all — the "ring the dentist" kind. They belong to no
    square on the grid, so they ride above it as a tick-off strip: tap the box
@@ -7060,6 +7056,7 @@ function pBoardHtml(days,topStrip,opts){
      full of them reserves too few rows and clips its own contents */
   const adCount=days.map((d,di)=>byDay[di].filter(it=>
       it.ref&&(it.ref.kind==="task"||it.ref.kind==="quick")&&!it.time&&it.ref.due===d).length
+    + byDay[di].filter(it=>it.kind==="proj"&&it.unassigned).length
     + (byDay[di].some(it=>it.kind==="care")?1:0));
   const adRows=Math.min(3,Math.max(1,...adCount));
   const cols=days.map((d,di)=>{
@@ -7164,7 +7161,13 @@ function pBoardHtml(days,topStrip,opts){
        and cannot be picked up. Ticking it is the whole of it. */
     const adTasks=items.filter(it=>it.ref&&(it.ref.kind==="task"||it.ref.kind==="quick")
       &&!it.time&&it.ref.due===d);
-    const allday=(adTasks.length||care)?`<div class="wb-allday">${
+    /* A Project with no real time-of-day for this day — see pPlaceProjects —
+       surfaces here instead of being packed into a made-up hour. Tapping it
+       opens the same day dialog a grid project opens, where a time (or the
+       hours) can be set on purpose; it carries no data-wb, so unlike a Task
+       chip it isn't draggable straight onto an hour in this pass. */
+    const unassignedProjs=items.filter(it=>it.kind==="proj"&&it.unassigned);
+    const allday=(adTasks.length||unassignedProjs.length||care)?`<div class="wb-allday">${
       adTasks.map(it=>{
         const q=it.ref.kind==="quick", dn=q&&it.ref.done;
         return `<span class="wb-adtask${q?" quick":""}${dn?" done":""}"${
@@ -7174,6 +7177,10 @@ function pBoardHtml(days,topStrip,opts){
           <i class="wb-adtick${dn?" on":""}" data-adtick="${it.ref.id}" role="button" tabindex="0"
             aria-label="${esc(dn?t("Mark not done"):t("Mark done"))}"></i>${esc(it.name)}</span>`;
       }).join("")}${
+      unassignedProjs.map(it=>`<span class="wb-adtask wb-adproj" data-wbaproj="${it.id}" data-day="${d}"
+          style="--pc:${ppSafeColor(it.color)}"
+          title="${esc(it.name)} · ${pFmtH(it.hours)}h — ${esc(t("unassigned — tap to set a time"))}">
+          <i class="wb-adprojdot"></i>${esc(it.name)} <small>${pFmtH(it.hours)}h</small></span>`).join("")}${
       care?`<span class="wb-adcare" title="${esc(care.name)} · ${pFmtH(care.hours)}h">🌿</span>`:""}</div>`
       :'<div class="wb-allday"></div>';
     /* drawn before the real blocks, so it sits underneath them in stacking
@@ -7839,7 +7846,9 @@ function pWireBoard(){
   },{passive:false});
   board.addEventListener("click",e=>{
     const h=e.target.closest("[data-wbgo]");
-    if(h){ pSelISO=h.dataset.wbgo; pScope="day"; pWinShift=0; pDayPanel(); renderSchedule(); }
+    if(h){ pSelISO=h.dataset.wbgo; pScope="day"; pWinShift=0; pDayPanel(); renderSchedule(); return; }
+    const ap=e.target.closest("[data-wbaproj]");
+    if(ap) pOpenDayDialog("proj",ap.dataset.wbaproj,ap.dataset.day);
   });
 }
 
