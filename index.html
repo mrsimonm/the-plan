@@ -696,6 +696,16 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .wb-adtask.quick{cursor:default; touch-action:auto}
 .wb-adtask.done{opacity:.5}
 .wb-adtask.done:not(:hover){text-decoration:line-through; text-decoration-thickness:1px}
+/* An unassigned Project chip: dashed border marks it as not really placed
+   yet (unlike a Task chip's solid one), and it isn't grabbable in this pass
+   — tap opens the day dialog, where a real time can be set on purpose. */
+.wb-adtask.wb-adproj{cursor:pointer; touch-action:auto;
+  border-style:dashed; border-color:color-mix(in srgb,var(--pc) 45%,transparent);
+  background:color-mix(in srgb,var(--pc) 14%,var(--surface))}
+.wb-adtask.wb-adproj:hover{border-color:var(--pc)}
+.wb-adtask.wb-adproj small{font-family:var(--font); font-variant-numeric:tabular-nums;
+  color:var(--ink-2)}
+.wb-adprojdot{width:7px; height:7px; flex:0 0 auto; border-radius:50%; background:var(--pc)}
 /* Plachta: columns are a fixed width so the canvas scrolls rather than
    squeezing, and so the scroll maths can trust a known column pitch */
 /* max-content, not 0: a sticky box is clamped to its containing block, so a
@@ -735,9 +745,14 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
    clipped box instead of outside it. */
 .wb-scroll{overflow-x:auto; margin-top:12px; padding:10px 0}
 .wb-grid{display:flex; min-width:640px}
-/* sticky so the hour labels stay readable while the week scrolls sideways */
-.wb-gutter{flex:0 0 34px; position:sticky; left:0; z-index:4; background:var(--surface)}
-.wb-gutter span{position:absolute; right:6px; transform:translateY(-6px);
+/* sticky so the hour labels stay readable while the week scrolls sideways.
+   Flex column now, matching .wb-col's own layout: a hidden .wb-head-sized
+   spacer, a hidden .wb-allday-sized spacer, then the actual hour labels —
+   see the gutter-crookedness note above pBoardHtml's gutter template. */
+.wb-gutter{flex:0 0 34px; position:sticky; left:0; z-index:4; background:var(--surface);
+  display:flex; flex-direction:column}
+.wb-gutter-hours{position:relative; flex:0 0 auto}
+.wb-gutter-hours span{position:absolute; right:6px; transform:translateY(-6px);
   font-family:var(--font); font-variant-numeric:tabular-nums; font-size:10.5px; font-weight:500;
   color:var(--ink)}
 .wb-col{flex:1 1 0; min-width:86px; border-left:1px solid var(--grid-sep); display:flex; flex-direction:column}
@@ -771,11 +786,25 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .wb-pchip.sizing::after,.wb-blk.sizing::after{content:attr(data-live); position:absolute; top:-16px; left:50%;
   transform:translateX(-50%); font-family:var(--font); font-variant-numeric:tabular-nums;
   font-size:9px; color:var(--accent); white-space:nowrap}
-.wb-phandle{position:absolute; right:-3px; top:0; bottom:0; width:9px; cursor:ew-resize}
+/* Same bug class as .wb-h, and worse: the hit area was live (pointer-events:
+   auto) across the block's FULL HEIGHT at all times, while the visible
+   indicator it drew was a small 9px dot centered in the middle — so a drag
+   meant to MOVE the block, grabbed anywhere near the right edge top-to-
+   bottom, silently resized its hours instead. Two fixes, both needed: gated
+   like .wb-h (invisible and inert until hovered/focused) is not enough on
+   its own, because hovering is unavoidable before any click — the hitbox
+   itself also has to shrink to match what's actually drawn, the way .wb-h-e
+   /.wb-h-w already inset from the block's top/bottom rather than spanning
+   it, or the full-height trap is merely invisible, not gone. */
+.wb-phandle{position:absolute; right:-3px; top:50%; transform:translateY(-50%);
+  width:9px; height:20px; cursor:ew-resize;
+  opacity:0; pointer-events:none; transition:opacity .12s}
+.wb-blk:hover .wb-phandle,.wb-blk:focus-within .wb-phandle,.wb-blk.sizing .wb-phandle{
+  opacity:1; pointer-events:auto}
 .wb-phandle::after{content:""; position:absolute; right:3px; top:50%; transform:translateY(-50%);
   width:2px; height:9px; border-radius:2px; background:var(--pc); opacity:.75}
 .wb-pchip:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
-@media (hover:none){ .wb-phandle{width:14px; right:-5px} }
+@media (hover:none){ .wb-phandle{width:14px; height:26px; right:-5px; opacity:.9} }
 .wb-allday{gap:2px}
 .wb-adcare{font-size:9px; line-height:1}
 .wb-track{position:relative}
@@ -812,6 +841,11 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .wb-blk.wb-sleep{z-index:0; border-left-color:var(--ink-3);
   background:color-mix(in srgb, var(--ink-3) 16%, var(--surface)); opacity:.8}
 .wb-blk.wb-sleep:hover{filter:brightness(1.1)}
+/* The half that spills into tomorrow loses its bottom corners; the half
+   that's a continuation from last night loses its top ones — a visual cue
+   that each is a fragment of one night, not two separate, complete sleeps. */
+.wb-blk.wb-sleep-cont-b{border-bottom-left-radius:0; border-bottom-right-radius:0}
+.wb-blk.wb-sleep-cont-t{border-top-left-radius:0; border-top-right-radius:0}
 /* Done stays on the board rather than disappearing — solid green reads as
    "finished" at a glance the same way a done Task's checkbox does elsewhere,
    and overrides whatever tint the block (Task, Event, or recurring Block)
@@ -6375,13 +6409,12 @@ function pBoardLabel(scope,days){
    timeline had (live countdown, clash warnings, untimed care jobs) rather
    than losing them when folded in. Every width shows the full 24 hours; the
    auto-fitting hour window this used to mention is gone. */
-/* A project carries a day-level hour budget with no time-of-day, so on a clock
-   grid it has nowhere of its own to sit. Rather than leave it floating in a
-   chip strip above the board, pack it into the day's first free gap from
-   PROJ_ANCHOR on so it reads as a real block like everything else. The times
-   invented here are presentation only — pBudgetOf's totals are computed before
-   this runs and never see them, so the day's arithmetic is unchanged. */
-const PROJ_ANCHOR=9;
+/* A project carries a day-level hour budget with no time-of-day, so on a
+   clock grid it has nowhere of its own to sit UNTIL something (a drag, or
+   the day dialog) gives it a real one via ppSetDayTime — see pPlaceProjects.
+   Before that, it surfaces as unassigned in the all-day strip rather than
+   being packed into whatever hour happens to be free; a project silently
+   filling the next open gap read as the app scheduling your day for you. */
 const pSnapQ=v=>Math.round(v/WB_SNAP)*WB_SNAP;
 /* how far the wheel has pushed the visible hour window past what the day's
    contents alone would show. Ephemeral: which hours you happen to be looking
@@ -6397,43 +6430,30 @@ function pPlaceProjects(items,iso){
   const busy=items.filter(it=>it.time&&it.hours>0&&it.kind!=="care")
     .map(it=>{ const [h,m]=it.time.split(":").map(Number); return {s:h+m/60,e:h+m/60+it.hours}; });
   const placed=new Map();
-  let cursor=PROJ_ANCHOR;
   projs.forEach(p=>{
     /* Once someone has dragged this project's day to a real clock slot,
-       that slot is what draws it — the invented placement below is only
-       ever a fallback for a day nobody has positioned yet. */
+       that slot is what draws it. A day with no slot of its own — most
+       often one that just lost its old time, e.g. because a shorter
+       project's schedule shifted it off the day it used to occupy — used
+       to get one INVENTED by walking a cursor forward to the next free
+       gap, which silently dropped it into whatever hour happened to be
+       open. That reads as the app randomly scheduling your work. It's
+       marked unassigned instead: pBoardHtml puts it in the all-day strip
+       rather than the hour grid, and nothing claims a slot on your behalf. */
     const fixed=iso&&window.ppDayTimeOf?ppDayTimeOf(p.id,iso):null;
-    if(fixed){
-      const [fh,fm]=fixed.split(":").map(Number);
-      const s=Math.max(0,Math.min(fh+fm/60,24-Math.min(p.hours,24)));
-      const clash=busy.some(b=>b.e>s&&b.s<s+p.hours);
-      placed.set(p,{time:hhmm(s),clash});
-      busy.push({s,e:s+p.hours});
-      return;
-    }
-    let s=Math.max(cursor,PROJ_ANCHOR);
-    /* step past whatever already occupies the slot; bounded by the number of
-       busy intervals so a pathological overlap set can't spin here */
-    for(let guard=0;guard<=busy.length;guard++){
-      const hit=busy.find(b=>b.e>s&&b.s<s+p.hours);
-      if(!hit) break;
-      s=hit.e;
-    }
-    /* keep the block inside the day rather than clamping its START — clamping
-       to a fixed 23:75 pushed long stacks back into the very interval the walk
-       above had just cleared, and let the tail paint past the bottom of the
-       track. A day with more booked than it holds genuinely overlaps; say so
-       with the same clash flag a double-booked hour gets. */
-    s=Math.max(0,Math.min(s,24-Math.min(p.hours,24)));
+    if(!fixed){ placed.set(p,{unassigned:true}); return; }
+    const [fh,fm]=fixed.split(":").map(Number);
+    const s=Math.max(0,Math.min(fh+fm/60,24-Math.min(p.hours,24)));
     const clash=busy.some(b=>b.e>s&&b.s<s+p.hours);
     placed.set(p,{time:hhmm(s),clash});
     busy.push({s,e:s+p.hours});
-    cursor=s+p.hours;
   });
-  return items.map(it=>placed.has(it)
-    ? Object.assign({},it,placed.get(it).clash?{time:placed.get(it).time,clash:true}
-                                             :{time:placed.get(it).time})
-    : it);
+  return items.map(it=>{
+    if(!placed.has(it)) return it;
+    const pl=placed.get(it);
+    return pl.unassigned?Object.assign({},it,{unassigned:true})
+      :Object.assign({},it,pl.clash?{time:pl.time,clash:true}:{time:pl.time});
+  });
 }
 /* Tasks with no day at all — the "ring the dentist" kind. They belong to no
    square on the grid, so they ride above it as a tick-off strip: tap the box
@@ -7006,9 +7026,26 @@ function pBoardHtml(days,topStrip,opts){
 
   /* Labelled 1–24, not 0–23: the first row of the day reads "1", the last
      "24", so every hour the board draws has a visible, unambiguous number —
-     no row is left implying a "0" that reads as missing. */
-  const gutter=`<div class="wb-gutter" style="height:${H}px">${
-    Array.from({length:endH-startH},(_,i)=>`<span style="top:${i*WB_PXH}px">${startH+i+1}</span>`).join("")}</div>`;
+     no row is left implying a "0" that reads as missing.
+
+     The gutter used to be one flat block starting at the very top of the
+     grid, with its labels absolutely positioned from y=0. Every DAY column,
+     though, stacks a .wb-head button and a .wb-allday strip ABOVE its own
+     .wb-track — so the track (and every real hour row in it) actually starts
+     however tall those two happen to render, while "hour 1" in the gutter
+     sat fixed at y=0. The two drifted apart by exactly that height, which is
+     what "crooked hour grid" was: not uneven row spacing, but the whole
+     label column starting higher than the rows it's meant to label.
+     Fixed by giving the gutter the SAME two spacers, hidden but sized by the
+     SAME classes (.wb-head, .wb-allday) a real column uses — so if either
+     one's height ever changes, both sides move together automatically
+     instead of this needing a hand-tuned pixel offset that can drift again. */
+  const gutter=`<div class="wb-gutter">
+    <button type="button" class="wb-head" style="visibility:hidden" tabindex="-1" aria-hidden="true">·</button>
+    <div class="wb-allday" style="visibility:hidden" aria-hidden="true"></div>
+    <div class="wb-gutter-hours" style="height:${H}px">${
+      Array.from({length:endH-startH},(_,i)=>`<span style="top:${i*WB_PXH}px">${startH+i+1}</span>`).join("")}</div>
+  </div>`;
 
   const nowH=nowFrac;          // one clock read for the whole board
   /* The all-day row used to size itself to its own contents, so a day with a
@@ -7019,6 +7056,7 @@ function pBoardHtml(days,topStrip,opts){
      full of them reserves too few rows and clips its own contents */
   const adCount=days.map((d,di)=>byDay[di].filter(it=>
       it.ref&&(it.ref.kind==="task"||it.ref.kind==="quick")&&!it.time&&it.ref.due===d).length
+    + byDay[di].filter(it=>it.kind==="proj"&&it.unassigned).length
     + (byDay[di].some(it=>it.kind==="care")?1:0));
   const adRows=Math.min(3,Math.max(1,...adCount));
   const cols=days.map((d,di)=>{
@@ -7123,7 +7161,13 @@ function pBoardHtml(days,topStrip,opts){
        and cannot be picked up. Ticking it is the whole of it. */
     const adTasks=items.filter(it=>it.ref&&(it.ref.kind==="task"||it.ref.kind==="quick")
       &&!it.time&&it.ref.due===d);
-    const allday=(adTasks.length||care)?`<div class="wb-allday">${
+    /* A Project with no real time-of-day for this day — see pPlaceProjects —
+       surfaces here instead of being packed into a made-up hour. Tapping it
+       opens the same day dialog a grid project opens, where a time (or the
+       hours) can be set on purpose; it carries no data-wb, so unlike a Task
+       chip it isn't draggable straight onto an hour in this pass. */
+    const unassignedProjs=items.filter(it=>it.kind==="proj"&&it.unassigned);
+    const allday=(adTasks.length||unassignedProjs.length||care)?`<div class="wb-allday">${
       adTasks.map(it=>{
         const q=it.ref.kind==="quick", dn=q&&it.ref.done;
         return `<span class="wb-adtask${q?" quick":""}${dn?" done":""}"${
@@ -7133,17 +7177,38 @@ function pBoardHtml(days,topStrip,opts){
           <i class="wb-adtick${dn?" on":""}" data-adtick="${it.ref.id}" role="button" tabindex="0"
             aria-label="${esc(dn?t("Mark not done"):t("Mark done"))}"></i>${esc(it.name)}</span>`;
       }).join("")}${
+      unassignedProjs.map(it=>`<span class="wb-adtask wb-adproj" data-wbaproj="${it.id}" data-day="${d}"
+          style="--pc:${ppSafeColor(it.color)}"
+          title="${esc(it.name)} · ${pFmtH(it.hours)}h — ${esc(t("unassigned — tap to set a time"))}">
+          <i class="wb-adprojdot"></i>${esc(it.name)} <small>${pFmtH(it.hours)}h</small></span>`).join("")}${
       care?`<span class="wb-adcare" title="${esc(care.name)} · ${pFmtH(care.hours)}h">🌿</span>`:""}</div>`
       :'<div class="wb-allday"></div>';
     /* drawn before the real blocks, so it sits underneath them in stacking
        order — anything genuinely scheduled during the night stays reachable,
        and only the empty stretch of the block answers a click */
+    /* One night is one record (owner), but a grid of side-by-side day COLUMNS
+       has no way to draw a single rectangle that crosses from one column into
+       the next — every calendar built this way (Google Calendar, Outlook,
+       Apple Calendar included) draws a midnight-spanning event as two
+       segments, one per day. What was actually fixable is making the two
+       segments read as one thing rather than two unrelated sleeps: both show
+       the FULL 23:00→07:00 range and duration (not just their own slice), a
+       "spills into tomorrow" arrow marks the first segment, and the corners
+       where they'd touch if the grid could join them are squared off instead
+       of rounded, rather than each looking like a complete, separate block. */
     const sleepHtml=pSleepBlocksFor(d).map(sp=>{
       const [sh,sm]=sp.time.split(":").map(Number);
       const s=sh+sm/60, top=(s-startH)*WB_PXH, hpx=Math.max(17,sp.hours*WB_PXH);
-      return `<div class="wb-blk wb-sleep" data-sleepblk="${sp.owner}" style="top:${top}px; height:${hpx}px; left:0; width:100%"
+      const full=pSleepFor(sp.owner);
+      const [oh,om]=full.from.split(":").map(Number);
+      const spills=(oh+om/60+full.hours)>24+1e-9;
+      const isContinuation=sp.time==="00:00"&&sp.owner!==d;
+      const contClass=spills?(isContinuation?" wb-sleep-cont-t":" wb-sleep-cont-b"):"";
+      const range=`${esc(full.from)}–${esc(pSleepUntilStr(full.from,full.hours))} · ${pFmtH(full.hours)}h`;
+      const label=isContinuation?"⟶ "+esc(t("Sleep")):esc(t("Sleep"))+(spills?" ⟶":"");
+      return `<div class="wb-blk wb-sleep${contClass}" data-sleepblk="${sp.owner}" style="top:${top}px; height:${hpx}px; left:0; width:100%"
         role="button" tabindex="0" aria-label="${esc(t("Sleep settings"))}">
-        <b>${esc(t("Sleep"))}</b><span>${esc(sp.time)} · ${pFmtH(sp.hours)}h</span>
+        <b>${label}</b><span>${range}</span>
       </div>`;
     }).join("");
     return `<div class="wb-col${d===pToday()?" today":""}${d.slice(8)==="01"?" mstart":""}" data-wbday="${d}">
@@ -7762,6 +7827,39 @@ function pWireBoard(){
     const [k,id]=(blk.getAttribute("data-wb")||"").split(":");
     if(k==="task"||k==="event"){ e.preventDefault(); pOpenEditDialog(id); }
   });
+  /* A Project block is the only block type this board makes keyboard-
+     focusable (tabindex="0" on data-wbp, so a drag alternative can exist for
+     it) — Task/Event blocks aren't focusable here at all yet, a separate,
+     wider gap. Left/Right move it a day, same as dragging it sideways;
+     Up/Down nudge its time by 15 minutes, same rounding pDayDlgSave already
+     uses. Re-render replaces the DOM node, so the moved block is re-found by
+     id and refocused — otherwise a second arrow press would land on nothing
+     and silently do nothing, indistinguishable from arrows not working. */
+  board.addEventListener("keydown",e=>{
+    const el=e.target.closest&&e.target.closest("[data-wbp]");
+    if(!el) return;
+    if(!["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.key)) return;
+    const id=el.dataset.wbp, day=el.dataset.day;
+    e.preventDefault();
+    /* renderPlanner() replaces #pWeekBoard wholesale, so the closed-over
+       `board` variable is a detached node by the time this runs — querying
+       through it silently finds nothing (or a detached match, which .focus()
+       does nothing useful with either). Re-fetch the live element by id. */
+    const refocus=()=>{ const again=document.getElementById("pWeekBoard");
+      const found=again&&again.querySelector(`[data-wbp="${id}"]`);
+      if(found) found.focus({preventScroll:true}); };
+    if(e.key==="ArrowLeft"||e.key==="ArrowRight"){
+      const to=pStepIso(day,e.key==="ArrowRight"?1:-1);
+      if(window.ppMoveDay&&ppMoveDay(id,day,to)){ touch(); renderPlanner(); refocus(); }
+      return;
+    }
+    const cur=window.ppDayTimeOf?ppDayTimeOf(id,day):null;
+    const base=cur?(()=>{ const [h,m]=cur.split(":").map(Number); return h+m/60; })():9;
+    const next=Math.max(0,Math.min(23.75,base+(e.key==="ArrowDown"?0.25:-0.25)));
+    const mins=Math.round(next*60);
+    const timeStr=String(Math.floor(mins/60)).padStart(2,"0")+":"+String(mins%60).padStart(2,"0");
+    if(window.ppSetDayTime&&ppSetDayTime(id,day,timeStr)){ touch(); renderPlanner(); refocus(); }
+  });
   /* the wheel shifts the visible hour window rather than the page — but only
      while there is somewhere to shift to. At either end the event is left
      alone so the page scrolls normally and you can never get trapped in the
@@ -7781,7 +7879,9 @@ function pWireBoard(){
   },{passive:false});
   board.addEventListener("click",e=>{
     const h=e.target.closest("[data-wbgo]");
-    if(h){ pSelISO=h.dataset.wbgo; pScope="day"; pWinShift=0; pDayPanel(); renderSchedule(); }
+    if(h){ pSelISO=h.dataset.wbgo; pScope="day"; pWinShift=0; pDayPanel(); renderSchedule(); return; }
+    const ap=e.target.closest("[data-wbaproj]");
+    if(ap) pOpenDayDialog("proj",ap.dataset.wbaproj,ap.dataset.day);
   });
 }
 
@@ -8262,7 +8362,20 @@ $("#pRollover").addEventListener("click",e=>{
 });
 $("#pJumpToday").addEventListener("click",()=>{
   pSelISO=pToday();
-  $("#pAddDue").value=pSelISO; renderPlanner();
+  $("#pAddDue").value=pSelISO;
+  /* Plachta and Timeline each keep their OWN idea of what's on screen
+     (pPlachtaAnchor, L.ppView/ppGridISO) instead of reading pSelISO, so
+     setting it alone left both scopes exactly where they already were —
+     the button looked like it did nothing. */
+  if(pScope==="plachta"){
+    pPlachtaAnchor=pToday(); renderSchedule(); pPlachtaCentre(pToday()); return;
+  }
+  if(pScope==="timeline"){
+    if(L.ppViewMode==="grid") ppGridISO=ymd(monthStart(Date.now()));
+    else if(window.ppScrollToday) ppScrollToday();
+    renderSchedule(); return;
+  }
+  renderPlanner();
 });
 $("#pBoardPrev").addEventListener("click",()=>{
   if(pScope==="plachta"){ pPlachtaAnchor=pStepIso(pPlachtaViewDay(),-14);
@@ -8315,7 +8428,19 @@ window.addEventListener("keydown",e=>{
 });
 $("#pScopeSeg").addEventListener("click",e=>{
   const b=e.target.closest("[data-pscope]"); if(!b) return;
-  pScope=b.dataset.pscope; pWinShift=0; renderSchedule();
+  const to=b.dataset.pscope;
+  /* Day/Week/Month read pSelISO directly, so switching between them already
+     shows whatever day you were on — no separate state to go stale. Plachta
+     (pPlachtaAnchor) and Timeline (L.ppView / ppGridISO) each keep their OWN
+     idea of what's on screen, though, so switching straight into either used
+     to show wherever THAT view was last left — today, on first visit, or a
+     scroll position from three days of edits ago — instead of the day you
+     had just been looking at. Resyncing both to pSelISO on the way in fixes
+     that without touching how they behave once you're already there (panning
+     Plachta, for instance, still moves pPlachtaAnchor freely afterwards). */
+  if(to==="plachta") pPlachtaAnchor=pSelISO;
+  else if(to==="timeline"){ L.ppView=pSelISO.slice(0,8)+"01"; ppGridISO=ymd(monthStart(+pParseISO(pSelISO))); }
+  pScope=to; pWinShift=0; renderSchedule();
 });
 
 /* ---------------- Plachta search ----------------
@@ -16698,6 +16823,12 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
     if (!ppScrolled) { ppScrolled = true; scrollToToday(); }
   };
   window.ppNormalize = fix;
+  /* The board's own "today" button (#pJumpToday) only ever moved pSelISO,
+     which the linear Timeline doesn't read at all — it scrolls by L.ppView
+     instead, so clicking "today" while looking at the Gantt silently did
+     nothing. Exposed so that button can drive this view's own notion of
+     "today" too, the same way scrollToToday() already does once on entry. */
+  window.ppScrollToday = scrollToToday;
   /* Mutations the week board drives, so a project can be reshaped from the
      calendar as well as the timeline. Both go through the same snapshot/undo
      and persistence the timeline's own gestures use — one history, one truth. */
