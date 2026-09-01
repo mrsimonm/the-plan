@@ -7827,6 +7827,39 @@ function pWireBoard(){
     const [k,id]=(blk.getAttribute("data-wb")||"").split(":");
     if(k==="task"||k==="event"){ e.preventDefault(); pOpenEditDialog(id); }
   });
+  /* A Project block is the only block type this board makes keyboard-
+     focusable (tabindex="0" on data-wbp, so a drag alternative can exist for
+     it) — Task/Event blocks aren't focusable here at all yet, a separate,
+     wider gap. Left/Right move it a day, same as dragging it sideways;
+     Up/Down nudge its time by 15 minutes, same rounding pDayDlgSave already
+     uses. Re-render replaces the DOM node, so the moved block is re-found by
+     id and refocused — otherwise a second arrow press would land on nothing
+     and silently do nothing, indistinguishable from arrows not working. */
+  board.addEventListener("keydown",e=>{
+    const el=e.target.closest&&e.target.closest("[data-wbp]");
+    if(!el) return;
+    if(!["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.key)) return;
+    const id=el.dataset.wbp, day=el.dataset.day;
+    e.preventDefault();
+    /* renderPlanner() replaces #pWeekBoard wholesale, so the closed-over
+       `board` variable is a detached node by the time this runs — querying
+       through it silently finds nothing (or a detached match, which .focus()
+       does nothing useful with either). Re-fetch the live element by id. */
+    const refocus=()=>{ const again=document.getElementById("pWeekBoard");
+      const found=again&&again.querySelector(`[data-wbp="${id}"]`);
+      if(found) found.focus({preventScroll:true}); };
+    if(e.key==="ArrowLeft"||e.key==="ArrowRight"){
+      const to=pStepIso(day,e.key==="ArrowRight"?1:-1);
+      if(window.ppMoveDay&&ppMoveDay(id,day,to)){ touch(); renderPlanner(); refocus(); }
+      return;
+    }
+    const cur=window.ppDayTimeOf?ppDayTimeOf(id,day):null;
+    const base=cur?(()=>{ const [h,m]=cur.split(":").map(Number); return h+m/60; })():9;
+    const next=Math.max(0,Math.min(23.75,base+(e.key==="ArrowDown"?0.25:-0.25)));
+    const mins=Math.round(next*60);
+    const timeStr=String(Math.floor(mins/60)).padStart(2,"0")+":"+String(mins%60).padStart(2,"0");
+    if(window.ppSetDayTime&&ppSetDayTime(id,day,timeStr)){ touch(); renderPlanner(); refocus(); }
+  });
   /* the wheel shifts the visible hour window rather than the page — but only
      while there is somewhere to shift to. At either end the event is left
      alone so the page scrolls normally and you can never get trapped in the
