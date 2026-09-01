@@ -797,6 +797,14 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
   /* not draggable, so it must not inherit .wb-blk's touch-action:none —
      a finger landing on tracked work still has to be able to scroll */
   cursor:default; touch-action:pan-y}
+/* Sleep is background, not something to grab — one tap opens its settings,
+   nothing to drag or resize, so it keeps scroll working under a finger like
+   tracked-work blocks do. Muted and slightly transparent so a real Task drawn
+   over the same hours (rare, but possible) still reads clearly on top of it. */
+.wb-blk.wb-sleep{z-index:0; border-left-color:var(--ink-3);
+  background:color-mix(in srgb, var(--ink-3) 16%, var(--surface)); opacity:.8;
+  cursor:pointer; touch-action:pan-y}
+.wb-blk.wb-sleep:hover{filter:brightness(1.1)}
 .wb-blk.wb-blk{}
 .wb-blk.wb-blk b{}
 .wb-blk[data-wb^="block"]{border-left-style:dashed}
@@ -3543,6 +3551,26 @@ html{overscroll-behavior-y:none}
   </div>
 </dialog>
 
+<!-- Sleep repeats every night at the same clock time, so unlike a Task or a
+     recurring block it has no "this day / whole series" split — one setting
+     covers every night, and this dialog is the whole of it. -->
+<dialog id="pSleepDlg">
+  <h3 class="dlg-head" id="pSleepDlgTitle">😴 Sleep</h3>
+  <div class="dlg-body">
+    <div class="pslot-row">
+      <span class="field-label" id="pSleepFromLabel">from</span>
+      <input type="time" id="pSleepFromInput" class="mono-input">
+      <span class="field-label" id="pSleepUntilLabel">until</span>
+      <input type="time" id="pSleepUntilInput" class="mono-input">
+    </div>
+    <p class="hint" id="pSleepHint"></p>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn" type="button" id="pSleepCancel">Cancel</button>
+    <button class="btn primary" type="button" id="pSleepSave">Save</button>
+  </div>
+</dialog>
+
 <dialog id="askDlg">
   <h3 class="dlg-head" id="askTitle">Are you sure?</h3>
   <div class="dlg-body"><p id="askMsg" style="margin:0; font-size:14px; line-height:1.6"></p></div>
@@ -4625,7 +4653,7 @@ function seed(){return{
   v:6, users:[{id:"u1",name:"Me"}],
   actionDaysOn:true, actionDays:[3,0],          // Wednesday & Sunday
   cuttings:[], photos:[], products:[], formulas:[], schedules:[], subjects:[], routines:[], events:[], tasks:[],
-  planner:{sleep:8, tasks:[], blocks:[], linkCare:true, linkHours:true, linkProjects:true, carePace:3},
+  planner:{sleep:8, sleepFrom:"23:00", tasks:[], blocks:[], linkCare:true, linkHours:true, linkProjects:true, carePace:3},
   hours:{projects:[], sessions:[], running:null,
     settings:{currency:"Kč", pomoWork:25, pomoShort:5, pomoLong:15, pomoCycle:4}},
   projplan:{projects:[], limit:8, weekendsOff:false}
@@ -4729,7 +4757,7 @@ function migrate(d){
     .map(r=>Object.assign({kind:"chore",name:"Care",every:7},r));
   d.events=(d.events||[]).map(e=>Object.assign({},e,
     {subjectId:e.subjectId||e.plantId||null, kind:e.kind||e.type||"water"}));
-  d.planner=d.planner||{sleep:8, tasks:[], blocks:[]};
+  d.planner=d.planner||{sleep:8, sleepFrom:"23:00", tasks:[], blocks:[]};
   /* `||` keeps a truthy non-array, and the forEach below then crashes migrate
      itself — taking the whole boot down with it. Array.isArray or nothing. */
   if(!Array.isArray(d.planner.tasks)) d.planner.tasks=[];
@@ -4814,6 +4842,7 @@ function migrate(d){
     d.planner.tasks.forEach(tk=>{ if(tk.groupId&&n[tk.groupId]<2) tk.groupId=null; });
   })();
   if(typeof d.planner.sleep!=="number") d.planner.sleep=8;
+  if(typeof d.planner.sleepFrom!=="string"||!/^\d{2}:\d{2}$/.test(d.planner.sleepFrom)) d.planner.sleepFrom="23:00";
   if(d.planner.linkCare===undefined) d.planner.linkCare=true;
   if(d.planner.linkHours===undefined) d.planner.linkHours=true;
   if(d.planner.linkProjects===undefined) d.planner.linkProjects=true;
@@ -5953,6 +5982,24 @@ const pDowOrder=[1,2,3,4,5,6,0];                 // Monday-first, matching actio
    promotes it into Today or Scheduled automatically. */
 function pBucket(due){ return !due?"quick":(due<=pToday()?"today":"scheduled"); }
 function pSleep(){ const v=+S.planner.sleep; return isNaN(v)?0:Math.min(Math.max(v,0),24); }
+function pSleepFrom(){ const v=S.planner.sleepFrom; return /^\d{2}:\d{2}$/.test(v)?v:"23:00"; }
+/* Sleep repeats every night at the same clock time, so unlike a task or a
+   recurring block it needs no date lookup — the pieces it draws on any given
+   day are the same for every day. A night that starts before midnight always
+   splits across two day-columns on this 0–24h board: the part up to midnight,
+   and the part from midnight into the next day's column. Both pieces are
+   returned so the caller can draw them into every column it renders. */
+function pSleepBlocks(){
+  const hours=pSleep(); if(hours<=0) return [];
+  const [h,m]=pSleepFrom().split(":").map(Number);
+  const start=h+(m||0)/60;
+  const tonight=Math.min(hours,24-start);
+  const spill=Math.max(0,hours-tonight);
+  const out=[];
+  if(tonight>0) out.push({time:pSleepFrom(),hours:tonight});
+  if(spill>0) out.push({time:"00:00",hours:spill});
+  return out;
+}
 function pFmtH(n){ const r=Math.round(n*10)/10; const s=String(r);
   return L.lang==="cs"?s.replace(".",","):s; }
 function pParseISO(iso){ return new Date(iso+"T00:00:00"); }
@@ -6529,6 +6576,43 @@ $("#pDayDlgSave").addEventListener("click",()=>{
     b.ex[c.iso]={time:$("#pDayDlgTime").value||"",hours}; } }
   $("#pDayDlg").close(); touch(); renderPlanner();
 });
+/* Sleep is one clock-time setting shared by every night, not a per-day record —
+   the dialog just edits S.planner.sleepFrom/sleep directly, with "until" a
+   view onto the same two numbers rather than a third field to keep in sync. */
+function pSleepUntilStr(){
+  const [h,m]=pSleepFrom().split(":").map(Number);
+  const total=Math.round((h*60+m+pSleep()*60)%1440);
+  return String(Math.floor(total/60)).padStart(2,"0")+":"+String(total%60).padStart(2,"0");
+}
+function pSleepDlgDiffHours(){
+  const from=$("#pSleepFromInput").value||"23:00", until=$("#pSleepUntilInput").value||"07:00";
+  const [fh,fm]=from.split(":").map(Number), [uh,um]=until.split(":").map(Number);
+  let diff=(uh*60+um)-(fh*60+fm); if(diff<=0) diff+=1440;
+  return diff/60;
+}
+function pSleepHintUpdate(){
+  $("#pSleepHint").textContent=t("{h}h of sleep").replace("{h}",pFmtH(pSleepDlgDiffHours()));
+}
+function pOpenSleepDialog(){
+  $("#pSleepDlgTitle").textContent="😴 "+t("Sleep");
+  $("#pSleepFromLabel").textContent=t("from");
+  $("#pSleepUntilLabel").textContent=t("until");
+  $("#pSleepCancel").textContent=t("Cancel");
+  $("#pSleepSave").textContent=t("Save");
+  $("#pSleepFromInput").value=pSleepFrom();
+  $("#pSleepUntilInput").value=pSleepUntilStr();
+  pSleepHintUpdate();
+  $("#pSleepDlg").showModal();
+}
+$("#pSleepFromInput").addEventListener("input",pSleepHintUpdate);
+$("#pSleepUntilInput").addEventListener("input",pSleepHintUpdate);
+$("#pSleepCancel").addEventListener("click",()=>$("#pSleepDlg").close());
+$("#pSleepSave").addEventListener("click",()=>{
+  const from=$("#pSleepFromInput").value||"23:00";
+  S.planner.sleepFrom=from;
+  S.planner.sleep=Math.min(24,Math.max(0,pSleepDlgDiffHours()));
+  $("#pSleepDlg").close(); touch(); renderPlanner();
+});
 $("#pSlotKind").addEventListener("click",e=>{
   const b=e.target.closest("[data-skind]"); if(!b) return;
   pSlotKindVal=b.dataset.skind;
@@ -6932,10 +7016,21 @@ function pBoardHtml(days,topStrip,opts){
       }).join("")}${
       care?`<span class="wb-adcare" title="${esc(care.name)} · ${pFmtH(care.hours)}h">🌿</span>`:""}</div>`
       :'<div class="wb-allday"></div>';
+    /* drawn before the real blocks, so it sits underneath them in stacking
+       order — anything genuinely scheduled during the night stays reachable,
+       and only the empty stretch of the block answers a click */
+    const sleepHtml=pSleepBlocks().map(sp=>{
+      const [sh,sm]=sp.time.split(":").map(Number);
+      const s=sh+sm/60, top=(s-startH)*WB_PXH, hpx=Math.max(17,sp.hours*WB_PXH);
+      return `<div class="wb-blk wb-sleep" data-sleepblk="1" style="top:${top}px; height:${hpx}px; left:0; width:100%"
+        role="button" tabindex="0" aria-label="${esc(t("Sleep settings"))}"
+        <b>😴 ${esc(t("Sleep"))}</b><span>${esc(sp.time)} · ${pFmtH(sp.hours)}h</span>
+      </div>`;
+    }).join("");
     return `<div class="wb-col${d===pToday()?" today":""}${d.slice(8)==="01"?" mstart":""}" data-wbday="${d}">
       <button type="button" class="wb-head" data-wbgo="${d}">${label(d)}</button>
       ${allday}
-      <div class="wb-track" style="height:${H}px">${lines}${now}${blocks}</div>
+      <div class="wb-track" style="height:${H}px">${lines}${now}${sleepHtml}${blocks}</div>
     </div>`;
   }).join("");
 
@@ -7471,6 +7566,7 @@ function pWireBoard(){
      instead of a listener stacking up on every week render. */
   pBoardAbort=abort; pBoardCommit=commit;
   board.addEventListener("click",e=>{
+    if(e.target.closest("[data-sleepblk]")){ pOpenSleepDialog(); return; }
     const tick=e.target.closest("[data-adtick]"); if(!tick) return;
     const tk=pFindTask(tick.dataset.adtick); if(!tk) return;
     e.stopPropagation();
@@ -10281,6 +10377,143 @@ a("flytrap",["Venus flytrap","Sundew (Drosera)","Butterwort (Pinguicula)"]);
 a("pitcher",["Pitcher plant (Sarracenia)","Nepenthes (tropical pitcher)"]);
 a("violet",["African violet","Geranium (Pelargonium)"]);
 })();
+/* ==== GENERATED: added plants — see tools/plant-data-spec.md. Do not edit by hand. ==== */
+/* Generated by tools/merge_plants.py from the batch files in tools/batches/.
+   Each record is pushed into the same four structures the hand-written
+   plants live in, so nothing downstream can tell the difference. */
+(function(){
+const ADDED=[
+{n:"Philodendron 'Pink Princess'",g:"Aroids & foliage",w:7,f:14,l:1,h:1,x:1,
+  t:"The pink only holds in bright light. Cut back to a variegated node if it reverts.",
+  tg:"",sz:"",pr:"",col:"Dark green with pink variegation",pic:"oval"},
+{n:"Philodendron 'White Knight'",g:"Aroids & foliage",w:7,f:14,l:1,h:1,x:1,
+  t:"The white areas scorch in strong sun and revert in shade. Bright, indirect light keeps the pattern stable.",
+  tg:"",sz:"",pr:"",col:"Dark green with cream-white variegation",pic:"oval"},
+{n:"Philodendron 'White Wizard'",g:"Aroids & foliage",w:7,f:14,l:1,h:1,x:1,
+  t:"The white sections need bright, indirect light to stay white, and scorch in direct sun.",
+  tg:"",sz:"",pr:"",col:"Green with pure white splashes",pic:"oval"},
+{n:"Philodendron 'White Princess'",g:"Aroids & foliage",w:7,f:14,l:1,h:1,x:1,
+  t:"Variegation is unstable. Cut back any stem that reverts to plain green.",
+  tg:"",sz:"",pr:"",col:"Green with white-streaked edges",pic:"oval"},
+{n:"Philodendron 'Rio'",g:"Aroids & foliage",w:7,f:14,l:2,h:1,x:1,
+  t:"A slow trailing form. Let the top third of the soil dry before watering again.",
+  tg:"",sz:"",pr:"",col:"Grey-green splashed cream",pic:"oval"},
+{n:"Philodendron 'Silver Stripe'",g:"Aroids & foliage",w:7,f:14,l:2,h:1,x:1,
+  t:"The silver striping holds best in bright, indirect light and fades in shade.",
+  tg:"",sz:"",pr:"",col:"Green with silver-grey striping",pic:"oval"},
+{n:"Philodendron 'Snow Drift'",g:"Aroids & foliage",w:7,f:14,l:2,h:1,x:1,
+  t:"Leaves stay creamier in bright light; too little and the variegation goes plain green.",
+  tg:"",sz:"",pr:"",col:"Creamy white mottling over green",pic:"oval"},
+{n:"Philodendron 'Lemon Lime'",g:"Aroids & foliage",w:7,f:14,l:2,h:1,x:1,
+  t:"Colour fades to plain green in dim light. Keep it bright, but out of hot sun.",
+  tg:"",sz:"",pr:"",col:"Bright yellow-green",pic:"oval"},
+{n:"Philodendron 'Golden Crocodile'",g:"Aroids & foliage",w:7,f:14,l:1,h:1,x:1,
+  t:"The gold speckling needs bright light; in shade it fades back to green.",
+  tg:"",sz:"",pr:"",col:"Green and gold speckled",pic:"oval"},
+{n:"Philodendron 'Malay Gold'",g:"Aroids & foliage",w:7,f:14,l:1,h:1,x:1,
+  t:"The gold contrast needs bright, indirect light and reverts quickly in shade.",
+  tg:"",sz:"",pr:"",col:"Yellow-green splashed dark green",pic:"oval"},
+{n:"Philodendron 'Rojo Congo'",g:"Aroids & foliage",w:7,f:14,l:2,h:1,x:1,
+  t:"New leaves open deep red before fading to green. Wipe the big leaves to keep them glossy.",
+  tg:"",sz:"",pr:"",col:"Deep green flushed ruby",pic:"oval"},
+{n:"Philodendron 'McColley's Finale'",g:"Aroids & foliage",w:7,f:14,l:2,h:1,x:1,
+  t:"The coral on new growth is the show. Bright, indirect light keeps it coming.",
+  tg:"",sz:"",pr:"",col:"Coral-orange new leaves maturing to green",pic:"oval"},
+{n:"Philodendron 'Prince of Orange'",g:"Aroids & foliage",w:7,f:14,l:2,h:1,x:1,
+  t:"New leaves open bright orange then fade; the strongest colour needs the brightest light.",
+  tg:"",sz:"",pr:"",col:"Vivid orange young leaves",pic:"oval"},
+{n:"Philodendron 'Autumn'",g:"Aroids & foliage",w:7,f:14,l:2,h:1,x:1,
+  t:"Colour is richest in bright, indirect light. Water when the top few centimetres are dry.",
+  tg:"",sz:"",pr:"",col:"Ochre and amber young leaves",pic:"oval"},
+{n:"Philodendron 'Imperial Red'",g:"Aroids & foliage",w:7,f:14,l:2,h:1,x:1,
+  t:"The red is strongest on new growth in bright, indirect light.",
+  tg:"",sz:"",pr:"",col:"Deep red young leaves over dark green",pic:"oval"},
+{n:"Philodendron 'Imperial Green'",g:"Aroids & foliage",w:7,f:14,l:2,h:1,x:1,
+  t:"Slow and sturdy. Brush dust off the big leaves regularly so they can photosynthesise.",
+  tg:"",sz:"",pr:"",col:"Large glossy emerald",pic:"oval"},
+{n:"Philodendron 'Black Cardinal'",g:"Aroids & foliage",w:7,f:14,l:2,h:1,x:1,
+  t:"The dark pigment fades in dim light. Bright, indirect light keeps the leaves almost black.",
+  tg:"",sz:"",pr:"",col:"Near-black burgundy foliage",pic:"oval"},
+{n:"Philodendron 'Black Knight'",g:"Aroids & foliage",w:7,f:14,l:1,h:1,x:1,
+  t:"Full, near-black colour needs the brightest spot you have.",
+  tg:"",sz:"",pr:"",col:"Almost black leaves with red stems",pic:"oval"},
+{n:"Philodendron 'Red Empress'",g:"Aroids & foliage",w:7,f:14,l:2,h:1,x:1,
+  t:"New growth is deep red. Keep it in bright, indirect light to hold the colour.",
+  tg:"",sz:"",pr:"",col:"Red-flushed, near-black leaves",pic:"oval"},
+{n:"Philodendron 'Painted Lady'",g:"Aroids & foliage",w:7,f:14,l:2,h:1,x:1,
+  t:"The blotching needs bright light, and the red stems respond to cooler nights.",
+  tg:"",sz:"",pr:"",col:"Yellow-mottled green with red stems",pic:"oval"},
+{n:"Philodendron 'Moonlight'",g:"Aroids & foliage",w:7,f:14,l:2,h:1,x:1,
+  t:"The lime colour is brightest in bright, indirect light; dim rooms turn it dull green.",
+  tg:"",sz:"",pr:"",col:"Lime-yellow new leaves",pic:"oval"},
+{n:"Philodendron 'Golden Dragon'",g:"Aroids & foliage",w:7,f:14,l:1,h:1,x:1,
+  t:"The dragon-scale speckle needs strong, indirect light to stay bright.",
+  tg:"",sz:"",pr:"",col:"Dark green freckled chartreuse",pic:"oval"},
+{n:"Philodendron 'Ring of Fire'",g:"Aroids & foliage",w:7,f:14,l:1,h:1,x:1,
+  t:"Each new leaf unfurls a different mix of cream, orange and maroon; keep it in bright light or the colour washes out.",
+  tg:"",sz:"",pr:"",col:"Lobed leaves in cream, orange and maroon",pic:"oval"},
+{n:"Philodendron 'Jungle Boogie'",g:"Aroids & foliage",w:7,f:14,l:2,h:1,x:1,
+  t:"The leaves stay deeply lobed in bright light. Water as the top of the soil dries.",
+  tg:"",sz:"",pr:"",col:"Deeply lobed pale green",pic:"oval"},
+{n:"Philodendron 'Narrow Escape'",g:"Aroids & foliage",w:7,f:14,l:2,h:1,x:1,
+  t:"Young leaves are very narrow; they widen as the plant matures. Keep it bright.",
+  tg:"",sz:"",pr:"",col:"Very narrow wavy green leaves",pic:"oval"},
+{n:"Philodendron 'Florida Ghost'",g:"Aroids & foliage",w:7,f:14,l:1,h:1,x:1,
+  t:"New leaves open white and colour up; the brightest white needs strong, indirect light.",
+  tg:"",sz:"",pr:"",col:"White new leaves maturing green",pic:"oval"},
+{n:"Philodendron 'Florida Green'",g:"Aroids & foliage",w:7,f:14,l:2,h:1,x:1,
+  t:"A vigorous climber. Give it a moss pole and it rewards with bigger, more divided leaves.",
+  tg:"",sz:"",pr:"",col:"Deeply lobed glossy green",pic:"oval"},
+{n:"Philodendron 'Splendid'",g:"Aroids & foliage",w:7,f:14,l:2,h:2,x:1,
+  t:"A velvet hybrid that wants humidity. Keep the leaf surfaces free of standing water.",
+  tg:"",sz:"",pr:"",col:"Velvet green with pale veins",pic:"oval"},
+{n:"Philodendron gloriosum",g:"Aroids & foliage",w:7,f:14,l:2,h:2,x:1,
+  t:"A ground crawler — plant it flat in a wide pot, not up a pole. The white veins prefer a humid corner.",
+  tg:"",sz:"",pr:"",col:"Velvet with pronounced white veins",pic:"oval"},
+{n:"Philodendron melanochrysum",g:"Aroids & foliage",w:7,f:14,l:2,h:2,x:1,
+  t:"A climbing velvet. It wants humidity and a moss pole to reach full, large-leaf form.",
+  tg:"",sz:"",pr:"",col:"Velvet dark green with gold veins",pic:"oval"},
+{n:"Philodendron verrucosum",g:"Aroids & foliage",w:7,f:14,l:2,h:2,x:1,
+  t:"Fussy about humidity; a misted, humid corner beats a dry living room.",
+  tg:"",sz:"",pr:"",col:"Velvet green with red-fringed veins",pic:"oval"},
+{n:"Philodendron sodiroi",g:"Aroids & foliage",w:7,f:14,l:2,h:2,x:1,
+  t:"The silver speckle holds in good, indirect light and humidity.",
+  tg:"",sz:"",pr:"",col:"Silver-speckled dark leaves",pic:"oval"},
+{n:"Philodendron mayoi",g:"Aroids & foliage",w:7,f:14,l:2,h:1,x:1,
+  t:"A self-heading plant with hand-like leaves. Water when the top of the soil dries.",
+  tg:"",sz:"",pr:"",col:"Finger-divided dark green",pic:"oval"},
+{n:"Philodendron brandtianum",g:"Aroids & foliage",w:7,f:14,l:2,h:1,x:1,
+  t:"A trailing climber. The silver marbling fades without bright, indirect light.",
+  tg:"",sz:"",pr:"",col:"Olive green with silver blotches",pic:"oval"},
+{n:"Philodendron plowmanii",g:"Aroids & foliage",w:7,f:14,l:2,h:2,x:1,
+  t:"A crawler with a frilled leaf base; keep it wide and low in a humid spot.",
+  tg:"",sz:"",pr:"",col:"Heart-shaped with ruffled edges",pic:"oval"},
+{n:"Philodendron pastazanum",g:"Aroids & foliage",w:7,f:14,l:2,h:2,x:1,
+  t:"Big leaves mean big thirst — keep the soil lightly moist and the air humid.",
+  tg:"",sz:"",pr:"",col:"Huge round velvet leaves",pic:"oval"},
+{n:"Philodendron mamei",g:"Aroids & foliage",w:7,f:14,l:2,h:2,x:1,
+  t:"The silver is etched on the leaf surface; it likes humidity and bright, indirect light.",
+  tg:"",sz:"",pr:"",col:"Silvery blotched, puckered",pic:"oval"},
+{n:"Philodendron 'Burle Marx'",g:"Aroids & foliage",w:7,f:14,l:2,h:1,x:1,
+  t:"Narrow, fanning leaves on short stems. Water as the top of the soil dries.",
+  tg:"",sz:"",pr:"",col:"Narrow, bright green",pic:"oval"},
+{n:"Philodendron 'Red Emerald'",g:"Aroids & foliage",w:7,f:14,l:2,h:1,x:1,
+  t:"A climber named for its red stems and petioles; give it something to scale.",
+  tg:"",sz:"",pr:"",col:"Green with burgundy stems",pic:"oval"},
+{n:"Philodendron giganteum",g:"Aroids & foliage",w:7,f:14,l:2,h:1,x:1,
+  t:"One of the largest philodendrons; give it room and let the top of the soil dry before watering.",
+  tg:"",sz:"",pr:"",col:"Huge corrugated green with red-edged new growth",pic:"oval"}
+];
+ADDED.forEach(r=>{
+  const g=SPECIES.find(x=>x.g===r.g);
+  if(!g){ console.warn("unknown category",r.g,r.n); return; }
+  g.list.push({n:r.n,w:r.w,f:r.f,l:r.l,h:r.h,x:r.x,t:r.t});
+  if(r.lore) LORE[r.n]=r.lore;
+  EXTRA[r.n]=[r.tg,r.sz,r.pr,r.col];
+  PICTO_OF[r.n]=r.pic;
+});
+})();
+/* ==== END GENERATED ==== */
 const pictoId=n=>PICTO_OF[n]||"broadleaf";
 const picto=(n,cls)=>`<svg class="picto${cls?" "+cls:""}" viewBox="0 0 48 48" fill="none"
   stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"
@@ -14557,6 +14790,7 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 /* ---- planner ---- */
 "Planner":"Plánovač","What needs doing?":"Co je potřeba udělat?",
 "on":"na den","takes":"zabere","Add":"Přidat","at":"v",
+"from":"od","until":"do","Sleep settings":"Nastavení spánku","{h}h of sleep":"{h}h spánku",
 "Today":"Dnes","Tomorrow":"Zítra","Overdue":"Po termínu","overdue":"po termínu",
 "today":"dnes","Calendar":"Kalendář","Sleep":"Spánek","h a night":"h za noc",
 "Subtracted from every day before anything else.":"Odečítá se z každého dne dřív než cokoli jiného.",
