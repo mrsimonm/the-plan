@@ -771,11 +771,25 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .wb-pchip.sizing::after,.wb-blk.sizing::after{content:attr(data-live); position:absolute; top:-16px; left:50%;
   transform:translateX(-50%); font-family:var(--font); font-variant-numeric:tabular-nums;
   font-size:9px; color:var(--accent); white-space:nowrap}
-.wb-phandle{position:absolute; right:-3px; top:0; bottom:0; width:9px; cursor:ew-resize}
+/* Same bug class as .wb-h, and worse: the hit area was live (pointer-events:
+   auto) across the block's FULL HEIGHT at all times, while the visible
+   indicator it drew was a small 9px dot centered in the middle — so a drag
+   meant to MOVE the block, grabbed anywhere near the right edge top-to-
+   bottom, silently resized its hours instead. Two fixes, both needed: gated
+   like .wb-h (invisible and inert until hovered/focused) is not enough on
+   its own, because hovering is unavoidable before any click — the hitbox
+   itself also has to shrink to match what's actually drawn, the way .wb-h-e
+   /.wb-h-w already inset from the block's top/bottom rather than spanning
+   it, or the full-height trap is merely invisible, not gone. */
+.wb-phandle{position:absolute; right:-3px; top:50%; transform:translateY(-50%);
+  width:9px; height:20px; cursor:ew-resize;
+  opacity:0; pointer-events:none; transition:opacity .12s}
+.wb-blk:hover .wb-phandle,.wb-blk:focus-within .wb-phandle,.wb-blk.sizing .wb-phandle{
+  opacity:1; pointer-events:auto}
 .wb-phandle::after{content:""; position:absolute; right:3px; top:50%; transform:translateY(-50%);
   width:2px; height:9px; border-radius:2px; background:var(--pc); opacity:.75}
 .wb-pchip:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
-@media (hover:none){ .wb-phandle{width:14px; right:-5px} }
+@media (hover:none){ .wb-phandle{width:14px; height:26px; right:-5px; opacity:.9} }
 .wb-allday{gap:2px}
 .wb-adcare{font-size:9px; line-height:1}
 .wb-track{position:relative}
