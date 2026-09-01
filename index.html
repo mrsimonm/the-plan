@@ -826,6 +826,11 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .wb-blk.wb-sleep{z-index:0; border-left-color:var(--ink-3);
   background:color-mix(in srgb, var(--ink-3) 16%, var(--surface)); opacity:.8}
 .wb-blk.wb-sleep:hover{filter:brightness(1.1)}
+/* The half that spills into tomorrow loses its bottom corners; the half
+   that's a continuation from last night loses its top ones — a visual cue
+   that each is a fragment of one night, not two separate, complete sleeps. */
+.wb-blk.wb-sleep-cont-b{border-bottom-left-radius:0; border-bottom-right-radius:0}
+.wb-blk.wb-sleep-cont-t{border-top-left-radius:0; border-top-right-radius:0}
 /* Done stays on the board rather than disappearing — solid green reads as
    "finished" at a glance the same way a done Task's checkbox does elsewhere,
    and overrides whatever tint the block (Task, Event, or recurring Block)
@@ -7152,12 +7157,29 @@ function pBoardHtml(days,topStrip,opts){
     /* drawn before the real blocks, so it sits underneath them in stacking
        order — anything genuinely scheduled during the night stays reachable,
        and only the empty stretch of the block answers a click */
+    /* One night is one record (owner), but a grid of side-by-side day COLUMNS
+       has no way to draw a single rectangle that crosses from one column into
+       the next — every calendar built this way (Google Calendar, Outlook,
+       Apple Calendar included) draws a midnight-spanning event as two
+       segments, one per day. What was actually fixable is making the two
+       segments read as one thing rather than two unrelated sleeps: both show
+       the FULL 23:00→07:00 range and duration (not just their own slice), a
+       "spills into tomorrow" arrow marks the first segment, and the corners
+       where they'd touch if the grid could join them are squared off instead
+       of rounded, rather than each looking like a complete, separate block. */
     const sleepHtml=pSleepBlocksFor(d).map(sp=>{
       const [sh,sm]=sp.time.split(":").map(Number);
       const s=sh+sm/60, top=(s-startH)*WB_PXH, hpx=Math.max(17,sp.hours*WB_PXH);
-      return `<div class="wb-blk wb-sleep" data-sleepblk="${sp.owner}" style="top:${top}px; height:${hpx}px; left:0; width:100%"
+      const full=pSleepFor(sp.owner);
+      const [oh,om]=full.from.split(":").map(Number);
+      const spills=(oh+om/60+full.hours)>24+1e-9;
+      const isContinuation=sp.time==="00:00"&&sp.owner!==d;
+      const contClass=spills?(isContinuation?" wb-sleep-cont-t":" wb-sleep-cont-b"):"";
+      const range=`${esc(full.from)}–${esc(pSleepUntilStr(full.from,full.hours))} · ${pFmtH(full.hours)}h`;
+      const label=isContinuation?"⟶ "+esc(t("Sleep")):esc(t("Sleep"))+(spills?" ⟶":"");
+      return `<div class="wb-blk wb-sleep${contClass}" data-sleepblk="${sp.owner}" style="top:${top}px; height:${hpx}px; left:0; width:100%"
         role="button" tabindex="0" aria-label="${esc(t("Sleep settings"))}">
-        <b>${esc(t("Sleep"))}</b><span>${esc(sp.time)} · ${pFmtH(sp.hours)}h</span>
+        <b>${label}</b><span>${range}</span>
       </div>`;
     }).join("");
     return `<div class="wb-col${d===pToday()?" today":""}${d.slice(8)==="01"?" mstart":""}" data-wbday="${d}">
