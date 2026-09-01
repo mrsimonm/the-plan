@@ -726,7 +726,14 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .pweek-pdot{width:8px; height:8px; border-radius:2px; display:block}
 .pweek-pmore{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:9.5px; color:var(--ink-3)}
 /* ---- the week board ---- */
-.wb-scroll{overflow-x:auto; margin-top:12px}
+/* Setting overflow-x alone makes the browser compute overflow-y as "auto"
+   too (the CSS spec ties the two together the moment either isn't
+   "visible"), which starts clipping at this element's own top/bottom edge.
+   Every hour label is shifted up 6px by .wb-gutter span's translateY, so the
+   very first one ("1") sat exactly in that newly-clipped strip and read as
+   cut off — padding here gives it (and the last label) room inside the
+   clipped box instead of outside it. */
+.wb-scroll{overflow-x:auto; margin-top:12px; padding:10px 0}
 .wb-grid{display:flex; min-width:640px}
 /* sticky so the hour labels stay readable while the week scrolls sideways */
 .wb-gutter{flex:0 0 34px; position:sticky; left:0; z-index:4; background:var(--surface)}
@@ -805,6 +812,12 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .wb-blk.wb-sleep{z-index:0; border-left-color:var(--ink-3);
   background:color-mix(in srgb, var(--ink-3) 16%, var(--surface)); opacity:.8}
 .wb-blk.wb-sleep:hover{filter:brightness(1.1)}
+/* Done stays on the board rather than disappearing — solid green reads as
+   "finished" at a glance the same way a done Task's checkbox does elsewhere,
+   and overrides whatever tint the block (Task, Event, or recurring Block)
+   would otherwise carry. */
+.wb-blk.done{background:var(--ok); border-left-color:var(--ok)}
+.wb-blk.done b,.wb-blk.done span{color:#fff}
 .wb-blk.wb-blk{}
 .wb-blk.wb-blk b{}
 .wb-blk[data-wb^="block"]{border-left-style:dashed}
@@ -2508,14 +2521,27 @@ html{overscroll-behavior-y:none}
     </div>
 
     <div class="card pad">
-      <div class="field" style="max-width:220px">
+      <div class="field">
         <label>Sleep</label>
-        <div style="display:flex; align-items:center; gap:8px">
-          <input type="number" id="pSleepInput" class="mono-input hrs" value="8" min="0" max="14" step="0.5">
-          <span class="hint" style="margin:0">h a night</span>
+        <div class="pslot-row" style="margin-top:4px">
+          <span class="field-label" style="min-width:64px">Weekday</span>
+          <span class="field-label">from</span>
+          <input type="time" id="pSleepWeekdayFrom" class="mono-input">
+          <span class="field-label">until</span>
+          <input type="time" id="pSleepWeekdayUntil" class="mono-input">
+          <span class="hint" id="pSleepWeekdayHint" style="margin:0"></span>
         </div>
+        <div class="pslot-row" style="margin-top:8px">
+          <span class="field-label" style="min-width:64px">Weekend</span>
+          <span class="field-label">from</span>
+          <input type="time" id="pSleepWeekendFrom" class="mono-input">
+          <span class="field-label">until</span>
+          <input type="time" id="pSleepWeekendUntil" class="mono-input">
+          <span class="hint" id="pSleepWeekendHint" style="margin:0"></span>
+        </div>
+        <p class="hint" style="margin:4px 0 0">Weekend covers Friday and Saturday night — every other night uses Weekday.</p>
       </div>
-      <p class="hint" style="margin:8px 0 0">Subtracted from every day before anything else.</p>
+      <p class="hint" style="margin:8px 0 0">Subtracted from every day before anything else. Any single night can still be dragged or edited on its own from the calendar.</p>
       <div class="plink">
         <span class="eyebrow" style="display:block; margin:13px 0 8px">Linked time</span>
         <label class="plink-row"><input type="checkbox" id="pLinkCare">
@@ -3551,12 +3577,14 @@ html{overscroll-behavior-y:none}
   </div>
 </dialog>
 
-<!-- Sleep repeats every night at the same clock time, so unlike a Task or a
-     recurring block it has no "this day / whole series" split — one setting
-     covers every night, and this dialog is the whole of it. -->
+<!-- Sleep repeats every night at the same clock time by default, but — same as
+     a recurring Block's day dialog — editing here only ever changes the ONE
+     night you opened this from; "Reset this night" drops back to whatever
+     every other night still follows. -->
 <dialog id="pSleepDlg">
   <h3 class="dlg-head" id="pSleepDlgTitle">Sleep</h3>
   <div class="dlg-body">
+    <p class="pslot-when" id="pSleepDlgWhen"></p>
     <div class="pslot-row">
       <span class="field-label" id="pSleepFromLabel">from</span>
       <input type="time" id="pSleepFromInput" class="mono-input">
@@ -3567,6 +3595,7 @@ html{overscroll-behavior-y:none}
   </div>
   <div class="dlg-foot">
     <button class="btn" type="button" id="pSleepCancel">Cancel</button>
+    <button class="btn danger" type="button" id="pSleepReset" hidden>Reset this night</button>
     <button class="btn primary" type="button" id="pSleepSave">Save</button>
   </div>
 </dialog>
@@ -4653,7 +4682,7 @@ function seed(){return{
   v:6, users:[{id:"u1",name:"Me"}],
   actionDaysOn:true, actionDays:[3,0],          // Wednesday & Sunday
   cuttings:[], photos:[], products:[], formulas:[], schedules:[], subjects:[], routines:[], events:[], tasks:[],
-  planner:{sleep:8, sleepFrom:"23:00", tasks:[], blocks:[], linkCare:true, linkHours:true, linkProjects:true, carePace:3},
+  planner:{sleepWeekday:{from:"23:00",hours:8}, sleepWeekend:{from:"23:00",hours:8}, sleepEx:{}, tasks:[], blocks:[], linkCare:true, linkHours:true, linkProjects:true, carePace:3},
   hours:{projects:[], sessions:[], running:null,
     settings:{currency:"Kč", pomoWork:25, pomoShort:5, pomoLong:15, pomoCycle:4}},
   projplan:{projects:[], limit:8, weekendsOff:false}
@@ -4757,7 +4786,7 @@ function migrate(d){
     .map(r=>Object.assign({kind:"chore",name:"Care",every:7},r));
   d.events=(d.events||[]).map(e=>Object.assign({},e,
     {subjectId:e.subjectId||e.plantId||null, kind:e.kind||e.type||"water"}));
-  d.planner=d.planner||{sleep:8, sleepFrom:"23:00", tasks:[], blocks:[]};
+  d.planner=d.planner||{sleepWeekday:{from:"23:00",hours:8}, sleepWeekend:{from:"23:00",hours:8}, tasks:[], blocks:[]};
   /* `||` keeps a truthy non-array, and the forEach below then crashes migrate
      itself — taking the whole boot down with it. Array.isArray or nothing. */
   if(!Array.isArray(d.planner.tasks)) d.planner.tasks=[];
@@ -4841,8 +4870,19 @@ function migrate(d){
     d.planner.tasks.forEach(tk=>{ if(tk.groupId) n[tk.groupId]=(n[tk.groupId]||0)+1; });
     d.planner.tasks.forEach(tk=>{ if(tk.groupId&&n[tk.groupId]<2) tk.groupId=null; });
   })();
-  if(typeof d.planner.sleep!=="number") d.planner.sleep=8;
-  if(typeof d.planner.sleepFrom!=="string"||!/^\d{2}:\d{2}$/.test(d.planner.sleepFrom)) d.planner.sleepFrom="23:00";
+  /* Pre-weekday/weekend records carried one flat sleep+sleepFrom pair —
+     migrate it into both buckets so an existing schedule is preserved
+     exactly (as one identical pair) until the person deliberately splits
+     Friday/Saturday off from the rest of the week. */
+  const pSleepBucketOk=v=>v&&typeof v==="object"&&/^\d{2}:\d{2}$/.test(v.from)&&typeof v.hours==="number";
+  if(!pSleepBucketOk(d.planner.sleepWeekday)){
+    const from=(typeof d.planner.sleepFrom==="string"&&/^\d{2}:\d{2}$/.test(d.planner.sleepFrom))?d.planner.sleepFrom:"23:00";
+    const hours=typeof d.planner.sleep==="number"?Math.min(24,Math.max(0,d.planner.sleep)):8;
+    d.planner.sleepWeekday={from,hours};
+  }
+  if(!pSleepBucketOk(d.planner.sleepWeekend)) d.planner.sleepWeekend=Object.assign({},d.planner.sleepWeekday);
+  delete d.planner.sleep; delete d.planner.sleepFrom;
+  if(!d.planner.sleepEx||typeof d.planner.sleepEx!=="object") d.planner.sleepEx={};
   if(d.planner.linkCare===undefined) d.planner.linkCare=true;
   if(d.planner.linkHours===undefined) d.planner.linkHours=true;
   if(d.planner.linkProjects===undefined) d.planner.linkProjects=true;
@@ -5981,23 +6021,63 @@ const pDowOrder=[1,2,3,4,5,6,0];                 // Monday-first, matching actio
    duration and no claim on any day's budget. Giving it a date at any point
    promotes it into Today or Scheduled automatically. */
 function pBucket(due){ return !due?"quick":(due<=pToday()?"today":"scheduled"); }
-function pSleep(){ const v=+S.planner.sleep; return isNaN(v)?0:Math.min(Math.max(v,0),24); }
-function pSleepFrom(){ const v=S.planner.sleepFrom; return /^\d{2}:\d{2}$/.test(v)?v:"23:00"; }
-/* Sleep repeats every night at the same clock time, so unlike a task or a
-   recurring block it needs no date lookup — the pieces it draws on any given
-   day are the same for every day. A night that starts before midnight always
-   splits across two day-columns on this 0–24h board: the part up to midnight,
-   and the part from midnight into the next day's column. Both pieces are
-   returned so the caller can draw them into every column it renders. */
-function pSleepBlocks(){
-  const hours=pSleep(); if(hours<=0) return [];
-  const [h,m]=pSleepFrom().split(":").map(Number);
-  const start=h+(m||0)/60;
-  const tonight=Math.min(hours,24-start);
-  const spill=Math.max(0,hours-tonight);
+/* A weekday and a weekend night rarely match, so there are two defaults, not
+   one — Friday/Saturday/Sunday nights follow sleepWeekend, everything else
+   follows sleepWeekday. On top of THAT, same as a recurring Block, any single
+   night can still be pulled aside as an exception in S.planner.sleepEx[iso]
+   without touching either pattern. Moving one night's block used to write
+   straight to the shared default, so it silently moved every night that
+   shared it at once — the fix is the same one Blocks already use. */
+/* Which BEDTIME a night uses, not which day it falls on: the night you don't
+   need to wake early for is Friday and Saturday (no workday follows), so
+   those two use the weekend schedule — Sunday night still has Monday
+   waiting, so it stays on the weekday one. */
+function pIsWeekendNight(iso){ const g=pParseISO(iso).getDay(); return g===5||g===6; }
+function pSleepBucket(iso){
+  const key=pIsWeekendNight(iso)?"sleepWeekend":"sleepWeekday";
+  const v=S.planner[key];
+  const from=(v&&/^\d{2}:\d{2}$/.test(v.from))?v.from:"23:00";
+  const hours=(v&&typeof v.hours==="number")?Math.min(24,Math.max(0,v.hours)):8;
+  return {from,hours};
+}
+function pSleepDefault(iso){ return pSleepBucket(iso); }
+function pSleepFor(iso){
+  const ex=S.planner.sleepEx&&S.planner.sleepEx[iso];
+  if(ex&&/^\d{2}:\d{2}$/.test(ex.from)&&typeof ex.hours==="number")
+    return {from:ex.from, hours:Math.min(24,Math.max(0,ex.hours))};
+  return pSleepDefault(iso);
+}
+function pSleepSetFor(iso,from,hours){
+  const def=pSleepDefault(iso);
+  S.planner.sleepEx=S.planner.sleepEx||{};
+  /* matches the default exactly → no exception needed, same tidy-up rule
+     ppSetDayHours uses for a Project day that drifts back to its default */
+  if(from===def.from&&Math.abs(hours-def.hours)<1e-6) delete S.planner.sleepEx[iso];
+  else S.planner.sleepEx[iso]={from,hours:Math.min(24,Math.max(0,hours))};
+}
+/* A night that starts before midnight always splits across two day-columns
+   on this 0–24h board: the part up to midnight, owned by `iso`'s own
+   schedule, and the part from midnight on, which is actually the tail of
+   the PREVIOUS day's night. Each piece is tagged with the iso whose
+   schedule it belongs to, so a drag or a tap on either one edits the right
+   day's exception rather than always the day it happens to be drawn on. */
+function pSleepBlocksFor(iso){
   const out=[];
-  if(tonight>0) out.push({time:pSleepFrom(),hours:tonight});
-  if(spill>0) out.push({time:"00:00",hours:spill});
+  const {from,hours}=pSleepFor(iso);
+  if(hours>0){
+    const [h,m]=from.split(":").map(Number);
+    const start=h+(m||0)/60;
+    const tonight=Math.min(hours,24-start);
+    if(tonight>0) out.push({time:from,hours:tonight,owner:iso});
+  }
+  const prev=pStepIso(iso,-1);
+  const p=pSleepFor(prev);
+  if(p.hours>0){
+    const [ph,pm]=p.from.split(":").map(Number);
+    const pstart=ph+(pm||0)/60;
+    const spill=Math.max(0,p.hours-(24-pstart));
+    if(spill>0) out.push({time:"00:00",hours:spill,owner:prev});
+  }
   return out;
 }
 function pFmtH(n){ const r=Math.round(n*10)/10; const s=String(r);
@@ -6019,10 +6099,10 @@ function pItemsFor(iso){
   });
   (S.planner.tasks||[]).forEach(tk=>{
     const isQuick=tk.kind==="quick";
-    /* Everything else disappears once it is done. A Quick Task stays put and
-       greys out: ticking it off is the whole interaction, and a list that
-       empties itself as you tick it gives you nothing to read back. */
-    if(tk.done&&!isQuick) return;
+    /* A finished Task or Event stays exactly where it was, on the calendar —
+       it turns green and says "done" instead of vanishing. Deleting it from
+       the day's picture the moment you tick it off was the actual complaint:
+       there was no way to look back and see what the day actually held. */
     if(!tk.due) return;                 // dateless items live in the tray below
     /* Only a TASK can be overdue. A task is a thing still to be done, so once
        its day passes it is pulled onto today and loses its slot — yesterday's
@@ -6030,11 +6110,13 @@ function pItemsFor(iso){
        An EVENT is a record of when something was scheduled: 12:30 on the 5th
        is still 12:30 on the 5th after the 5th has passed. Treating events as
        overdue stripped their time on their own day too, so every past day of
-       the calendar rendered empty and anything created on one vanished. */
+       the calendar rendered empty and anything created on one vanished.
+       A DONE task is also a record now, the same way — it stops rolling
+       forward once it's finished, and simply stays on the day it was done. */
     const isEvent=tk.kind==="event";
-    /* a Quick Task belongs to its day the way an Event does — it is what that
-       day held, so it is never dragged forward onto today */
-    const overdue=!isEvent&&!isQuick&&tk.due<pToday();
+    /* a Quick Task belongs to its day the way an Event does — it is never
+       dragged forward onto today */
+    const overdue=!isEvent&&!isQuick&&!tk.done&&tk.due<pToday();
     if(!(tk.due===iso||(isToday&&overdue))) return;
     out.push({kind:"task",ref:tk,name:tk.title||t("Untitled task"),hours:+tk.hours||0,
       time:overdue?"":(tk.time||""),overdue});
@@ -6151,7 +6233,7 @@ function pDayPanel(){
   const dateBit=L.lang==="cs"?d.getDate()+". "+pMonthGen(d.getMonth()):d.getDate()+" "+pMonthGen(d.getMonth());
   $("#pDayTitle").textContent=(isToday?t("Today")+" — ":"")+dowFull+" "+dateBit;
   const B=pBudgetOf(pSelISO);
-  const sleep=pSleep(), planned=B.total, awake=Math.max(24-sleep,0), free=awake-planned;
+  const sleep=pSleepFor(pSelISO).hours, planned=B.total, awake=Math.max(24-sleep,0), free=awake-planned;
   $("#pDaySub").textContent="24h − "+pFmtH(sleep)+"h "+t("sleep").toLowerCase()+" − "+pFmtH(planned)+"h "+t("planned").toLowerCase();
 
   /* An overbooked day now takes MORE BAR, not just a different colour — the
@@ -6305,7 +6387,7 @@ const pSnapQ=v=>Math.round(v/WB_SNAP)*WB_SNAP;
    contents alone would show. Ephemeral: which hours you happen to be looking
    at is not data, and it resets when the scope or day changes. */
 let pWinShift=0, pWheelT=null;
-function pPlaceProjects(items){
+function pPlaceProjects(items,iso){
   const projs=items.filter(it=>it.kind==="proj"&&it.hours>0);
   if(!projs.length) return items;
   /* round to the minute BEFORE splitting: a tracked session ending at
@@ -6317,6 +6399,18 @@ function pPlaceProjects(items){
   const placed=new Map();
   let cursor=PROJ_ANCHOR;
   projs.forEach(p=>{
+    /* Once someone has dragged this project's day to a real clock slot,
+       that slot is what draws it — the invented placement below is only
+       ever a fallback for a day nobody has positioned yet. */
+    const fixed=iso&&window.ppDayTimeOf?ppDayTimeOf(p.id,iso):null;
+    if(fixed){
+      const [fh,fm]=fixed.split(":").map(Number);
+      const s=Math.max(0,Math.min(fh+fm/60,24-Math.min(p.hours,24)));
+      const clash=busy.some(b=>b.e>s&&b.s<s+p.hours);
+      placed.set(p,{time:hhmm(s),clash});
+      busy.push({s,e:s+p.hours});
+      return;
+    }
     let s=Math.max(cursor,PROJ_ANCHOR);
     /* step past whatever already occupies the slot; bounded by the number of
        busy intervals so a pathological overlap set can't spin here */
@@ -6532,6 +6626,7 @@ function pOpenDayDialog(type,id,iso){
     const p=((S.projplan&&S.projplan.projects)||[]).find(x=>x.id===id); if(!p) return;
     name=p.name||t("Untitled project");
     hours=window.ppDayTarget?(ppDayTarget(id,day)||0):0;
+    time=window.ppDayTimeOf?(ppDayTimeOf(id,day)||""):"";
   } else {
     const b=pFindBlock(id); if(!b) return;
     const oc=pBlockOn(b,day); if(!oc) return;
@@ -6548,11 +6643,14 @@ function pOpenDayDialog(type,id,iso){
     : t("This changes only this day. The repeat pattern itself stays as it is.");
   $("#pDayDlgTime").value=time;
   $("#pDayDlgHours").value=Math.round(Math.max(0,+hours||0)*100)/100;
-  /* a Project's day has hours but no clock slot of its own — the board invents
-     one to draw it, and offering to edit an invented time would be a lie */
-  document.querySelectorAll("#pDayDlgRow .field-label").forEach((el,i)=>{
-    if(i<1) el.style.display=type==="proj"?"none":""; });
-  $("#pDayDlgTime").style.display=type==="proj"?"none":"";
+  /* a Project's day now CAN carry a clock slot (ppDayTimeOf/ppSetDayTime,
+     same thing dragging the block vertically sets) — it just starts blank,
+     placed automatically, until a drag or this field gives it one. Both
+     fields are relevant to both types now, so nothing here hides either —
+     but a stale inline display:none from before this field applied to
+     Projects would otherwise survive across dialog opens. */
+  document.querySelectorAll("#pDayDlgRow .field-label").forEach(el=>el.style.display="");
+  $("#pDayDlgTime").style.display="";
   $("#pDayDlg").showModal();
 }
 $("#pDayDlgCancel").addEventListener("click",()=>$("#pDayDlg").close());
@@ -6571,17 +6669,20 @@ $("#pDayDlgRemove").addEventListener("click",()=>{
 $("#pDayDlgSave").addEventListener("click",()=>{
   const c=pDayCtx; if(!c){ $("#pDayDlg").close(); return; }
   const hours=Math.max(0,Math.min(24,+$("#pDayDlgHours").value||0));
-  if(c.type==="proj"){ window.ppSetDayHours&&ppSetDayHours(c.id,c.iso,hours); }
+  if(c.type==="proj"){
+    window.ppSetDayHours&&ppSetDayHours(c.id,c.iso,hours);
+    window.ppSetDayTime&&ppSetDayTime(c.id,c.iso,$("#pDayDlgTime").value||"");
+  }
   else { const b=pFindBlock(c.id); if(b){ b.ex=b.ex||{};
     b.ex[c.iso]={time:$("#pDayDlgTime").value||"",hours}; } }
   $("#pDayDlg").close(); touch(); renderPlanner();
 });
-/* Sleep is one clock-time setting shared by every night, not a per-day record —
-   the dialog just edits S.planner.sleepFrom/sleep directly, with "until" a
-   view onto the same two numbers rather than a third field to keep in sync. */
-function pSleepUntilStr(){
-  const [h,m]=pSleepFrom().split(":").map(Number);
-  const total=Math.round((h*60+m+pSleep()*60)%1440);
+/* One night at a time: pSleepCtx names which day's exception this dialog is
+   editing, exactly like pDayCtx does for a Project or a recurring Block. */
+let pSleepCtx=null;
+function pSleepUntilStr(from,hours){
+  const [h,m]=from.split(":").map(Number);
+  const total=Math.round((h*60+m+hours*60)%1440);
   return String(Math.floor(total/60)).padStart(2,"0")+":"+String(total%60).padStart(2,"0");
 }
 function pSleepDlgDiffHours(){
@@ -6593,24 +6694,34 @@ function pSleepDlgDiffHours(){
 function pSleepHintUpdate(){
   $("#pSleepHint").textContent=t("{h}h of sleep").replace("{h}",pFmtH(pSleepDlgDiffHours()));
 }
-function pOpenSleepDialog(){
+function pOpenSleepDialog(iso){
+  pSleepCtx=iso||pToday();
+  const {from,hours}=pSleepFor(pSleepCtx);
   $("#pSleepDlgTitle").textContent=t("Sleep");
+  const d=pParseISO(pSleepCtx);
+  $("#pSleepDlgWhen").textContent=dowName(d.getDay())+" "+d.getDate()+" "+pMonthGen(d.getMonth());
   $("#pSleepFromLabel").textContent=t("from");
   $("#pSleepUntilLabel").textContent=t("until");
   $("#pSleepCancel").textContent=t("Cancel");
+  $("#pSleepReset").textContent=t("Reset this night");
   $("#pSleepSave").textContent=t("Save");
-  $("#pSleepFromInput").value=pSleepFrom();
-  $("#pSleepUntilInput").value=pSleepUntilStr();
+  $("#pSleepReset").hidden=!(S.planner.sleepEx&&S.planner.sleepEx[pSleepCtx]);
+  $("#pSleepFromInput").value=from;
+  $("#pSleepUntilInput").value=pSleepUntilStr(from,hours);
   pSleepHintUpdate();
   $("#pSleepDlg").showModal();
 }
 $("#pSleepFromInput").addEventListener("input",pSleepHintUpdate);
 $("#pSleepUntilInput").addEventListener("input",pSleepHintUpdate);
 $("#pSleepCancel").addEventListener("click",()=>$("#pSleepDlg").close());
+$("#pSleepReset").addEventListener("click",()=>{
+  if(pSleepCtx&&S.planner.sleepEx) delete S.planner.sleepEx[pSleepCtx];
+  $("#pSleepDlg").close(); touch(); renderPlanner();
+});
 $("#pSleepSave").addEventListener("click",()=>{
+  if(!pSleepCtx){ $("#pSleepDlg").close(); return; }
   const from=$("#pSleepFromInput").value||"23:00";
-  S.planner.sleepFrom=from;
-  S.planner.sleep=Math.min(24,Math.max(0,pSleepDlgDiffHours()));
+  pSleepSetFor(pSleepCtx,from,Math.min(24,Math.max(0,pSleepDlgDiffHours())));
   $("#pSleepDlg").close(); touch(); renderPlanner();
 });
 $("#pSlotKind").addEventListener("click",e=>{
@@ -6876,7 +6987,7 @@ function pPlachtaCentre(iso){
   el.scrollLeft=Math.max(0,i*PLACHTA_COLW-el.clientWidth/2+PLACHTA_COLW/2);
 }
 function pBoardHtml(days,topStrip,opts){
-  const byDay=days.map(d=>pPlaceProjects(pBudgetOf(d).items));
+  const byDay=days.map(d=>pPlaceProjects(pBudgetOf(d).items,d));
   /* Every board shows the whole 24 hours. It used to open on a 7-21 window
      that grew to fit whatever happened to be timed and slid up and down on the
      wheel, which meant the hours outside it did not exist on the board at all:
@@ -6893,8 +7004,11 @@ function pBoardHtml(days,topStrip,opts){
   const label=d=>{ const x=pParseISO(d);
     return `<b>${esc((L.lang==="cs"?DOW_CS:DOW_LONG)[x.getDay()].slice(0,3))}</b> ${x.getDate()}`; };
 
+  /* Labelled 1–24, not 0–23: the first row of the day reads "1", the last
+     "24", so every hour the board draws has a visible, unambiguous number —
+     no row is left implying a "0" that reads as missing. */
   const gutter=`<div class="wb-gutter" style="height:${H}px">${
-    Array.from({length:endH-startH},(_,i)=>`<span style="top:${i*WB_PXH}px">${String((startH+i)%24).padStart(2,"0")}</span>`).join("")}</div>`;
+    Array.from({length:endH-startH},(_,i)=>`<span style="top:${i*WB_PXH}px">${startH+i+1}</span>`).join("")}</div>`;
 
   const nowH=nowFrac;          // one clock read for the whole board
   /* The all-day row used to size itself to its own contents, so a day with a
@@ -6947,7 +7061,12 @@ function pBoardHtml(days,topStrip,opts){
       /* below ~38px there's no room for a title line plus a meta line — fold
          time+name onto one line rather than lose the fight against overflow */
       const compact=hpx<38;
-      const meta=`${esc(it.time)} · ${pFmtH(it.hours)}h${it.kind==="hours"&&it.live?` · <em>${esc(t("running"))}</em>`
+      /* Done stays on the board instead of vanishing — it just says so
+         instead of the usual time/duration, which stopped mattering the
+         moment it was finished. */
+      const done=!!(it.ref&&it.ref.done);
+      const meta=done?t("Done")
+        :`${esc(it.time)} · ${pFmtH(it.hours)}h${it.kind==="hours"&&it.live?` · <em>${esc(t("running"))}</em>`
           :live&&it.kind!=="hours"?` · <em>${esc(
           leftMin>=60?t("{h}h left").replace("{h}",pFmtH(leftMin/60))
                      :t("{m}m left").replace("{m}",leftMin))}</em>`:""}`;
@@ -6959,9 +7078,9 @@ function pBoardHtml(days,topStrip,opts){
          hit W/E and stretched the run across days. Held to a fifth of the
          height, the middle is always at least ~60% of the block. */
       const grip=Math.max(3,Math.min(8,Math.round(hpx*0.2)));
-      return `<div class="wb-blk wb-${kind}${live?" live":""}${compact?" compact":""}"${drag} style="top:${top}px; height:${hpx}px; --grip:${grip}px;${tint} ${lane}">
+      return `<div class="wb-blk wb-${kind}${live?" live":""}${compact?" compact":""}${done?" done":""}"${drag} style="top:${top}px; height:${hpx}px; --grip:${grip}px;${tint} ${lane}">
         ${compact
-          ? `<b>${warn}${it.kind==="block"?"↻ ":""}${esc(it.time)} ${esc(it.name)}</b>`
+          ? `<b>${warn}${it.kind==="block"?"↻ ":""}${esc(it.name)}${done?" — "+esc(t("Done")):" "+esc(it.time)}</b>`
           : `<b>${warn}${it.kind==="block"?"↻ ":""}${esc(it.name)}</b><span>${meta}</span>`}
         ${it.kind==="proj"?`<i class="wb-phandle" data-wbph="${it.id}" data-day="${d}"></i>`
           :(it.ref&&it.ref.kind==="event")&&drag
@@ -7019,10 +7138,10 @@ function pBoardHtml(days,topStrip,opts){
     /* drawn before the real blocks, so it sits underneath them in stacking
        order — anything genuinely scheduled during the night stays reachable,
        and only the empty stretch of the block answers a click */
-    const sleepHtml=pSleepBlocks().map(sp=>{
+    const sleepHtml=pSleepBlocksFor(d).map(sp=>{
       const [sh,sm]=sp.time.split(":").map(Number);
       const s=sh+sm/60, top=(s-startH)*WB_PXH, hpx=Math.max(17,sp.hours*WB_PXH);
-      return `<div class="wb-blk wb-sleep" data-sleepblk="1" style="top:${top}px; height:${hpx}px; left:0; width:100%"
+      return `<div class="wb-blk wb-sleep" data-sleepblk="${sp.owner}" style="top:${top}px; height:${hpx}px; left:0; width:100%"
         role="button" tabindex="0" aria-label="${esc(t("Sleep settings"))}">
         <b>${esc(t("Sleep"))}</b><span>${esc(sp.time)} · ${pFmtH(sp.hours)}h</span>
       </div>`;
@@ -7127,16 +7246,16 @@ function pWireBoard(){
     }
     const sleepblk=e.target.closest("[data-sleepblk]");
     if(sleepblk){
-      /* Sleep is one clock-time setting, not a per-day record, so there is no
-         day to change and no "kind:id" pair to look up — only a start time to
-         nudge. Whichever of the (up to two) pieces you grab, the whole night
-         slides by the same number of hours: pSleepBlocks() re-derives both
-         pieces from sleepFrom+sleep on the next render, so only sleepFrom
-         needs to change here. */
-      const [fh,fm]=pSleepFrom().split(":").map(Number);
+      /* data-sleepblk carries the OWNER day — the piece drawn at midnight in
+         column d actually belongs to d-1's night, so the owner is not always
+         the column it's drawn in. Dragging moves only that owner's night,
+         via its own exception, never the default every other night follows. */
+      const owner=sleepblk.dataset.sleepblk;
+      const {from}=pSleepFor(owner);
+      const [fh,fm]=from.split(":").map(Number);
       G2={mode:"sleepmove", pid:e.pointerId, x0:e.clientX, y0:e.clientY, el:sleepblk,
           armed:false, moved:false, touch:e.pointerType==="touch", timer:null,
-          from0:fh+fm/60};
+          owner, from0:fh+fm/60};
       pBoardBusy=true;
       try{ board.setPointerCapture(e.pointerId); }catch(err){}
       if(G2.touch){ G2.timer=setTimeout(()=>{ if(G2){ G2.armed=true; G2.el.classList.add("lift"); } },300); }
@@ -7179,7 +7298,11 @@ function pWireBoard(){
       G2={mode:kind==="projday"?"projday":"projmove", kind, id, pid:e.pointerId,
           x0:e.clientX, y0:e.clientY, el, armed:false, moved:false,
           touch:e.pointerType==="touch", timer:null,
-          day0:(ph||pchip).dataset.day, time0:null};
+          day0:(ph||pchip).dataset.day,
+          /* projday only resizes hours across the day-width, never a clock
+             slot — no time0 there. projmove doubles as a vertical drag now,
+             so it needs the same origin-time bookkeeping a Task's move does. */
+          time0:kind==="projday"?null:startH+(parseFloat(el.style.top)||0)/WB_PXH};
       pBoardBusy=true;
       try{ board.setPointerCapture(e.pointerId); }catch(err){}
       if(kind==="projday") e.preventDefault();
@@ -7332,12 +7455,12 @@ function pWireBoard(){
     G2.moved=true;
     /* edge autoscroll: dragging toward a day that is off-screen must be able
        to reach it — nudge the horizontal scroller near its edges */
-    if(G2.mode==="move"){
+    if(G2.mode==="move"||G2.mode==="projmove"){
       const sr=scrollEl.getBoundingClientRect();
       if(e.clientX>sr.right-36) scrollEl.scrollLeft+=14;
       else if(e.clientX<sr.left+36) scrollEl.scrollLeft-=14;
     }
-    if(G2.mode==="move"||G2.mode==="resize"||G2.mode==="sleepmove") pEdgeScrollY(e);
+    if(G2.mode==="move"||G2.mode==="resize"||G2.mode==="sleepmove"||G2.mode==="projmove") pEdgeScrollY(e);
     if(G2.mode==="resize"){
       const base=+G2.el.style.height.replace("px","");
       G2.el.style.height=Math.max(17,(G2.h0??(G2.h0=base))+dy)+"px";
@@ -7347,7 +7470,11 @@ function pWireBoard(){
       const nv=Math.max(0,Math.min(24,(base||0)+Math.round(dx/14)));   // 14px ≈ 1h
       G2.el.dataset.live=pFmtH(nv)+"h";
     } else if(G2.mode==="projmove"){
-      G2.el.style.transform=`translateX(${dx}px)`;             // projects move by day only
+      /* a project still moves across days by dx like before; it can now also
+         move up and down within a day, which needed a real per-day time to
+         land in (see ppDayTimeOf/ppSetDayTime) — a slot the model never had
+         until this drag exists to set one */
+      G2.el.style.transform=`translate(${dx}px,${dy}px)`;
     } else if(G2.mode==="sleepmove"){
       G2.el.style.transform=`translateY(${dy}px)`;              // sleep has no day to cross
     } else {
@@ -7388,12 +7515,12 @@ function pWireBoard(){
     const done=()=>{ pGLog("end",{result:"committed",mode:g.mode}); touch(); pCareCache={}; pSessCache=null; window.ppClearExt&&ppClearExt(); renderPlanner(); };
     if(g.mode==="sleepmove"){
       g.el.style.transform="";
-      if(!g.moved){ pOpenSleepDialog(); return; }
+      if(!g.moved){ pOpenSleepDialog(g.owner); return; }
       const fmt=v=>{ const m=Math.round(Math.max(0,Math.min(v,24))*60)%1440;
         return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"); };
       const dy=e.clientY-g.y0;
       const wrapped=((g.from0+dy/WB_PXH)%24+24)%24;
-      S.planner.sleepFrom=fmt(snap(wrapped));
+      pSleepSetFor(g.owner,fmt(snap(wrapped)),pSleepFor(g.owner).hours);
       done(); return;
     }
     if(g.mode==="rz8"){
@@ -7471,12 +7598,21 @@ function pWireBoard(){
     if(g.mode==="projmove"){
       g.el.style.transform="";
       const {day}=geom(e.clientX,e.clientY);
+      const targetDay=day||g.day0;
       /* Dragging ONE day of a project moves that day's work, not the whole
          project — the same rule Events got in Wave 1. A project's span is
          derived from its start and budget, so this is expressed as moving the
          day's hours: the old day empties and the new one gains them. */
-      if(day&&day!==g.day0&&window.ppMoveDay&&ppMoveDay(g.id,g.day0,day)) done();
-      else renderSchedule();
+      let changed=false;
+      if(targetDay&&targetDay!==g.day0&&window.ppMoveDay&&ppMoveDay(g.id,g.day0,targetDay)) changed=true;
+      /* the vertical half of the same drag: where in the day it sits. Applies
+         to whichever day it landed on, whether or not the day itself moved,
+         so a purely vertical drag (still on g.day0) is not silently dropped. */
+      if(g.time0!=null&&targetDay){
+        const t2=Math.max(0,Math.min(23.75,snap(g.time0+(e.clientY-g.y0)/WB_PXH)));
+        if(window.ppSetDayTime&&ppSetDayTime(g.id,targetDay,fmtT(t2))) changed=true;
+      }
+      if(changed) done(); else renderSchedule();
       return;
     }
     if(g.mode==="projday"){
@@ -7774,8 +7910,14 @@ function renderSchedule(){
   $("#pTimelineZoom").style.display="none";
   $("#pScheduleBody").hidden=false;
   $("#pBoardNav").style.display="";
+  /* Search only ever showed up on Plachta, a view most people never switch
+     to — from Day/Week/Month, which is where everyone actually lives, typing
+     into "Search this calendar…" wasn't dead, it simply wasn't there to
+     type into. pplRender()/pplMatches() never cared which board was open, so
+     the fix is just showing the same bar everywhere Timeline's own Gantt
+     isn't the thing on screen. */
+  $("#pPlachtaSearch").style.display="";
   if(pScope==="plachta"){
-    $("#pPlachtaSearch").style.display="";
     if(!pPlachtaAnchor) pPlachtaAnchor=pToday();
     const pdays=pPlachtaDays(pPlachtaAnchor);
     $("#pBoardLabel").textContent=pBoardLabel("month",[pPlachtaAnchor]);
@@ -7833,7 +7975,7 @@ function pAddWarn(){
   const el=$("#pAddWarn"); if(!el) return;
   const due=$("#pAddDue").value, add=+$("#pAddHours").value||0;
   if(!due||!add){ el.hidden=true; return; }
-  const awake=Math.max(24-pSleep(),0);
+  const awake=Math.max(24-pSleepFor(due).hours,0);
   const already=pPlanned(due), after=already+add, free=awake-after;
   if(free>=0&&free>=1.5){ el.hidden=true; return; }
   el.hidden=false;
@@ -8021,7 +8163,7 @@ function renderPlanner(){
   pEnsureView();
   pCareCache={}; pSessCache=null;
   pFillProjectSelect(); pSyncAddKind(); renderProjectsOverview();
-  $("#pSleepInput").value=S.planner.sleep;
+  pSleepSettingsSync();
   $("#pLinkCare").checked=S.planner.linkCare!==false;
   $("#pLinkHours").checked=S.planner.linkHours!==false;
   $("#pLinkProjects").checked=S.planner.linkProjects!==false;
@@ -8235,7 +8377,31 @@ $("#pLinkHours").addEventListener("change",e=>{ S.planner.linkHours=e.target.che
 $("#pLinkProjects").addEventListener("change",e=>{ S.planner.linkProjects=e.target.checked; touch(); renderPlanner(); });
 $("#pCarePace").addEventListener("change",e=>{ const n=+e.target.value;
   S.planner.carePace=Number.isFinite(n)&&n>=0?n:3; touch(); renderPlanner(); });
-$("#pSleepInput").addEventListener("input",e=>{ S.planner.sleep=+e.target.value||0; touch(); pDayPanel(); renderSchedule(); });
+/* The Weekday/Weekend pair IS the default every night without its own
+   exception falls back to — pSleepBucketCommit writes straight into it, the
+   same live-binding style pCarePace and the checkboxes below already use. */
+function pSleepSettingsSync(){
+  const wd=S.planner.sleepWeekday, we=S.planner.sleepWeekend;
+  $("#pSleepWeekdayFrom").value=wd.from;
+  $("#pSleepWeekdayUntil").value=pSleepUntilStr(wd.from,wd.hours);
+  $("#pSleepWeekdayHint").textContent=pFmtH(wd.hours)+"h";
+  $("#pSleepWeekendFrom").value=we.from;
+  $("#pSleepWeekendUntil").value=pSleepUntilStr(we.from,we.hours);
+  $("#pSleepWeekendHint").textContent=pFmtH(we.hours)+"h";
+}
+function pSleepBucketCommit(bucket){
+  const wk=bucket==="sleepWeekday"?"Weekday":"Weekend";
+  const from=$(`#pSleep${wk}From`).value||"23:00", until=$(`#pSleep${wk}Until`).value||"07:00";
+  const [fh,fm]=from.split(":").map(Number), [uh,um]=until.split(":").map(Number);
+  let diff=(uh*60+um)-(fh*60+fm); if(diff<=0) diff+=1440;
+  S.planner[bucket]={from,hours:Math.min(24,Math.max(0,diff/60))};
+  $(`#pSleep${wk}Hint`).textContent=pFmtH(S.planner[bucket].hours)+"h";
+  touch(); pDayPanel(); renderSchedule();
+}
+$("#pSleepWeekdayFrom").addEventListener("input",()=>pSleepBucketCommit("sleepWeekday"));
+$("#pSleepWeekdayUntil").addEventListener("input",()=>pSleepBucketCommit("sleepWeekday"));
+$("#pSleepWeekendFrom").addEventListener("input",()=>pSleepBucketCommit("sleepWeekend"));
+$("#pSleepWeekendUntil").addEventListener("input",()=>pSleepBucketCommit("sleepWeekend"));
 $("#pAddBlock").addEventListener("click",()=>{
   S.planner.blocks.push({id:uid(),title:"",dow:[],time:"",hours:1});
   touch(); renderPlanner();
@@ -8698,7 +8864,7 @@ function hLaneHtml(){
       <small>${pFmtH(p.today)}h ${esc(t("planned lc"))} · ${pFmtH(p.left)}h ${esc(t("left"))}</small></button>`);
   });
   const B=(typeof pBudgetOf==="function")?pBudgetOf(day):null;
-  const free=B?Math.max(0,Math.max(24-(S.planner&&+S.planner.sleep||8),0)-B.total):null;
+  const free=B?Math.max(0,Math.max(24-(typeof pSleepFor==="function"?pSleepFor(day).hours:8),0)-B.total):null;
   if(!chips.length&&free==null) return "";
   return `<div class="hlane">${chips.join("")}
     ${free!=null?`<span class="hlane-free">${esc(t("Today"))}: ${pFmtH(B.total)}h · ${pFmtH(free)}h ${esc(t("free"))}</span>`:""}
@@ -16610,6 +16776,27 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
     PS = S.projplan; var p = byId(id);
     if (!p || dif(p.start, iso) < 0) return null;
     return want(p, iso);
+  };
+  /* A Project has no clock time of its own — build() only ever spends hours
+     against a day, never a slot within it — so the board used to invent one
+     purely to have somewhere to draw the block, and dragging it could only
+     ever change which DAY it fell on. dayTime is the same kind of per-day
+     override p.days already uses for hours, just for the hour-of-day
+     instead: once set, pPlaceProjects draws the block there instead of
+     inventing a slot, and a drag can move it up and down like anything
+     else. It carries no weight in the schedule maths (want/build never read
+     it) — it is purely where today's chunk happens to sit on the clock. */
+  window.ppDayTimeOf = function (id, iso) {
+    PS = S.projplan; var p = byId(id);
+    return (p && p.dayTime && p.dayTime[iso]) || null;
+  };
+  window.ppSetDayTime = function (id, iso, time) {
+    PS = S.projplan; var p = byId(id); if (!p) return false;
+    if (!(dayUse(p, iso) > 0)) return false;         // nothing that day to place
+    p.dayTime = p.dayTime || {};
+    if (!time) delete p.dayTime[iso]; else p.dayTime[iso] = time;
+    persist();
+    return true;
   };
   /* the Hours view's lane: every project with hours scheduled today, with its
      today quota and how much of the whole budget is still ahead */
