@@ -8320,7 +8320,20 @@ $("#pRollover").addEventListener("click",e=>{
 });
 $("#pJumpToday").addEventListener("click",()=>{
   pSelISO=pToday();
-  $("#pAddDue").value=pSelISO; renderPlanner();
+  $("#pAddDue").value=pSelISO;
+  /* Plachta and Timeline each keep their OWN idea of what's on screen
+     (pPlachtaAnchor, L.ppView/ppGridISO) instead of reading pSelISO, so
+     setting it alone left both scopes exactly where they already were —
+     the button looked like it did nothing. */
+  if(pScope==="plachta"){
+    pPlachtaAnchor=pToday(); renderSchedule(); pPlachtaCentre(pToday()); return;
+  }
+  if(pScope==="timeline"){
+    if(L.ppViewMode==="grid") ppGridISO=ymd(monthStart(Date.now()));
+    else if(window.ppScrollToday) ppScrollToday();
+    renderSchedule(); return;
+  }
+  renderPlanner();
 });
 $("#pBoardPrev").addEventListener("click",()=>{
   if(pScope==="plachta"){ pPlachtaAnchor=pStepIso(pPlachtaViewDay(),-14);
@@ -16756,6 +16769,12 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
     if (!ppScrolled) { ppScrolled = true; scrollToToday(); }
   };
   window.ppNormalize = fix;
+  /* The board's own "today" button (#pJumpToday) only ever moved pSelISO,
+     which the linear Timeline doesn't read at all — it scrolls by L.ppView
+     instead, so clicking "today" while looking at the Gantt silently did
+     nothing. Exposed so that button can drive this view's own notion of
+     "today" too, the same way scrollToToday() already does once on entry. */
+  window.ppScrollToday = scrollToToday;
   /* Mutations the week board drives, so a project can be reshaped from the
      calendar as well as the timeline. Both go through the same snapshot/undo
      and persistence the timeline's own gestures use — one history, one truth. */
