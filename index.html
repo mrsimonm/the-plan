@@ -735,9 +735,14 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
    clipped box instead of outside it. */
 .wb-scroll{overflow-x:auto; margin-top:12px; padding:10px 0}
 .wb-grid{display:flex; min-width:640px}
-/* sticky so the hour labels stay readable while the week scrolls sideways */
-.wb-gutter{flex:0 0 34px; position:sticky; left:0; z-index:4; background:var(--surface)}
-.wb-gutter span{position:absolute; right:6px; transform:translateY(-6px);
+/* sticky so the hour labels stay readable while the week scrolls sideways.
+   Flex column now, matching .wb-col's own layout: a hidden .wb-head-sized
+   spacer, a hidden .wb-allday-sized spacer, then the actual hour labels —
+   see the gutter-crookedness note above pBoardHtml's gutter template. */
+.wb-gutter{flex:0 0 34px; position:sticky; left:0; z-index:4; background:var(--surface);
+  display:flex; flex-direction:column}
+.wb-gutter-hours{position:relative; flex:0 0 auto}
+.wb-gutter-hours span{position:absolute; right:6px; transform:translateY(-6px);
   font-family:var(--font); font-variant-numeric:tabular-nums; font-size:10.5px; font-weight:500;
   color:var(--ink)}
 .wb-col{flex:1 1 0; min-width:86px; border-left:1px solid var(--grid-sep); display:flex; flex-direction:column}
@@ -7025,9 +7030,26 @@ function pBoardHtml(days,topStrip,opts){
 
   /* Labelled 1–24, not 0–23: the first row of the day reads "1", the last
      "24", so every hour the board draws has a visible, unambiguous number —
-     no row is left implying a "0" that reads as missing. */
-  const gutter=`<div class="wb-gutter" style="height:${H}px">${
-    Array.from({length:endH-startH},(_,i)=>`<span style="top:${i*WB_PXH}px">${startH+i+1}</span>`).join("")}</div>`;
+     no row is left implying a "0" that reads as missing.
+
+     The gutter used to be one flat block starting at the very top of the
+     grid, with its labels absolutely positioned from y=0. Every DAY column,
+     though, stacks a .wb-head button and a .wb-allday strip ABOVE its own
+     .wb-track — so the track (and every real hour row in it) actually starts
+     however tall those two happen to render, while "hour 1" in the gutter
+     sat fixed at y=0. The two drifted apart by exactly that height, which is
+     what "crooked hour grid" was: not uneven row spacing, but the whole
+     label column starting higher than the rows it's meant to label.
+     Fixed by giving the gutter the SAME two spacers, hidden but sized by the
+     SAME classes (.wb-head, .wb-allday) a real column uses — so if either
+     one's height ever changes, both sides move together automatically
+     instead of this needing a hand-tuned pixel offset that can drift again. */
+  const gutter=`<div class="wb-gutter">
+    <button type="button" class="wb-head" style="visibility:hidden" tabindex="-1" aria-hidden="true">·</button>
+    <div class="wb-allday" style="visibility:hidden" aria-hidden="true"></div>
+    <div class="wb-gutter-hours" style="height:${H}px">${
+      Array.from({length:endH-startH},(_,i)=>`<span style="top:${i*WB_PXH}px">${startH+i+1}</span>`).join("")}</div>
+  </div>`;
 
   const nowH=nowFrac;          // one clock read for the whole board
   /* The all-day row used to size itself to its own contents, so a day with a
