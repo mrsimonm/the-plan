@@ -8386,7 +8386,19 @@ window.addEventListener("keydown",e=>{
 });
 $("#pScopeSeg").addEventListener("click",e=>{
   const b=e.target.closest("[data-pscope]"); if(!b) return;
-  pScope=b.dataset.pscope; pWinShift=0; renderSchedule();
+  const to=b.dataset.pscope;
+  /* Day/Week/Month read pSelISO directly, so switching between them already
+     shows whatever day you were on — no separate state to go stale. Plachta
+     (pPlachtaAnchor) and Timeline (L.ppView / ppGridISO) each keep their OWN
+     idea of what's on screen, though, so switching straight into either used
+     to show wherever THAT view was last left — today, on first visit, or a
+     scroll position from three days of edits ago — instead of the day you
+     had just been looking at. Resyncing both to pSelISO on the way in fixes
+     that without touching how they behave once you're already there (panning
+     Plachta, for instance, still moves pPlachtaAnchor freely afterwards). */
+  if(to==="plachta") pPlachtaAnchor=pSelISO;
+  else if(to==="timeline"){ L.ppView=pSelISO.slice(0,8)+"01"; ppGridISO=ymd(monthStart(+pParseISO(pSelISO))); }
+  pScope=to; pWinShift=0; renderSchedule();
 });
 
 /* ---------------- Plachta search ----------------
