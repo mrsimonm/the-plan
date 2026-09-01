@@ -797,13 +797,13 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
   /* not draggable, so it must not inherit .wb-blk's touch-action:none —
      a finger landing on tracked work still has to be able to scroll */
   cursor:default; touch-action:pan-y}
-/* Sleep is background, not something to grab — one tap opens its settings,
-   nothing to drag or resize, so it keeps scroll working under a finger like
-   tracked-work blocks do. Muted and slightly transparent so a real Task drawn
-   over the same hours (rare, but possible) still reads clearly on top of it. */
+/* Sleep drags like any other block — up and down, to change bedtime — it just
+   has no day to move across and nothing to resize, so it keeps .wb-blk's
+   default touch-action:none rather than the pan-y override tracked-work uses.
+   Muted and slightly transparent so a real Task drawn over the same hours
+   (rare, but possible) still reads clearly on top of it. */
 .wb-blk.wb-sleep{z-index:0; border-left-color:var(--ink-3);
-  background:color-mix(in srgb, var(--ink-3) 16%, var(--surface)); opacity:.8;
-  cursor:pointer; touch-action:pan-y}
+  background:color-mix(in srgb, var(--ink-3) 16%, var(--surface)); opacity:.8}
 .wb-blk.wb-sleep:hover{filter:brightness(1.1)}
 .wb-blk.wb-blk{}
 .wb-blk.wb-blk b{}
@@ -3555,7 +3555,7 @@ html{overscroll-behavior-y:none}
      recurring block it has no "this day / whole series" split — one setting
      covers every night, and this dialog is the whole of it. -->
 <dialog id="pSleepDlg">
-  <h3 class="dlg-head" id="pSleepDlgTitle">😴 Sleep</h3>
+  <h3 class="dlg-head" id="pSleepDlgTitle">Sleep</h3>
   <div class="dlg-body">
     <div class="pslot-row">
       <span class="field-label" id="pSleepFromLabel">from</span>
@@ -6594,7 +6594,7 @@ function pSleepHintUpdate(){
   $("#pSleepHint").textContent=t("{h}h of sleep").replace("{h}",pFmtH(pSleepDlgDiffHours()));
 }
 function pOpenSleepDialog(){
-  $("#pSleepDlgTitle").textContent="😴 "+t("Sleep");
+  $("#pSleepDlgTitle").textContent=t("Sleep");
   $("#pSleepFromLabel").textContent=t("from");
   $("#pSleepUntilLabel").textContent=t("until");
   $("#pSleepCancel").textContent=t("Cancel");
@@ -7023,8 +7023,8 @@ function pBoardHtml(days,topStrip,opts){
       const [sh,sm]=sp.time.split(":").map(Number);
       const s=sh+sm/60, top=(s-startH)*WB_PXH, hpx=Math.max(17,sp.hours*WB_PXH);
       return `<div class="wb-blk wb-sleep" data-sleepblk="1" style="top:${top}px; height:${hpx}px; left:0; width:100%"
-        role="button" tabindex="0" aria-label="${esc(t("Sleep settings"))}"
-        <b>😴 ${esc(t("Sleep"))}</b><span>${esc(sp.time)} · ${pFmtH(sp.hours)}h</span>
+        role="button" tabindex="0" aria-label="${esc(t("Sleep settings"))}">
+        <b>${esc(t("Sleep"))}</b><span>${esc(sp.time)} · ${pFmtH(sp.hours)}h</span>
       </div>`;
     }).join("");
     return `<div class="wb-col${d===pToday()?" today":""}${d.slice(8)==="01"?" mstart":""}" data-wbday="${d}">
@@ -7125,6 +7125,24 @@ function pWireBoard(){
       e.preventDefault();
       return;
     }
+    const sleepblk=e.target.closest("[data-sleepblk]");
+    if(sleepblk){
+      /* Sleep is one clock-time setting, not a per-day record, so there is no
+         day to change and no "kind:id" pair to look up — only a start time to
+         nudge. Whichever of the (up to two) pieces you grab, the whole night
+         slides by the same number of hours: pSleepBlocks() re-derives both
+         pieces from sleepFrom+sleep on the next render, so only sleepFrom
+         needs to change here. */
+      const [fh,fm]=pSleepFrom().split(":").map(Number);
+      G2={mode:"sleepmove", pid:e.pointerId, x0:e.clientX, y0:e.clientY, el:sleepblk,
+          armed:false, moved:false, touch:e.pointerType==="touch", timer:null,
+          from0:fh+fm/60};
+      pBoardBusy=true;
+      try{ board.setPointerCapture(e.pointerId); }catch(err){}
+      if(G2.touch){ G2.timer=setTimeout(()=>{ if(G2){ G2.armed=true; G2.el.classList.add("lift"); } },300); }
+      else e.preventDefault();
+      return;
+    }
     const rsz=e.target.closest("[data-wbr]");
     const ph=e.target.closest("[data-wbph]");        // project day-hours handle
     const pchip=e.target.closest("[data-wbp]");      // project chip
@@ -7187,10 +7205,22 @@ function pWireBoard(){
       G2.timer=setTimeout(()=>{ if(G2){ G2.armed=true; G2.el.classList.add("lift"); } },300);
     } else e.preventDefault();
   });
+  /* Vertical autoscroll: a day column is 24×WB_PXH tall — well past one
+     screen — so a drag that had no way to push the PAGE down or up could only
+     ever reach whichever hours happened to already be on screen. The board
+     already nudges its horizontal scroller for an off-screen day; this is the
+     same idea for the vertical axis, which every mode that repositions a
+     block by hour (move, resize, the 8-way event handles) needs alike. */
+  const pEdgeScrollY=e=>{
+    const de=document.scrollingElement||document.documentElement;
+    if(e.clientY>window.innerHeight-40) de.scrollTop+=16;
+    else if(e.clientY<40) de.scrollTop-=16;
+  };
   board.addEventListener("pointermove",e=>{
     if(!G2||e.pointerId!==G2.pid) return;
     const dx=e.clientX-G2.x0, dy=e.clientY-G2.y0;
     if(G2.mode==="rz8"){
+      pEdgeScrollY(e);
       if(!G2.armed){ if(Math.abs(dx)<4&&Math.abs(dy)<4) return; G2.armed=true; G2.el.classList.add("rz"); }
       G2.moved=true;
       const E=G2.edge;
@@ -7307,6 +7337,7 @@ function pWireBoard(){
       if(e.clientX>sr.right-36) scrollEl.scrollLeft+=14;
       else if(e.clientX<sr.left+36) scrollEl.scrollLeft-=14;
     }
+    if(G2.mode==="move"||G2.mode==="resize"||G2.mode==="sleepmove") pEdgeScrollY(e);
     if(G2.mode==="resize"){
       const base=+G2.el.style.height.replace("px","");
       G2.el.style.height=Math.max(17,(G2.h0??(G2.h0=base))+dy)+"px";
@@ -7317,6 +7348,8 @@ function pWireBoard(){
       G2.el.dataset.live=pFmtH(nv)+"h";
     } else if(G2.mode==="projmove"){
       G2.el.style.transform=`translateX(${dx}px)`;             // projects move by day only
+    } else if(G2.mode==="sleepmove"){
+      G2.el.style.transform=`translateY(${dy}px)`;              // sleep has no day to cross
     } else {
       G2.el.style.transform=`translate(${dx}px,${dy}px)`;
     }
@@ -7353,6 +7386,16 @@ function pWireBoard(){
        renderPlanner refreshes the task lists, the day panel, the warning line
        AND this board (it ends in pDayPanel + renderSchedule) */
     const done=()=>{ pGLog("end",{result:"committed",mode:g.mode}); touch(); pCareCache={}; pSessCache=null; window.ppClearExt&&ppClearExt(); renderPlanner(); };
+    if(g.mode==="sleepmove"){
+      g.el.style.transform="";
+      if(!g.moved){ pOpenSleepDialog(); return; }
+      const fmt=v=>{ const m=Math.round(Math.max(0,Math.min(v,24))*60)%1440;
+        return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"); };
+      const dy=e.clientY-g.y0;
+      const wrapped=((g.from0+dy/WB_PXH)%24+24)%24;
+      S.planner.sleepFrom=fmt(snap(wrapped));
+      done(); return;
+    }
     if(g.mode==="rz8"){
       g.el.classList.remove("rz"); delete g.el.dataset.live;
       board.querySelectorAll(".wb-col.rz-target").forEach(c=>c.classList.remove("rz-target"));
@@ -7566,7 +7609,6 @@ function pWireBoard(){
      instead of a listener stacking up on every week render. */
   pBoardAbort=abort; pBoardCommit=commit;
   board.addEventListener("click",e=>{
-    if(e.target.closest("[data-sleepblk]")){ pOpenSleepDialog(); return; }
     const tick=e.target.closest("[data-adtick]"); if(!tick) return;
     const tk=pFindTask(tick.dataset.adtick); if(!tk) return;
     e.stopPropagation();
