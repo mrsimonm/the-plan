@@ -427,6 +427,7 @@ input[type="time"].mono-input{width:88px}
    with results as a simple clickable list rather than a dropdown, so it
    reads as part of the board rather than a floating overlay */
 .ppl-search{margin-bottom:11px}
+.plant-search{width:100%; box-sizing:border-box}
 .ppl-search-row{display:flex; gap:8px; align-items:center}
 .ppl-input{flex:1 1 auto; min-width:0}
 #pplWhenSeg{flex:0 0 auto; width:auto}
@@ -2202,6 +2203,7 @@ html{overscroll-behavior-y:none}
     <div id="gardenTaskBar" class="task-bar-full"></div>
     <div class="stack">
       <div id="gardenDue"></div>
+      <input type="text" id="gardenSearch" class="plant-search" placeholder="Search plants…" autocomplete="off">
       <div class="grid" id="gardenGrid"></div>
     </div>
   </section>
@@ -2222,6 +2224,7 @@ html{overscroll-behavior-y:none}
         <button class="btn" id="plantsBatchCare">Batch care</button>
         <button class="btn" id="gardenBack">← Garden</button>
       </div></div>
+    <input type="text" id="plantsSearch" class="plant-search" placeholder="Search plants…" autocomplete="off">
     <div class="stack" id="subjectList"></div>
   </section>
 
@@ -5134,6 +5137,16 @@ const MODULES=[{id:"plants",label:"Plants",noun:"plant"},{id:"home",label:"Home"
 const moduleOf=id=>MODULES.find(m=>m.id===id)||MODULES[0];
 const subject=id=>S.subjects.find(x=>x.id===id);
 const subjectsIn=m=>S.subjects.filter(x=>x.module===m);
+/* Live search for Garden and Library's "All plants" — separate query per
+   view, since searching one shouldn't reset what you typed in the other.
+   Matches name, species and spot, so "kitchen" finds every plant on that
+   windowsill as readily as its own name would. */
+let gGardenQuery="", gPlantsQuery="";
+function plantMatchesQuery(p,q){
+  if(!q) return true;
+  const hay=[p.name,p.species,p.spot].filter(Boolean).join(" ").toLowerCase();
+  return hay.includes(q);
+}
 const routinesFor=sid=>S.routines.filter(r=>r.subjectId===sid);
 /* what a routine wants poured into it, if anything */
 function routineFormula(r){
@@ -5751,9 +5764,14 @@ const DID={water:"Watered",feed:"Fed",spray:"Sprayed"};
 const careRoutines=sid=>routinesFor(sid)
   .slice().sort((a,b)=>CARE_ORDER.indexOf(a.kind)-CARE_ORDER.indexOf(b.kind));
 function renderSubjects(){
-  const list=subjectsIn("plants");
-  if(!list.length){
+  const all=subjectsIn("plants");
+  const list=all.filter(p=>plantMatchesQuery(p,gPlantsQuery));
+  if(!all.length){
     $("#subjectList").innerHTML='<p class="empty">No plants yet. Add one and the app keeps track of what it last had, and when.</p>';
+    return;
+  }
+  if(!list.length){
+    $("#subjectList").innerHTML=`<p class="empty">No plants match "${esc(gPlantsQuery)}".</p>`;
     return;
   }
   $("#subjectList").innerHTML=list.map(p=>{
@@ -9590,7 +9608,8 @@ function renderGarden(){
         <div>Nothing needs you today. ${S.subjects.filter(x=>x.module==="plants").length
           ?"Everything's had what it wants.":"Add a plant and it'll start keeping track."}</div></div></div>`;
 
-  const list=subjectsIn("plants");
+  const all=subjectsIn("plants");
+  const list=all.filter(p=>plantMatchesQuery(p,gGardenQuery));
   $("#gardenGrid").innerHTML = list.length
     ? list.map(p=>{
         const ph=latestPhoto(p.id), w=worstState(p.id);
@@ -9604,7 +9623,10 @@ function renderGarden(){
             ${w?`<span class="pill ${w.st.cls}">${esc(t(rName(w.r)).toLowerCase())} ${w.st.text}</span>`:""}
           </span></button>`;
       }).join("")
-    : `<div class="card pad" style="grid-column:1/-1"><p class="hint" style="margin:0">
+    : all.length
+      ? `<div class="card pad" style="grid-column:1/-1"><p class="hint" style="margin:0">
+          No plants match "${esc(gGardenQuery)}".</p></div>`
+      : `<div class="card pad" style="grid-column:1/-1"><p class="hint" style="margin:0">
         No plants yet. Tap <b>+ Plant</b> and pick what it is — the app fills in how often it wants
         watering, how much light it likes, and whether it's safe around animals.</p></div>`;
 }
@@ -9700,6 +9722,13 @@ $("#gardenGrid").addEventListener("click",e=>{
   const b=e.target.closest("[data-open-plant]"); if(b) openPlantPage(b.dataset.openPlant);
 });
 $("#gardenBack").addEventListener("click",()=>show("garden"));
+/* filters the grid as you type, progressively */
+$("#gardenSearch").addEventListener("input",e=>{
+  gGardenQuery=e.target.value.trim().toLowerCase(); renderGarden();
+});
+$("#plantsSearch").addEventListener("input",e=>{
+  gPlantsQuery=e.target.value.trim().toLowerCase(); renderSubjects();
+});
 
 /* ---------------- library ---------------- */
 const LIB_ITEMS=[
