@@ -12037,7 +12037,8 @@ function renderTaskBarFull(containerId){
 const APPS=[{id:"bench",label:"Potting Bench",view:null},
             {id:"planner",label:"Daily Planner",view:"planner"},
             {id:"hours",label:"Hours",view:"hours"},
-            {id:"teachbench",label:"Teachbench",view:"teachbench"}];
+            {id:"teachbench",label:"Teachbench",view:"teachbench"},
+            {id:"teachbench-student",label:"Student Bench",view:"teachbench-student"}];
 const BENCH_VIEWS=["garden","library","mix","plants","plan","cuttings","batch","shelf","log","academy","acadedit","settings","plant","product","sched","formula","stats"];
 const NAV_PARENT={batch:"cuttings", plant:"garden", plants:"library", product:"library",
   sched:"plan", formula:"mix", acadedit:"library", settings:"library", shelf:"library", log:"library", academy:"library"};
@@ -13321,7 +13322,7 @@ function showNow(v){
      own re-render is a no-op rather than a recursion. */
   if(v!=="planner"&&document.documentElement.classList.contains("pfocus")) pSetFocus(false);
   document.querySelectorAll(".nav button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.view===v)));
-  BENCH_VIEWS.concat(["planner","hours","hproject","teachbench"]).forEach(x=>{ $("#view-"+x).hidden=(x!==v); });
+  BENCH_VIEWS.concat(["planner","hours","hproject","teachbench","teachbench-student"]).forEach(x=>{ $("#view-"+x).hidden=(x!==v); });
   /* editor sub-views (product/formula/plant/batch/…) are populated by their
      open* call, not by showNow — relaunching straight into one was a blank
      shell that crashed on the first tap. Remember their parent tab instead. */
@@ -13334,6 +13335,7 @@ function showNow(v){
      ml totals for a 10 L tank while the control above reads 2 L, and whoever is
      holding the jug pours five times the dose. */
   if(v==="teachbench") renderTeachbench();
+  if(v==="teachbench-student") renderTeachbenchStudent();
   if(v==="mix"){ renderVol(); renderStr(); renderDue(); renderHow(); renderMix(); }
   if(v==="plan"){ anchor=sod(Date.now()); }
   if(v==="shelf") renderShelf(); if(v==="plants") renderSubjects(); if(v==="academy") renderAcademy();
@@ -16081,6 +16083,14 @@ async function bootStudentApp(){
   document.getElementById("view-teachbench-student").hidden=false;
   /* real access-code redemption + Firestore wiring lands in a later step;
      for now this only proves the mode gate and shell render correctly. */
+}
+/* Reachable two ways during development: the real student-only boot path
+   above (bootStudentApp, via #s=<code>, no app chrome at all), and — while
+   this is being built and tested — a normal tab in the app switcher, which
+   calls this render function through the ordinary showNow() dispatch. Both
+   render the same section; only the surrounding chrome differs. */
+function renderTeachbenchStudent(){
+  /* placeholder: flashcard/calendar/homework rendering lands in later steps */
 }
 
 /* ---------------- boot ---------------- */
