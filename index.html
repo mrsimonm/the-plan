@@ -9557,25 +9557,31 @@ function renderGarden(){
           <button type="button" class="btn mini" data-go="plan">Diary</button></div>
         ${items.slice(0,5).map(it=>{
           const sw=(!it.cut&&it.r);                       // cuttings need opening, not completing
+          const ph=latestPhoto(it.p.id);
           return `<div class="duerow${sw?" swipeable":""}"${sw?` data-swipe-routine="${it.r.id}"`:""}>
           ${sw?`<span class="swipe-act" aria-hidden="true">${swipeVerb(it.r)}</span>`:""}
           <div class="duerow-in">
             <span class="pill ${it.overdue?"over":"due"}">${it.overdue?"late":"today"}</span>
+            ${ph?`<img class="lu-thumb" src="${ph.data}" alt="">`:'<span class="lu-thumb none">🌿</span>'}
             <span class="duerow-t">${esc(it.p.name)}
               <small>${esc(it.cut?"check the cuttings":routineName(it))}</small></span>
             ${it.cut?`<button class="btn mini" data-gocut="${it.cut.id}">Open</button>`
                     :(it.r?`<button class="btn mini" data-agdone="${it.r.id}">Done</button>`:"")}
           </div>
         </div>`;}).join("")}
-        ${tasks.slice(0,3).map(tk=>`<div class="duerow swipeable" data-swipe-task="${tk.id}">
+        ${tasks.slice(0,3).map(tk=>{
+          const tsub=tk.subjectId&&subject(tk.subjectId);
+          const ph=tsub&&latestPhoto(tsub.id);
+          return `<div class="duerow swipeable" data-swipe-task="${tk.id}">
           <span class="swipe-act" aria-hidden="true">${esc(t("Done"))}</span>
           <div class="duerow-in">
             <span class="pill due">task</span>
+            ${tsub?(ph?`<img class="lu-thumb" src="${ph.data}" alt="">`:'<span class="lu-thumb none">🌿</span>'):""}
             <span class="duerow-t">${esc(tk.text)}<small>${
-              esc(tk.subjectId&&subject(tk.subjectId)?subject(tk.subjectId).name:"anytime")}</small></span>
+              esc(tsub?tsub.name:"anytime")}</small></span>
             <button class="btn mini" data-gtask="${tk.id}">Done</button>
           </div>
-        </div>`).join("")}
+        </div>`;}).join("")}
         ${hiddenCount>0?`<div class="duerow"><span class="duerow-t">
           <small>${L.lang==="cs"?`a další ${hiddenCount} v deníku`
             :`and ${hiddenCount} more in the diary`}</small></span></div>`:""}
