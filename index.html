@@ -5792,6 +5792,16 @@ function setSync(s,msg){ $("#syncTag").dataset.s=s; $("#syncText").textContent=m
    that still risks hitting the sync code paths. */
 async function initSync(){ setSync("local","this device"); }
 async function loadShared(){
+  /* Did we FAIL to read stored state, as opposed to finding none? The two must
+     never be confused — the photo fetch below already says so in its own
+     comment, but state.json itself had no such guard, and it is the more
+     dangerous of the two. Every failure path here was a bare catch that fell
+     through to seed(), so any error inside migrate() produced a blank app that
+     push() would then publish straight over the real state. That is almost
+     certainly the "everything I entered was gone" report, and it was live for
+     every user during the window when migrate() threw on a missing
+     normaliser. */
+  let readFailed=false;
   try{
     const r=await fetch("data/state.json",{cache:"no-store"});
     if(r.ok){
@@ -5806,13 +5816,18 @@ async function loadShared(){
           const pr=await fetch("data/photos.json",{cache:"no-store"});
           if(pr.ok){ const ph=await pr.json(); if(Array.isArray(ph)){ d.photos=ph; photosLoaded=true; } }
         }catch(e){}
-        return migrate(d);
+        const m=migrate(d); stateLoaded=true; return m;
       }
     }
-  }catch(e){}
+  }catch(e){ readFailed=true; console.error("loadShared: shared state unreadable",e); }
   try{ const raw=localStorage.getItem(KEY); if(raw){ const d=JSON.parse(raw);
-    if(d&&d.products){ photosLoaded=true; return migrate(d); } } }catch(e){}
-  photosLoaded=true;                       // a fresh seed has nothing to lose
+    if(d&&d.products){ photosLoaded=true; const m=migrate(d); stateLoaded=true; return m; } } }
+  catch(e){ readFailed=true; console.error("loadShared: local state unreadable",e); }
+  photosLoaded=true;
+  /* A genuinely empty start has nothing to lose and may be published over.
+     A start we only THINK is empty because a read or a migration threw must
+     not be — push() checks this before it writes state.json. */
+  stateLoaded=!readFailed;
   return seed();
 }
 function saveLocal(){ try{ localStorage.setItem(LOCAL_KEY,JSON.stringify(L)); }catch(e){} }
@@ -5822,6 +5837,10 @@ function saveLocal(){ try{ localStorage.setItem(LOCAL_KEY,JSON.stringify(L)); }c
                  which is why a save that landed mid-flight was simply dropped.
    readOnly:     sticky once the host refuses a write, so the badge stops lying. */
 let photosLoaded=false, photosDirty=false, dirty=false, readOnly=false;
+/* stateLoaded: did we actually read (or genuinely find no) stored state this
+   session? False means a read or migration failed, and publishing would
+   overwrite real data with a blank seed. */
+let stateLoaded=false;
 /* Call whenever S.photos is added to, edited, or filtered. Comparing lengths
    could not see an edit-in-place, so a height typed into an existing photo was
    silently never published. */
@@ -5869,6 +5888,10 @@ async function push(){
   const sentPhotos=photosDirty&&photosLoaded;
   const wasDirty=dirty;
   dirty=false;                                    // any edit from here re-arms it
+  /* Never publish state we failed to read. Same rule the photo file has had
+     since one failed fetch plus one edit wiped the library — state.json is
+     the bigger loss and had no guard at all. */
+  if(!stateLoaded){ pushing=false; dirty=wasDirty; setSync("readonly","not saved — could not read your data"); return; }
   try{
     const {photos,...rest}=S;
     const files={"data/state.json":JSON.stringify(rest)};
