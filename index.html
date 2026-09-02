@@ -551,6 +551,9 @@ input[type="time"].mono-input{width:88px}
   border-radius:var(--r-xs); transition:background .12s}
 .wb-parking .eyebrow{flex:0 0 auto; margin-right:2px}
 .wb-parking.over{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.wb-traychip.done{border-color:var(--ok); background:color-mix(in srgb,var(--ok) 18%,var(--surface-2))}
+.wb-traychip.done .wb-tc{text-decoration:line-through; text-decoration-thickness:1px}
+.wb-traychip.done small{color:var(--ok)}
 .wb-traychip.clash{border-color:var(--amber)}
 .wb-traychip.clash small{color:var(--amber)}
 .wb-traychip .wb-adtick{margin-right:-1px}
@@ -894,6 +897,17 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 /* passed its time and still not ticked — a quiet marker, not an alarm */
 .wb-blk.missed{border-left-color:var(--amber)}
 .wb-blk .miss{color:var(--amber); font-weight:700; font-style:normal}
+/* ---- multi-select ----
+   A selected block gets a ring rather than a fill change, so you can still
+   read what it is and whether it is done/missed while it is picked. */
+.wb-blk.sel,.wb-traychip.sel{box-shadow:inset 0 0 0 2px var(--accent), var(--shadow-lift)}
+.wb.selmode .wb-blk,.wb.selmode .wb-traychip{cursor:pointer}
+/* the bulk bar: sits under the board, appears only with something selected */
+.psel-bar{display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:10px;
+  padding:9px 12px; border-radius:var(--r-sm); background:var(--surface-2);
+  border:1px solid var(--glass-border)}
+.psel-bar b{font-size:13px; flex:0 0 auto; margin-right:2px}
+.psel-bar .grow{flex:1 1 auto}
 .wb-blk.lift{z-index:5; box-shadow:var(--shadow-lift); opacity:.9; cursor:grabbing}
 .wb-rsz{position:absolute; left:0; right:0; bottom:0; height:9px; cursor:ns-resize;
   border-radius:0 0 6px 6px}
@@ -2552,6 +2566,8 @@ html{overscroll-behavior-y:none}
           <span class="pcal-month" id="pBoardLabel"></span>
           <button type="button" class="btn mini" id="pBoardNext" aria-label="Next">›</button>
         </span>
+        <button type="button" class="btn mini" id="pSelBtn"
+          title="Select several blocks" aria-pressed="false">Select</button>
         <button type="button" class="btn mini pfocus-btn" id="pFocusBtn"
           title="Fill the screen" aria-pressed="false">⛶</button>
         <span class="pcal-nav" id="pTimelineZoom" style="display:none">
@@ -2588,6 +2604,16 @@ html{overscroll-behavior-y:none}
         <div id="pplResults" class="ppl-results" hidden></div>
       </div>
       <div id="pScheduleBody"></div>
+      <div class="psel-bar" id="pSelBar" hidden>
+        <b id="pSelCount"></b>
+        <button type="button" class="btn mini" id="pSelAllDone">Mark done</button>
+        <button type="button" class="btn mini" id="pSelAllUndone">Not done</button>
+        <button type="button" class="btn mini" id="pSelAllDup">Duplicate</button>
+        <button type="button" class="btn mini" id="pSelAllPark">To parking lot</button>
+        <span class="grow"></span>
+        <button type="button" class="btn mini" id="pSelClear">Clear</button>
+        <button type="button" class="btn mini danger" id="pSelAllDelete">Delete</button>
+      </div>
 <div id="view-projplan" hidden>
 
   <div class="pphead2"><span class="eyebrow">Projects</span>
@@ -3472,6 +3498,7 @@ html{overscroll-behavior-y:none}
         <div class="seg segsm" id="tbsScopeSeg">
           <button type="button" data-tbsscope="today" aria-pressed="true">Today</button>
           <button type="button" data-tbsscope="cards" aria-pressed="false">Words</button>
+          <button type="button" data-tbsscope="cal" aria-pressed="false">Calendar</button>
           <button type="button" data-tbsscope="homework" aria-pressed="false">Homework</button>
         </div>
       </div>
@@ -6948,6 +6975,88 @@ function pDetachFromRun(tk){
   });
   flush();
 }
+/* ---- multi-select ----
+   Asked for on the beta call: ticking or deleting five blocks on one day,
+   one dialog at a time, is miserable. Two ways in, because the two devices
+   have different vocabularies: Ctrl/Cmd/Shift-click on a desktop, and a
+   "Select" toggle in the board header for a phone, which has no modifiers.
+   Once anything is selected a plain tap keeps toggling, so you are never
+   stuck holding a key down.
+
+   Only Tasks and Events take part. A Project day, a recurring Block's
+   occurrence and Sleep are all edits to a shared record rather than to one
+   day's own thing, so "delete these four" would mean something different
+   and dangerous for each — they stay single-tap. */
+let pSelMode=false;
+const pSel=new Set();
+function pSelClear(){ pSel.clear(); pSelSync(); }
+function pSelToggle(id){ if(pSel.has(id)) pSel.delete(id); else pSel.add(id); pSelSync(); }
+/* prune ids that no longer exist (deleted, or a Quick Task that changed kind)
+   so the count can never claim more than the bar would actually act on */
+function pSelLive(){
+  [...pSel].forEach(id=>{ const t=pFindTask(id); if(!t||t.kind==="quick") pSel.delete(id); });
+  return [...pSel].map(pFindTask).filter(Boolean);
+}
+function pSelSync(){
+  const n=pSelLive().length;
+  const btn=$("#pSelBtn");
+  if(btn){ btn.setAttribute("aria-pressed",String(pSelMode)); btn.textContent=pSelMode?t("Done selecting"):t("Select"); }
+  const board=document.getElementById("pWeekBoard");
+  if(board) board.classList.toggle("selmode",pSelMode);
+  document.querySelectorAll("#pWeekBoard [data-wb]").forEach(el=>{
+    const id=(el.getAttribute("data-wb")||"").split(":")[1];
+    el.classList.toggle("sel",!!id&&pSel.has(id));
+  });
+  const bar=$("#pSelBar");
+  if(!bar) return;
+  bar.hidden=n===0;
+  const lab=$("#pSelCount");
+  if(lab) lab.textContent=t("{n} selected").replace("{n}",n);
+}
+/* every bulk action ends the same way: write once, repaint once */
+function pSelApply(fn){
+  const list=pSelLive();
+  if(!list.length) return;
+  list.forEach(fn);
+  touch(); renderPlanner(); pSelSync();
+}
+$("#pSelBtn").addEventListener("click",()=>{
+  pSelMode=!pSelMode;
+  if(!pSelMode) pSel.clear();
+  pSelSync();
+});
+$("#pSelAllDone").addEventListener("click",()=>pSelApply(tk=>{
+  tk.done=true; if(!tk.doneAt) tk.doneAt=new Date().toISOString();
+}));
+$("#pSelAllUndone").addEventListener("click",()=>pSelApply(tk=>{
+  tk.done=false; delete tk.doneAt;
+}));
+$("#pSelAllPark").addEventListener("click",()=>pSelApply(tk=>{
+  pDetachFromRun(tk); tk.time=""; tk.kind="task";
+}));
+$("#pSelAllDup").addEventListener("click",()=>{
+  const ids=pSelLive().map(t=>t.id);
+  if(!ids.length) return;
+  ids.forEach(id=>pDupTask(id));
+  renderPlanner(); pSelSync();
+});
+$("#pSelAllDelete").addEventListener("click",async()=>{
+  const list=pSelLive();
+  if(!list.length) return;
+  /* deletion is the one bulk action with no undo, so it asks first and says
+     exactly how many records it is about to remove */
+  const ok=await ask(t("Delete {n} blocks? This cannot be undone.").replace("{n}",list.length),
+    t("Delete"));
+  if(!ok) return;
+  const gone=new Set(list.map(x=>x.id));
+  const gids=[...new Set(list.map(x=>x.groupId).filter(Boolean))];
+  S.planner.tasks=(S.planner.tasks||[]).filter(x=>!gone.has(x.id));
+  /* a run that drops below two members stops claiming to be a span */
+  gids.forEach(g=>{ const left=(S.planner.tasks||[]).filter(x=>x.groupId===g);
+    if(left.length<2) left.forEach(x=>{ x.groupId=null; }); });
+  pSel.clear(); touch(); renderPlanner(); pSelSync();
+});
+$("#pSelClear").addEventListener("click",pSelClear);
 /* ---- Duplicate ----
    Asked for repeatedly on the beta call ("potřebuju vzít blok a hodit ho
    jinam") and nothing in the app could do it. A button in the editor works
@@ -7635,12 +7744,14 @@ function pBoardHtml(days,opts){
   const dayTag=d=>{ if(d===today) return t("today"); const x=pParseISO(d);
     return dowName(x.getDay()).slice(0,3)+" "+x.getDate(); };
   const lot=[], seen=new Set();
-  const tick=id=>`<i class="wb-adtick" data-adtick="${id}" role="button" tabindex="0" aria-label="${esc(t("Mark done"))}"></i>`;
+  const tick=(id,on)=>`<i class="wb-adtick${on?" on":""}" data-adtick="${id}" role="button" tabindex="0" aria-label="${esc(on?t("Mark not done"):t("Mark done"))}"></i>`;
   const untimedChip=(tk,tag)=>{
     if(seen.has("t"+tk.id)) return; seen.add("t"+tk.id);
-    lot.push(`<span class="wb-traychip${tk.due&&tk.due<today?" late":""}" data-wb="tray:${tk.id}"
-      title="${esc(tk.title||"")} — ${esc(t("drag onto an hour to give it a time"))}">${tick(tk.id)}<span class="wb-tc">${
-      esc(tk.title||t("Untitled task"))}</span><small>${esc(tag)}</small></span>`);
+    const dn=!!tk.done;
+    lot.push(`<span class="wb-traychip${dn?" done":tk.due&&tk.due<today?" late":""}" data-wb="tray:${tk.id}"
+      title="${esc(tk.title||"")} — ${esc(dn?t("Done"):t("drag onto an hour to give it a time"))}">${
+      tick(tk.id,dn)}<span class="wb-tc">${
+      esc(tk.title||t("Untitled task"))}</span><small>${esc(dn?t("Done"):tag)}</small></span>`);
   };
   /* dateless first — they are the most "parked" of all */
   (S.planner.tasks||[]).filter(tk=>tk.kind!=="event"&&!tk.due&&!tk.done)
@@ -7651,8 +7762,15 @@ function pBoardHtml(days,opts){
      nothing now"), so it is never a grid block anywhere — this row is the
      only place left for it. Filtering on the raw tk.time here made a timed
      Task that slipped a day vanish from the board entirely. */
-  (S.planner.tasks||[]).filter(tk=>!tk.done&&tk.due&&tk.kind!=="event"&&tk.kind!=="quick"
-      &&((!tk.time&&days.includes(tk.due))||tk.due<today))
+  /* A DONE untimed Task still shows, for the days on screen only — he asked
+     for finished things to stay put as proof they happened, and with no time
+     there is no grid block to carry that record. Bounded to the visible days
+     so the row does not accumulate every task ever ticked; a done task is
+     never "overdue", so it does not take the off-screen overdue branch. */
+  (S.planner.tasks||[]).filter(tk=>tk.due&&tk.kind!=="event"&&tk.kind!=="quick"
+      &&(tk.done
+          ? (!tk.time&&days.includes(tk.due))
+          : ((!tk.time&&days.includes(tk.due))||tk.due<today)))
     .sort((a,b)=>a.due.localeCompare(b.due))
     .forEach(tk=>untimedChip(tk,tk.due<today?t("overdue"):dayTag(tk.due)));
   /* Projects nobody has placed yet, then whatever lost the greedy pack in
@@ -7834,6 +7952,9 @@ function pWireBoard(){
     G2={mode:rsz?"resize":"move", kind:kind3, id:idA, pid:e.pointerId, x0:e.clientX, y0:e.clientY,
         el, armed:false, moved:false,
         touch:e.pointerType==="touch", timer:null,
+        /* remembered at press time: the tap handler runs on release, by which
+           point the key may already be up */
+        selKey:!!(e.ctrlKey||e.metaKey||e.shiftKey),
         day0:(rsz||blk).dataset.day||null,
         /* where the block started, so a move commits origin+delta — committing
            at the raw pointer would snap the block's TOP to the finger and lose
@@ -8138,6 +8259,15 @@ function pWireBoard(){
       /* Everything that repeats opens on the DAY you tapped, with the whole
          series one button away — tapping straight into the series editor made
          a single day feel uneditable, which is the report this wave answers. */
+      /* A tap on a Task/Event picks it instead of opening it while a
+         selection is being built — either because select mode is on (the
+         phone route) or because a modifier was held (the desktop route) or
+         because something is already selected, so you can carry on tapping
+         without keeping a key down. */
+      if((g.kind==="task"||g.kind==="tray")&&(pSelMode||g.selKey||pSel.size)){
+        const tk=pFindTask(g.id);
+        if(tk&&tk.kind!=="quick"){ pSelToggle(g.id); return; }
+      }
       if(g.mode==="projmove"||g.mode==="projday"){ pOpenDayDialog("proj",g.id,g.day0); }
       else if(g.kind==="block"){ pOpenDayDialog("block",g.id,g.day0); }
       else if(g.mode==="move"){
@@ -8298,6 +8428,9 @@ function pWireBoard(){
      it — window's do NOT. One module-level hook, overwritten per wiring pass,
      instead of a listener stacking up on every week render. */
   pBoardAbort=abort; pBoardCommit=commit;
+  /* the board is rebuilt on every render, so the selection rings and the
+     select-mode class have to be reapplied to the new nodes each time */
+  pSelSync();
   board.addEventListener("click",e=>{
     const tick=e.target.closest("[data-adtick]"); if(!tick) return;
     const tk=pFindTask(tick.dataset.adtick); if(!tk) return;
@@ -15753,7 +15886,8 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "Linked time":"Propojený čas","Plant care counts here":"Péče o rostliny se počítá sem",
 "Tracked hours count here":"Měřené hodiny se počítají sem",
 "Projects count here":"Projekty se počítají sem",
-"Unscheduled":"Nenaplánované","Parking lot":"Parkoviště","Still not done":"Pořád nesplněno","Duplicate":"Duplikovat","double-booked — drag onto a free hour":"dvojitá rezervace — přetáhni na volnou hodinu","unassigned — tap to set a time":"bez času — klepnutím nastavíš čas","Nothing parked — everything has a time.":"Nic tu neparkuje — všechno má svůj čas.","planned lc":"v plánu","Routine":"Rutina","drag one onto the hours above to schedule it":"přetáhni na hodiny výš a naplánuje se","Pause":"Pauza","Resume":"Pokračovat","Paused":"Pozastaveno","Skip":"Přeskočit","End this phase and start the next":"Ukončit tuto fázi a začít další","drag to move, edge to resize":"tažením přesuneš, okrajem změníš hodiny","Previous week":"Předchozí týden","Next week":"Další týden",
+"Unscheduled":"Nenaplánované","Parking lot":"Parkoviště","Still not done":"Pořád nesplněno","Duplicate":"Duplikovat",
+"Select":"Vybrat","Done selecting":"Hotovo","{n} selected":"{n} vybráno","Mark done":"Označit hotové","Not done":"Nesplněno","To parking lot":"Na parkoviště","Clear":"Zrušit výběr","Delete {n} blocks? This cannot be undone.":"Smazat {n} bloků? Nelze vzít zpět.","double-booked — drag onto a free hour":"dvojitá rezervace — přetáhni na volnou hodinu","unassigned — tap to set a time":"bez času — klepnutím nastavíš čas","Nothing parked — everything has a time.":"Nic tu neparkuje — všechno má svůj čas.","planned lc":"v plánu","Routine":"Rutina","drag one onto the hours above to schedule it":"přetáhni na hodiny výš a naplánuje se","Pause":"Pauza","Resume":"Pokračovat","Paused":"Pozastaveno","Skip":"Přeskočit","End this phase and start the next":"Ukončit tuto fázi a začít další","drag to move, edge to resize":"tažením přesuneš, okrajem změníš hodiny","Previous week":"Předchozí týden","Next week":"Další týden",
 "Previous day":"Předchozí den","Next day":"Další den","Yesterday":"Včera",
 "No projects scheduled for this day.":"Na tento den nejsou naplánované žádné projekty.","Drag a task onto the board to give it a time.":"Přetáhni úkol do tabulky a dostane čas.",
 "What the garden and the timer already claim from the same 24 hours.":"Co si zahrada a stopky už berou ze stejných 24 hodin.",
