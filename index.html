@@ -551,6 +551,9 @@ input[type="time"].mono-input{width:88px}
   border-radius:var(--r-xs); transition:background .12s}
 .wb-parking .eyebrow{flex:0 0 auto; margin-right:2px}
 .wb-parking.over{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+/* an unplaced project says so with the same "!" a missed block uses — he
+   asked for unassigned things to carry a mark, not just sit there */
+.wb-traychip.unplaced .miss{color:var(--amber); font-weight:700; font-style:normal}
 .wb-traychip.done{border-color:var(--ok); background:color-mix(in srgb,var(--ok) 18%,var(--surface-2))}
 .wb-traychip.done .wb-tc{text-decoration:line-through; text-decoration-thickness:1px}
 .wb-traychip.done small{color:var(--ok)}
@@ -3873,6 +3876,9 @@ html{overscroll-behavior-y:none}
       <button type="button" data-skind="task" aria-pressed="true">Task</button>
       <button type="button" data-skind="event" aria-pressed="false">Event</button>
     </div>
+    <!-- which of the two to pick was the single most confusing thing on the
+         beta call — he asked repeatedly and nothing in the app ever said -->
+    <p class="hint" id="pSlotKindHint" style="margin:-4px 0 0"></p>
     <input type="text" id="pSlotText" placeholder="What is it?" autocomplete="off" style="width:100%">
     <div class="pslot-row">
       <span class="field-label pslot-edit-only">on</span>
@@ -6894,6 +6900,14 @@ function pSlotRenderSteps(){
 /* Show the fields that mean something for this kind. An Event must sit at a
    time; a Task may carry one and may hold subtasks. Nothing is hidden to make
    a Task feel smaller — only what genuinely does not apply. */
+/* One line saying what the two words actually mean here, because nothing in
+   the app ever did and it was the most repeated confusion on the beta call. */
+function pSlotKindHint(){
+  const el=$("#pSlotKindHint"); if(!el) return;
+  el.textContent=pSlotKindVal==="event"
+    ? t("An event happens at a set time — it sits on the clock.")
+    : t("A task is something to get done — it can wait in the parking lot.");
+}
 function pSlotSyncKind(){
   const isEvent=pSlotKindVal==="event";
   document.querySelectorAll("#pSlotKind [data-skind]").forEach(b=>
@@ -6901,6 +6915,7 @@ function pSlotSyncKind(){
   const steps=$("#pSlotSteps"); if(steps) steps.hidden=isEvent||!pSlotEditId;
   const ti=$("#pSlotTime");
   if(ti) ti.placeholder=isEvent?"":t("optional");
+  pSlotKindHint();
 }
 function pOpenEditDialog(id){
   const tk=pFindTask(id); if(!tk) return;
@@ -7870,10 +7885,10 @@ function pBoardHtml(days,opts){
   }));
   projDays.forEach(({it,days:ds})=>{
     const more=ds.length-1;
-    lot.push(`<span class="wb-traychip wb-adproj" data-wbaproj="${it.id}" data-day="${ds[0]}"
+    lot.push(`<span class="wb-traychip wb-adproj unplaced" data-wbaproj="${it.id}" data-day="${ds[0]}"
       style="--pc:${ppSafeColor(it.color)}"
       title="${esc(it.name)} · ${pFmtH(it.hours)}h — ${esc(t("unassigned — tap to set a time"))}">
-      <i class="wb-adprojdot"></i><span class="wb-tc">${esc(it.name)}</span><small>${esc(dayTag(ds[0]))}${
+      <i class="wb-adprojdot"></i><i class="miss">!</i><span class="wb-tc">${esc(it.name)}</span><small>${esc(dayTag(ds[0]))}${
       more>0?` +${more}`:""} · ${pFmtH(it.hours)}h</small></span>`);
   });
   days.forEach((d,di)=>{
@@ -15964,6 +15979,7 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "Tracked hours count here":"Měřené hodiny se počítají sem",
 "Projects count here":"Projekty se počítají sem",
 "Unscheduled":"Nenaplánované","Parking lot":"Parkoviště","Still not done":"Pořád nesplněno","Duplicate":"Duplikovat",
+"An event happens at a set time — it sits on the clock.":"Událost se děje v daný čas — sedí na hodinách.","A task is something to get done — it can wait in the parking lot.":"Úkol je něco, co je potřeba udělat — může počkat na parkovišti.",
 "Rest":"Odpočinek","Also a rest during the day":"K tomu odpočinek přes den","{h}h of rest":"{h}h odpočinku",
 "Select":"Vybrat","Done selecting":"Hotovo","{n} selected":"{n} vybráno","Mark done":"Označit hotové","Not done":"Nesplněno","To parking lot":"Na parkoviště","Clear":"Zrušit výběr","Delete {n} blocks? This cannot be undone.":"Smazat {n} bloků? Nelze vzít zpět.","double-booked — drag onto a free hour":"dvojitá rezervace — přetáhni na volnou hodinu","unassigned — tap to set a time":"bez času — klepnutím nastavíš čas","Nothing parked — everything has a time.":"Nic tu neparkuje — všechno má svůj čas.","planned lc":"v plánu","Routine":"Rutina","drag one onto the hours above to schedule it":"přetáhni na hodiny výš a naplánuje se","Pause":"Pauza","Resume":"Pokračovat","Paused":"Pozastaveno","Skip":"Přeskočit","End this phase and start the next":"Ukončit tuto fázi a začít další","drag to move, edge to resize":"tažením přesuneš, okrajem změníš hodiny","Previous week":"Předchozí týden","Next week":"Další týden",
 "Previous day":"Předchozí den","Next day":"Další den","Yesterday":"Včera",
