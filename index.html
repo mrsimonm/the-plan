@@ -874,6 +874,10 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 /* The half that spills into tomorrow loses its bottom corners; the half
    that's a continuation from last night loses its top ones — a visual cue
    that each is a fragment of one night, not two separate, complete sleeps. */
+/* the daytime rest: same muted family as the night block so it reads as the
+   same kind of thing, a shade warmer so it is not mistaken for one */
+.wb-blk.wb-nap{background:color-mix(in srgb, var(--ink-3) 11%, var(--surface));
+  border-left-style:dotted}
 .wb-blk.wb-sleep-cont-b{border-bottom-left-radius:0; border-bottom-right-radius:0}
 .wb-blk.wb-sleep-cont-t{border-top-left-radius:0; border-top-right-radius:0}
 /* Done stays on the board rather than disappearing — solid green reads as
@@ -3938,6 +3942,17 @@ html{overscroll-behavior-y:none}
       <input type="time" id="pSleepUntilInput" class="mono-input">
     </div>
     <p class="hint" id="pSleepHint"></p>
+    <label class="lu" style="border:0; padding:6px 0">
+      <span class="sw"><input type="checkbox" id="pNapOn"><i></i></span>
+      <span class="lu-name" id="pNapLabel">Also a rest during the day</span>
+    </label>
+    <div class="pslot-row" id="pNapRow" hidden>
+      <span class="field-label" id="pNapFromLabel">from</span>
+      <input type="time" id="pNapFromInput" class="mono-input">
+      <span class="field-label" id="pNapUntilLabel">until</span>
+      <input type="time" id="pNapUntilInput" class="mono-input">
+    </div>
+    <p class="hint" id="pNapHint"></p>
   </div>
   <div class="dlg-foot">
     <button class="btn" type="button" id="pSleepCancel">Cancel</button>
@@ -6427,27 +6442,45 @@ function pBucket(due){ return !due?"quick":(due<=pToday()?"today":"scheduled"); 
    those two use the weekend schedule — Sunday night still has Monday
    waiting, so it stays on the weekday one. */
 function pIsWeekendNight(iso){ const g=pParseISO(iso).getDay(); return g===5||g===6; }
+/* A rest period is {from,hours}; a day carries a night one and, optionally, a
+   second daytime one — the afternoon lie-down asked for on the beta call
+   ("rozdělení na dva bloky za den"). Anything stored before naps existed is a
+   bare {from,hours} and reads back as nap:null, so old records stay valid. */
+function pNapOk(v){ return !!(v&&/^\d{2}:\d{2}$/.test(v.from)&&typeof v.hours==="number"&&v.hours>0); }
+function pNapOf(v){ return pNapOk(v&&v.nap)?{from:v.nap.from,hours:Math.min(24,Math.max(0,v.nap.hours))}:null; }
+/* what the day actually loses to rest — night plus any daytime period. Every
+   "24h minus sleep" sum uses this, or a nap would be drawn on the board while
+   the free-time arithmetic pretended it wasn't there. */
+function pSleepHoursFor(iso){
+  const s=pSleepFor(iso);
+  return Math.min(24,Math.max(0,s.hours)+(s.nap?Math.max(0,s.nap.hours):0));
+}
 function pSleepBucket(iso){
   const key=pIsWeekendNight(iso)?"sleepWeekend":"sleepWeekday";
   const v=S.planner[key];
   const from=(v&&/^\d{2}:\d{2}$/.test(v.from))?v.from:"23:00";
   const hours=(v&&typeof v.hours==="number")?Math.min(24,Math.max(0,v.hours)):8;
-  return {from,hours};
+  return {from,hours,nap:pNapOf(v)};
 }
 function pSleepDefault(iso){ return pSleepBucket(iso); }
 function pSleepFor(iso){
   const ex=S.planner.sleepEx&&S.planner.sleepEx[iso];
   if(ex&&/^\d{2}:\d{2}$/.test(ex.from)&&typeof ex.hours==="number")
-    return {from:ex.from, hours:Math.min(24,Math.max(0,ex.hours))};
+    return {from:ex.from, hours:Math.min(24,Math.max(0,ex.hours)), nap:pNapOf(ex)};
   return pSleepDefault(iso);
 }
-function pSleepSetFor(iso,from,hours){
+function pSleepSetFor(iso,from,hours,nap){
   const def=pSleepDefault(iso);
   S.planner.sleepEx=S.planner.sleepEx||{};
+  const napSame=(!nap&&!def.nap)||(nap&&def.nap&&nap.from===def.nap.from&&Math.abs(nap.hours-def.nap.hours)<1e-6);
   /* matches the default exactly → no exception needed, same tidy-up rule
      ppSetDayHours uses for a Project day that drifts back to its default */
-  if(from===def.from&&Math.abs(hours-def.hours)<1e-6) delete S.planner.sleepEx[iso];
-  else S.planner.sleepEx[iso]={from,hours:Math.min(24,Math.max(0,hours))};
+  if(from===def.from&&Math.abs(hours-def.hours)<1e-6&&napSame) delete S.planner.sleepEx[iso];
+  else {
+    const rec={from,hours:Math.min(24,Math.max(0,hours))};
+    if(nap) rec.nap={from:nap.from,hours:Math.min(24,Math.max(0,nap.hours))};
+    S.planner.sleepEx[iso]=rec;
+  }
 }
 /* A night that starts before midnight always splits across two day-columns
    on this 0–24h board: the part up to midnight, owned by `iso`'s own
@@ -6471,6 +6504,14 @@ function pSleepBlocksFor(iso){
     const pstart=ph+(pm||0)/60;
     const spill=Math.max(0,p.hours-(24-pstart));
     if(spill>0) out.push({time:"00:00",hours:spill,owner:prev});
+  }
+  /* the optional second period — a daytime rest, drawn like the night one but
+     never split, since a nap that ran past midnight would just be a night */
+  const nap=pSleepFor(iso).nap;
+  if(nap){
+    const [nh,nm]=nap.from.split(":").map(Number);
+    const ns=nh+(nm||0)/60;
+    out.push({time:nap.from,hours:Math.min(nap.hours,24-ns),owner:iso,nap:true});
   }
   return out;
 }
@@ -6627,7 +6668,7 @@ function pDayPanel(){
   const dateBit=L.lang==="cs"?d.getDate()+". "+pMonthGen(d.getMonth()):d.getDate()+" "+pMonthGen(d.getMonth());
   $("#pDayTitle").textContent=(isToday?t("Today")+" — ":"")+dowFull+" "+dateBit;
   const B=pBudgetOf(pSelISO);
-  const sleep=pSleepFor(pSelISO).hours, planned=B.total, awake=Math.max(24-sleep,0), free=awake-planned;
+  const sleep=pSleepHoursFor(pSelISO), planned=B.total, awake=Math.max(24-sleep,0), free=awake-planned;
   $("#pDaySub").textContent="24h − "+pFmtH(sleep)+"h "+t("sleep").toLowerCase()+" − "+pFmtH(planned)+"h "+t("planned").toLowerCase();
 
   /* An overbooked day now takes MORE BAR, not just a different colour — the
@@ -7189,13 +7230,29 @@ function pSleepDlgDiffHours(){
   let diff=(uh*60+um)-(fh*60+fm); if(diff<=0) diff+=1440;
   return diff/60;
 }
+/* the daytime rest reads from its own pair; it never wraps midnight, so a
+   backwards range is nonsense rather than an overnight stretch and clamps to 0 */
+function pNapDlgHours(){
+  const from=$("#pNapFromInput").value||"14:00", until=$("#pNapUntilInput").value||"15:00";
+  const [fh,fm]=from.split(":").map(Number), [uh,um]=until.split(":").map(Number);
+  return Math.max(0,((uh*60+um)-(fh*60+fm))/60);
+}
 function pSleepHintUpdate(){
   $("#pSleepHint").textContent=t("{h}h of sleep").replace("{h}",pFmtH(pSleepDlgDiffHours()));
+  const on=$("#pNapOn").checked;
+  $("#pNapRow").hidden=!on;
+  $("#pNapHint").textContent=on?t("{h}h of rest").replace("{h}",pFmtH(pNapDlgHours())):"";
 }
 function pOpenSleepDialog(iso){
   pSleepCtx=iso||pToday();
-  const {from,hours}=pSleepFor(pSleepCtx);
+  const {from,hours,nap}=pSleepFor(pSleepCtx);
   $("#pSleepDlgTitle").textContent=t("Sleep");
+  $("#pNapLabel").textContent=t("Also a rest during the day");
+  $("#pNapFromLabel").textContent=t("from");
+  $("#pNapUntilLabel").textContent=t("until");
+  $("#pNapOn").checked=!!nap;
+  $("#pNapFromInput").value=nap?nap.from:"14:00";
+  $("#pNapUntilInput").value=nap?pSleepUntilStr(nap.from,nap.hours):"15:00";
   const d=pParseISO(pSleepCtx);
   $("#pSleepDlgWhen").textContent=dowName(d.getDay())+" "+d.getDate()+" "+pMonthGen(d.getMonth());
   $("#pSleepFromLabel").textContent=t("from");
@@ -7211,6 +7268,9 @@ function pOpenSleepDialog(iso){
 }
 $("#pSleepFromInput").addEventListener("input",pSleepHintUpdate);
 $("#pSleepUntilInput").addEventListener("input",pSleepHintUpdate);
+$("#pNapOn").addEventListener("change",pSleepHintUpdate);
+$("#pNapFromInput").addEventListener("input",pSleepHintUpdate);
+$("#pNapUntilInput").addEventListener("input",pSleepHintUpdate);
 $("#pSleepCancel").addEventListener("click",()=>$("#pSleepDlg").close());
 $("#pSleepReset").addEventListener("click",()=>{
   if(pSleepCtx&&S.planner.sleepEx) delete S.planner.sleepEx[pSleepCtx];
@@ -7219,7 +7279,9 @@ $("#pSleepReset").addEventListener("click",()=>{
 $("#pSleepSave").addEventListener("click",()=>{
   if(!pSleepCtx){ $("#pSleepDlg").close(); return; }
   const from=$("#pSleepFromInput").value||"23:00";
-  pSleepSetFor(pSleepCtx,from,Math.min(24,Math.max(0,pSleepDlgDiffHours())));
+  const napH=pNapDlgHours();
+  const nap=($("#pNapOn").checked&&napH>0)?{from:$("#pNapFromInput").value||"14:00",hours:napH}:null;
+  pSleepSetFor(pSleepCtx,from,Math.min(24,Math.max(0,pSleepDlgDiffHours())),nap);
   $("#pSleepDlg").close(); touch(); renderPlanner();
 });
 $("#pSlotKind").addEventListener("click",e=>{
@@ -7698,6 +7760,15 @@ function pBoardHtml(days,opts){
       const [sh,sm]=sp.time.split(":").map(Number);
       const s=sh+sm/60, top=(s-startH)*WB_PXH, hpx=Math.max(17,sp.hours*WB_PXH);
       const full=pSleepFor(sp.owner);
+      /* the daytime rest is its own short period: it never crosses midnight,
+         so none of the continuation machinery below applies to it */
+      if(sp.nap){
+        const n=full.nap||{from:sp.time,hours:sp.hours};
+        return `<div class="wb-blk wb-sleep wb-nap" data-sleepblk="${sp.owner}" style="top:${top}px; height:${hpx}px; left:0; width:100%"
+          role="button" tabindex="0" aria-label="${esc(t("Sleep settings"))}">
+          <b>${esc(t("Rest"))}</b><span>${esc(n.from)}–${esc(pSleepUntilStr(n.from,n.hours))} · ${pFmtH(n.hours)}h</span>
+        </div>`;
+      }
       const [oh,om]=full.from.split(":").map(Number);
       const spills=(oh+om/60+full.hours)>24+1e-9;
       const isContinuation=sp.time==="00:00"&&sp.owner!==d;
@@ -8697,7 +8768,7 @@ function pAddWarn(){
   const el=$("#pAddWarn"); if(!el) return;
   const due=$("#pAddDue").value, add=+$("#pAddHours").value||0;
   if(!due||!add){ el.hidden=true; return; }
-  const awake=Math.max(24-pSleepFor(due).hours,0);
+  const awake=Math.max(24-pSleepHoursFor(due),0);
   const already=pPlanned(due), after=already+add, free=awake-after;
   if(free>=0&&free>=1.5){ el.hidden=true; return; }
   el.hidden=false;
@@ -9611,7 +9682,7 @@ function hLaneHtml(){
       <small>${pFmtH(p.today)}h ${esc(t("planned lc"))} · ${pFmtH(p.left)}h ${esc(t("left"))}</small></button>`);
   });
   const B=(typeof pBudgetOf==="function")?pBudgetOf(day):null;
-  const free=B?Math.max(0,Math.max(24-(typeof pSleepFor==="function"?pSleepFor(day).hours:8),0)-B.total):null;
+  const free=B?Math.max(0,Math.max(24-(typeof pSleepHoursFor==="function"?pSleepHoursFor(day):8),0)-B.total):null;
   if(!chips.length&&free==null) return "";
   return `<div class="hlane">${chips.join("")}
     ${free!=null?`<span class="hlane-free">${esc(t("Today"))}: ${pFmtH(B.total)}h · ${pFmtH(free)}h ${esc(t("free"))}</span>`:""}
@@ -15887,6 +15958,7 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "Tracked hours count here":"Měřené hodiny se počítají sem",
 "Projects count here":"Projekty se počítají sem",
 "Unscheduled":"Nenaplánované","Parking lot":"Parkoviště","Still not done":"Pořád nesplněno","Duplicate":"Duplikovat",
+"Rest":"Odpočinek","Also a rest during the day":"K tomu odpočinek přes den","{h}h of rest":"{h}h odpočinku",
 "Select":"Vybrat","Done selecting":"Hotovo","{n} selected":"{n} vybráno","Mark done":"Označit hotové","Not done":"Nesplněno","To parking lot":"Na parkoviště","Clear":"Zrušit výběr","Delete {n} blocks? This cannot be undone.":"Smazat {n} bloků? Nelze vzít zpět.","double-booked — drag onto a free hour":"dvojitá rezervace — přetáhni na volnou hodinu","unassigned — tap to set a time":"bez času — klepnutím nastavíš čas","Nothing parked — everything has a time.":"Nic tu neparkuje — všechno má svůj čas.","planned lc":"v plánu","Routine":"Rutina","drag one onto the hours above to schedule it":"přetáhni na hodiny výš a naplánuje se","Pause":"Pauza","Resume":"Pokračovat","Paused":"Pozastaveno","Skip":"Přeskočit","End this phase and start the next":"Ukončit tuto fázi a začít další","drag to move, edge to resize":"tažením přesuneš, okrajem změníš hodiny","Previous week":"Předchozí týden","Next week":"Další týden",
 "Previous day":"Předchozí den","Next day":"Další den","Yesterday":"Včera",
 "No projects scheduled for this day.":"Na tento den nejsou naplánované žádné projekty.","Drag a task onto the board to give it a time.":"Přetáhni úkol do tabulky a dostane čas.",
