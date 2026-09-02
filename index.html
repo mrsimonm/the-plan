@@ -535,20 +535,22 @@ input[type="time"].mono-input{width:88px}
   cursor:pointer; appearance:none}
 .pcal-mini-cell.out{visibility:hidden; cursor:default}
 .pcal-mini-cell.today{box-shadow:inset 0 0 0 1.5px var(--ink)}
-/* the dateless-task strip above the Day board */
-.pquick-strip{display:flex; flex-wrap:wrap; align-items:center; gap:6px;
-  padding:0 0 10px; border-bottom:1px solid var(--line-soft); margin-bottom:2px}
-.pquick-strip .eyebrow{flex:0 0 auto; margin-right:2px}
-.pqchip{display:inline-flex; align-items:center; gap:6px; padding:5px 10px 5px 7px;
-  border:1px solid var(--line); border-radius:999px; background:var(--surface-2);
-  font-size:12.5px; color:var(--ink); cursor:grab; touch-action:none; user-select:none;
-  max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-.pqchip:hover{border-color:var(--accent)}
-.pqchip.lift{box-shadow:var(--shadow-lift); opacity:.9; cursor:grabbing; z-index:6; position:relative}
-.pqbox{width:15px; height:15px; flex:0 0 auto; border-radius:4px; cursor:pointer;
-  border:1.5px solid var(--line-strong); background:var(--surface)}
-.pqbox:hover{border-color:var(--accent)}
-.pqbox:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+/* The parking lot: one full-width row above the hour grid, the height of a
+   normal block, holding everything that is on the calendar but has no slot
+   of its own — Tasks without a time (dated or not), Projects nobody has
+   placed yet, anything double-booked, and overdue Tasks whose day has gone.
+   It replaced two half-measures that split the same idea across the screen:
+   an "Anytime" strip (Day view only) above the board and an "Unscheduled"
+   tray below it. Chips drag onto an hour to get a time; a timed block
+   dragged back up here loses its time again. */
+.wb-parking{display:flex; flex-wrap:wrap; align-items:center; gap:7px; min-height:34px;
+  padding:6px 4px 10px; margin-bottom:8px; border-bottom:1px solid var(--line);
+  border-radius:var(--r-xs); transition:background .12s}
+.wb-parking .eyebrow{flex:0 0 auto; margin-right:2px}
+.wb-parking.over{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.wb-traychip.clash{border-color:var(--amber)}
+.wb-traychip.clash small{color:var(--amber)}
+.wb-traychip .wb-adtick{margin-right:-1px}
 /* All projects: one scannable row per project */
 .povw{padding:11px 14px; border-bottom:1px solid var(--line-soft)}
 .povw:last-child{border-bottom:0}
@@ -712,23 +714,13 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 /* An unassigned Project chip: dashed border marks it as not really placed
    yet (unlike a Task chip's solid one), and it isn't grabbable in this pass
    — tap opens the day dialog, where a real time can be set on purpose. */
-.wb-adtask.wb-adproj{cursor:pointer; touch-action:auto;
+.wb-adproj{cursor:pointer; touch-action:auto;
   border-style:dashed; border-color:color-mix(in srgb,var(--pc) 45%,transparent);
   background:color-mix(in srgb,var(--pc) 14%,var(--surface))}
-.wb-adtask.wb-adproj:hover{border-color:var(--pc)}
-.wb-adtask.wb-adproj small{font-family:var(--font); font-variant-numeric:tabular-nums;
+.wb-adproj:hover{border-color:var(--pc)}
+.wb-adproj small{font-family:var(--font); font-variant-numeric:tabular-nums;
   color:var(--ink-2)}
 .wb-adprojdot{width:7px; height:7px; flex:0 0 auto; border-radius:50%; background:var(--pc)}
-/* A Task/Event/Block that WOULD overlap another gets bumped up here instead
-   of drawing on top of it — same chip as an untimed Task, tinted like the
-   grid's own clash warning so it reads as "conflict", not just "no time yet".
-   Still a real record with a time of its own, so it keeps the solid border
-   and drag gesture a Task chip has, unlike the dashed, tap-only Project one. */
-.wb-adtask.wb-adclash{border-color:color-mix(in srgb,var(--crit) 45%,transparent);
-  background:var(--crit-soft); color:var(--ink)}
-.wb-adtask.wb-adclash:hover{border-color:var(--crit)}
-.wb-adtask.wb-adclash small{font-family:var(--font); font-variant-numeric:tabular-nums; color:var(--crit)}
-.wb-adclashdot{flex:0 0 auto; font-size:9px; line-height:1; color:var(--crit)}
 /* Plachta: columns are a fixed width so the canvas scrolls rather than
    squeezing, and so the scroll maths can trust a known column pitch */
 /* max-content, not 0: a sticky box is clamped to its containing block, so a
@@ -883,8 +875,6 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
   border-radius:0 0 6px 6px}
 .wb-rsz::after{content:""; position:absolute; left:50%; bottom:2px; transform:translateX(-50%);
   width:16px; height:2px; border-radius:2px; background:var(--ink-3); opacity:.5}
-.wb-tray{display:flex; flex-wrap:wrap; align-items:center; gap:7px; margin-top:13px;
-  border-top:1px solid var(--line); padding-top:12px}
 .wb-traychip{display:inline-flex; align-items:center; gap:6px; padding:5px 11px; border-radius:999px;
   border:1.5px dashed var(--accent); color:var(--ink); font-size:12.5px; font-weight:500;
   cursor:grab; -webkit-tap-highlight-color:transparent; touch-action:none; user-select:none; background:var(--surface-2)}
@@ -1772,14 +1762,20 @@ dialog{border-radius:var(--r); background:var(--glass-fill-2);
 dialog::backdrop{background:rgba(46,46,42,.32); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px)}
 @keyframes dlg-in{ from{opacity:0; transform:translateY(6px) scale(.98)} to{opacity:1; transform:none} }
 @media (max-width:640px){
-  /* dvh tracks the visual viewport once the on-screen keyboard is up; vh does
-     not, and stayed sized against the full layout height, so a sheet anchored
-     to the bottom could extend under the keyboard with no way to reach its
-     own Save button. vh stays as the fallback for the browsers without dvh. */
-  dialog{position:fixed; inset:auto 0 0 0; margin:0; width:100%;
-    max-height:88vh; max-height:88dvh;
-    border-radius:var(--r) var(--r) 0 0; animation:dlg-in-sheet .26s cubic-bezier(.2,.8,.2,1)}
-  @keyframes dlg-in-sheet{ from{transform:translateY(100%)} to{transform:translateY(0)} }
+  /* Centred on phones, not a bottom sheet. The sheet version set margin:0
+     and width:100% with left/right pinned to 0 — but the browser's own
+     dialog stylesheet caps max-width at calc(100% - 2em - 6px), so the box
+     came out 36px narrower than the screen and, with no auto margins to
+     centre it, sat flush against the LEFT edge with the gap on the right.
+     That, plus being anchored to the bottom, is what read as pop-ups
+     "opening in weird places". inset:0 + margin:auto centres it both ways
+     regardless of what max-width resolves to; the explicit width keeps it
+     inside the screen with an even margin either side.
+     dvh, not vh, so the cap follows the visual viewport when the on-screen
+     keyboard is up; vh stays as the fallback for browsers without dvh. */
+  dialog{position:fixed; inset:0; margin:auto;
+    width:calc(100vw - 24px); max-width:calc(100vw - 24px);
+    max-height:88vh; max-height:88dvh}
 }
 @media (prefers-reduced-motion: reduce){ dialog{animation:none} }
 .dlg-head{padding:16px 18px; border-bottom:1px solid var(--glass-border); font-size:19px}
@@ -3357,6 +3353,18 @@ html{overscroll-behavior-y:none}
   <section class="view" id="view-log" hidden>
     <div class="sec-head"><h2>Log</h2><span class="eyebrow" id="logCount"></span></div>
     <div class="card" id="logList"></div>
+  </section>
+
+  <!-- ============ TEACHBENCH STUDENT APP ============
+       A separate mode entered only via boot()'s student-mode gate (see
+       bootStudentApp()) — never reachable through the normal app switcher,
+       so a student device never sees Potting Bench or the teacher's own
+       Teachbench tools. -->
+  <section class="view" id="view-teachbench-student" hidden>
+    <div class="sec-head"><h2 id="tbsGreeting">Hello!</h2></div>
+    <div class="card pad" id="tbsHello">
+      <p>Your Teachbench student app is on its way.</p>
+    </div>
   </section>
 
 <!-- projects-timeline dialogs: body-level, because a <dialog> inside a
@@ -6547,18 +6555,6 @@ function pPlaceProjects(items,iso){
    to finish one, or drag it down onto an hour to turn it into a real slot.
    Day view only; on a week or a month they would compete with 7-31 columns
    for the same glance. */
-function pDatelessStripHtml(){
-  const list=(S.planner.tasks||[]).filter(tk=>tk.kind!=="event"&&!tk.due&&!tk.done);
-  const done=(S.planner.tasks||[]).filter(tk=>tk.kind!=="event"&&!tk.due&&tk.done).length;
-  if(!list.length&&!done) return "";
-  return `<div class="pquick-strip">
-    <span class="eyebrow">${esc(t("Anytime"))}</span>
-    ${list.map(tk=>`<span class="pqchip" data-wb="tray:${tk.id}" data-pqid="${tk.id}">
-      <i class="pqbox" data-pqtick="${tk.id}" role="button" tabindex="0"
-        aria-label="${esc(t("Mark done"))}"></i>${esc(tk.title||t("Untitled task"))}</span>`).join("")}
-    ${done?`<small class="hint">${done} ${esc(t("done"))}</small>`:""}
-  </div>`;
-}
 /* the empty-slot dialog: one place that turns "there is nothing here" into
    either kind of record, with the slot you pointed at already filled in.
    Adding a Task deliberately keeps the day but drops the time — a Task has
@@ -6876,15 +6872,6 @@ $("#pSlotAddEvent").addEventListener("click",()=>pSlotCreate("event"));
 $("#pSlotText").addEventListener("keydown",e=>{
   if(e.key==="Enter"){ e.preventDefault();
     if(pSlotEditId) $("#pSlotSave").click(); else pSlotCreate("event"); } });
-function pWireDatelessStrip(){
-  const host=$("#pScheduleBody").querySelector(".pquick-strip"); if(!host) return;
-  host.addEventListener("click",e=>{
-    const box=e.target.closest("[data-pqtick]"); if(!box) return;
-    const tk=pFindTask(box.dataset.pqtick); if(!tk) return;
-    tk.done=true; tk.doneAt=new Date().toISOString();
-    touch(); renderPlanner();
-  });
-}
 /* ---- multi-day Events ----
    A stretched Event is one record per day sharing a groupId: same time, same
    duration, repeated across a contiguous run. The day is the order, so there
@@ -7049,8 +7036,8 @@ function pPlachtaViewDay(){
    re-runs work the slide has not invalidated. */
 function pPlachtaPaint(at){
   const days=pPlachtaDays(pPlachtaAnchor);
-  $("#pScheduleBody").innerHTML=pBoardHtml(days,pDatelessStripHtml(),{plachta:true});
-  pWireBoard(); pWireDatelessStrip(); pWirePlachta();
+  $("#pScheduleBody").innerHTML=pBoardHtml(days,{plachta:true});
+  pWireBoard(); pWirePlachta();
   $("#pBoardLabel").textContent=pBoardLabel("month",[pPlachtaAnchor]);
   const el=document.querySelector("#pWeekBoard .wb-scroll");
   if(el&&at){ const i=days.indexOf(at.day); if(i>=0) el.scrollLeft=i*PLACHTA_COLW+at.offset; }
@@ -7093,7 +7080,7 @@ function pPlachtaCentre(iso){
   if(i<0) return;
   el.scrollLeft=Math.max(0,i*PLACHTA_COLW-el.clientWidth/2+PLACHTA_COLW/2);
 }
-function pBoardHtml(days,topStrip,opts){
+function pBoardHtml(days,opts){
   const byDay=days.map(d=>pPlaceProjects(pBudgetOf(d).items,d));
   /* Every board shows the whole 24 hours. It used to open on a 7-21 window
      that grew to fit whatever happened to be timed and slid up and down on the
@@ -7162,14 +7149,16 @@ function pBoardHtml(days,topStrip,opts){
       else kept.push(x);
     });
     kept.sort((a,b)=>a.s-b.s||b.e-a.e);
+    /* pBudgetOf flagged BOTH halves of every overlap, but the parked half is
+       off the grid now — the survivor only keeps its ⚠ if it still overlaps
+       something that is also kept (two pinned items on one hour, say). */
+    kept.forEach(k=>{ k.it.clash=kept.some(o=>o!==k&&o.s<k.e&&k.s<o.e); });
     return {kept,parked};
   });
   /* must match what the lane actually draws, Quick Tasks included, or a day
      full of them reserves too few rows and clips its own contents */
   const adCount=days.map((d,di)=>byDay[di].filter(it=>
-      it.ref&&(it.ref.kind==="task"||it.ref.kind==="quick")&&!it.time&&it.ref.due===d).length
-    + byDay[di].filter(it=>it.kind==="proj"&&it.unassigned).length
-    + packedByDay[di].parked.length
+      it.ref&&it.ref.kind==="quick"&&!it.time&&it.ref.due===d).length
     + (byDay[di].some(it=>it.kind==="care")?1:0));
   const adRows=Math.min(3,Math.max(1,...adCount));
   const cols=days.map((d,di)=>{
@@ -7268,44 +7257,21 @@ function pBoardHtml(days,topStrip,opts){
        fold and read as lost — it belongs in its own day, in the lane that
        means "today, no particular time". Chips keep data-wb so they can still
        be dragged down onto an hour, which promotes them to Events. */
-    /* Quick Tasks share this lane with untimed Tasks, but not its gestures: a
-       Quick Task has no clock slot to be dragged to, so it carries no data-wb
-       and cannot be picked up. Ticking it is the whole of it. */
-    const adTasks=items.filter(it=>it.ref&&(it.ref.kind==="task"||it.ref.kind==="quick")
-      &&!it.time&&it.ref.due===d);
-    /* A Project with no real time-of-day for this day — see pPlaceProjects —
-       surfaces here instead of being packed into a made-up hour. Tapping it
-       opens the same day dialog a grid project opens, where a time (or the
-       hours) can be set on purpose; it carries no data-wb, so unlike a Task
-       chip it isn't draggable straight onto an hour in this pass. */
-    const unassignedProjs=items.filter(it=>it.kind==="proj"&&it.unassigned);
-    /* A Task, Event or Block that lost the greedy pack above because it would
-       have overlapped something else — see packedByDay. Still a real record
-       with its own time, so unlike a Task chip it isn't stripped down to
-       "no time yet": the time it wants is shown, and it keeps the same
-       data-wb the grid version would carry so dragging it onto a free hour
-       commits through the exact same gesture path. */
-    const clashChips=parked.map(x=>{
-      const it=x.it;
-      return `<span class="wb-adtask wb-adclash" data-wb="${it.kind}:${it.ref.id}" data-day="${d}"
-          title="${esc(it.name)} · ${esc(it.time)} · ${pFmtH(it.hours)}h — ${esc(t("double-booked — drag onto a free hour"))}">
-          <i class="wb-adclashdot">⚠</i>${esc(it.name)} <small>${esc(it.time)}</small></span>`;
-    }).join("");
-    const allday=(adTasks.length||unassignedProjs.length||parked.length||care)?`<div class="wb-allday">${
+    /* Only Quick Tasks stay in this per-day lane: they belong to their day,
+       are tick-only, and dropping one on an hour would turn it into the one
+       thing it must never become — a timed Event. Everything else without a
+       slot of its own (untimed Tasks, unplaced Projects, whatever lost the
+       pack in packedByDay) lives in the parking lot row above the grid, so
+       it's in one place whatever width the board is instead of scattered
+       across seven or thirty little lanes. */
+    const adTasks=items.filter(it=>it.ref&&it.ref.kind==="quick"&&!it.time&&it.ref.due===d);
+    const allday=(adTasks.length||care)?`<div class="wb-allday">${
       adTasks.map(it=>{
-        const q=it.ref.kind==="quick", dn=q&&it.ref.done;
-        return `<span class="wb-adtask${q?" quick":""}${dn?" done":""}"${
-          q?"":` data-wb="tray:${it.ref.id}" data-day="${d}"`}
-          title="${esc(it.name)}${+it.hours>0?" · "+pFmtH(it.hours)+"h":""}${
-            q?"":" — "+esc(t("drag onto an hour to give it a time"))}">
+        const dn=it.ref.done;
+        return `<span class="wb-adtask quick${dn?" done":""}" title="${esc(it.name)}">
           <i class="wb-adtick${dn?" on":""}" data-adtick="${it.ref.id}" role="button" tabindex="0"
             aria-label="${esc(dn?t("Mark not done"):t("Mark done"))}"></i>${esc(it.name)}</span>`;
       }).join("")}${
-      unassignedProjs.map(it=>`<span class="wb-adtask wb-adproj" data-wbaproj="${it.id}" data-day="${d}"
-          style="--pc:${ppSafeColor(it.color)}"
-          title="${esc(it.name)} · ${pFmtH(it.hours)}h — ${esc(t("unassigned — tap to set a time"))}">
-          <i class="wb-adprojdot"></i>${esc(it.name)} <small>${pFmtH(it.hours)}h</small></span>`).join("")}${
-      clashChips}${
       care?`<span class="wb-adcare" title="${esc(care.name)} · ${pFmtH(care.hours)}h">🌿</span>`:""}</div>`
       :'<div class="wb-allday"></div>';
     /* drawn before the real blocks, so it sits underneath them in stacking
@@ -7343,44 +7309,87 @@ function pBoardHtml(days,topStrip,opts){
     </div>`;
   }).join("");
 
-  /* the tray: tasks with no time yet, plus a non-draggable line for any day
-     with unscheduled plant care — two kinds of homeless task, this range's
-     untimed ones and anything overdue, whose old slot is gone either way */
-  /* dated untimed Tasks show in their own day's all-day lane, and past Events
-     stay on the day they happened, so the tray is left with the one thing that
-     genuinely has nowhere else to be: an overdue TASK, still to be done, whose
-     day has gone. A past Event is a record, not a to-do, and listing it here
-     as well would double it on screen. */
-  /* "not an Event" used to be the same thing as "a Task", and a Quick Task
-     slipped through it: once its day had passed and fallen outside the board's
-     window it appeared here as a draggable chip, and dropping it on an hour
-     promoted it to a timed Event — the one thing a Quick Task must never
-     become. It belongs to its day and is never carried forward. */
-  const trayTasks=(S.planner.tasks||[]).filter(tk=>
-    !tk.done&&tk.due&&tk.kind!=="event"&&tk.kind!=="quick"
-    &&tk.due<pToday()&&!days.includes(tk.due));
-  const careTray=days.map((d,di)=>{
-    const c=byDay[di].find(it=>it.kind==="care"); if(!c) return "";
-    const x=pParseISO(d);
-    const when=days.length>1?esc(dowName(x.getDay()).slice(0,3))+" "+x.getDate()+" ":"";
-    return `<span class="wb-traychip">🌿 ${when}
-      <small>${c.jobs} ${esc(t("jobs"))}</small></span>`;
-  }).join("");
-  const tray=(trayTasks.length||careTray)?`<div class="wb-tray">
-    <span class="eyebrow">${esc(t("Unscheduled"))}</span>
-    ${trayTasks.map(tk=>`<span class="wb-traychip${tk.due<pToday()?" late":""}" data-wb="tray:${tk.id}">${
-      esc(tk.title||t("Untitled task"))}
-      <small>${tk.due<pToday()?esc(t("overdue")):(+tk.hours>0?pFmtH(+tk.hours)+"h":"")}</small></span>`).join("")}
-    ${careTray}
-    <small class="hint" style="flex-basis:100%; margin:2px 0 0">${esc(t("Drag a task onto the board to give it a time."))}</small>
-  </div>`:"";
+  /* ---- the parking lot ----
+     One row, the full width of the board, above the hours: everything that is
+     on the calendar but has no slot of its own. It sits INSIDE #pWeekBoard so
+     its chips ride the same pointer engine as the grid — a chip dragged onto
+     an hour commits through the "tray" path (day + time from where it lands,
+     which makes it an Event), and a timed block dragged up here goes the
+     other way (see the park-drop in commitInner).
+     What lands here, and why:
+       · Tasks with no day at all — the "ring the dentist" kind.
+       · Dated Tasks with no time yet, for the days on screen. They used to
+         sit in their own day's all-day lane; on a Week or Month that was seven
+         to thirty little lanes to scan instead of one row.
+       · Overdue Tasks whose day has gone off the left of the board — still to
+         be done, and the only place left for them.
+       · Projects with no time set for a day (pPlaceProjects marks them) —
+         tap opens the day dialog to place them.
+       · Anything double-booked: a timed Task/Event overlapping another block
+         is shown again here with a warning so it can be dragged to a clear
+         hour; an overlapping recurring Block or Project opens its day dialog.
+       · Plant care still to be done, as a count — informational, not a chip
+         you can move.
+     A Quick Task is deliberately NOT here: it belongs to its day, is tick-only,
+     and dropping one on an hour would turn it into the one thing it must never
+     become — a timed Event. It stays in its day's all-day lane. */
+  const today=pToday();
+  const dayTag=d=>{ if(d===today) return t("today"); const x=pParseISO(d);
+    return dowName(x.getDay()).slice(0,3)+" "+x.getDate(); };
+  const lot=[], seen=new Set();
+  const tick=id=>`<i class="wb-adtick" data-adtick="${id}" role="button" tabindex="0" aria-label="${esc(t("Mark done"))}"></i>`;
+  const untimedChip=(tk,tag)=>{
+    if(seen.has("t"+tk.id)) return; seen.add("t"+tk.id);
+    lot.push(`<span class="wb-traychip${tk.due&&tk.due<today?" late":""}" data-wb="tray:${tk.id}"
+      title="${esc(t("drag onto an hour to give it a time"))}">${tick(tk.id)}${
+      esc(tk.title||t("Untitled task"))}<small>${esc(tag)}</small></span>`);
+  };
+  /* dateless first — they are the most "parked" of all */
+  (S.planner.tasks||[]).filter(tk=>tk.kind!=="event"&&!tk.due&&!tk.done)
+    .forEach(tk=>untimedChip(tk,t("anytime")));
+  /* dated but untimed, on screen or overdue off it */
+  (S.planner.tasks||[]).filter(tk=>!tk.done&&tk.due&&!tk.time&&tk.kind!=="event"&&tk.kind!=="quick"
+      &&(days.includes(tk.due)||tk.due<today))
+    .sort((a,b)=>a.due.localeCompare(b.due))
+    .forEach(tk=>untimedChip(tk,tk.due<today?t("overdue"):dayTag(tk.due)));
+  /* Projects nobody has placed yet, then whatever lost the greedy pack in
+     packedByDay — a Task, Event or Block that would have drawn on top of
+     another block. Those are still real records with a time of their own:
+     the chip shows the time they wanted, and carries the same data-wb the
+     grid block would, so dragging it onto a clear hour commits through the
+     exact same gesture path (time taken from where it lands — see the
+     time0 rule in pWireBoard's pointerdown). */
+  days.forEach((d,di)=>{
+    byDay[di].forEach(it=>{
+      if(it.kind!=="proj"||!it.unassigned) return;
+      if(seen.has("p"+it.id+d)) return; seen.add("p"+it.id+d);
+      lot.push(`<span class="wb-traychip wb-adproj" data-wbaproj="${it.id}" data-day="${d}"
+        style="--pc:${ppSafeColor(it.color)}"
+        title="${esc(it.name)} · ${pFmtH(it.hours)}h — ${esc(t("unassigned — tap to set a time"))}">
+        <i class="wb-adprojdot"></i>${esc(it.name)}<small>${esc(dayTag(d))} · ${pFmtH(it.hours)}h</small></span>`);
+    });
+    packedByDay[di].parked.forEach(x=>{
+      const it=x.it; if(!it.ref) return;
+      if(it.kind==="task"&&it.ref.done) return;
+      const key=it.kind+":"+it.ref.id+":"+d; if(seen.has(key)) return; seen.add(key);
+      lot.push(`<span class="wb-traychip clash" data-wb="${it.kind}:${it.ref.id}" data-day="${d}"
+        title="${esc(it.name)} · ${esc(it.time)} · ${pFmtH(it.hours)}h — ${esc(t("double-booked — drag onto a free hour"))}">${
+        it.kind==="task"?tick(it.ref.id):""}⚠ ${it.kind==="block"?"↻ ":""}${
+        esc(it.name)}<small>${esc(dayTag(d))} ${esc(it.time)}</small></span>`);
+    });
+  });
+  days.forEach((d,di)=>{
+    const c=byDay[di].find(it=>it.kind==="care"); if(!c) return;
+    lot.push(`<span class="wb-traychip">🌿 ${days.length>1?esc(dayTag(d))+" ":""}<small>${c.jobs} ${esc(t("jobs"))}</small></span>`);
+  });
+  const parking=`<div class="wb-parking">
+    <span class="eyebrow">${esc(t("Parking lot"))}</span>
+    ${lot.length?lot.join(""):`<small class="hint" style="margin:0">${esc(t("Nothing parked — everything has a time."))}</small>`}
+  </div>`;
 
-  /* the dateless strip sits INSIDE the board: its chips carry data-wb, and
-     pWireBoard's pointer handling is bound to this element, so a chip dragged
-     from here onto an hour lands through the same commit path as the tray */
   return `<div class="wb${opts&&opts.plachta?" wb-plachta":""}" id="pWeekBoard" data-starth="${startH}" data-maxshift="${maxShift}" style="--adrows:${adRows}">
-    ${topStrip||""}
-    <div class="wb-scroll"><div class="wb-grid">${gutter}${cols}</div></div>${tray}</div>`;
+    ${parking}
+    <div class="wb-scroll"><div class="wb-grid">${gutter}${cols}</div></div></div>`;
 }
 
 /* ---- the board's gesture engine ---- */
@@ -7414,6 +7423,11 @@ function pWireBoard(){
       hadLiveGesture:!!G2});
     if(e.button!==undefined&&e.button!==0) return;
     if(G2) return;                        // one gesture at a time — a second finger is noise
+    /* A tick box sits inside a draggable chip. Without this, pressing it
+       started a "move" gesture on the chip as well, and a plain tap then
+       fell into the tap branch — which opens the edit dialog — at the same
+       time as the click handler marked the task done. One press, two things. */
+    if(e.target.closest("[data-adtick]")) return;
     const rz8=e.target.closest("[data-wbrz]");
     if(rz8){
       const host=rz8.closest(".wb-blk"), col=rz8.closest(".wb-col");
@@ -7514,7 +7528,13 @@ function pWireBoard(){
            its own to measure — it isn't a time, it's the absence of one — so
            it falls back to the same raw-pointer drop the tray already uses,
            same as "tray" kind does. */
-        time0:(kind3==="tray"||el.closest(".wb-allday"))?null:startH+(parseFloat(el.style.top)||0)/WB_PXH};
+        /* null = "take the time from where it lands": a tray chip, and any
+           chip outside an hour track (all-day lane, parking lot) — those have
+           no style.top to measure, so origin+delta would read a top of 0 and
+           drop the block at a time computed from the top of the day rather
+           than the hour under the finger. Only a block drawn IN a track has a
+           real origin to move relative to. */
+        time0:(kind3==="tray"||!el.closest(".wb-track"))?null:startH+(parseFloat(el.style.top)||0)/WB_PXH};
     pBoardBusy=true;
     try{ board.setPointerCapture(e.pointerId); }catch(err){}
     if(G2.mode==="resize"){ e.preventDefault(); }   // arms after slop like everything else
@@ -7654,6 +7674,13 @@ function pWireBoard(){
       if(e.clientX>sr.right-36) scrollEl.scrollLeft+=14;
       else if(e.clientX<sr.left+36) scrollEl.scrollLeft-=14;
     }
+    /* light up the parking lot while a Task/Event hovers over it, so "let go
+       here to unschedule" is visible before it happens */
+    if(G2.mode==="move"&&(G2.kind==="task"||G2.kind==="tray")){
+      const park=board.querySelector(".wb-parking");
+      if(park){ const pr=park.getBoundingClientRect();
+        park.classList.toggle("over",e.clientX>=pr.left&&e.clientX<=pr.right&&e.clientY>=pr.top&&e.clientY<=pr.bottom); }
+    }
     if(G2.mode==="move"||G2.mode==="resize"||G2.mode==="sleepmove"||G2.mode==="projmove") pEdgeScrollY(e);
     if(G2.mode==="resize"){
       const base=+G2.el.style.height.replace("px","");
@@ -7746,6 +7773,25 @@ function pWireBoard(){
       done(); return;
     }
 
+    /* Dropping a Task/Event on the parking lot is the reverse of dragging a
+       chip out of it: the record keeps its day but gives up its time, so it
+       goes back to being a dated, untimed Task and shows up as a chip. A chip
+       that was already parked and is let go in the same row just settles back
+       — nothing to write. Checked BEFORE the outside-the-grid guard below,
+       which would otherwise read the row as "not a time of day" and cancel. */
+    if(g.moved&&g.mode==="move"&&(g.kind==="task"||g.kind==="tray")){
+      const park=board.querySelector(".wb-parking"), pr=park&&park.getBoundingClientRect();
+      if(pr&&pr.width>0&&e.clientX>=pr.left&&e.clientX<=pr.right&&e.clientY>=pr.top&&e.clientY<=pr.bottom){
+        g.el.style.transform="";
+        const tk=pFindTask(g.id);
+        if(tk&&tk.kind!=="quick"&&tk.time){
+          pDetachFromRun(tk); tk.time=""; tk.kind="task";
+          pGLog("end",{result:"parked: time cleared",id:tk.id});
+          done(); return;
+        }
+        renderSchedule(); return;
+      }
+    }
     /* releasing outside the grid is a CANCEL, not a drop — the tray, the
        headers and the page around the board are not times of day */
     if(g.moved&&g.mode==="move"){
@@ -8157,8 +8203,8 @@ function renderSchedule(){
        to day one instead of centring on today */
     const prev=document.querySelector("#pWeekBoard.wb-plachta .wb-scroll");
     const keep=prev?prev.scrollLeft:null;
-    $("#pScheduleBody").innerHTML=pBoardHtml(pdays,pDatelessStripHtml(),{plachta:true});
-    pWireBoard(); pWireDatelessStrip(); pWirePlachta();
+    $("#pScheduleBody").innerHTML=pBoardHtml(pdays,{plachta:true});
+    pWireBoard(); pWirePlachta();
     const el=document.querySelector("#pWeekBoard .wb-scroll");
     if(el){ if(keep!=null) el.scrollLeft=keep; else pPlachtaCentre(pToday()); }
     pPlachtaArmTick(pdays);
@@ -8176,8 +8222,8 @@ function renderSchedule(){
   const shownKey=pScope+"|"+days[0]+"|"+days[days.length-1];
   const prevScroll=document.querySelector("#pWeekBoard .wb-scroll");
   const keepLeft=prevScroll?prevScroll.scrollLeft:null;
-  $("#pScheduleBody").innerHTML=pBoardHtml(days,pDatelessStripHtml());
-  pWireBoard(); pWireDatelessStrip();
+  $("#pScheduleBody").innerHTML=pBoardHtml(days);
+  pWireBoard();
   if(shownKey!==pBoardShown){ pBoardShown=shownKey; pBoardShowToday(); }
   else { const el=document.querySelector("#pWeekBoard .wb-scroll");
          if(el&&keepLeft!=null) el.scrollLeft=keepLeft; }
@@ -8190,8 +8236,8 @@ function renderSchedule(){
        board back to day one every thirty seconds while you were reading it */
     const prev=document.querySelector("#pWeekBoard .wb-scroll");
     const keep=prev?prev.scrollLeft:null;
-    $("#pScheduleBody").innerHTML=pBoardHtml(pDaysFor(pScope,pSelISO),pDatelessStripHtml());
-    pWireBoard(); pWireDatelessStrip();
+    $("#pScheduleBody").innerHTML=pBoardHtml(pDaysFor(pScope,pSelISO));
+    pWireBoard();
     const el=document.querySelector("#pWeekBoard .wb-scroll");
     if(el&&keep!=null) el.scrollLeft=keep;
   },30000);
@@ -15391,7 +15437,7 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "Linked time":"Propojený čas","Plant care counts here":"Péče o rostliny se počítá sem",
 "Tracked hours count here":"Měřené hodiny se počítají sem",
 "Projects count here":"Projekty se počítají sem",
-"Unscheduled":"Nenaplánované","planned lc":"v plánu","Routine":"Rutina","drag one onto the hours above to schedule it":"přetáhni na hodiny výš a naplánuje se","Pause":"Pauza","Resume":"Pokračovat","Paused":"Pozastaveno","Skip":"Přeskočit","End this phase and start the next":"Ukončit tuto fázi a začít další","drag to move, edge to resize":"tažením přesuneš, okrajem změníš hodiny","Previous week":"Předchozí týden","Next week":"Další týden",
+"Unscheduled":"Nenaplánované","Parking lot":"Parkoviště","double-booked — drag onto a free hour":"dvojitá rezervace — přetáhni na volnou hodinu","unassigned — tap to set a time":"bez času — klepnutím nastavíš čas","Nothing parked — everything has a time.":"Nic tu neparkuje — všechno má svůj čas.","planned lc":"v plánu","Routine":"Rutina","drag one onto the hours above to schedule it":"přetáhni na hodiny výš a naplánuje se","Pause":"Pauza","Resume":"Pokračovat","Paused":"Pozastaveno","Skip":"Přeskočit","End this phase and start the next":"Ukončit tuto fázi a začít další","drag to move, edge to resize":"tažením přesuneš, okrajem změníš hodiny","Previous week":"Předchozí týden","Next week":"Další týden",
 "Previous day":"Předchozí den","Next day":"Další den","Yesterday":"Včera",
 "No projects scheduled for this day.":"Na tento den nejsou naplánované žádné projekty.","Drag a task onto the board to give it a time.":"Přetáhni úkol do tabulky a dostane čas.",
 "What the garden and the timer already claim from the same 24 hours.":"Co si zahrada a stopky už berou ze stejných 24 hodin.",
@@ -16017,8 +16063,29 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "Letting the surface dry out during germination, or giving up too early.":"Nechat povrch během klíčení vyschnout, nebo to vzdát moc brzy."
 });
 
+/* ---------------- teachbench student app: mode gate ----------------
+   A student's device must never see the teacher's own tools (Potting
+   Bench, Diary, Hours, the teacher Teachbench dashboard) — so student
+   mode is not another entry in the app switcher, it's a separate boot
+   path chosen before any of the normal app's state loads. Detected by
+   a URL fragment (#s=<accessCode>, never sent to a server) on first
+   visit, or by a small localStorage flag on every visit after that. */
+const STUDENT_LOCAL_KEY="teachbenchStudent.local";
+function studentModeRequested(){
+  return location.hash.startsWith("#s=") || !!localStorage.getItem(STUDENT_LOCAL_KEY);
+}
+async function bootStudentApp(){
+  document.querySelector(".top").style.display="none";
+  document.querySelector(".navwrap").style.display="none";
+  document.querySelectorAll("main > .view").forEach(v=>{ if(v.id!=="view-teachbench-student") v.hidden=true; });
+  document.getElementById("view-teachbench-student").hidden=false;
+  /* real access-code redemption + Firestore wiring lands in a later step;
+     for now this only proves the mode gate and shell render correctly. */
+}
+
 /* ---------------- boot ---------------- */
 async function boot(){
+  if(studentModeRequested()) return bootStudentApp();
   try{ const raw=localStorage.getItem(LOCAL_KEY); if(raw) L=Object.assign(L,JSON.parse(raw)); }catch(e){}
   applyTheme();
   await initSync();
