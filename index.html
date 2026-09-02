@@ -882,6 +882,18 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .wb-blk.wb-blk{}
 .wb-blk.wb-blk b{}
 .wb-blk[data-wb^="block"]{border-left-style:dashed}
+/* An Event and a Task looked identical on the board. An Event is a
+   commitment at a fixed time — solid accent edge, warmer fill. A Task is
+   work you mean to get to — cooler fill and a dashed left edge, matching
+   the dashed chip it arrives as from the parking lot. Both stay clearly
+   "a block"; .done still overrides both, since finished beats either. */
+.wb-blk.wb-ev{border-left-color:var(--accent);
+  background:color-mix(in srgb, var(--accent) 20%, var(--glass-fill))}
+.wb-blk.wb-tk{border-left-style:dashed; border-left-color:var(--ink-2);
+  background:color-mix(in srgb, var(--ink-2) 13%, var(--glass-fill))}
+/* passed its time and still not ticked — a quiet marker, not an alarm */
+.wb-blk.missed{border-left-color:var(--amber)}
+.wb-blk .miss{color:var(--amber); font-weight:700; font-style:normal}
 .wb-blk.lift{z-index:5; box-shadow:var(--shadow-lift); opacity:.9; cursor:grabbing}
 .wb-rsz{position:absolute; left:0; right:0; bottom:0; height:9px; cursor:ns-resize;
   border-radius:0 0 6px 6px}
@@ -7429,6 +7441,17 @@ function pBoardHtml(days,opts){
          instead of the usual time/duration, which stopped mattering the
          moment it was finished. */
       const done=!!(it.ref&&it.ref.done);
+      /* An Event and a Task drew identically, so you could not tell at a
+         glance which was which — reported on the beta call. An Event is a
+         commitment at a time (solid, accent-tinted); a Task is work you
+         intend to do (cooler tint, dashed left edge, matching the dashed
+         chips it comes from in the parking lot). */
+      const evkind=it.kind==="task"&&it.ref
+        ?(it.ref.kind==="event"?" wb-ev":it.ref.kind==="quick"?"":" wb-tk"):"";
+      /* time has passed and it was never ticked — say so quietly rather than
+         letting it sit looking identical to something still ahead of you */
+      const missed=!done&&it.ref&&it.ref.kind!=="quick"&&it.kind==="task"
+        &&d<=pToday()&&(d<pToday()||nowH>=x.e);
       const meta=done?t("Done")
         :`${esc(it.time)} · ${pFmtH(it.hours)}h${it.kind==="hours"&&it.live?` · <em>${esc(t("running"))}</em>`
           :live&&it.kind!=="hours"?` · <em>${esc(
@@ -7442,10 +7465,11 @@ function pBoardHtml(days,opts){
          hit W/E and stretched the run across days. Held to a fifth of the
          height, the middle is always at least ~60% of the block. */
       const grip=Math.max(3,Math.min(8,Math.round(hpx*0.2)));
-      return `<div class="wb-blk wb-${kind}${live?" live":""}${compact?" compact":""}${done?" done":""}"${drag} style="top:${top}px; height:${hpx}px; --grip:${grip}px;${tint} ${lane}">
+      const miss=missed?'<i class="miss" title="'+esc(t("Still not done"))+'">!</i> ':"";
+      return `<div class="wb-blk wb-${kind}${evkind}${live?" live":""}${compact?" compact":""}${done?" done":""}${missed?" missed":""}"${drag} style="top:${top}px; height:${hpx}px; --grip:${grip}px;${tint} ${lane}">
         ${compact
-          ? `<b>${warn}${it.kind==="block"?"↻ ":""}${esc(it.name)}${done?" — "+esc(t("Done")):" "+esc(it.time)}</b>`
-          : `<b>${warn}${it.kind==="block"?"↻ ":""}${esc(it.name)}</b><span>${meta}</span>`}
+          ? `<b>${warn}${miss}${it.kind==="block"?"↻ ":""}${esc(it.name)}${done?" — "+esc(t("Done")):" "+esc(it.time)}</b>`
+          : `<b>${warn}${miss}${it.kind==="block"?"↻ ":""}${esc(it.name)}</b><span>${meta}</span>`}
         ${it.kind==="proj"?`<i class="wb-phandle" data-wbph="${it.id}" data-day="${d}"></i>`
           :(it.ref&&it.ref.kind==="event")&&drag
             /* Events get the full eight: N/S change duration on the day, E/W
@@ -15680,7 +15704,7 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "Linked time":"Propojený čas","Plant care counts here":"Péče o rostliny se počítá sem",
 "Tracked hours count here":"Měřené hodiny se počítají sem",
 "Projects count here":"Projekty se počítají sem",
-"Unscheduled":"Nenaplánované","Parking lot":"Parkoviště","double-booked — drag onto a free hour":"dvojitá rezervace — přetáhni na volnou hodinu","unassigned — tap to set a time":"bez času — klepnutím nastavíš čas","Nothing parked — everything has a time.":"Nic tu neparkuje — všechno má svůj čas.","planned lc":"v plánu","Routine":"Rutina","drag one onto the hours above to schedule it":"přetáhni na hodiny výš a naplánuje se","Pause":"Pauza","Resume":"Pokračovat","Paused":"Pozastaveno","Skip":"Přeskočit","End this phase and start the next":"Ukončit tuto fázi a začít další","drag to move, edge to resize":"tažením přesuneš, okrajem změníš hodiny","Previous week":"Předchozí týden","Next week":"Další týden",
+"Unscheduled":"Nenaplánované","Parking lot":"Parkoviště","Still not done":"Pořád nesplněno","double-booked — drag onto a free hour":"dvojitá rezervace — přetáhni na volnou hodinu","unassigned — tap to set a time":"bez času — klepnutím nastavíš čas","Nothing parked — everything has a time.":"Nic tu neparkuje — všechno má svůj čas.","planned lc":"v plánu","Routine":"Rutina","drag one onto the hours above to schedule it":"přetáhni na hodiny výš a naplánuje se","Pause":"Pauza","Resume":"Pokračovat","Paused":"Pozastaveno","Skip":"Přeskočit","End this phase and start the next":"Ukončit tuto fázi a začít další","drag to move, edge to resize":"tažením přesuneš, okrajem změníš hodiny","Previous week":"Předchozí týden","Next week":"Další týden",
 "Previous day":"Předchozí den","Next day":"Další den","Yesterday":"Včera",
 "No projects scheduled for this day.":"Na tento den nejsou naplánované žádné projekty.","Drag a task onto the board to give it a time.":"Přetáhni úkol do tabulky a dostane čas.",
 "What the garden and the timer already claim from the same 24 hours.":"Co si zahrada a stopky už berou ze stejných 24 hodin.",
