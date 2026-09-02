@@ -677,7 +677,12 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
    the block: at 13px each, n+s covered 26px of the 30px minimum and left
    nothing to drag. 9px keeps a usable middle at every size we render. */
 @media (hover:none){
-  .wb-h{opacity:.9}
+  /* pointer-events too, not just opacity: the rule that turns these on for a
+     mouse keys off :hover / :focus-within, and a touch device fires neither
+     (a .wb-blk carries no tabindex, so it cannot take focus either). Handles
+     were therefore drawn on a phone and did nothing at all when pressed —
+     "the drag handle disappears" from the beta call. */
+  .wb-h{opacity:.9; pointer-events:auto}
   /* a couple of px more than the mouse grip, still scaled to the block */
   .wb-h-n,.wb-h-s{height:calc(var(--grip,8px) + 2px)}
   .wb-h-w,.wb-h-e{width:min(8px,12%); top:calc(var(--grip,8px) + 2px); bottom:calc(var(--grip,8px) + 2px)}
@@ -825,7 +830,8 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .wb-phandle::after{content:""; position:absolute; right:3px; top:50%; transform:translateY(-50%);
   width:2px; height:9px; border-radius:2px; background:var(--pc); opacity:.75}
 .wb-pchip:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
-@media (hover:none){ .wb-phandle{width:14px; height:26px; right:-5px; opacity:.9} }
+/* same dead-on-touch problem as .wb-h above — visible but unpressable */
+@media (hover:none){ .wb-phandle{width:14px; height:26px; right:-5px; opacity:.9; pointer-events:auto} }
 .wb-allday{gap:2px}
 .wb-adcare{font-size:9px; line-height:1}
 .wb-track{position:relative}
@@ -2117,6 +2123,52 @@ html{overscroll-behavior-y:none}
   @keyframes pp-rise { from { opacity: 0; transform: translate(-50%, 6px); }
                        to   { opacity: 1; transform: translate(-50%, 0); } }
 }
+/* ---------- Teachbench student app ----------
+   Reuses the shared .card/.btn/.seg components and the :root custom
+   properties, so light/dark comes for free. Only the few shapes that
+   don't exist elsewhere (a big flip card, the code entry) are new. */
+.tbs-screen{display:flex; flex-direction:column; gap:12px}
+.tbs-screen[hidden]{display:none}
+.tbs-center{text-align:center; align-items:center}
+.tbs-muted{color:var(--ink-2)}
+.tbs-err{color:var(--crit); font-size:13px; margin:0}
+.tbs-spinner{width:22px; height:22px; margin:0 auto 10px; border-radius:50%;
+  border:2px solid var(--line); border-top-color:var(--accent); animation:tbs-spin .8s linear infinite}
+@keyframes tbs-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){ .tbs-spinner{animation:none} }
+.tbs-code{width:100%; text-align:center; font-size:22px; letter-spacing:.16em;
+  text-transform:uppercase; font-variant-numeric:tabular-nums; padding:14px 12px}
+.tbs-due{text-align:center; display:flex; flex-direction:column; gap:8px; align-items:center}
+.tbs-duebig{font-size:44px; line-height:1; font-weight:600; color:var(--accent)}
+.tbs-duelabel{color:var(--ink-2); font-size:14px}
+/* the review card itself: generous, quiet, one thing at a time */
+.tbs-card{min-height:190px; display:flex; flex-direction:column; gap:14px;
+  align-items:center; justify-content:center; text-align:center}
+.tbs-front{font-size:26px; line-height:1.35; font-weight:500}
+.tbs-back{font-size:19px; color:var(--accent); line-height:1.4}
+.tbs-expl{font-size:13.5px; color:var(--ink-2); line-height:1.5; margin:0;
+  border-left:2px solid var(--line); padding-left:10px; text-align:left}
+.tbs-answer{width:100%; max-width:320px; text-align:center; font-size:17px; padding:10px}
+.tbs-acts{display:flex; gap:8px; flex-wrap:wrap; justify-content:center}
+.tbs-acts .btn{flex:1 1 0; min-width:78px}
+.tbs-acts .btn.wide{flex:1 1 100%}
+/* one row per student / card / homework item */
+.tbs-row{display:flex; align-items:center; gap:10px; padding:11px 14px;
+  border-bottom:1px solid var(--line-soft); cursor:pointer}
+.tbs-row:last-child{border-bottom:0}
+.tbs-row:hover{background:var(--surface-2)}
+.tbs-row .grow{flex:1; min-width:0}
+.tbs-row .grow b{display:block; font-weight:500; overflow:hidden;
+  text-overflow:ellipsis; white-space:nowrap}
+.tbs-row small{color:var(--ink-3); font-size:11.5px}
+.tbs-pill{flex:0 0 auto; font-size:11px; padding:2px 8px; border-radius:var(--r-pill);
+  border:1px solid var(--line); color:var(--ink-2)}
+.tbs-pill.due{border-color:var(--accent); color:var(--accent)}
+.tbs-hw{padding:12px 14px; border-bottom:1px solid var(--line-soft)}
+.tbs-hw:last-child{border-bottom:0}
+.tbs-hw.mine{background:var(--surface-2)}
+.tbs-hw p{margin:4px 0 0; line-height:1.5}
+
 /* dialog internals (chrome itself comes from the app's dialog styles) */
 .ppdlg form{display:flex; flex-direction:column; gap:.95rem; padding:1.35rem}
 .ppdlg h2{margin:0; font-size:1.35rem; letter-spacing:-.01em}
@@ -3378,9 +3430,165 @@ html{overscroll-behavior-y:none}
        so a student device never sees Potting Bench or the teacher's own
        Teachbench tools. -->
   <section class="view" id="view-teachbench-student" hidden>
-    <div class="sec-head"><h2 id="tbsGreeting">Hello!</h2></div>
-    <div class="card pad" id="tbsHello">
-      <p>Your Teachbench student app is on its way.</p>
+    <!-- one screen visible at a time; tbsShow() swaps them -->
+
+    <!-- connecting / offline -->
+    <div class="tbs-screen" id="tbsBooting">
+      <div class="card pad tbs-center">
+        <div class="tbs-spinner" aria-hidden="true"></div>
+        <p id="tbsBootMsg">Connecting…</p>
+      </div>
+    </div>
+
+    <!-- student: enter access code -->
+    <div class="tbs-screen" id="tbsCodeScreen" hidden>
+      <div class="sec-head"><h2>Welcome</h2></div>
+      <div class="card pad stack">
+        <p class="tbs-muted">Enter the code your teacher gave you.</p>
+        <input id="tbsCodeInput" class="tbs-code" inputmode="text"
+               autocapitalize="characters" autocomplete="off" spellcheck="false"
+               placeholder="ABCD-1234" aria-label="Access code">
+        <button class="btn primary" id="tbsCodeGo">Start</button>
+        <p class="tbs-err" id="tbsCodeErr" hidden></p>
+      </div>
+    </div>
+
+    <!-- student: home -->
+    <div class="tbs-screen" id="tbsHome" hidden>
+      <div class="sec-head">
+        <h2 id="tbsGreeting">Hello</h2>
+        <div class="seg segsm" id="tbsScopeSeg">
+          <button type="button" data-tbsscope="today" aria-pressed="true">Today</button>
+          <button type="button" data-tbsscope="cards" aria-pressed="false">Words</button>
+          <button type="button" data-tbsscope="homework" aria-pressed="false">Homework</button>
+        </div>
+      </div>
+
+      <div id="tbsScopeToday">
+        <div class="card pad tbs-due">
+          <div class="tbs-duebig" id="tbsDueCount">0</div>
+          <div class="tbs-duelabel" id="tbsDueLabel">nothing to review right now</div>
+          <button class="btn primary" id="tbsStartReview" hidden>Start reviewing</button>
+        </div>
+        <div class="card pad" id="tbsNextUp" hidden>
+          <span class="eyebrow">Next review</span>
+          <p id="tbsNextUpText" class="tbs-muted"></p>
+        </div>
+      </div>
+
+      <div id="tbsScopeCards" hidden>
+        <div class="card" id="tbsCardList"></div>
+      </div>
+
+      <div id="tbsScopeHomework" hidden>
+        <div class="stack" id="tbsHomeworkList"></div>
+      </div>
+    </div>
+
+    <!-- student: review session -->
+    <div class="tbs-screen" id="tbsReview" hidden>
+      <div class="sec-head">
+        <h2 id="tbsReviewProgress">Review</h2>
+        <button class="btn" id="tbsReviewQuit">Done</button>
+      </div>
+      <div class="card pad tbs-card" id="tbsReviewCard">
+        <span class="eyebrow" id="tbsCardType">Word</span>
+        <div class="tbs-front" id="tbsCardFront"></div>
+
+        <!-- grammar: typed answer -->
+        <div id="tbsAnswerWrap" hidden>
+          <input id="tbsAnswerInput" class="tbs-answer" autocomplete="off"
+                 autocapitalize="off" spellcheck="false" placeholder="your answer" aria-label="Your answer">
+        </div>
+
+        <!-- pronunciation: hear it -->
+        <button class="btn" id="tbsSpeak" hidden>🔊 Hear it</button>
+
+        <div class="tbs-back" id="tbsCardBack" hidden></div>
+        <p class="tbs-expl" id="tbsCardExpl" hidden></p>
+      </div>
+
+      <div class="tbs-acts" id="tbsRevealWrap">
+        <button class="btn primary wide" id="tbsReveal">Show answer</button>
+      </div>
+      <div class="tbs-acts" id="tbsGradeWrap" hidden>
+        <button class="btn danger" data-grade="again">Again</button>
+        <button class="btn" data-grade="hard">Hard</button>
+        <button class="btn primary" data-grade="good">Good</button>
+        <button class="btn" data-grade="easy">Easy</button>
+      </div>
+    </div>
+
+    <!-- student: session finished -->
+    <div class="tbs-screen" id="tbsDone" hidden>
+      <div class="card pad tbs-center stack">
+        <div class="tbs-duebig">✓</div>
+        <p id="tbsDoneMsg">All done for now.</p>
+        <button class="btn primary" id="tbsDoneBack">Back</button>
+      </div>
+    </div>
+
+    <!-- staff: sign in (only reachable from the app-menu tab, not a student link) -->
+    <div class="tbs-screen" id="tbsStaffLogin" hidden>
+      <div class="sec-head"><h2>Teacher sign-in</h2></div>
+      <div class="card pad stack">
+        <div class="field"><label for="tbsEmail">Email</label>
+          <input id="tbsEmail" type="email" autocomplete="username" placeholder="you@example.com"></div>
+        <div class="field"><label for="tbsPass">Password</label>
+          <input id="tbsPass" type="password" autocomplete="current-password" placeholder="••••••••"></div>
+        <button class="btn primary" id="tbsStaffGo">Sign in</button>
+        <p class="tbs-err" id="tbsStaffErr" hidden></p>
+        <p class="tbs-muted" style="font-size:12px">A student never sees this screen — they open their own link instead.</p>
+      </div>
+    </div>
+
+    <!-- staff: roster + per-student detail -->
+    <div class="tbs-screen" id="tbsStaffHome" hidden>
+      <div class="sec-head">
+        <h2 id="tbsStaffTitle">Students</h2>
+        <button class="btn mini" id="tbsStaffOut">Sign out</button>
+      </div>
+      <div class="card pad stack" id="tbsAddStudentCard">
+        <div class="row" style="gap:8px">
+          <input id="tbsNewStudentName" placeholder="Student name" style="flex:1" aria-label="New student name">
+          <button class="btn primary" id="tbsAddStudent">Add</button>
+        </div>
+      </div>
+      <div class="card" id="tbsStudentList"></div>
+    </div>
+
+    <div class="tbs-screen" id="tbsStaffStudent" hidden>
+      <div class="sec-head">
+        <h2 id="tbsStuName">Student</h2>
+        <button class="btn" id="tbsStuBack">← Students</button>
+      </div>
+      <div class="card pad stack">
+        <span class="eyebrow">Access link</span>
+        <p class="tbs-muted" style="font-size:12px">Send this once — it opens their own app on their own device.</p>
+        <div class="row" style="gap:8px">
+          <input id="tbsStuLink" readonly style="flex:1" aria-label="Student access link">
+          <button class="btn" id="tbsCopyLink">Copy</button>
+        </div>
+      </div>
+      <div class="card pad stack">
+        <span class="eyebrow">Add a card</span>
+        <div class="seg segsm" id="tbsNewTypeSeg">
+          <button type="button" data-tbstype="vocab" aria-pressed="true">Word</button>
+          <button type="button" data-tbstype="grammar" aria-pressed="false">Grammar</button>
+          <button type="button" data-tbstype="pron" aria-pressed="false">Pronunciation</button>
+        </div>
+        <input id="tbsNewFront" placeholder="Front — the word, or the sentence with ___" aria-label="Card front">
+        <input id="tbsNewBack" placeholder="Back — meaning or the missing word" aria-label="Card back">
+        <input id="tbsNewExpl" placeholder="Explanation (optional)" aria-label="Explanation">
+        <button class="btn primary" id="tbsAddCard">Add card</button>
+      </div>
+      <div class="card pad stack">
+        <span class="eyebrow">Send homework</span>
+        <textarea id="tbsHwText" rows="3" placeholder="Write the homework…" aria-label="Homework text"></textarea>
+        <button class="btn primary" id="tbsSendHw">Send</button>
+      </div>
+      <div class="card" id="tbsStuCards"></div>
+      <div class="card" id="tbsStuHw"></div>
     </div>
   </section>
 
@@ -16114,17 +16322,754 @@ async function bootStudentApp(){
   document.querySelector(".navwrap").style.display="none";
   document.querySelectorAll("main > .view").forEach(v=>{ if(v.id!=="view-teachbench-student") v.hidden=true; });
   document.getElementById("view-teachbench-student").hidden=false;
-  /* real access-code redemption + Firestore wiring lands in a later step;
-     for now this only proves the mode gate and shell render correctly. */
+  TBS_UI.start({studentOnly:true});
 }
-/* Reachable two ways during development: the real student-only boot path
-   above (bootStudentApp, via #s=<code>, no app chrome at all), and — while
-   this is being built and tested — a normal tab in the app switcher, which
-   calls this render function through the ordinary showNow() dispatch. Both
-   render the same section; only the surrounding chrome differs. */
+/* Reachable two ways: the real student-only boot path above (via
+   #s=<code>, no app chrome at all), and a normal tab in the app switcher
+   — which is how the teacher reaches her own side. Same section either
+   way; only the surrounding chrome and the entry screen differ. */
+let tbsStarted=false;
 function renderTeachbenchStudent(){
-  /* placeholder: flashcard/calendar/homework rendering lands in later steps */
+  if(tbsStarted) return;            // listeners are live; re-entering the tab must not re-wire
+  tbsStarted=true;
+  TBS_UI.start({studentOnly:false});
 }
+
+/* ============================================================================
+   TEACHBENCH STUDENT APP
+   Three cooperating pieces, deliberately separable:
+     SRS     pure spaced-repetition maths, no DOM and no network
+     TBS     the Firestore data layer (async + live listeners)
+     TBS_UI  everything that touches the DOM
+   Kept apart from the teacher-side TB module on purpose: TB is
+   synchronous localStorage on one device, this is shared cloud data
+   across devices, and forcing them into one shape would help nobody.
+   ========================================================================= */
+
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyALWSLAJjrGmJ3KXI5nfrbNOw0ctZFx27I",
+  authDomain: "teachbench-student.firebaseapp.com",
+  projectId: "teachbench-student",
+  storageBucket: "teachbench-student.firebasestorage.app",
+  messagingSenderId: "613087761906",
+  appId: "1:613087761906:web:686b5b87c385dc0962c76b"
+};
+/* Not a secret: every deployed Firebase web app ships these in plain
+   sight. Access control is firestore.rules, not obscurity. */
+
+/* ---------------------------------------------------------------- SRS ----
+   SM-2, near enough. A pure function of plain data: hand it a card's
+   current schedule and how well the answer went, get the next schedule
+   back. No DOM, no Firestore, no clock of its own — so it can be tuned
+   or replaced without touching a line of UI. */
+const SRS = (() => {
+  const DAY = 86400000;
+  const MIN_EF = 1.3;
+
+  /* The UI grades in words; SM-2 wants 0-5. Keeping the translation
+     here means the maths below never learns what a button is. */
+  const QUALITY = { again:2, hard:3, good:4, easy:5 };
+  function qualityOf(grade){ return QUALITY[grade] ?? 4; }
+
+  function fresh(){
+    return { intervalStage:0, easeFactor:2.5, intervalDays:0,
+             nextReviewDate:new Date().toISOString(), lastReviewedAt:null,
+             reviewCount:0, lapses:0 };
+  }
+
+  function scheduleNext(card, grade, now){
+    const q  = qualityOf(grade);
+    const at = now instanceof Date ? now : new Date(now || Date.now());
+    let stage = Number(card?.intervalStage) || 0;
+    let ef    = Number(card?.easeFactor)    || 2.5;
+    let days  = Number(card?.intervalDays)  || 0;
+    let lapses= Number(card?.lapses)        || 0;
+
+    if(q < 3){
+      /* Missed it: back to the start of the ladder and come round again
+         today. The ease penalty is carried by the EF formula below. */
+      stage = 0; days = 0; lapses += 1;
+    }else{
+      stage += 1;
+      days = stage === 1 ? 1
+           : stage === 2 ? 6
+           : Math.round(days * ef);
+      if(days < 1) days = 1;
+    }
+    /* SM-2's ease update, applied on every answer including lapses. */
+    ef = ef + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02));
+    if(ef < MIN_EF) ef = MIN_EF;
+
+    /* days===0 means "again in this same session" — ten minutes, not
+       tomorrow, so a forgotten card actually comes back while the
+       student is still sitting there. */
+    const next = new Date(at.getTime() + (days === 0 ? 10 * 60000 : days * DAY));
+
+    return { intervalStage:stage, easeFactor:Number(ef.toFixed(3)),
+             intervalDays:days, nextReviewDate:next.toISOString(),
+             lastReviewedAt:at.toISOString(),
+             reviewCount:(Number(card?.reviewCount)||0)+1, lapses };
+  }
+
+  function isDue(card, now){
+    const t = (now instanceof Date ? now : new Date(now || Date.now())).getTime();
+    const d = Date.parse(card?.nextReviewDate || 0);
+    return !Number.isFinite(d) || d <= t;
+  }
+
+  return { fresh, scheduleNext, isDue, qualityOf };
+})();
+
+/* ---------------------------------------------------------------- TBS ----
+   Firestore, loaded on demand. The compat SDK is injected only when this
+   module actually starts, so the teacher's Potting Bench sessions stay
+   as network-free as they have always been. */
+const TBS = (() => {
+  const SDK = "https://www.gstatic.com/firebasejs/10.12.2/";
+  const PARTS = ["firebase-app-compat.js","firebase-auth-compat.js","firebase-firestore-compat.js"];
+  let ready = null, db = null, auth = null;
+
+  function loadScript(src){
+    return new Promise((ok, fail) => {
+      const s = document.createElement("script");
+      s.src = src; s.async = false;
+      s.onload = ok;
+      s.onerror = () => fail(new Error("offline"));
+      document.head.appendChild(s);
+    });
+  }
+
+  /* Idempotent: every entry point awaits this, only the first does work. */
+  function init(){
+    if(ready) return ready;
+    ready = (async () => {
+      for(const p of PARTS) await loadScript(SDK + p);
+      firebase.initializeApp(FIREBASE_CONFIG);
+      auth = firebase.auth();
+      db   = firebase.firestore();
+      /* Cached reads survive a dropped connection once the SDK itself
+         has loaded at least once. Failure here is not fatal — several
+         tabs open at once is the usual cause. */
+      try{ await db.enablePersistence({synchronizeTabs:true}); }catch(e){}
+      return true;
+    })();
+    return ready;
+  }
+
+  /* ---- identity ---- */
+  async function sha256Hex(text){
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,"0")).join("");
+  }
+  /* Codes are compared case- and dash-insensitively so "abcd1234",
+     "ABCD-1234" and a stray trailing space all reach the same hash. */
+  function normaliseCode(code){ return String(code||"").toUpperCase().replace(/[^A-Z0-9]/g,""); }
+
+  function waitForAuth(){
+    return new Promise(ok => {
+      const off = auth.onAuthStateChanged(u => { off(); ok(u); });
+    });
+  }
+
+  async function currentUser(){
+    await init();
+    return auth.currentUser || await waitForAuth();
+  }
+
+  /* Redeem an access code: prove possession of the code, then record
+     this device's anonymous uid against the student. Deliberately
+     idempotent — a cleared browser can redeem the same code again. */
+  async function redeemCode(rawCode){
+    await init();
+    const codeHash = await sha256Hex(normaliseCode(rawCode));
+    if(!auth.currentUser) await auth.signInAnonymously();
+    const uid = auth.currentUser.uid;
+
+    const codeSnap = await db.collection("accessCodes").doc(codeHash).get();
+    if(!codeSnap.exists) throw new Error("bad-code");
+    const studentId = codeSnap.data().studentId;
+
+    const mineRef = db.collection("studentAuth").doc(uid);
+    const mine = await mineRef.get();
+    if(!mine.exists){
+      await mineRef.set({ studentId, codeHash,
+        createdAt:new Date().toISOString() });
+    }else if(mine.data().studentId !== studentId){
+      /* This device already belongs to another student. Rules forbid
+         rewriting the mapping, so start a clean identity instead. */
+      await auth.signOut();
+      await auth.signInAnonymously();
+      await db.collection("studentAuth").doc(auth.currentUser.uid)
+        .set({ studentId, codeHash, createdAt:new Date().toISOString() });
+    }
+    return studentId;
+  }
+
+  /* Which student is this device? null if it has never redeemed. */
+  async function myStudentId(){
+    await init();
+    const u = await currentUser();
+    if(!u) return null;
+    const snap = await db.collection("studentAuth").doc(u.uid).get();
+    return snap.exists ? snap.data().studentId : null;
+  }
+
+  async function signInStaff(email, password){
+    await init();
+    const cred = await auth.signInWithEmailAndPassword(email, password);
+    const snap = await db.collection("staff").doc(cred.user.uid).get();
+    if(!snap.exists){ await auth.signOut(); throw new Error("not-staff"); }
+    return { uid:cred.user.uid, ...snap.data() };
+  }
+  async function currentStaff(){
+    await init();
+    const u = await currentUser();
+    if(!u || u.isAnonymous) return null;
+    const snap = await db.collection("staff").doc(u.uid).get();
+    return snap.exists ? { uid:u.uid, ...snap.data() } : null;
+  }
+  async function signOut(){ await init(); await auth.signOut(); }
+
+  /* ---- students ---- */
+  const students = () => db.collection("teachbenchStudents");
+
+  function onRoster(staff, cb){
+    const q = staff.role === "owner" ? students()
+            : students().where("teacherId","==",staff.uid);
+    return q.onSnapshot(
+      s => cb(s.docs.map(d => ({ id:d.id, ...d.data() }))),
+      err => { console.warn("roster", err); cb([]); });
+  }
+  function onStudent(studentId, cb){
+    return students().doc(studentId).onSnapshot(
+      d => cb(d.exists ? { id:d.id, ...d.data() } : null),
+      err => { console.warn("student", err); cb(null); });
+  }
+
+  /* A code short enough to read down the phone, long enough not to be
+     guessed: 8 chars from a 32-symbol alphabet with look-alikes (0/O,
+     1/I) removed = ~40 bits. */
+  function makeCode(){
+    const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const r = crypto.getRandomValues(new Uint8Array(8));
+    return [...r].map(b => A[b % A.length]).join("");
+  }
+
+  async function addStudent(name, staff){
+    await init();
+    const code = makeCode();
+    const ref = await students().add({
+      name: String(name||"").trim() || "Student",
+      teacherId: staff.uid,
+      createdAt: new Date().toISOString()
+    });
+    await db.collection("accessCodes").doc(await sha256Hex(code))
+      .set({ studentId: ref.id });
+    /* The plain code exists only here and in whatever the teacher sends
+       to the student — Firestore keeps the hash alone. Stored locally so
+       she can re-read a code she has already generated. */
+    rememberCode(ref.id, code);
+    return { id:ref.id, code };
+  }
+
+  const CODE_KEY = "teachbench.staffCodes";
+  function rememberCode(studentId, code){
+    try{
+      const all = JSON.parse(localStorage.getItem(CODE_KEY) || "{}");
+      all[studentId] = code;
+      localStorage.setItem(CODE_KEY, JSON.stringify(all));
+    }catch(e){}
+  }
+  function knownCode(studentId){
+    try{ return (JSON.parse(localStorage.getItem(CODE_KEY) || "{}"))[studentId] || null; }
+    catch(e){ return null; }
+  }
+  /* Re-issuing replaces the code: the old hash is deleted, so an old
+     link stops working — which is the point when a phone goes missing. */
+  async function reissueCode(studentId){
+    await init();
+    const old = knownCode(studentId);
+    const code = makeCode();
+    await db.collection("accessCodes").doc(await sha256Hex(code)).set({ studentId });
+    if(old){ try{ await db.collection("accessCodes").doc(await sha256Hex(old)).delete(); }catch(e){} }
+    rememberCode(studentId, code);
+    return code;
+  }
+
+  /* ---- flashcards ---- */
+  const cardsOf = id => students().doc(id).collection("flashcards");
+
+  function onCards(studentId, cb){
+    return cardsOf(studentId).onSnapshot(
+      s => cb(s.docs.map(d => ({ id:d.id, ...d.data() }))),
+      err => { console.warn("cards", err); cb([]); });
+  }
+  async function addCard(studentId, card){
+    await init();
+    return cardsOf(studentId).add({
+      type: card.type, front: card.front, back: card.back,
+      explanation: card.explanation || null,
+      studentId, createdAt: new Date().toISOString(),
+      createdBy: "teacher", ...SRS.fresh()
+    });
+  }
+  async function deleteCard(studentId, cardId){
+    await init(); return cardsOf(studentId).doc(cardId).delete();
+  }
+  /* The only write a student's device is allowed to make to a card —
+     and the rules enforce that, not just this function. */
+  async function submitReview(studentId, cardId, card, grade){
+    await init();
+    const next = SRS.scheduleNext(card, grade, new Date());
+    await cardsOf(studentId).doc(cardId).update(next);
+    return next;
+  }
+
+  /* ---- homework ---- */
+  const hwOf = id => students().doc(id).collection("homework");
+
+  function onHomework(studentId, cb){
+    return hwOf(studentId).onSnapshot(
+      s => cb(s.docs.map(d => ({ id:d.id, ...d.data() }))
+               .sort((a,b) => String(a.createdAt).localeCompare(String(b.createdAt)))),
+      err => { console.warn("homework", err); cb([]); });
+  }
+  async function sendHomework(studentId, text, direction){
+    await init();
+    return hwOf(studentId).add({
+      direction, kind:"text", text:String(text||"").trim(), photoPath:null,
+      status:"sent", createdAt:new Date().toISOString()
+    });
+  }
+
+  return { init, redeemCode, myStudentId, signInStaff, currentStaff, signOut,
+           onRoster, onStudent, addStudent, knownCode, reissueCode,
+           onCards, addCard, deleteCard, submitReview,
+           onHomework, sendHomework };
+})();
+
+/* ------------------------------------------------------------- TBS_UI ----
+   Everything that touches the DOM. Talks to TBS for data and SRS for
+   scheduling; neither of those knows this exists. */
+const TBS_UI = (() => {
+  const $$ = id => document.getElementById(id);
+  const SCREENS = ["tbsBooting","tbsCodeScreen","tbsHome","tbsReview","tbsDone",
+                   "tbsStaffLogin","tbsStaffHome","tbsStaffStudent"];
+  const TYPE_LABEL = { vocab:"Word", grammar:"Grammar", pron:"Pronunciation" };
+
+  let state = {
+    studentOnly:false, studentId:null, staff:null,
+    cards:[], homework:[], roster:[], openStudent:null,
+    queue:[], current:null, revealed:false, doneCount:0,
+    newType:"vocab", unsub:[]
+  };
+
+  function show(id){ SCREENS.forEach(s => { const el=$$(s); if(el) el.hidden = s!==id; }); }
+  function dropListeners(){ state.unsub.forEach(f => { try{ f(); }catch(e){} }); state.unsub=[]; }
+
+  /* ---------- entry ---------- */
+  async function start(opts){
+    state.studentOnly = !!opts.studentOnly;
+    show("tbsBooting");
+    wireOnce();
+    try{
+      await TBS.init();
+    }catch(e){
+      /* The SDK itself is cross-origin, so a cold offline load cannot
+         work. Say so plainly rather than showing an empty screen. */
+      $$("tbsBootMsg").textContent = "Can't connect. Check your internet and reload.";
+      return;
+    }
+    /* A device that has already redeemed goes straight in, whichever
+       way the app was opened. */
+    let sid = null;
+    try{ sid = await TBS.myStudentId(); }catch(e){}
+    const hash = location.hash.startsWith("#s=") ? decodeURIComponent(location.hash.slice(3)) : "";
+    if(!sid && hash){
+      try{ sid = await TBS.redeemCode(hash); }catch(e){}
+    }
+    if(sid){
+      /* Drop the code out of the address bar once it has been used. */
+      if(location.hash.startsWith("#s=")) history.replaceState(null,"",location.pathname+location.search);
+      return enterStudent(sid);
+    }
+    if(state.studentOnly) return show("tbsCodeScreen");
+
+    const staff = await TBS.currentStaff().catch(() => null);
+    if(staff) return enterStaff(staff);
+    show("tbsStaffLogin");
+  }
+
+  /* ---------- student ---------- */
+  function enterStudent(studentId){
+    state.studentId = studentId;
+    dropListeners();
+    show("tbsHome");
+    state.unsub.push(TBS.onStudent(studentId, s => {
+      $$("tbsGreeting").textContent = s ? `Hello, ${s.name}` : "Hello";
+    }));
+    state.unsub.push(TBS.onCards(studentId, cards => {
+      state.cards = cards; renderStudentToday(); renderCardList();
+    }));
+    state.unsub.push(TBS.onHomework(studentId, hw => {
+      state.homework = hw; renderHomework();
+    }));
+  }
+
+  function dueCards(){ return state.cards.filter(c => SRS.isDue(c)); }
+
+  function renderStudentToday(){
+    const due = dueCards();
+    $$("tbsDueCount").textContent = due.length;
+    $$("tbsDueLabel").textContent = !state.cards.length
+      ? "no words yet — your teacher will add some"
+      : due.length ? (due.length === 1 ? "word to review" : "words to review")
+                   : "all caught up";
+    $$("tbsStartReview").hidden = !due.length;
+
+    /* When nothing is due, the next date is the useful thing to show. */
+    const upcoming = state.cards
+      .filter(c => !SRS.isDue(c))
+      .map(c => Date.parse(c.nextReviewDate))
+      .filter(Number.isFinite).sort((a,b) => a-b)[0];
+    const box = $$("tbsNextUp");
+    if(!due.length && upcoming){
+      box.hidden = false;
+      $$("tbsNextUpText").textContent = relativeWhen(upcoming);
+    }else box.hidden = true;
+  }
+
+  function relativeWhen(ms){
+    const mins = Math.round((ms - Date.now()) / 60000);
+    if(mins <= 1) return "in a moment";
+    if(mins < 60) return `in ${mins} minutes`;
+    const hrs = Math.round(mins/60);
+    if(hrs < 24) return hrs === 1 ? "in about an hour" : `in about ${hrs} hours`;
+    const days = Math.round(hrs/24);
+    return days === 1 ? "tomorrow" : `in ${days} days`;
+  }
+
+  function renderCardList(){
+    const box = $$("tbsCardList");
+    if(!state.cards.length){ box.innerHTML = `<p class="empty">Nothing here yet.</p>`; return; }
+    box.innerHTML = state.cards.map(c => `
+      <div class="tbs-row">
+        <span class="grow"><b>${esc(c.front)}</b><small>${esc(TYPE_LABEL[c.type]||c.type)}</small></span>
+        <span class="tbs-pill${SRS.isDue(c)?" due":""}">${SRS.isDue(c)?"due":relativeWhen(Date.parse(c.nextReviewDate))}</span>
+      </div>`).join("");
+  }
+
+  function renderHomework(){
+    const box = $$("tbsHomeworkList");
+    if(!state.homework.length){ box.innerHTML = `<div class="card pad"><p class="empty">No homework yet.</p></div>`; return; }
+    box.innerHTML = `<div class="card">` + state.homework.map(h => `
+      <div class="tbs-hw${h.direction==="student-to-teacher"?" mine":""}">
+        <small class="tbs-muted">${h.direction==="student-to-teacher"?"You":"Teacher"} · ${esc(shortDate(h.createdAt))}</small>
+        <p>${esc(h.text||"")}</p>
+      </div>`).join("") + `</div>
+      <div class="card pad stack">
+        <textarea id="tbsHwReply" rows="3" placeholder="Write your answer…" aria-label="Your answer"></textarea>
+        <button class="btn primary" id="tbsHwSend">Send to teacher</button>
+      </div>`;
+    $$("tbsHwSend").onclick = async () => {
+      const t = $$("tbsHwReply").value.trim();
+      if(!t) return;
+      $$("tbsHwSend").disabled = true;
+      try{ await TBS.sendHomework(state.studentId, t, "student-to-teacher"); }
+      finally{ $$("tbsHwSend").disabled = false; }
+    };
+  }
+
+  function shortDate(iso){
+    const d = new Date(iso||0);
+    return Number.isFinite(d.getTime()) ? d.toLocaleDateString(undefined,{day:"numeric",month:"short"}) : "";
+  }
+
+  /* ---------- review session ---------- */
+  function startReview(){
+    /* Snapshot the queue now: cards rescheduled mid-session must not
+       reshuffle the list under the student's feet. */
+    state.queue = dueCards().slice();
+    state.doneCount = 0;
+    if(!state.queue.length) return;
+    show("tbsReview");
+    nextCard();
+  }
+
+  function nextCard(){
+    state.current = state.queue.shift() || null;
+    if(!state.current){
+      $$("tbsDoneMsg").textContent = state.doneCount
+        ? `${state.doneCount} ${state.doneCount===1?"word":"words"} reviewed. Nice work.`
+        : "All done for now.";
+      return show("tbsDone");
+    }
+    const c = state.current;
+    state.revealed = false;
+    $$("tbsReviewProgress").textContent = `${state.doneCount+1} of ${state.doneCount+1+state.queue.length}`;
+    $$("tbsCardType").textContent = TYPE_LABEL[c.type] || "Card";
+    $$("tbsCardFront").textContent = c.front || "";
+    $$("tbsCardBack").textContent = c.back || "";
+    $$("tbsCardBack").hidden = true;
+    $$("tbsCardExpl").textContent = c.explanation || "";
+    $$("tbsCardExpl").hidden = true;
+    $$("tbsAnswerWrap").hidden = c.type !== "grammar";
+    $$("tbsAnswerInput").value = "";
+    $$("tbsSpeak").hidden = c.type !== "pron";
+    $$("tbsRevealWrap").hidden = false;
+    $$("tbsGradeWrap").hidden = true;
+    if(c.type === "grammar") setTimeout(() => $$("tbsAnswerInput").focus(), 60);
+  }
+
+  function reveal(){
+    const c = state.current; if(!c) return;
+    state.revealed = true;
+    $$("tbsCardBack").hidden = false;
+    if(c.explanation) $$("tbsCardExpl").hidden = false;
+    $$("tbsRevealWrap").hidden = true;
+    $$("tbsGradeWrap").hidden = false;
+
+    /* A typed grammar answer grades itself, so the student gets an
+       honest verdict instead of marking their own homework. */
+    if(c.type === "grammar"){
+      const said = $$("tbsAnswerInput").value.trim().toLowerCase();
+      const want = String(c.back||"").trim().toLowerCase();
+      if(said && want){
+        $$("tbsCardBack").textContent = said === want ? `✓ ${c.back}` : `${c.back}  (you wrote: ${said})`;
+      }
+    }
+  }
+
+  async function grade(g){
+    const c = state.current; if(!c || !state.revealed) return;
+    state.doneCount += 1;
+    try{
+      const next = await TBS.submitReview(state.studentId, c.id, c, g);
+      /* "Again" means again in this session, not tomorrow. */
+      if(g === "again") state.queue.push({ ...c, ...next });
+    }catch(e){ console.warn("review", e); }
+    nextCard();
+  }
+
+  function speak(){
+    const c = state.current; if(!c) return;
+    try{
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(c.front || "");
+      u.lang = "en-GB"; u.rate = 0.9;
+      speechSynthesis.speak(u);
+    }catch(e){}
+  }
+
+  /* ---------- staff ---------- */
+  function enterStaff(staff){
+    state.staff = staff;
+    dropListeners();
+    show("tbsStaffHome");
+    $$("tbsStaffTitle").textContent = staff.role === "owner" ? "All students" : "Your students";
+    state.unsub.push(TBS.onRoster(staff, list => {
+      state.roster = list.slice().sort((a,b) => String(a.name).localeCompare(String(b.name)));
+      renderRoster();
+    }));
+  }
+
+  function renderRoster(){
+    const box = $$("tbsStudentList");
+    if(!state.roster.length){ box.innerHTML = `<p class="empty">No students yet — add one above.</p>`; return; }
+    box.innerHTML = state.roster.map(s => `
+      <div class="tbs-row" data-student="${esc(s.id)}">
+        <span class="grow"><b>${esc(s.name)}</b><small>${esc(s.id.slice(0,6))}</small></span>
+        <span class="tbs-pill">open</span>
+      </div>`).join("");
+    box.querySelectorAll("[data-student]").forEach(row =>
+      row.onclick = () => openStudent(row.dataset.student));
+  }
+
+  function studentLink(code){
+    return `${location.origin}${location.pathname}#s=${encodeURIComponent(code)}`;
+  }
+
+  function openStudent(id){
+    const s = state.roster.find(x => x.id === id); if(!s) return;
+    state.openStudent = id;
+    show("tbsStaffStudent");
+    $$("tbsStuName").textContent = s.name;
+    const code = TBS.knownCode(id);
+    $$("tbsStuLink").value = code ? studentLink(code)
+      : "No code on this device — press Copy to issue a new one";
+    $$("tbsStuLink").dataset.code = code || "";
+
+    dropStudentListeners();
+    state._stuUnsub = [
+      TBS.onCards(id, cards => renderStaffCards(cards)),
+      TBS.onHomework(id, hw => renderStaffHomework(hw))
+    ];
+  }
+  function dropStudentListeners(){
+    (state._stuUnsub||[]).forEach(f => { try{ f(); }catch(e){} });
+    state._stuUnsub = [];
+  }
+
+  function renderStaffCards(cards){
+    const box = $$("tbsStuCards");
+    if(!cards.length){ box.innerHTML = `<p class="empty">No cards yet.</p>`; return; }
+    box.innerHTML = cards.map(c => `
+      <div class="tbs-row">
+        <span class="grow"><b>${esc(c.front)}</b><small>${esc(TYPE_LABEL[c.type]||c.type)} · ${esc(c.back||"")}</small></span>
+        <button class="btn mini" data-del="${esc(c.id)}">Delete</button>
+      </div>`).join("");
+    box.querySelectorAll("[data-del]").forEach(b =>
+      b.onclick = () => TBS.deleteCard(state.openStudent, b.dataset.del));
+  }
+
+  function renderStaffHomework(hw){
+    const box = $$("tbsStuHw");
+    if(!hw.length){ box.innerHTML = `<p class="empty">No homework yet.</p>`; return; }
+    box.innerHTML = hw.map(h => `
+      <div class="tbs-hw${h.direction==="student-to-teacher"?" mine":""}">
+        <small class="tbs-muted">${h.direction==="student-to-teacher"?"Student":"You"} · ${esc(shortDate(h.createdAt))}</small>
+        <p>${esc(h.text||"")}</p>
+      </div>`).join("");
+  }
+
+  /* ---------- wiring ---------- */
+  let wired = false;
+  function wireOnce(){
+    if(wired) return; wired = true;
+
+    /* student: code entry */
+    const tryCode = async () => {
+      const raw = $$("tbsCodeInput").value.trim();
+      if(!raw) return;
+      const err = $$("tbsCodeErr");
+      err.hidden = true; $$("tbsCodeGo").disabled = true;
+      try{
+        const sid = await TBS.redeemCode(raw);
+        enterStudent(sid);
+      }catch(e){
+        err.textContent = e && e.message === "bad-code"
+          ? "That code didn't work. Check it and try again."
+          : "Couldn't connect. Check your internet and try again.";
+        err.hidden = false;
+      }finally{ $$("tbsCodeGo").disabled = false; }
+    };
+    $$("tbsCodeGo").onclick = tryCode;
+    $$("tbsCodeInput").onkeydown = e => { if(e.key === "Enter") tryCode(); };
+
+    /* student: home tabs */
+    $$("tbsScopeSeg").onclick = e => {
+      const b = e.target.closest("[data-tbsscope]"); if(!b) return;
+      const scope = b.dataset.tbsscope;
+      $$("tbsScopeSeg").querySelectorAll("button").forEach(x =>
+        x.setAttribute("aria-pressed", String(x === b)));
+      $$("tbsScopeToday").hidden    = scope !== "today";
+      $$("tbsScopeCards").hidden    = scope !== "cards";
+      $$("tbsScopeHomework").hidden = scope !== "homework";
+    };
+
+    /* student: review */
+    $$("tbsStartReview").onclick = startReview;
+    $$("tbsReveal").onclick = reveal;
+    $$("tbsAnswerInput").onkeydown = e => { if(e.key === "Enter" && !state.revealed) reveal(); };
+    $$("tbsSpeak").onclick = speak;
+    $$("tbsGradeWrap").onclick = e => {
+      const b = e.target.closest("[data-grade]"); if(b) grade(b.dataset.grade);
+    };
+    $$("tbsReviewQuit").onclick = () => show("tbsHome");
+    $$("tbsDoneBack").onclick = () => show("tbsHome");
+
+    /* staff: sign in / out */
+    const tryStaff = async () => {
+      const err = $$("tbsStaffErr");
+      err.hidden = true; $$("tbsStaffGo").disabled = true;
+      try{
+        const staff = await TBS.signInStaff($$("tbsEmail").value.trim(), $$("tbsPass").value);
+        $$("tbsPass").value = "";
+        enterStaff(staff);
+      }catch(e){
+        err.textContent = e && e.message === "not-staff"
+          ? "That account isn't set up as a teacher."
+          : "Sign-in failed. Check the email and password.";
+        err.hidden = false;
+      }finally{ $$("tbsStaffGo").disabled = false; }
+    };
+    $$("tbsStaffGo").onclick = tryStaff;
+    $$("tbsPass").onkeydown = e => { if(e.key === "Enter") tryStaff(); };
+    $$("tbsStaffOut").onclick = async () => {
+      dropListeners(); dropStudentListeners();
+      state.staff = null; state.roster = [];
+      await TBS.signOut();
+      show("tbsStaffLogin");
+    };
+
+    /* staff: roster */
+    $$("tbsAddStudent").onclick = async () => {
+      const name = $$("tbsNewStudentName").value.trim();
+      if(!name || !state.staff) return;
+      $$("tbsAddStudent").disabled = true;
+      try{
+        await TBS.addStudent(name, state.staff);
+        $$("tbsNewStudentName").value = "";
+      }catch(e){ console.warn("addStudent", e); }
+      finally{ $$("tbsAddStudent").disabled = false; }
+    };
+    $$("tbsStuBack").onclick = () => { dropStudentListeners(); show("tbsStaffHome"); };
+
+    $$("tbsCopyLink").onclick = async () => {
+      let code = $$("tbsStuLink").dataset.code;
+      if(!code){
+        code = await TBS.reissueCode(state.openStudent);
+        $$("tbsStuLink").value = studentLink(code);
+        $$("tbsStuLink").dataset.code = code;
+      }
+      try{ await navigator.clipboard.writeText(studentLink(code)); }
+      catch(e){ $$("tbsStuLink").select(); }
+      $$("tbsCopyLink").textContent = "Copied";
+      setTimeout(() => { $$("tbsCopyLink").textContent = "Copy"; }, 1400);
+    };
+
+    /* staff: new card */
+    $$("tbsNewTypeSeg").onclick = e => {
+      const b = e.target.closest("[data-tbstype]"); if(!b) return;
+      state.newType = b.dataset.tbstype;
+      $$("tbsNewTypeSeg").querySelectorAll("button").forEach(x =>
+        x.setAttribute("aria-pressed", String(x === b)));
+      $$("tbsNewFront").placeholder = state.newType === "grammar"
+        ? "Sentence with ___ for the gap"
+        : state.newType === "pron" ? "Word or phrase to say" : "The word or phrase";
+      $$("tbsNewBack").placeholder = state.newType === "grammar"
+        ? "The missing word" : "Meaning or translation";
+    };
+    $$("tbsAddCard").onclick = async () => {
+      const front = $$("tbsNewFront").value.trim();
+      const back  = $$("tbsNewBack").value.trim();
+      if(!front || !back || !state.openStudent) return;
+      $$("tbsAddCard").disabled = true;
+      try{
+        await TBS.addCard(state.openStudent, {
+          type: state.newType, front, back,
+          explanation: $$("tbsNewExpl").value.trim() || null
+        });
+        $$("tbsNewFront").value = ""; $$("tbsNewBack").value = ""; $$("tbsNewExpl").value = "";
+      }catch(e){ console.warn("addCard", e); }
+      finally{ $$("tbsAddCard").disabled = false; }
+    };
+
+    /* staff: homework */
+    $$("tbsSendHw").onclick = async () => {
+      const t = $$("tbsHwText").value.trim();
+      if(!t || !state.openStudent) return;
+      $$("tbsSendHw").disabled = true;
+      try{
+        await TBS.sendHomework(state.openStudent, t, "teacher-to-student");
+        $$("tbsHwText").value = "";
+      }catch(e){ console.warn("sendHomework", e); }
+      finally{ $$("tbsSendHw").disabled = false; }
+    };
+  }
+
+  return { start };
+})();
 
 /* ---------------- boot ---------------- */
 async function boot(){
