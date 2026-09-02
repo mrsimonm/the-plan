@@ -706,6 +706,16 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .wb-adtask.wb-adproj small{font-family:var(--font); font-variant-numeric:tabular-nums;
   color:var(--ink-2)}
 .wb-adprojdot{width:7px; height:7px; flex:0 0 auto; border-radius:50%; background:var(--pc)}
+/* A Task/Event/Block that WOULD overlap another gets bumped up here instead
+   of drawing on top of it — same chip as an untimed Task, tinted like the
+   grid's own clash warning so it reads as "conflict", not just "no time yet".
+   Still a real record with a time of its own, so it keeps the solid border
+   and drag gesture a Task chip has, unlike the dashed, tap-only Project one. */
+.wb-adtask.wb-adclash{border-color:color-mix(in srgb,var(--crit) 45%,transparent);
+  background:var(--crit-soft); color:var(--ink)}
+.wb-adtask.wb-adclash:hover{border-color:var(--crit)}
+.wb-adtask.wb-adclash small{font-family:var(--font); font-variant-numeric:tabular-nums; color:var(--crit)}
+.wb-adclashdot{flex:0 0 auto; font-size:9px; line-height:1; color:var(--crit)}
 /* Plachta: columns are a fixed width so the canvas scrolls rather than
    squeezing, and so the scroll maths can trust a known column pitch */
 /* max-content, not 0: a sticky box is clamped to its containing block, so a
@@ -1141,6 +1151,13 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
   border:1px solid var(--line)}
 .pcard-thumb.none{display:flex; align-items:center; justify-content:center; background:var(--sunk);
   color:var(--ink-3); font-size:17px}
+/* small enough to sit at the end of a checklist row (checkbox, name, then
+   this) without pushing the row taller — just enough to tell two similarly
+   coloured plants apart at a glance, which the name alone couldn't do */
+.lu-thumb{width:32px; height:32px; border-radius:var(--r-xs); object-fit:cover; flex:0 0 auto;
+  border:1px solid var(--line)}
+.lu-thumb.none{display:flex; align-items:center; justify-content:center; background:var(--sunk);
+  color:var(--ink-3); font-size:13px}
 .pcard-top{display:flex; gap:12px; align-items:center; width:100%; text-align:left;
   background:none; border:0; padding:13px 15px; cursor:pointer; color:inherit; font:inherit;
   -webkit-tap-highlight-color:transparent; transition:background .12s}
@@ -7052,24 +7069,49 @@ function pBoardHtml(days,topStrip,opts){
      chip pushed its hour track down and its grid no longer lined up with its
      neighbours. Every column reserves the same number of rows — that of the
      busiest day — so the board stays on one baseline whatever is in it. */
+  /* Split each day's timed items into what actually draws on the grid and
+     what a clash bumps up to the parking lot instead — computed once, here,
+     so the row's height (adCount, below) and the columns themselves (cols)
+     agree on the same split rather than each guessing independently.
+     Tracked work, sleep-adjacent "care" and Projects keep the old behaviour
+     (side-by-side lanes, or the Project's own unassigned/clash handling) —
+     only a Task, Event or recurring Block ever gets parked, per the ask.
+     Sorting parkable items after pinned ones, then earliest-first, means a
+     pinned item always keeps its slot, and among two clashing Tasks/Blocks
+     the earlier one keeps the grid and the later one parks. */
+  const packedByDay=days.map((d,di)=>{
+    const timed=byDay[di].filter(it=>it.time&&it.hours>0&&!(it.kind==="care"));
+    const parkable=it=>it.kind==="task"||it.kind==="block";
+    const iv0=timed.map(it=>{ const [h,m]=it.time.split(":").map(Number);
+      return {it,s:h+m/60,e:h+m/60+it.hours}; });
+    const order=[...iv0].sort((a,b)=>
+      (parkable(a.it)?1:0)-(parkable(b.it)?1:0) || a.s-b.s || b.e-a.e);
+    const kept=[], parked=[];
+    order.forEach(x=>{
+      if(parkable(x.it)&&kept.some(k=>k.s<x.e&&x.s<k.e)) parked.push(x);
+      else kept.push(x);
+    });
+    kept.sort((a,b)=>a.s-b.s||b.e-a.e);
+    return {kept,parked};
+  });
   /* must match what the lane actually draws, Quick Tasks included, or a day
      full of them reserves too few rows and clips its own contents */
   const adCount=days.map((d,di)=>byDay[di].filter(it=>
       it.ref&&(it.ref.kind==="task"||it.ref.kind==="quick")&&!it.time&&it.ref.due===d).length
     + byDay[di].filter(it=>it.kind==="proj"&&it.unassigned).length
+    + packedByDay[di].parked.length
     + (byDay[di].some(it=>it.kind==="care")?1:0));
   const adRows=Math.min(3,Math.max(1,...adCount));
   const cols=days.map((d,di)=>{
     const items=byDay[di];
     const care=items.find(it=>it.kind==="care");
-    const timed=items.filter(it=>it.time&&it.hours>0&&!(it.kind==="care"));
-    /* lane packing inside the column: clashing blocks share the width side by
-       side instead of drawing on top of each other */
-    const iv=timed.map(it=>{ const [h,m]=it.time.split(":").map(Number);
-      return {it,s:h+m/60,e:h+m/60+it.hours,col:0,n:1}; }).sort((a,b)=>a.s-b.s||b.e-a.e);
+    const {kept,parked}=packedByDay[di];
+    /* lane packing inside the column: only the rare case of two PINNED items
+       (tracked work, say) still landing on the same hour ever needs this now
+       — a clashing Task/Block never reaches `kept` in the first place */
     let cl=[], clEnd=-1;
     const closeCl=()=>{ const n=Math.max(...cl.map(x=>x.col))+1; cl.forEach(x=>x.n=n); cl=[]; };
-    iv.forEach(x=>{
+    kept.forEach(x=>{ x.col=0; x.n=1;
       if(cl.length&&x.s>=clEnd) closeCl();
       if(!cl.length){ cl=[x]; clEnd=x.e; x.col=0; return; }
       const used=cl.filter(y=>y.e>x.s).map(y=>y.col);
@@ -7079,7 +7121,7 @@ function pBoardHtml(days,topStrip,opts){
     if(cl.length) closeCl();
     /* clash flags come pre-computed on the items — pBudgetOf() already marks
        every interval that overlaps another; reused below for the warning icon */
-    const blocks=iv.map(x=>{
+    const blocks=kept.map(x=>{
       const it=x.it, top=(x.s-startH)*WB_PXH, hpx=Math.max(17,it.hours*WB_PXH);
       const lane=`left:calc(${(x.col/x.n)*100}% + 1px); width:calc(${(1/x.n)*100}% - 3px)`;
       const kind=it.kind==="hours"?"hrs":it.kind==="block"?"blk":it.kind==="proj"?"proj":"task";
@@ -7167,7 +7209,19 @@ function pBoardHtml(days,topStrip,opts){
        hours) can be set on purpose; it carries no data-wb, so unlike a Task
        chip it isn't draggable straight onto an hour in this pass. */
     const unassignedProjs=items.filter(it=>it.kind==="proj"&&it.unassigned);
-    const allday=(adTasks.length||unassignedProjs.length||care)?`<div class="wb-allday">${
+    /* A Task, Event or Block that lost the greedy pack above because it would
+       have overlapped something else — see packedByDay. Still a real record
+       with its own time, so unlike a Task chip it isn't stripped down to
+       "no time yet": the time it wants is shown, and it keeps the same
+       data-wb the grid version would carry so dragging it onto a free hour
+       commits through the exact same gesture path. */
+    const clashChips=parked.map(x=>{
+      const it=x.it;
+      return `<span class="wb-adtask wb-adclash" data-wb="${it.kind}:${it.ref.id}" data-day="${d}"
+          title="${esc(it.name)} · ${esc(it.time)} · ${pFmtH(it.hours)}h — ${esc(t("double-booked — drag onto a free hour"))}">
+          <i class="wb-adclashdot">⚠</i>${esc(it.name)} <small>${esc(it.time)}</small></span>`;
+    }).join("");
+    const allday=(adTasks.length||unassignedProjs.length||parked.length||care)?`<div class="wb-allday">${
       adTasks.map(it=>{
         const q=it.ref.kind==="quick", dn=q&&it.ref.done;
         return `<span class="wb-adtask${q?" quick":""}${dn?" done":""}"${
@@ -7181,6 +7235,7 @@ function pBoardHtml(days,topStrip,opts){
           style="--pc:${ppSafeColor(it.color)}"
           title="${esc(it.name)} · ${pFmtH(it.hours)}h — ${esc(t("unassigned — tap to set a time"))}">
           <i class="wb-adprojdot"></i>${esc(it.name)} <small>${pFmtH(it.hours)}h</small></span>`).join("")}${
+      clashChips}${
       care?`<span class="wb-adcare" title="${esc(care.name)} · ${pFmtH(care.hours)}h">🌿</span>`:""}</div>`
       :'<div class="wb-allday"></div>';
     /* drawn before the real blocks, so it sits underneath them in stacking
@@ -7384,8 +7439,12 @@ function pWireBoard(){
         day0:(rsz||blk).dataset.day||null,
         /* where the block started, so a move commits origin+delta — committing
            at the raw pointer would snap the block's TOP to the finger and lose
-           the grab offset, a visible jump on release */
-        time0:kind3==="tray"?null:startH+(parseFloat(el.style.top)||0)/WB_PXH};
+           the grab offset, a visible jump on release.
+           A chip picked up from the parking lot (.wb-allday) has no `top` of
+           its own to measure — it isn't a time, it's the absence of one — so
+           it falls back to the same raw-pointer drop the tray already uses,
+           same as "tray" kind does. */
+        time0:(kind3==="tray"||el.closest(".wb-allday"))?null:startH+(parseFloat(el.style.top)||0)/WB_PXH};
     pBoardBusy=true;
     try{ board.setPointerCapture(e.pointerId); }catch(err){}
     if(G2.mode==="resize"){ e.preventDefault(); }   // arms after slop like everything else
@@ -14541,10 +14600,14 @@ $("#logMix").addEventListener("click",async()=>{
   if(!S.subjects.length){ say("Add a plant first — then you can log a feed against it."); show("plants"); return; }
   const t=mixTarget();
   $("#logDlgTitle").textContent=`Log ${t?t.name:"mix"} · ${litres().toFixed(2)} L`;
-  $("#logPlants").innerHTML=subjectsIn("plants").map(p=>`<label class="lu">
+  $("#logPlants").innerHTML=subjectsIn("plants").map(p=>{
+    const ph=latestPhoto(p.id);
+    return `<label class="lu">
     <span class="sw"><input type="checkbox" data-lp="${p.id}"${
       !pendingPlants||pendingPlants.includes(p.id)?" checked":""}><i></i></span>
-    <span class="lu-name">${esc(p.name)}<small>${p.spot?esc(p.spot):""}</small></span></label>`).join("");
+    <span class="lu-name">${esc(p.name)}<small>${p.spot?esc(p.spot):""}</small></span>
+    ${ph?`<img class="lu-thumb" src="${ph.data}" alt="">`:'<span class="lu-thumb none">🌿</span>'}</label>`;
+  }).join("");
   $("#logNote").value="";
   $("#logDlg").showModal();
 });
