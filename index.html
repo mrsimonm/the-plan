@@ -914,6 +914,9 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 /* passed its time and still not ticked — a quiet marker, not an alarm */
 .wb-blk.missed{border-left-color:var(--amber)}
 .wb-blk .miss{color:var(--amber); font-weight:700; font-style:normal}
+.prewards{display:flex; align-items:center; gap:9px; margin-top:9px; flex-wrap:wrap}
+.prew-icons{font-size:15px; line-height:1.1; letter-spacing:1px}
+.prew-txt{font-size:12.5px; color:var(--ink-2)}
 /* ---- multi-select ----
    A selected block gets a ring rather than a fill change, so you can still
    read what it is and whether it is done/missed while it is picked. */
@@ -2705,6 +2708,7 @@ html{overscroll-behavior-y:none}
       </div>
       <div class="budget-bar" id="pBudgetBar"></div>
       <p class="pday-verdict" id="pVerdict"></p>
+      <div class="prewards" id="pRewards" hidden></div>
     </div>
 
     <div class="card pad">
@@ -6940,6 +6944,71 @@ function pEnsureView(){
   pSelISO=pToday();
 }
 
+/* ---- what you got done ----
+   He asked for something to collect ("nasbíral jsem dneska 30 kytek a mám dvě
+   prasátka"). Deliberately derived, never stored: a flower is one thing
+   finished today, a piglet is every tenth. Nothing to award, nothing to lose,
+   nothing to migrate — untick something and the flower goes with it, which is
+   the honest behaviour for a count of what is actually done.
+   Plant care counts too: watering something IS getting something done, and
+   the garden already logs every one of those with a timestamp. */
+function pRewardCount(iso){
+  const tasks=(S.planner.tasks||[]).filter(tk=>tk.done&&(
+    (tk.doneAt&&ymd(new Date(tk.doneAt))===iso)||(!tk.doneAt&&tk.due===iso))).length;
+  const care=((S.events)||[]).filter(e=>e&&e.at&&ymd(new Date(e.at))===iso).length;
+  return tasks+care;
+}
+function pRewards(){
+  const host=$("#pRewards"); if(!host) return;
+  const n=pRewardCount(pSelISO);
+  if(!n){ host.hidden=true; host.innerHTML=""; return; }
+  const pigs=Math.floor(n/10), flowers=n-pigs*10;
+  host.hidden=false;
+  /* the row shows what the tally MEANS, not n icons — thirty flowers on a
+     phone would wrap into a wall; ten collapse into a piglet instead */
+  /* plural(): the app's own counter, so Czech's 1/2-4/5+ forms come out right
+     too rather than being pluralised the English way */
+  const parts=[];
+  if(pigs>0) parts.push(plural(pigs,"piglet"));
+  if(flowers>0) parts.push(plural(flowers,"flower"));
+  host.innerHTML=`<span class="prew-icons" aria-hidden="true">${
+    "🐷".repeat(Math.min(pigs,8))}${"🌸".repeat(flowers)}</span>
+    <span class="prew-txt">${esc(
+      t("{n} done today").replace("{n}",n)+(parts.length?" · "+parts.join(" + "):""))}</span>`;
+}
+/* ---- what you got done ----
+   He asked for something to collect ("nasbíral jsem dneska 30 kytek a mám dvě
+   prasátka"). Deliberately derived, never stored: a flower is one thing
+   finished today, a piglet is every tenth. Nothing to award, nothing to lose,
+   nothing to migrate — untick something and its flower goes with it, which is
+   the honest behaviour for a count of what is actually done.
+   Plant care counts too: watering something IS getting something done, and
+   the garden already logs every one of those with a timestamp. */
+function pRewardCount(iso){
+  const tasks=(S.planner.tasks||[]).filter(tk=>tk.done&&(
+    (tk.doneAt&&ymd(new Date(tk.doneAt))===iso)||(!tk.doneAt&&tk.due===iso))).length;
+  const care=((S.events)||[]).filter(e=>e&&e.at&&ymd(new Date(e.at))===iso).length;
+  return tasks+care;
+}
+function pRewards(){
+  const host=$("#pRewards"); if(!host) return;
+  const n=pRewardCount(pSelISO);
+  if(!n){ host.hidden=true; host.innerHTML=""; return; }
+  const pigs=Math.floor(n/10), flowers=n-pigs*10;
+  host.hidden=false;
+  /* plural() so Czech's 1 / 2-4 / 5+ forms come out right rather than being
+     pluralised the English way */
+  const parts=[];
+  if(pigs>0) parts.push(plural(pigs,"piglet"));
+  if(flowers>0) parts.push(plural(flowers,"flower"));
+  /* the row shows what the tally MEANS, not n icons — thirty flowers on a
+     phone would wrap into a wall; every ten collapse into a piglet instead,
+     and the piglets themselves stop at eight so a huge day cannot overflow */
+  host.innerHTML=`<span class="prew-icons" aria-hidden="true">${
+    "🐷".repeat(Math.min(pigs,8))}${"🌸".repeat(flowers)}</span>
+    <span class="prew-txt">${esc(
+      t("{n} done today").replace("{n}",n)+(parts.length?" · "+parts.join(" + "):""))}</span>`;
+}
 function pDayPanel(){
   pEnsureView();
   const d=pParseISO(pSelISO), isToday=pSelISO===pToday();
@@ -6981,7 +7050,7 @@ function pDayPanel(){
     : free<2 ? t("Only {h}h free left. No room for anything extra.").replace("{h}",pFmtH(free))
     : t("{h}h free.").replace("{h}",pFmtH(free));
   if(B.overlapH>0.01) verdict+=" "+t("⚠ {h}h double-booked.").replace("{h}",pFmtH(B.overlapH));
-  vEl.textContent=verdict;
+  vEl.textContent=verdict;  pRewards();
 }
 function pMonthGen(m){ return (L.lang==="cs"?MONTH_CS_GEN:MONTH_EN)[m]; }
 
@@ -12051,6 +12120,7 @@ const cutUnit=c=>(METHODS[c.method]||METHODS.soil).u||"cutting";
 /* "3 plants" / "3 rostliny". Czech picks a different form at 1, at 2-4 and at 5+,
    and the forms are irregular, so each noun carries its own three. */
 const PLU={
+  piglet:["prasátko","prasátka","prasátek"], flower:["kytka","kytky","kytek"],
   thing:["věc","věci","věcí"], plant:["rostlina","rostliny","rostlin"],
   formula:["receptura","receptury","receptur"], product:["produkt","produkty","produktů"],
   cutting:["řízek","řízky","řízků"], corm:["hlíza","hlízy","hlíz"],
@@ -16289,6 +16359,7 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "New — parked":"Nové — na parkovišti","Add project":"Přidat projekt",
 "An event happens at a set time — it sits on the clock.":"Událost se děje v daný čas — sedí na hodinách.","A task is something to get done — it can wait in the parking lot.":"Úkol je něco, co je potřeba udělat — může počkat na parkovišti.",
 "Wind-down":"Zklidnění","Wind-down either side":"Zklidnění před a po","{h}h before bed and {h}h after waking, kept clear.":"{h}h před spaním a {h}h po probuzení, volno.",
+"{n} done today":"{n} hotovo dnes",
 "Rest":"Odpočinek","Also a rest during the day":"K tomu odpočinek přes den","{h}h of rest":"{h}h odpočinku",
 "Select":"Vybrat","Done selecting":"Hotovo","{n} selected":"{n} vybráno","Mark done":"Označit hotové","Not done":"Nesplněno","To parking lot":"Na parkoviště","Clear":"Zrušit výběr","Delete {n} blocks? This cannot be undone.":"Smazat {n} bloků? Nelze vzít zpět.","double-booked — drag onto a free hour":"dvojitá rezervace — přetáhni na volnou hodinu","unassigned — tap to set a time":"bez času — klepnutím nastavíš čas","Nothing parked — everything has a time.":"Nic tu neparkuje — všechno má svůj čas.","planned lc":"v plánu","Routine":"Rutina","drag one onto the hours above to schedule it":"přetáhni na hodiny výš a naplánuje se","Pause":"Pauza","Resume":"Pokračovat","Paused":"Pozastaveno","Skip":"Přeskočit","End this phase and start the next":"Ukončit tuto fázi a začít další","drag to move, edge to resize":"tažením přesuneš, okrajem změníš hodiny","Previous week":"Předchozí týden","Next week":"Další týden",
 "Previous day":"Předchozí den","Next day":"Další den","Yesterday":"Včera",
