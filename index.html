@@ -5612,7 +5612,13 @@ function migrate(d){
   if(!Array.isArray(d.cuttings)) d.cuttings=[];
   if(!Array.isArray(d.photos)) d.photos=[];
   if(!Array.isArray(d.users)||!d.users.length) d.users=base.users;
-  nNormalise(d);
+  /* Guarded because migrate() runs on EVERY boot that has stored data: if a
+     normaliser is ever missing — a half-landed feature, a load-order change —
+     an unguarded call takes the whole app down with a ReferenceError before
+     anything renders, which is exactly what happened when the Notes module's
+     call shipped a commit ahead of its definition. A missing normaliser
+     should cost that one module's tidy-up, not the user's entire app. */
+  if(typeof nNormalise==="function") nNormalise(d);
   d.v=6;
   return d;
 }
