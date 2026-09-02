@@ -3989,6 +3989,7 @@ html{overscroll-behavior-y:none}
   </div>
   <div class="dlg-foot">
     <button class="btn" type="button" id="pSlotCancel">Cancel</button>
+    <button class="btn" type="button" id="pSlotAddProject">Add project</button>
     <button class="btn" type="button" id="pSlotAddTask">Add task</button>
     <button class="btn primary" type="button" id="pSlotAddEvent">Add event</button>
     <button class="btn danger" type="button" id="pSlotDelete" hidden>Delete</button>
@@ -4124,7 +4125,6 @@ html{overscroll-behavior-y:none}
     <button class="btn primary" type="button" id="batchCareApply">Log it</button>
   </div>
 </dialog>
-
 <script>
 "use strict";
 
@@ -5411,6 +5411,7 @@ function migrate(d){
   if(!Array.isArray(d.cuttings)) d.cuttings=[];
   if(!Array.isArray(d.photos)) d.photos=[];
   if(!Array.isArray(d.users)||!d.users.length) d.users=base.users;
+  nNormalise(d);
   d.v=6;
   return d;
 }
@@ -7027,10 +7028,13 @@ function pOpenEditDialog(id){
   $("#pSlotCancel").textContent=t("Close");
   pSlotSyncKind(); pSlotRenderSteps();
 }
+/* fromH null means "no time" — the parking-lot route. The dialog then offers
+   only the kinds that can exist without a clock slot, and creates them parked. */
 function pOpenSlotDialog(day,fromH,hours){
+  const parked=fromH===null||fromH===undefined;
   pSlotEditId=null;
-  $("#pSlotTitle").textContent=t("New");
-  $("#pSlotAddTask").hidden=false; $("#pSlotAddEvent").hidden=false;
+  $("#pSlotTitle").textContent=parked?t("New — parked"):t("New");
+  $("#pSlotAddTask").hidden=false; $("#pSlotAddEvent").hidden=parked;
   $("#pSlotSave").hidden=true; $("#pSlotDelete").hidden=true; $("#pSlotDup").hidden=true;
   /* creating, not editing: the edit-only controls stay out of the way, and
      none of them may carry a value over from the last record opened */
@@ -7043,8 +7047,8 @@ function pOpenSlotDialog(day,fromH,hours){
   pSlotDay=day||pToday();
   const hhmm=v=>{ const m=Math.round(Math.max(0,Math.min(v,24))*60);
     return String(Math.floor(m/60)%24).padStart(2,"0")+":"+String(m%60).padStart(2,"0"); };
-  $("#pSlotTime").value=hhmm(fromH);
-  $("#pSlotHours").value=Math.round(Math.max(0.25,hours)*100)/100;
+  $("#pSlotTime").value=parked?"":hhmm(fromH);
+  $("#pSlotHours").value=Math.round(Math.max(0.25,hours||1)*100)/100;
   $("#pSlotText").value="";
   const d=pParseISO(pSlotDay);
   $("#pSlotWhen").textContent=dowName(d.getDay())+" "+d.getDate()+" "+pMonthGen(d.getMonth());
@@ -7070,6 +7074,18 @@ function pSlotCreate(kind){
   $("#pSlotDlg").close();
   pSelISO=pSlotDay; pWinShift=0; touch(); renderPlanner();
 }
+/* "a projekt tam nešel přidat" — the click-a-slot menu offered Task and Event
+   but not the third kind of thing the calendar draws, so a project had to be
+   made somewhere else entirely. It hands off to the project editor, which
+   owns every field a project needs; the day you clicked becomes its start. */
+$("#pSlotAddProject").addEventListener("click",()=>{
+  const day=pSlotDay;
+  $("#pSlotDlg").close();
+  if(!window.ppNewProject) return;
+  ppNewProject();
+  const st=document.getElementById("ppFS");
+  if(st&&day) st.value=day;
+});
 $("#pSlotSave").addEventListener("click",()=>{
   const tk=pFindTask(pSlotEditId); if(!tk){ $("#pSlotDlg").close(); return; }
   const isEvent=pSlotKindVal==="event";
@@ -8677,7 +8693,17 @@ function pWireBoard(){
     const h=e.target.closest("[data-wbgo]");
     if(h){ pSelISO=h.dataset.wbgo; pScope="day"; pWinShift=0; pDayPanel(); renderSchedule(); return; }
     const ap=e.target.closest("[data-wbaproj]");
-    if(ap) pOpenDayDialog("proj",ap.dataset.wbaproj,ap.dataset.day);
+    if(ap){ pOpenDayDialog("proj",ap.dataset.wbaproj,ap.dataset.day); return; }
+    /* Clicking the empty part of the parking row makes something there, the
+       way clicking an empty hour makes something on the grid — asked for on
+       the beta call ("kliknout do parkoviště a rovnou tam něco založit").
+       It opens with no time, so what you make stays parked until you drag it
+       onto an hour; the day is whichever the board is centred on. */
+    const row=e.target.closest(".wb-parking");
+    if(row&&!e.target.closest(".wb-traychip")){
+      const days=pDaysFor(pScope,pSelISO);
+      pOpenSlotDialog(days.includes(pSelISO)?pSelISO:days[0],null,1);
+    }
   });
 }
 
@@ -16061,6 +16087,7 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "Tracked hours count here":"Měřené hodiny se počítají sem",
 "Projects count here":"Projekty se počítají sem",
 "Unscheduled":"Nenaplánované","Parking lot":"Parkoviště","Still not done":"Pořád nesplněno","Duplicate":"Duplikovat",
+"New — parked":"Nové — na parkovišti","Add project":"Přidat projekt",
 "An event happens at a set time — it sits on the clock.":"Událost se děje v daný čas — sedí na hodinách.","A task is something to get done — it can wait in the parking lot.":"Úkol je něco, co je potřeba udělat — může počkat na parkovišti.",
 "Rest":"Odpočinek","Also a rest during the day":"K tomu odpočinek přes den","{h}h of rest":"{h}h odpočinku",
 "Select":"Vybrat","Done selecting":"Hotovo","{n} selected":"{n} vybráno","Mark done":"Označit hotové","Not done":"Nesplněno","To parking lot":"Na parkoviště","Clear":"Zrušit výběr","Delete {n} blocks? This cannot be undone.":"Smazat {n} bloků? Nelze vzít zpět.","double-booked — drag onto a free hour":"dvojitá rezervace — přetáhni na volnou hodinu","unassigned — tap to set a time":"bez času — klepnutím nastavíš čas","Nothing parked — everything has a time.":"Nic tu neparkuje — všechno má svůj čas.","planned lc":"v plánu","Routine":"Rutina","drag one onto the hours above to schedule it":"přetáhni na hodiny výš a naplánuje se","Pause":"Pauza","Resume":"Pokračovat","Paused":"Pozastaveno","Skip":"Přeskočit","End this phase and start the next":"Ukončit tuto fázi a začít další","drag to move, edge to resize":"tažením přesuneš, okrajem změníš hodiny","Previous week":"Předchozí týden","Next week":"Další týden",
@@ -17052,6 +17079,27 @@ const TBS = (() => {
     const next = SRS.scheduleNext(card, grade, new Date());
     await cardsOf(studentId).doc(cardId).update(next);
     return next;
+  }
+
+  /* ---- progress (streak / points) ---- */
+  const progRef = id => students().doc(id).collection("progress").doc("streak");
+
+  function onProgress(studentId, cb){
+    return progRef(studentId).onSnapshot(
+      d => cb(d.exists ? d.data() : STREAK.empty(), null),
+      err => { console.warn("progress", err); cb(STREAK.empty(), err); });
+  }
+  /* Written by the student's own device as a by-product of reviewing.
+     Merged rather than replaced so two tabs cannot wipe each other's
+     history wholesale. */
+  async function saveProgress(studentId, prog){
+    await init();
+    return progRef(studentId).set(prog, { merge:true });
+  }
+  async function getProgress(studentId){
+    await init();
+    const d = await progRef(studentId).get();
+    return d.exists ? d.data() : STREAK.empty();
   }
 
   /* ---- homework ---- */
