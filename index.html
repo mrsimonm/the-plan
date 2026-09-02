@@ -3931,6 +3931,52 @@ html{overscroll-behavior-y:none}
     </div>
   </form>
 </dialog>
+
+  <!-- ============ NOTES ============ -->
+  <section class="view" id="view-notes" hidden>
+    <div class="sec-head">
+      <h2>Notes</h2>
+      <button class="btn primary mini" type="button" id="nNewBtn">+ New note</button>
+    </div>
+
+    <div class="card pad">
+      <div class="n-list-head">
+        <label class="n-sr" for="nSearch">Search notes</label>
+        <input type="search" id="nSearch" class="n-search" placeholder="Search notes…"
+               autocomplete="off" aria-label="Search notes">
+      </div>
+    </div>
+
+    <div class="card">
+      <div id="nList"></div>
+      <p class="empty" id="nEmpty" hidden></p>
+    </div>
+  </section>
+
+  <!-- ============ ONE NOTE ============ -->
+  <section class="view" id="view-note" hidden>
+    <div class="sec-head">
+      <h2 class="n-sr">Note</h2>
+      <button class="btn" type="button" id="nBack">← Notes</button>
+    </div>
+
+    <div class="card pad">
+      <div class="n-editor-head">
+        <label class="n-sr" for="nTitle">Note title</label>
+        <input type="text" id="nTitle" class="n-title-input" placeholder="Untitled"
+               autocomplete="off" aria-label="Note title">
+        <span class="n-meta" id="nMeta"></span>
+      </div>
+      <div class="n-blocks" id="nBlocks"></div>
+      <button class="btn mini" type="button" id="nAddBlock" style="margin-top:10px">+ Add block</button>
+    </div>
+
+    <div class="card pad">
+      <button class="btn mini" type="button" id="nDelete">Delete note</button>
+      <p class="hint" style="margin:8px 0 0">Notes save as you type. "# " makes a heading, "- " a bullet, "[] " a to-do.</p>
+    </div>
+  </section>
+
 </main>
 
 <!-- plant editor -->
@@ -12954,7 +13000,8 @@ const APPS=[{id:"bench",label:"Potting Bench",view:null},
             {id:"planner",label:"Daily Planner",view:"planner"},
             {id:"hours",label:"Hours",view:"hours"},
             {id:"teachbench",label:"Teachbench",view:"teachbench"},
-            {id:"teachbench-student",label:"Student Bench",view:"teachbench-student"}];
+            {id:"teachbench-student",label:"Student Bench",view:"teachbench-student"},
+            {id:"notes",label:"Notes",view:"notes"}];
 const BENCH_VIEWS=["garden","library","mix","plants","plan","cuttings","batch","shelf","log","academy","acadedit","settings","plant","product","sched","formula","stats"];
 const NAV_PARENT={batch:"cuttings", plant:"garden", plants:"library", product:"library",
   sched:"plan", formula:"mix", acadedit:"library", settings:"library", shelf:"library", log:"library", academy:"library"};
@@ -14238,7 +14285,7 @@ function showNow(v){
      own re-render is a no-op rather than a recursion. */
   if(v!=="planner"&&document.documentElement.classList.contains("pfocus")) pSetFocus(false);
   document.querySelectorAll(".nav button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.view===v)));
-  BENCH_VIEWS.concat(["planner","hours","hproject","teachbench","teachbench-student"]).forEach(x=>{ $("#view-"+x).hidden=(x!==v); });
+  BENCH_VIEWS.concat(["planner","hours","hproject","teachbench","teachbench-student","notes","note"]).forEach(x=>{ $("#view-"+x).hidden=(x!==v); });
   /* editor sub-views (product/formula/plant/batch/…) are populated by their
      open* call, not by showNow — relaunching straight into one was a blank
      shell that crashed on the first tap. Remember their parent tab instead. */
@@ -14252,6 +14299,8 @@ function showNow(v){
      holding the jug pours five times the dose. */
   if(v==="teachbench") renderTeachbench();
   if(v==="teachbench-student") renderTeachbenchStudent();
+  if(v==="notes") renderNotes();
+  if(v==="note") nGrowAll();
   if(v==="mix"){ renderVol(); renderStr(); renderDue(); renderHow(); renderMix(); }
   if(v==="plan"){ anchor=sod(Date.now()); }
   if(v==="shelf") renderShelf(); if(v==="plants") renderSubjects(); if(v==="academy") renderAcademy();
@@ -19652,4 +19701,425 @@ if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
     navigator.serviceWorker.register("./sw.js").catch(() => {});
   });
 }
+/* ============================================================================
+   NOTES — a block editor in the shape of Notion, kept deliberately plain.
+
+   Every block is its own <textarea> rather than one big contenteditable. That
+   is an Android decision before it is a design one: contenteditable fights the
+   soft keyboard's composition events, loses the caret whenever the subtree is
+   rewritten, and reorders input on exactly the phone this app is used on. A
+   textarea per block is boring, and boring is what survives a Samsung keyboard.
+
+   The rule that everything else here bends around: TYPING NEVER RE-RENDERS.
+   Rebuilding #nBlocks on a keystroke tears the focused textarea out of the DOM,
+   which drops the caret and dismisses the keyboard mid-word. So a keystroke
+   only mutates the model and grows the textarea in place. Structural changes —
+   split, merge, delete, retype, reorder — are the only things allowed to
+   rebuild, and each one hands nRestructure() the block and offset the caret
+   must come back to.
+   ============================================================================ */
+
+const N_TYPES=[["p","Text"],["h1","Heading 1"],["h2","Heading 2"],["h3","Heading 3"],
+  ["ul","Bulleted list"],["ol","Numbered list"],["todo","To-do"],
+  ["quote","Quote"],["code","Code"],["hr","Divider"]];
+const N_TYPE_SET=new Set(N_TYPES.map(x=>x[0]));
+const N_LIST_TYPES={ul:1,ol:1,todo:1};
+const nBlock=(type,text)=>({id:uid(),type:type||"p",text:text||"",checked:false});
+
+/* Runs from migrate(), which boot() calls BEFORE this block has executed. Only
+   the function DECLARATION is hoisted that early — every const below is still
+   in its temporal dead zone — so this function deliberately touches nothing
+   outside itself. Reaching for nBlock() or N_TYPE_SET here would ReferenceError
+   during boot and white-screen the whole app. It also has to be idempotent, and
+   survive whatever is already in the store, including nothing at all. */
+function nNormalise(d){
+  const TYPES={p:1,h1:1,h2:1,h3:1,ul:1,ol:1,todo:1,quote:1,code:1,hr:1};
+  const rid=()=>Math.random().toString(36).slice(2,9);
+  d.notebooks=(Array.isArray(d.notebooks)?d.notebooks:[])
+    .filter(nb=>nb&&typeof nb==="object")
+    .map(nb=>({id:nb.id||rid(), name:typeof nb.name==="string"?nb.name:"Notebook"}));
+  d.notes=(Array.isArray(d.notes)?d.notes:[])
+    .filter(n=>n&&typeof n==="object")
+    .map(n=>{
+      let blocks=(Array.isArray(n.blocks)?n.blocks:[])
+        .filter(b=>b&&typeof b==="object")
+        .map(b=>({id:b.id||rid(),
+                  type:TYPES[b.type]?b.type:"p",
+                  text:typeof b.text==="string"?b.text:String(b.text==null?"":b.text),
+                  checked:b.checked===true}));
+      /* A note with no blocks renders nothing to put a caret in, so it would be
+         permanently untypable. Every note keeps at least one empty paragraph. */
+      if(!blocks.length) blocks=[{id:rid(),type:"p",text:"",checked:false}];
+      const made=Number(n.createdAt)||Date.now();
+      return {id:n.id||rid(),
+              title:typeof n.title==="string"?n.title:String(n.title==null?"":n.title),
+              blocks:blocks,
+              notebook:n.notebook||null,
+              tags:Array.isArray(n.tags)?n.tags.filter(x=>typeof x==="string"):[],
+              pinned:n.pinned===true, archived:n.archived===true,
+              createdAt:made, updatedAt:Number(n.updatedAt)||made};
+    });
+  return d;
+}
+
+const nNoteById=id=>(S.notes||[]).find(n=>n.id===id)||null;
+const nOpenNote=()=>nNoteById(L.noteId);
+const nIdx=(n,bid)=>n.blocks.findIndex(b=>b.id===bid);
+function nTouchNote(n){ if(n) n.updatedAt=Date.now(); touch(); }
+
+/* A divider has no textarea, so arrow keys and post-delete focus have to step
+   over it rather than land on it and silently do nothing. */
+function nTypableNear(n,idx,dir){
+  for(let i=idx;i>=0&&i<n.blocks.length;i+=dir) if(n.blocks[i].type!=="hr") return n.blocks[i];
+  return null;
+}
+
+function nSnippet(n){
+  const b=(n.blocks||[]).find(x=>x.type!=="hr"&&(x.text||"").trim());
+  return b?b.text.trim().replace(/\s+/g," ").slice(0,120):"";
+}
+function nWhen(ts){
+  const d=new Date(ts||Date.now()), now=new Date();
+  if(d.toDateString()===now.toDateString())
+    return d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+  return d.toLocaleDateString([], d.getFullYear()===now.getFullYear()
+    ?{day:"numeric",month:"short"}:{day:"numeric",month:"short",year:"numeric"});
+}
+
+/* ---------------- the list ---------------- */
+var nQuery="";   /* var, not let: renderNotes() can run from boot() before this line */
+function nMatches(n,q){
+  if(!q) return true;
+  if((n.title||"").toLowerCase().indexOf(q)>=0) return true;
+  return (n.blocks||[]).some(b=>(b.text||"").toLowerCase().indexOf(q)>=0);
+}
+function renderNotes(){
+  const host=$("#nList"); if(!host) return;
+  const q=(nQuery||"").trim().toLowerCase();
+  const list=(S.notes||[]).filter(n=>!n.archived&&nMatches(n,q))
+    .sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||(b.updatedAt||0)-(a.updatedAt||0));
+  host.innerHTML=list.map(n=>{
+    const snip=nSnippet(n);
+    return `<div class="n-row">
+      <button type="button" class="n-row-main" data-open="${esc(n.id)}">
+        <span class="n-row-title">${esc(n.title||"Untitled")}</span>
+        <span class="n-row-sub">${snip?esc(snip):"<i>Empty note</i>"}</span>
+      </button>
+      <span class="n-row-date">${esc(nWhen(n.updatedAt||n.createdAt))}</span>
+      <button type="button" class="n-pin${n.pinned?" on":""}" data-pin="${esc(n.id)}"
+        aria-pressed="${n.pinned?"true":"false"}" aria-label="Pin this note">&#9733;</button>
+    </div>`;
+  }).join("");
+  const empty=$("#nEmpty");
+  if(empty){
+    empty.hidden=list.length>0;
+    empty.textContent=q?'Nothing matches "'+(nQuery||"").trim()+'".'
+      :"No notes yet — start one and it saves as you type.";
+  }
+}
+
+/* ---------------- the editor ---------------- */
+/* A textarea inside a display:none section has no layout box, so scrollHeight
+   comes back as a meaningless number — and because nRenderEditor deliberately
+   runs BEFORE show() (the app's own rule: populate a view, then reveal it) that
+   is exactly the state every block is first measured in. Writing a height then
+   bakes the garbage in permanently, which is what turned an eight-character
+   heading into an eight-line one. Refuse to measure without layout; nGrowAll()
+   comes back for it once the view is on screen. */
+function nAutoGrow(ta){
+  if(!ta||!ta.clientWidth) return;
+  ta.style.height="auto"; ta.style.height=ta.scrollHeight+"px";
+}
+/* Deferred a frame because showNow() runs inside the View Transition callback,
+   where the new view is in the DOM but has not been laid out yet. */
+function nGrowAll(){
+  requestAnimationFrame(()=>document.querySelectorAll("#nBlocks .n-block-ta").forEach(nAutoGrow));
+}
+
+function nFocusBlock(bid,pos){
+  if(!bid) return;
+  const ta=document.querySelector('#nBlocks [data-ta="'+bid+'"]');
+  if(!ta) return;
+  ta.focus();
+  const p=pos==null?ta.value.length:Math.max(0,Math.min(pos,ta.value.length));
+  try{ ta.setSelectionRange(p,p); }catch(e){}
+  nAutoGrow(ta);
+}
+
+function nBlockHtml(b,ord){
+  const id=esc(b.id);
+  if(b.type==="hr") return `<div class="n-block" data-b="${id}" data-type="hr">
+      <button type="button" class="n-btype" data-menu="${id}" aria-label="Change block type">⋯</button>
+      <hr class="n-hr"></div>`;
+  const lead = b.type==="ul" ? '<span class="n-bullet" aria-hidden="true">•</span>'
+    : b.type==="ol" ? '<span class="n-num" aria-hidden="true">'+ord+'.</span>'
+    : b.type==="todo" ? `<label class="n-todo-box"><input type="checkbox" data-check="${id}"${b.checked?" checked":""} aria-label="Done"><i></i></label>`
+    : "";
+  const ph = (b.type==="h1"||b.type==="h2"||b.type==="h3") ? "Heading"
+    : b.type==="code" ? "Code" : b.type==="quote" ? "Quote"
+    : 'Type here, or "- " for a list';
+  return `<div class="n-block" data-b="${id}" data-type="${esc(b.type)}"${(b.type==="todo"&&b.checked)?' data-done="1"':""}>
+      <button type="button" class="n-btype" data-menu="${id}" aria-label="Change block type">⋯</button>
+      ${lead}<textarea class="n-block-ta" data-ta="${id}" rows="1" placeholder="${esc(ph)}">${esc(b.text)}</textarea>
+    </div>`;
+}
+
+function nRenderMeta(){
+  const n=nOpenNote(), meta=$("#nMeta"); if(!meta) return;
+  if(!n){ meta.textContent=""; return; }
+  const words=n.blocks.reduce((a,b)=>a+((b.text||"").trim()?b.text.trim().split(/\s+/).length:0),0);
+  meta.textContent="Edited "+nWhen(n.updatedAt||n.createdAt)+" · "
+    +n.blocks.length+" block"+(n.blocks.length===1?"":"s")+" · "
+    +words+" word"+(words===1?"":"s");
+}
+
+function nRenderEditor(){
+  const host=$("#nBlocks"); if(!host) return;
+  const n=nOpenNote(), title=$("#nTitle");
+  if(!n){ host.innerHTML=""; if(title) title.value=""; nRenderMeta(); return; }
+  /* Don't stamp over the title while it is being typed into — the caret would
+     jump to the end on every keystroke. */
+  if(title&&document.activeElement!==title) title.value=n.title||"";
+  let ord=0;
+  host.innerHTML=n.blocks.map(b=>{ ord=(b.type==="ol")?ord+1:0; return nBlockHtml(b,ord); }).join("");
+  nGrowAll();
+  nRenderMeta();
+}
+
+/* The only path allowed to rebuild the block list. Callers say where the caret
+   belongs afterwards, because the browser cannot know. */
+function nRestructure(focusId,pos){ nRenderEditor(); nFocusBlock(focusId,pos); }
+
+function openNote(id){
+  const n=nNoteById(id); if(!n) return;
+  L.noteId=id; saveLocal();
+  nRenderEditor();
+  show("note");
+}
+function nNewNote(){
+  const now=Date.now(), n={id:uid(),title:"",blocks:[nBlock("p","")],notebook:null,
+    tags:[],pinned:false,archived:false,createdAt:now,updatedAt:now};
+  S.notes=S.notes||[]; S.notes.unshift(n); touch();
+  openNote(n.id);
+  /* show() may run inside a view transition, so the textarea is not focusable
+     until the swap has happened — hence the next tick rather than right now. */
+  setTimeout(()=>nFocusBlock(n.blocks[0].id,0),0);
+}
+
+/* ---------------- markdown shortcuts ----------------
+   Matched against the block's WHOLE text, never against the slice before the
+   caret. Caret-relative matching reads as the more precise of the two, but it
+   leans on selectionStart being trustworthy at input time and it is not: an IME
+   composition, an autocomplete insertion, a paste and at least one automation
+   harness all report a stale offset, and the shortcut then silently never
+   fires. A prefix test needs nothing but the text. Longest trigger first, so
+   "### " is never eaten by "# ". */
+const N_MD=[["### ","h3"],["## ","h2"],["# ","h1"],
+  ["- ","ul"],["* ","ul"],["1. ","ol"],
+  ["[ ] ","todo"],["[] ","todo"],
+  ["> ","quote"],["```","code"],["---","hr"]];
+function nTryMarkdown(n,b,ta){
+  /* Shortcuts fire from any typable block, not just a paragraph. Once Enter has
+     carried you into a bullet list every following block is a "ul", so a
+     paragraph-only guard silently traps you there: no heading, no divider, no
+     to-do until you reach for the menu. "code" is excluded because inside a
+     code block the trigger characters are content, and "hr" has no textarea. */
+  if(b.type==="code"||b.type==="hr") return false;
+  const v=ta.value;
+  for(let i=0;i<N_MD.length;i++){
+    const trig=N_MD[i][0], type=N_MD[i][1];
+    if(v.indexOf(trig)!==0||type===b.type) continue;
+    const rest=v.slice(trig.length);
+    /* "```" and "---" have no trailing space to close them, so they only count
+       while they are the entire block. Without this, "--- and then some" turns
+       into a divider halfway through the sentence and eats the words. */
+    if((type==="code"||type==="hr")&&rest!=="") continue;
+    b.text=rest;                           // the trigger is consumed, not left behind
+    if(type==="hr"){
+      b.type="hr"; b.text="";
+      const nb=nBlock("p",rest);
+      n.blocks.splice(nIdx(n,b.id)+1,0,nb);
+      nTouchNote(n); nRestructure(nb.id,0);
+    }else{
+      b.type=type; nTouchNote(n); nRestructure(b.id,rest.length);
+    }
+    return true;
+  }
+  return false;
+}
+
+/* ---------------- block type menu ---------------- */
+function nCloseMenu(){ const m=$("#nTypeMenu"); if(m) m.remove(); }
+function nOpenTypeMenu(bid,anchorEl){
+  nCloseMenu();
+  const n=nOpenNote(); if(!n) return;
+  const b=n.blocks.find(x=>x.id===bid); if(!b) return;
+  const m=document.createElement("div");
+  m.id="nTypeMenu"; m.className="n-btype-menu"; m.setAttribute("role","menu"); m.dataset.b=bid;
+  m.innerHTML=N_TYPES.map(p=>`<button type="button" role="menuitem" data-settype="${esc(p[0])}"${p[0]===b.type?' aria-current="true"':""}>${esc(p[1])}</button>`).join("")
+    +'<div class="n-menu-sep"></div><button type="button" role="menuitem" class="n-danger" data-delblock="1">Delete block</button>';
+  document.body.appendChild(m);
+  const r=anchorEl.getBoundingClientRect();
+  m.style.top=(window.scrollY+r.bottom+6)+"px";
+  m.style.left=Math.max(8,Math.min(window.scrollX+r.left,
+    window.scrollX+window.innerWidth-m.offsetWidth-8))+"px";
+  const first=m.querySelector("button"); if(first) first.focus();
+}
+
+/* ---------------- wiring: attached once, never inside a render ---------------- */
+(function nWire(){
+  const list=$("#nList"), blocks=$("#nBlocks");
+  if(!list||!blocks) return;   /* markup absent (student boot) — stay quiet */
+
+  const search=$("#nSearch");
+  if(search) search.addEventListener("input",()=>{ nQuery=search.value; renderNotes(); });
+  const newBtn=$("#nNewBtn"); if(newBtn) newBtn.addEventListener("click",nNewNote);
+  const back=$("#nBack"); if(back) back.addEventListener("click",()=>{ renderNotes(); show("notes"); });
+
+  const title=$("#nTitle");
+  if(title) title.addEventListener("input",()=>{
+    const n=nOpenNote(); if(!n) return;
+    n.title=title.value; nQueueSave();
+  });
+
+  const add=$("#nAddBlock");
+  if(add) add.addEventListener("click",()=>{
+    const n=nOpenNote(); if(!n) return;
+    const nb=nBlock("p",""); n.blocks.push(nb);
+    nTouchNote(n); nRestructure(nb.id,0);
+  });
+
+  const del=$("#nDelete");
+  if(del) del.addEventListener("click",()=>{
+    const n=nOpenNote(); if(!n) return;
+    if(!confirm('Delete "'+(n.title||"Untitled")+'"? This cannot be undone.')) return;
+    S.notes=(S.notes||[]).filter(x=>x.id!==n.id);
+    L.noteId=null; saveLocal(); touch();
+    renderNotes(); show("notes");
+  });
+
+  list.addEventListener("click",e=>{
+    const pin=e.target.closest("[data-pin]");
+    if(pin){ const n=nNoteById(pin.dataset.pin); if(n){ n.pinned=!n.pinned; nTouchNote(n); renderNotes(); } return; }
+    const open=e.target.closest("[data-open]");
+    if(open) openNote(open.dataset.open);
+  });
+
+  blocks.addEventListener("input",e=>{
+    const ta=e.target.closest(".n-block-ta"); if(!ta) return;
+    const n=nOpenNote(); if(!n) return;
+    const b=n.blocks.find(x=>x.id===ta.dataset.ta); if(!b) return;
+    b.text=ta.value;
+    nAutoGrow(ta);
+    if(nTryMarkdown(n,b,ta)) return;
+    nQueueSave();
+  });
+
+  blocks.addEventListener("change",e=>{
+    const cb=e.target.closest("[data-check]"); if(!cb) return;
+    const n=nOpenNote(); if(!n) return;
+    const b=n.blocks.find(x=>x.id===cb.dataset.check); if(!b) return;
+    b.checked=cb.checked;
+    const wrap=cb.closest(".n-block");
+    if(wrap){ if(b.checked) wrap.dataset.done="1"; else delete wrap.dataset.done; }
+    nTouchNote(n); nRenderMeta();
+  });
+
+  blocks.addEventListener("keydown",e=>{
+    const ta=e.target.closest(".n-block-ta"); if(!ta) return;
+    const n=nOpenNote(); if(!n) return;
+    const at=nIdx(n,ta.dataset.ta); if(at<0) return;
+    const b=n.blocks[at];
+
+    if(e.key==="Enter"&&!e.shiftKey&&b.type!=="code"){
+      e.preventDefault();
+      /* Enter on an empty list item leaves the list instead of making another
+         empty one — the behaviour every editor has trained people to expect. */
+      if(!ta.value.trim()&&N_LIST_TYPES[b.type]){
+        b.type="p"; b.checked=false; nTouchNote(n); nRestructure(b.id,0); return;
+      }
+      const pos=ta.selectionStart;
+      b.text=ta.value.slice(0,pos);
+      const nb=nBlock(N_LIST_TYPES[b.type]?b.type:"p", ta.value.slice(pos));
+      n.blocks.splice(at+1,0,nb);
+      nTouchNote(n); nRestructure(nb.id,0);
+      return;
+    }
+
+    if(e.key==="Backspace"&&ta.selectionStart===0&&ta.selectionEnd===0){
+      /* A styled block backspaced into at offset 0 drops its styling first, and
+         only a plain paragraph merges upward — otherwise there is no way to undo
+         a "- " without also deleting the words you just typed. This deliberately
+         runs BEFORE the first-block guard: the very first block of a note is the
+         one most likely to have been mistyped as a list, and it was previously
+         the one block that could never be turned back. */
+      if(b.type!=="p"){ e.preventDefault(); b.type="p"; b.checked=false; nTouchNote(n); nRestructure(b.id,0); return; }
+      if(at===0) return;
+      e.preventDefault();
+      const prev=n.blocks[at-1];
+      if(prev.type==="hr"){ n.blocks.splice(at-1,1); nTouchNote(n); nRestructure(b.id,0); return; }
+      const join=prev.text.length;
+      prev.text=prev.text+ta.value;
+      n.blocks.splice(at,1);
+      nTouchNote(n); nRestructure(prev.id,join);
+      return;
+    }
+
+    if(e.key==="ArrowUp"&&ta.selectionStart===0&&at>0){
+      const p=nTypableNear(n,at-1,-1);
+      if(p){ e.preventDefault(); nFocusBlock(p.id,null); }
+      return;
+    }
+    if(e.key==="ArrowDown"&&ta.selectionStart===ta.value.length&&at<n.blocks.length-1){
+      const p=nTypableNear(n,at+1,1);
+      if(p){ e.preventDefault(); nFocusBlock(p.id,0); }
+    }
+  });
+
+  blocks.addEventListener("click",e=>{
+    const mb=e.target.closest("[data-menu]");
+    if(mb){ e.stopPropagation(); nOpenTypeMenu(mb.dataset.menu,mb); }
+  });
+
+  document.addEventListener("click",e=>{
+    const m=$("#nTypeMenu"); if(!m) return;
+    if(!m.contains(e.target)){ nCloseMenu(); return; }
+    const n=nOpenNote(); if(!n) return;
+    const b=n.blocks.find(x=>x.id===m.dataset.b); if(!b) return;
+    const st=e.target.closest("[data-settype]");
+    if(st){
+      b.type=st.dataset.settype;
+      if(b.type!=="todo") b.checked=false;
+      if(b.type==="hr") b.text="";
+      nCloseMenu(); nTouchNote(n);
+      nRestructure(b.type==="hr"?null:b.id,null);
+      return;
+    }
+    if(e.target.closest("[data-delblock]")){
+      const at=nIdx(n,b.id);
+      n.blocks.splice(at,1);
+      if(!n.blocks.length) n.blocks.push(nBlock("p",""));
+      const f=nTypableNear(n,Math.min(at,n.blocks.length-1),-1)||nTypableNear(n,0,1);
+      nCloseMenu(); nTouchNote(n); nRestructure(f?f.id:null,null);
+    }
+  });
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape") nCloseMenu(); });
+})();
+
+var nMetaTimer=null;
+/* The store already coalesces its own writes onto the next tick, so calling
+   touch() per keystroke costs one localStorage write per frame rather than one
+   per character — the same deal every other mutation in this app gets. Holding
+   the save behind a debounce instead opened a quiet data-loss window: close the
+   tab inside those 250ms and the words just typed had never been handed to the
+   store at all, so the pagehide flush faithfully wrote a stale copy. The only
+   thing debounced now is the meta line, because that is DOM work and nobody
+   needs a word count recomputed on every keypress. */
+function nQueueSave(){
+  const n=nOpenNote(); if(n) n.updatedAt=Date.now();
+  touch();
+  clearTimeout(nMetaTimer);
+  nMetaTimer=setTimeout(nRenderMeta,250);
+}
+
 </script>
