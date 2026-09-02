@@ -3664,6 +3664,26 @@ html{overscroll-behavior-y:none}
           <div class="tbs-duelabel" id="tbsDueLabel">nothing to review right now</div>
           <button class="btn primary" id="tbsStartReview" hidden>Start reviewing</button>
         </div>
+        <div class="card pad" id="tbsStreakCard" hidden>
+          <div class="tbs-stats">
+            <div class="tbs-stat good"><b id="tbsStreakN">0</b><small>day streak</small></div>
+            <div class="tbs-stat"><b id="tbsPointsN">0</b><small>points</small></div>
+            <div class="tbs-stat"><b id="tbsBestN">0</b><small>best</small></div>
+          </div>
+          <p class="tbs-muted" id="tbsStreakNote" style="font-size:12.5px; margin:10px 0 0"></p>
+        </div>
+
+        <div class="card pad stack" id="tbsRecapCard" hidden>
+          <span class="eyebrow" id="tbsRecapMonth">This month</span>
+          <div class="tbs-stats">
+            <div class="tbs-stat"><b id="tbsRecapNew">0</b><small>new words</small></div>
+            <div class="tbs-stat good"><b id="tbsRecapMastered">0</b><small>mastered</small></div>
+            <div class="tbs-stat"><b id="tbsRecapAcc">—</b><small>recall</small></div>
+          </div>
+          <p id="tbsRecapFocus" class="tbs-muted" style="font-size:12.5px; margin:0" hidden></p>
+          <p id="tbsRecapMsg" style="margin:0; line-height:1.5"></p>
+        </div>
+
         <div class="card pad" id="tbsNextUp" hidden>
           <span class="eyebrow">Next review</span>
           <p id="tbsNextUpText" class="tbs-muted"></p>
@@ -3789,6 +3809,19 @@ html{overscroll-behavior-y:none}
         <button class="btn" id="tbsStuBack">← Students</button>
       </div>
       <div class="card pad stack" id="tbsStuStats"></div>
+      <div class="card pad stack">
+        <span class="eyebrow">End of month</span>
+        <p class="tbs-muted" style="font-size:12px; margin:0">
+          A plain-text summary of this student's month — what they have mastered,
+          what keeps slipping, what you added — ready to paste into an LLM to
+          help draft next month's lessons.</p>
+        <div class="row" style="gap:8px">
+          <button class="btn" id="tbsCopyPlan">Copy planning notes</button>
+          <button class="btn mini" id="tbsShowPlan">Preview</button>
+        </div>
+        <textarea id="tbsPlanText" rows="12" readonly hidden
+                  aria-label="Planning notes" style="font-size:12px; font-family:var(--mono,monospace)"></textarea>
+      </div>
       <div class="card pad stack">
         <span class="eyebrow">Access link</span>
         <p class="tbs-muted" style="font-size:12px">Send this once — it opens their own app on their own device.</p>
@@ -17006,6 +17039,192 @@ const SRS = (() => {
   return { fresh, scheduleNext, isDue, qualityOf };
 })();
 
+/* ------------------------------------------------------------- STREAK ----
+   Motivation that reinforces the schedule rather than mere attendance.
+   A generic daily streak would punish a student on a day the algorithm
+   gave them nothing to do, and reward opening the app to do nothing —
+   both of which pull against spaced repetition. So:
+
+     · a day with nothing due does NOT break the streak
+     · letting a card sit more than a day past its slot DOES
+     · reviewing something early, for the love of it, earns a little
+       but never inflates the streak
+
+   Pure functions over a plain record, like SRS — no DOM, no network. */
+const STREAK = (() => {
+  const PTS = { onTime:10, late:4, extra:3, clearedDay:25 };
+  const GRACE_DAYS = 1;          // a card is "let slip" only after this
+  const KEEP_DAYS  = 62;         // history kept for the recap, then pruned
+
+  const dayOf = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+
+  function empty(){
+    return { currentStreak:0, bestStreak:0, points:0, lastStudyDate:null,
+             onTime:0, late:0, extra:0, days:{} };
+  }
+
+  /* One review. `ev` describes it in the algorithm's own terms:
+       wasDue      — the card had come up for review
+       daysLate    — how far past its slot it was (0 if early/on time)
+       anySlipped  — is anything ELSE currently more than the grace
+                     period overdue? that is what breaks a streak */
+  function record(prog, ev, now){
+    const p = { ...empty(), ...(prog||{}) };
+    p.days = { ...(p.days||{}) };
+    const at = now instanceof Date ? now : new Date(now || Date.now());
+    const day = dayOf(at);
+
+    const kind = !ev.wasDue ? "extra"
+               : (ev.daysLate||0) > GRACE_DAYS ? "late" : "onTime";
+    p[kind] = (p[kind]||0) + 1;
+    p.points = (p.points||0) + PTS[kind];
+
+    const d = p.days[day] || { reviewed:0, onTime:0, late:0, extra:0 };
+    d.reviewed += 1; d[kind] += 1;
+    p.days[day] = d;
+
+    /* The streak moves once per day, on the first review of that day. */
+    if(p.lastStudyDate !== day){
+      p.currentStreak = ev.anySlipped ? 1 : (p.currentStreak||0) + 1;
+      p.lastStudyDate = day;
+    }
+    if(p.currentStreak > (p.bestStreak||0)) p.bestStreak = p.currentStreak;
+
+    /* Keep the history small enough to sit in one document forever. */
+    const cutoff = new Date(at.getTime() - KEEP_DAYS*86400000);
+    Object.keys(p.days).forEach(k => { if(new Date(k) < cutoff) delete p.days[k]; });
+    return p;
+  }
+
+  /* Award the day-cleared bonus once, when the last due card goes. */
+  function clearedDay(prog, now){
+    const p = { ...empty(), ...(prog||{}) };
+    p.days = { ...(p.days||{}) };
+    const day = dayOf(now instanceof Date ? now : new Date(now || Date.now()));
+    const d = p.days[day] || { reviewed:0, onTime:0, late:0, extra:0 };
+    if(d.cleared) return p;               // idempotent
+    d.cleared = true; p.days[day] = d;
+    p.points = (p.points||0) + PTS.clearedDay;
+    return p;
+  }
+
+  /* A streak is only alive if it was kept up. Two clear days without a
+     review and it has lapsed, whatever the stored number says — better
+     to show the truth than a number the student knows they did not earn. */
+  function view(prog, now){
+    const p = { ...empty(), ...(prog||{}) };
+    const at = now instanceof Date ? now : new Date(now || Date.now());
+    const today = dayOf(at);
+    let live = p.currentStreak || 0;
+    if(p.lastStudyDate && p.lastStudyDate !== today){
+      const gap = Math.floor((new Date(today) - new Date(p.lastStudyDate)) / 86400000);
+      if(gap > GRACE_DAYS + 1) live = 0;
+    }
+    return { streak:live, best:Math.max(p.bestStreak||0, live), points:p.points||0,
+             studiedToday: p.lastStudyDate === today,
+             onTime:p.onTime||0, late:p.late||0, extra:p.extra||0, days:p.days||{} };
+  }
+
+  return { empty, record, clearedDay, view, dayOf, PTS };
+})();
+
+/* -------------------------------------------------------------- RECAP ----
+   Month-end summaries, derived entirely from the cards and homework
+   that already exist — nothing extra is stored to produce them.
+   Two audiences, two registers: the student gets encouragement, the
+   teacher gets something she can paste into an LLM to plan next month. */
+const RECAP = (() => {
+  const MASTERED_DAYS = 21;      // same line SM-2 draws for long-term memory
+  const monthStart = d => new Date(d.getFullYear(), d.getMonth(), 1);
+  const inMonth = (iso, ref) => {
+    const t = Date.parse(iso); if(!Number.isFinite(t)) return false;
+    const d = new Date(t);
+    return d.getFullYear() === ref.getFullYear() && d.getMonth() === ref.getMonth();
+  };
+
+  function gather(cards, homework, when){
+    const ref = when instanceof Date ? when : new Date(when || Date.now());
+    const added = cards.filter(c => inMonth(c.createdAt, ref));
+    const mastered = cards.filter(c => (Number(c.intervalDays)||0) >= MASTERED_DAYS);
+    /* "Struggling" is about repeated forgetting, not one bad day. */
+    const struggling = cards.filter(c => (Number(c.lapses)||0) >= 2)
+      .sort((a,b) => (b.lapses||0) - (a.lapses||0));
+    const reviews = cards.reduce((n,c) => n + (Number(c.reviewCount)||0), 0);
+    const lapses  = cards.reduce((n,c) => n + (Number(c.lapses)||0), 0);
+    const hwMonth = (homework||[]).filter(h => inMonth(h.createdAt, ref));
+    const answered = hwMonth.filter(h => h.direction === "student-to-teacher").length;
+    const sent     = hwMonth.filter(h => h.direction === "teacher-to-student").length;
+    const byType = t => cards.filter(c => c.type === t).length;
+    return { ref, added, mastered, struggling, reviews, lapses, sent, answered,
+             total: cards.length,
+             accuracy: reviews ? Math.round((1 - lapses/reviews) * 100) : null,
+             byType: { vocab:byType("vocab"), grammar:byType("grammar"), pron:byType("pron") } };
+  }
+
+  /* Warm, specific, and honest — praise that ignores what went badly
+     stops meaning anything, so the encouragement is tied to a real number. */
+  function encourage(g, streak){
+    if(!g.total) return "A fresh start — your first words are on their way.";
+    if(g.mastered.length >= 10) return `${g.mastered.length} words are properly yours now. That is real progress.`;
+    if(streak >= 7) return `${streak} days in a row of turning up. That habit is the whole trick.`;
+    if(g.accuracy !== null && g.accuracy >= 85) return "You are remembering nearly everything you meet. Keep going.";
+    if(g.struggling.length) return "A few words are being stubborn — that is normal, and they are the ones worth the time.";
+    return "Small and often beats long and rare. You are doing it right.";
+  }
+
+  /* What the student sees at month end. */
+  function forStudent(cards, homework, streakView, when){
+    const g = gather(cards, homework, when);
+    return {
+      month: g.ref.toLocaleDateString(undefined,{month:"long", year:"numeric"}),
+      learnedThisMonth: g.added.length,
+      mastered: g.mastered.length,
+      reviews: g.reviews,
+      accuracy: g.accuracy,
+      homeworkAnswered: g.answered,
+      streak: streakView ? streakView.best : 0,
+      points: streakView ? streakView.points : 0,
+      focus: g.struggling.slice(0,3).map(c => c.front),
+      message: encourage(g, streakView ? streakView.best : 0)
+    };
+  }
+
+  /* Plain text on purpose: the teacher pastes this straight into an LLM
+     to draft next month's lessons, so it must carry the facts without
+     any formatting to argue with. */
+  function forTeacher(student, cards, homework, streakView, when){
+    const g = gather(cards, homework, when);
+    const month = g.ref.toLocaleDateString(undefined,{month:"long", year:"numeric"});
+    const list = arr => arr.length ? arr.map(c => `  - ${c.front} = ${c.back}`).join("\n") : "  (none)";
+    const v = streakView || { best:0, points:0, onTime:0, late:0 };
+    return [
+      `LESSON PLANNING NOTES — ${student.name} — ${month}`,
+      ``,
+      `Level: ${student.level || "not set"}`,
+      `Vocabulary items: ${g.byType.vocab} · Grammar: ${g.byType.grammar} · Pronunciation: ${g.byType.pron}`,
+      `Total cards: ${g.total} (${g.added.length} added this month)`,
+      `Reviews done: ${g.reviews}${g.accuracy!==null?` · recall ${g.accuracy}%`:""}`,
+      `Reviewed on time ${v.onTime} times, late ${v.late} times · best streak ${v.best} days`,
+      `Homework: ${g.sent} set, ${g.answered} answered`,
+      ``,
+      `MASTERED (interval ${MASTERED_DAYS}+ days — safe to stop drilling):`,
+      list(g.mastered.slice(0,25)),
+      ``,
+      `STILL SLIPPING (forgotten twice or more — worth revisiting in a lesson):`,
+      list(g.struggling.slice(0,15)),
+      ``,
+      `ADDED THIS MONTH:`,
+      list(g.added.slice(0,40)),
+      ``,
+      `Please suggest next month's focus for this student: which of the`,
+      `slipping items to reteach and how, what to introduce next given`,
+      `what they already hold, and one activity idea per week.`
+    ].join("\n");
+  }
+
+  return { forStudent, forTeacher, gather, MASTERED_DAYS };
+})();
+
 /* ---------------------------------------------------------------- TBS ----
    Firestore, loaded on demand. The compat SDK is injected only when this
    module actually starts, so the teacher's Potting Bench sessions stay
@@ -17342,7 +17561,8 @@ const TBS = (() => {
   return { init, redeemCode, myStudentId, signInStaff, currentStaff, signOut,
            onRoster, onStudent, addStudent, knownCode, reissueCode,
            onCards, addCard, deleteCard, submitReview,
-           onHomework, sendHomework, photoUrl };
+           onHomework, sendHomework, photoUrl,
+           onProgress, saveProgress, getProgress };
 })();
 
 /* ------------------------------------------------------------- TBS_UI ----
@@ -17360,7 +17580,8 @@ const TBS_UI = (() => {
     queue:[], current:null, revealed:false, doneCount:0,
     newType:"vocab", unsub:[],
     calOffset:0,                    // months from the current one
-    stats:{}, statUnsub:{}          // per-student rollups for the roster
+    stats:{}, statUnsub:{},         // per-student rollups for the roster
+    progress:null, planText:""      // streak record; teacher's month export
   };
 
   function show(id){ SCREENS.forEach(s => { const el=$$(s); if(el) el.hidden = s!==id; }); }
@@ -17418,7 +17639,14 @@ const TBS_UI = (() => {
     }));
     state.unsub.push(TBS.onHomework(studentId, (hw, err) => {
       state.homework = hw; state.homeworkError = err || null;
-      renderHomework();
+      renderHomework(); renderRecap();
+    }));
+    state.unsub.push(TBS.onProgress(studentId, (prog, err) => {
+      /* Snapshots also echo back this device's own writes. Keeping the
+         local copy as the source of truth for the next write avoids a
+         round-trip deciding whether today already counted. */
+      state.progress = prog || STREAK.empty();
+      renderStreak(); renderRecap();
     }));
   }
 
@@ -17445,6 +17673,42 @@ const TBS_UI = (() => {
       box.hidden = false;
       $$("tbsNextUpText").textContent = relativeWhen(upcoming);
     }else box.hidden = true;
+  }
+
+  function renderStreak(){
+    const box = $$("tbsStreakCard"); if(!box) return;
+    const v = STREAK.view(state.progress, new Date());
+    /* Hidden entirely until there is something to be proud of — a row
+       of zeroes on day one is discouraging, not motivating. */
+    if(!v.points && !v.streak){ box.hidden = true; return; }
+    box.hidden = false;
+    $$("tbsStreakN").textContent = v.streak;
+    $$("tbsPointsN").textContent = v.points;
+    $$("tbsBestN").textContent   = v.best;
+    const due = dueCards().length;
+    $$("tbsStreakNote").textContent =
+      v.streak && v.studiedToday && !due ? "Today is done. Come back when the next words are ready."
+      : v.streak && due ? "Review what's due to keep the streak."
+      : !v.streak && v.best ? `Your best run was ${v.best} days — start another today.`
+      : "Reviewing on time is what builds the streak.";
+  }
+
+  function renderRecap(){
+    const box = $$("tbsRecapCard"); if(!box) return;
+    if(!state.cards.length){ box.hidden = true; return; }
+    const r = RECAP.forStudent(state.cards, state.homework,
+                               STREAK.view(state.progress, new Date()), new Date());
+    box.hidden = false;
+    $$("tbsRecapMonth").textContent  = r.month;
+    $$("tbsRecapNew").textContent    = r.learnedThisMonth;
+    $$("tbsRecapMastered").textContent = r.mastered;
+    $$("tbsRecapAcc").textContent    = r.accuracy === null ? "—" : r.accuracy + "%";
+    const focus = $$("tbsRecapFocus");
+    if(r.focus.length){
+      focus.hidden = false;
+      focus.textContent = `Worth another look: ${r.focus.join(", ")}`;
+    }else focus.hidden = true;
+    $$("tbsRecapMsg").textContent = r.message;
   }
 
   function relativeWhen(ms){
@@ -17655,8 +17919,28 @@ const TBS_UI = (() => {
        phone's network. SM-2 is computed locally, so the next card is
        already correct; the write catches up, and Firestore's offline
        queue replays it if the connection has dropped. */
-    const next = SRS.scheduleNext(c, g, new Date());
+    const now = new Date();
+    const next = SRS.scheduleNext(c, g, now);
     TBS.submitReview(state.studentId, c.id, c, g).catch(e => console.warn("review", e));
+
+    /* Credit the streak from the card's state BEFORE this answer: how
+       late it was, and whether anything else had been left to rot. */
+    const dueAt = Date.parse(c.nextReviewDate);
+    const daysLate = Number.isFinite(dueAt)
+      ? Math.max(0, Math.floor((now.getTime() - dueAt) / 86400000)) : 0;
+    const anySlipped = state.cards.some(x => {
+      if(x.id === c.id) return false;
+      const t = Date.parse(x.nextReviewDate);
+      return Number.isFinite(t) && (now.getTime() - t) > 86400000;
+    });
+    state.progress = STREAK.record(state.progress, {
+      wasDue: SRS.isDue(c, now), daysLate, anySlipped
+    }, now);
+    /* Nothing left in the queue and nothing re-queued: the day is clear. */
+    if(!state.queue.length && g !== "again") state.progress = STREAK.clearedDay(state.progress, now);
+    TBS.saveProgress(state.studentId, state.progress).catch(e => console.warn("progress", e));
+    renderStreak();
+
     /* "Again" means again in this session, not tomorrow. */
     if(g === "again") state.queue.push({ ...c, ...next });
     nextCard();
@@ -17766,9 +18050,10 @@ const TBS_UI = (() => {
     });
   }
 
-  function renderStudentStats(cards, homework){
+  function renderStudentStats(cards, homework, prog){
     const box = $$("tbsStuStats"); if(!box) return;
     const st = statsFor(cards, homework);
+    const sv = STREAK.view(prog, new Date());
     if(!st.total){ box.innerHTML = `<p class="empty">No cards yet — add one below.</p>`; return; }
     box.innerHTML = `
       <div class="tbs-stats">
@@ -17779,6 +18064,7 @@ const TBS_UI = (() => {
       </div>
       <p class="tbs-muted" style="font-size:12.5px; margin:10px 0 0">
         ${st.reviews} ${st.reviews===1?"review":"reviews"} so far · last studied ${esc(agoText(st.lastSeen))}${
+          sv.streak ? ` · ${sv.streak}-day streak` : sv.best ? ` · best streak ${sv.best} days` : ""}${
           st.waiting ? " · waiting on their homework reply" : ""}
       </p>`;
   }
@@ -17800,10 +18086,17 @@ const TBS_UI = (() => {
     dropStudentListeners();
     /* The detail panel shows cards, homework and a rollup over both, so
        each side keeps the other's latest copy to recompute against. */
-    let cards = [], hw = [];
+    let cards = [], hw = [], prog = STREAK.empty();
+    const refresh = () => {
+      renderStudentStats(cards, hw, prog);
+      /* Kept ready so Copy is instant — the teacher pressing it should
+         not wait on a render. */
+      state.planText = RECAP.forTeacher(s, cards, hw, STREAK.view(prog, new Date()), new Date());
+    };
     state._stuUnsub = [
-      TBS.onCards(id, list => { cards = list; renderStaffCards(list); renderStudentStats(cards, hw); }),
-      TBS.onHomework(id, list => { hw = list; renderStaffHomework(list); renderStudentStats(cards, hw); })
+      TBS.onCards(id, list => { cards = list; renderStaffCards(list); refresh(); }),
+      TBS.onHomework(id, list => { hw = list; renderStaffHomework(list); refresh(); }),
+      TBS.onProgress(id, p => { prog = p || STREAK.empty(); refresh(); })
     ];
   }
   function dropStudentListeners(){
@@ -17960,6 +18253,28 @@ const TBS_UI = (() => {
       finally{ $$("tbsAddStudent").disabled = false; }
     };
     $$("tbsStuBack").onclick = () => { dropStudentListeners(); show("tbsStaffHome"); };
+
+    /* staff: month-end planning notes */
+    $$("tbsShowPlan").onclick = () => {
+      const ta = $$("tbsPlanText");
+      ta.value = state.planText || "";
+      ta.hidden = !ta.hidden;
+      $$("tbsShowPlan").textContent = ta.hidden ? "Preview" : "Hide";
+    };
+    $$("tbsCopyPlan").onclick = async () => {
+      const text = state.planText || "";
+      if(!text) return;
+      try{ await navigator.clipboard.writeText(text); }
+      catch(e){
+        /* Clipboard access is refused in plenty of mobile contexts —
+           show the text so it can still be copied by hand. */
+        const ta = $$("tbsPlanText");
+        ta.value = text; ta.hidden = false; ta.select();
+        $$("tbsShowPlan").textContent = "Hide";
+      }
+      $$("tbsCopyPlan").textContent = "Copied";
+      setTimeout(() => { $$("tbsCopyPlan").textContent = "Copy planning notes"; }, 1400);
+    };
 
     $$("tbsCopyLink").onclick = async () => {
       let code = $$("tbsStuLink").dataset.code;

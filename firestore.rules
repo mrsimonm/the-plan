@@ -105,6 +105,19 @@ service cloud.firestore {
           || (isThisStudent(studentId) && onlyReviewFieldsChanged());
       }
 
+      /* A student's own record of their study habit: streak, points,
+         and a short per-day history. Written by the student because it
+         is a by-product of them reviewing; readable by their teacher so
+         it can show up on the dashboard. Yes, a determined child could
+         inflate their own streak — it is their own motivation data and
+         nobody else is harmed by it, so it is not worth the complexity
+         of moving these writes somewhere they cannot reach. */
+      match /progress/{docId} {
+        allow read: if canManage(studentId) || isThisStudent(studentId);
+        allow create, update: if isThisStudent(studentId);
+        allow delete: if canManage(studentId);
+      }
+
       match /homework/{itemId} {
         allow read: if canManage(studentId) || isThisStudent(studentId);
         allow create: if canManage(studentId)
