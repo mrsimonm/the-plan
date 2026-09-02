@@ -3557,6 +3557,12 @@ html{overscroll-behavior-y:none}
           <span class="eyebrow">Next review</span>
           <p id="tbsNextUpText" class="tbs-muted"></p>
         </div>
+        <!-- A device only ever belongs to one student, and student mode
+             is sticky across reloads by design. This is the way back out
+             if the wrong person opened the link or the phone is passed on. -->
+        <p class="tbs-muted" style="font-size:12px; text-align:center; margin:2px 0 0">
+          <button class="btn mini" id="tbsNotYou">Not you?</button>
+        </p>
       </div>
 
       <div id="tbsScopeCards" hidden>
@@ -3578,6 +3584,19 @@ html{overscroll-behavior-y:none}
 
       <div id="tbsScopeHomework" hidden>
         <div class="stack" id="tbsHomeworkList"></div>
+        <!-- the composer lives outside the thread on purpose: the thread
+             re-renders on every snapshot, and rebuilding this with it
+             would wipe a half-typed answer the moment a message lands -->
+        <div class="card pad stack">
+          <textarea id="tbsHwReply" rows="3" placeholder="Write your answer…" aria-label="Your answer"></textarea>
+          <div class="row" style="gap:8px; align-items:center">
+            <label class="btn" for="tbsHwReplyPhoto">📷 Photo</label>
+            <input id="tbsHwReplyPhoto" type="file" accept="image/*" hidden>
+            <span class="tbs-muted" id="tbsHwReplyName" style="font-size:12px; flex:1"></span>
+            <button class="btn primary" id="tbsHwSend">Send</button>
+          </div>
+          <p class="tbs-err" id="tbsHwErr" hidden></p>
+        </div>
       </div>
     </div>
 
@@ -16688,6 +16707,15 @@ async function bootStudentApp(){
   document.getElementById("view-teachbench-student").hidden=false;
   TBS_UI.start({studentOnly:true});
 }
+/* Student mode has to survive a reload, or the first pull-to-refresh
+   drops the student back into the teacher's whole app — the one thing
+   this gate exists to prevent. The link's #s= fragment is consumed on
+   first use, so the flag is what carries the mode afterwards. Written
+   only on the genuine student path, never when the teacher opens a
+   student link from her own app, and clearable from the student screen
+   in case a device changes hands. */
+function markStudentDevice(){ try{ localStorage.setItem(STUDENT_LOCAL_KEY,"1"); }catch(e){} }
+function clearStudentDevice(){ try{ localStorage.removeItem(STUDENT_LOCAL_KEY); }catch(e){} }
 /* Reachable two ways: the real student-only boot path above (via
    #s=<code>, no app chrome at all), and a normal tab in the app switcher
    — which is how the teacher reaches her own side. Same section either
@@ -16848,6 +16876,12 @@ const TBS = (() => {
   async function redeemCode(rawCode){
     await init();
     const codeHash = await sha256Hex(normaliseCode(rawCode));
+    /* A student identity is always anonymous. If a teacher is signed in
+       on this browser — which is exactly what happens when she tests a
+       link she just copied — binding HER uid to a student would give her
+       account a studentAuth mapping it can never remove (the rules
+       forbid rewriting one). Step down to a fresh anonymous identity. */
+    if(auth.currentUser && !auth.currentUser.isAnonymous) await auth.signOut();
     if(!auth.currentUser) await auth.signInAnonymously();
     const uid = auth.currentUser.uid;
 
@@ -16924,13 +16958,19 @@ const TBS = (() => {
   async function addStudent(name, staff){
     await init();
     const code = makeCode();
+    const hash = await sha256Hex(code);
     const ref = await students().add({
       name: String(name||"").trim() || "Student",
       teacherId: staff.uid,
+      /* The HASH of the live code, not the code. Kept on the student so
+         any of the teacher's devices can revoke it — storing it only in
+         one browser's localStorage meant a link issued on the laptop
+         could never be withdrawn from the phone. A hash is one-way, so
+         this does not let anyone read the code itself. */
+      codeHash: hash,
       createdAt: new Date().toISOString()
     });
-    await db.collection("accessCodes").doc(await sha256Hex(code))
-      .set({ studentId: ref.id });
+    await db.collection("accessCodes").doc(hash).set({ studentId: ref.id });
     /* The plain code exists only here and in whatever the teacher sends
        to the student — Firestore keeps the hash alone. Stored locally so
        she can re-read a code she has already generated. */
@@ -16954,10 +16994,30 @@ const TBS = (() => {
      link stops working — which is the point when a phone goes missing. */
   async function reissueCode(studentId){
     await init();
-    const old = knownCode(studentId);
+    /* The live code's hash comes from the student record, so this works
+       from whichever device the teacher happens to be holding. Falls
+       back to a locally remembered code for students created before the
+       field existed. */
+    let oldHash = null;
+    try{
+      const snap = await students().doc(studentId).get();
+      oldHash = snap.exists ? (snap.data().codeHash || null) : null;
+    }catch(e){}
+    if(!oldHash){
+      const localOld = knownCode(studentId);
+      if(localOld) oldHash = await sha256Hex(localOld);
+    }
+
     const code = makeCode();
-    await db.collection("accessCodes").doc(await sha256Hex(code)).set({ studentId });
-    if(old){ try{ await db.collection("accessCodes").doc(await sha256Hex(old)).delete(); }catch(e){} }
+    const hash = await sha256Hex(code);
+    await db.collection("accessCodes").doc(hash).set({ studentId });
+    await students().doc(studentId).update({ codeHash: hash });
+    /* Delete the old mapping last: if this fails the student still has a
+       working link, which is better than locking them out. */
+    if(oldHash && oldHash !== hash){
+      try{ await db.collection("accessCodes").doc(oldHash).delete(); }
+      catch(e){ console.warn("revoke old code", e); }
+    }
     rememberCode(studentId, code);
     return code;
   }
@@ -16965,10 +17025,13 @@ const TBS = (() => {
   /* ---- flashcards ---- */
   const cardsOf = id => students().doc(id).collection("flashcards");
 
+  /* The error path passes a second argument rather than substituting an
+     empty list: "we couldn't reach your words" and "you have no words"
+     look identical to a child otherwise, and the wrong one is alarming. */
   function onCards(studentId, cb){
     return cardsOf(studentId).onSnapshot(
-      s => cb(s.docs.map(d => ({ id:d.id, ...d.data() }))),
-      err => { console.warn("cards", err); cb([]); });
+      s => cb(s.docs.map(d => ({ id:d.id, ...d.data() })), null),
+      err => { console.warn("cards", err); cb([], err); });
   }
   async function addCard(studentId, card){
     await init();
@@ -16997,8 +17060,8 @@ const TBS = (() => {
   function onHomework(studentId, cb){
     return hwOf(studentId).onSnapshot(
       s => cb(s.docs.map(d => ({ id:d.id, ...d.data() }))
-               .sort((a,b) => String(a.createdAt).localeCompare(String(b.createdAt)))),
-      err => { console.warn("homework", err); cb([]); });
+               .sort((a,b) => String(a.createdAt).localeCompare(String(b.createdAt))), null),
+      err => { console.warn("homework", err); cb([], err); });
   }
   /* A phone photo is 3-5 MB of detail nobody needs to read a worksheet,
      and the teacher is often on mobile data. Downscale to something
@@ -17052,7 +17115,11 @@ const TBS = (() => {
   async function photoUrl(path){
     if(!path) return null;
     if(urlCache.has(path)) return urlCache.get(path);
-    const p = store.ref(path).getDownloadURL().catch(() => null);
+    /* Only a success is cached. Caching the failure meant one flaky
+       moment left that photo permanently blank, with a reload the only
+       way back. */
+    const p = store.ref(path).getDownloadURL()
+      .catch(e => { urlCache.delete(path); return null; });
     urlCache.set(path, p);
     return p;
   }
@@ -17106,6 +17173,11 @@ const TBS_UI = (() => {
       try{ sid = await TBS.redeemCode(hash); }catch(e){}
     }
     if(sid){
+      /* Remember the mode BEFORE consuming the fragment, so a reload
+         between the two can never strand the device. Only on the
+         student-only path: if the teacher opens a student link from
+         inside her own app, her device must not become a student's. */
+      if(state.studentOnly) markStudentDevice();
       /* Drop the code out of the address bar once it has been used. */
       if(location.hash.startsWith("#s=")) history.replaceState(null,"",location.pathname+location.search);
       return enterStudent(sid);
@@ -17125,11 +17197,13 @@ const TBS_UI = (() => {
     state.unsub.push(TBS.onStudent(studentId, s => {
       $$("tbsGreeting").textContent = s ? `Hello, ${s.name}` : "Hello";
     }));
-    state.unsub.push(TBS.onCards(studentId, cards => {
-      state.cards = cards; renderStudentToday(); renderCardList(); renderCalendar();
+    state.unsub.push(TBS.onCards(studentId, (cards, err) => {
+      state.cards = cards; state.cardsError = err || null;
+      renderStudentToday(); renderCardList(); renderCalendar();
     }));
-    state.unsub.push(TBS.onHomework(studentId, hw => {
-      state.homework = hw; renderHomework();
+    state.unsub.push(TBS.onHomework(studentId, (hw, err) => {
+      state.homework = hw; state.homeworkError = err || null;
+      renderHomework();
     }));
   }
 
@@ -17137,8 +17211,10 @@ const TBS_UI = (() => {
 
   function renderStudentToday(){
     const due = dueCards();
-    $$("tbsDueCount").textContent = due.length;
-    $$("tbsDueLabel").textContent = !state.cards.length
+    $$("tbsDueCount").textContent = state.cardsError ? "—" : due.length;
+    $$("tbsDueLabel").textContent = state.cardsError
+      ? "can't reach your words — check your internet"
+      : !state.cards.length
       ? "no words yet — your teacher will add some"
       : due.length ? (due.length === 1 ? "word to review" : "words to review")
                    : "all caught up";
@@ -17202,47 +17278,21 @@ const TBS_UI = (() => {
     if(typeof dlg.showModal === "function") dlg.showModal(); else window.open(url,"_blank");
   }
 
+  /* Only the thread is rebuilt here; the composer is static markup, so
+     whatever the student has already typed survives a message arriving. */
   function renderHomework(){
     const box = $$("tbsHomeworkList");
+    if(state.homeworkError){
+      box.innerHTML = `<div class="card pad"><p class="tbs-err">Couldn't load your homework. Check your internet.</p></div>`;
+      return;
+    }
     if(!state.homework.length){
       box.innerHTML = `<div class="card pad"><p class="empty">No homework yet.</p></div>`;
     }else{
       box.innerHTML = `<div class="card">` +
         state.homework.map(h => hwBubble(h, "You", "Teacher")).join("") + `</div>`;
     }
-    box.insertAdjacentHTML("beforeend", `
-      <div class="card pad stack">
-        <textarea id="tbsHwReply" rows="3" placeholder="Write your answer…" aria-label="Your answer"></textarea>
-        <div class="row" style="gap:8px; align-items:center">
-          <label class="btn" for="tbsHwReplyPhoto">📷 Photo</label>
-          <input id="tbsHwReplyPhoto" type="file" accept="image/*" hidden>
-          <span class="tbs-muted" id="tbsHwReplyName" style="font-size:12px; flex:1"></span>
-          <button class="btn primary" id="tbsHwSend">Send</button>
-        </div>
-        <p class="tbs-err" id="tbsHwErr" hidden></p>
-      </div>`);
     fillPhotos(box);
-
-    const picker = $$("tbsHwReplyPhoto");
-    picker.onchange = () => {
-      $$("tbsHwReplyName").textContent = picker.files[0] ? picker.files[0].name : "";
-    };
-    $$("tbsHwSend").onclick = async () => {
-      const t = $$("tbsHwReply").value.trim();
-      const f = picker.files[0] || null;
-      if(!t && !f) return;
-      const btn = $$("tbsHwSend"), err = $$("tbsHwErr");
-      err.hidden = true; btn.disabled = true; btn.textContent = f ? "Sending photo…" : "Sending…";
-      try{
-        await TBS.sendHomework(state.studentId, t, "student-to-teacher", f);
-        $$("tbsHwReply").value = ""; picker.value = ""; $$("tbsHwReplyName").textContent = "";
-      }catch(e){
-        err.textContent = e && e.message === "too-big"
-          ? "That photo is too large. Try a smaller one."
-          : "Couldn't send. Check your internet and try again.";
-        err.hidden = false;
-      }finally{ btn.disabled = false; btn.textContent = "Send"; }
-    };
   }
 
   function shortDate(iso){
@@ -17378,14 +17428,22 @@ const TBS_UI = (() => {
     }
   }
 
-  async function grade(g){
+  function grade(g){
     const c = state.current; if(!c || !state.revealed) return;
+    /* Closing the card FIRST makes a second tap a no-op. Awaiting the
+       write before doing so let an impatient double-tap grade the same
+       card twice and skip the next one entirely. */
+    state.revealed = false;
     state.doneCount += 1;
-    try{
-      const next = await TBS.submitReview(state.studentId, c.id, c, g);
-      /* "Again" means again in this session, not tomorrow. */
-      if(g === "again") state.queue.push({ ...c, ...next });
-    }catch(e){ console.warn("review", e); }
+
+    /* The write is not awaited: a review must never stall behind a
+       phone's network. SM-2 is computed locally, so the next card is
+       already correct; the write catches up, and Firestore's offline
+       queue replays it if the connection has dropped. */
+    const next = SRS.scheduleNext(c, g, new Date());
+    TBS.submitReview(state.studentId, c.id, c, g).catch(e => console.warn("review", e));
+    /* "Again" means again in this session, not tomorrow. */
+    if(g === "again") state.queue.push({ ...c, ...next });
     nextCard();
   }
 
@@ -17574,6 +17632,7 @@ const TBS_UI = (() => {
       err.hidden = true; $$("tbsCodeGo").disabled = true;
       try{
         const sid = await TBS.redeemCode(raw);
+        if(state.studentOnly) markStudentDevice();
         enterStudent(sid);
       }catch(e){
         err.textContent = e && e.message === "bad-code"
@@ -17598,6 +17657,39 @@ const TBS_UI = (() => {
       /* the grid is laid out from the live card list, so draw it when
          it is actually on screen rather than keeping it warm */
       if(scope === "cal") renderCalendar();
+    };
+
+    /* student: homework composer. Wired once, because it is static
+       markup now rather than something the thread rebuilds. */
+    const picker = $$("tbsHwReplyPhoto");
+    picker.onchange = () => {
+      $$("tbsHwReplyName").textContent = picker.files[0] ? picker.files[0].name : "";
+    };
+    $$("tbsHwSend").onclick = async () => {
+      const t = $$("tbsHwReply").value.trim();
+      const f = picker.files[0] || null;
+      if((!t && !f) || !state.studentId) return;
+      const btn = $$("tbsHwSend"), err = $$("tbsHwErr");
+      err.hidden = true; btn.disabled = true; btn.textContent = f ? "Sending photo…" : "Sending…";
+      try{
+        await TBS.sendHomework(state.studentId, t, "student-to-teacher", f);
+        $$("tbsHwReply").value = ""; picker.value = ""; $$("tbsHwReplyName").textContent = "";
+      }catch(e){
+        /* The text stays in the box on failure — losing a child's
+           written answer to a dropped connection is unforgivable. */
+        err.textContent = e && e.message === "too-big"
+          ? "That photo is too large. Try a smaller one."
+          : "Couldn't send. Your answer is still here — try again.";
+        err.hidden = false;
+      }finally{ btn.disabled = false; btn.textContent = "Send"; }
+    };
+
+    /* student: hand the device back */
+    $$("tbsNotYou").onclick = async () => {
+      if(!confirm("This will sign this device out of the student app. Continue?")) return;
+      clearStudentDevice();
+      try{ await TBS.signOut(); }catch(e){}
+      location.replace(location.pathname + location.search);
     };
 
     /* student: calendar */
