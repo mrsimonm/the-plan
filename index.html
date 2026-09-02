@@ -2195,7 +2195,10 @@ html{overscroll-behavior-y:none}
   <!-- ============ GARDEN ============ -->
   <section class="view" id="view-garden" hidden>
     <div class="sec-head"><h2 id="gardenHi">Garden</h2>
-      <button class="btn primary" id="addSubject">+ Plant</button></div>
+      <div style="display:flex; gap:8px">
+        <button class="btn" id="gardenBatchCare">Batch care</button>
+        <button class="btn primary" id="addSubject">+ Plant</button>
+      </div></div>
     <div id="gardenTaskBar" class="task-bar-full"></div>
     <div class="stack">
       <div id="gardenDue"></div>
@@ -2214,7 +2217,11 @@ html{overscroll-behavior-y:none}
 
   <!-- ============ PLANTS ============ -->
   <section class="view" id="view-plants" hidden>
-    <div class="sec-head"><h2>All plants</h2><button class="btn" id="gardenBack">← Garden</button></div>
+    <div class="sec-head"><h2>All plants</h2>
+      <div style="display:flex; gap:8px">
+        <button class="btn" id="plantsBatchCare">Batch care</button>
+        <button class="btn" id="gardenBack">← Garden</button>
+      </div></div>
     <div class="stack" id="subjectList"></div>
   </section>
 
@@ -3687,6 +3694,39 @@ html{overscroll-behavior-y:none}
     <button class="btn primary" type="submit">Log it</button>
   </div>
 </form></dialog>
+
+<!-- batch care: log watering/feeding/spraying against several plants at once,
+     without needing a specific mix/product the way the Bench log does -->
+<dialog id="batchCareDlg">
+  <h3 class="dlg-head">Batch care</h3>
+  <div class="dlg-body">
+    <div class="field">
+      <div style="display:flex; align-items:center; justify-content:space-between">
+        <label style="margin:0">Which plants</label>
+        <button type="button" class="btn mini" id="batchSelectAll">Select all</button>
+      </div>
+      <div id="batchPlantList" class="stack" style="gap:0"></div>
+    </div>
+    <div class="field">
+      <label>What did you do</label>
+      <div>
+        <label class="lu" style="border:0; padding:6px 0">
+          <span class="sw"><input type="checkbox" id="batchWater"><i></i></span>
+          <span class="lu-name">Watered</span></label>
+        <label class="lu" style="border:0; padding:6px 0">
+          <span class="sw"><input type="checkbox" id="batchFeed"><i></i></span>
+          <span class="lu-name">Fed</span></label>
+        <label class="lu" style="border:0; padding:6px 0">
+          <span class="sw"><input type="checkbox" id="batchSpray"><i></i></span>
+          <span class="lu-name">Sprayed</span></label>
+      </div>
+    </div>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn" type="button" id="batchCareCancel">Cancel</button>
+    <button class="btn primary" type="button" id="batchCareApply">Log it</button>
+  </div>
+</dialog>
 
 <script>
 "use strict";
@@ -14595,19 +14635,24 @@ $("#plantDelete").addEventListener("click",async()=>{
   if(wasOpen) show("plants");            // don't strand us on a page that no longer exists
 });
 
+/* One row for any "pick which plants" checklist — the Bench log dialog and
+   Batch care both need the same thing: a checkbox, the name, and a thumbnail
+   of the plant's latest photo, since the name alone doesn't tell two
+   similarly-coloured plants apart. */
+function pickerPlantRowHtml(p,checked){
+  const ph=latestPhoto(p.id);
+  return `<label class="lu">
+    <span class="sw"><input type="checkbox" data-lp="${p.id}"${checked?" checked":""}><i></i></span>
+    <span class="lu-name">${esc(p.name)}<small>${p.spot?esc(p.spot):""}</small></span>
+    ${ph?`<img class="lu-thumb" src="${ph.data}" alt="">`:'<span class="lu-thumb none">🌿</span>'}</label>`;
+}
 /* log the whole mix against several plants at once */
 $("#logMix").addEventListener("click",async()=>{
   if(!S.subjects.length){ say("Add a plant first — then you can log a feed against it."); show("plants"); return; }
   const t=mixTarget();
   $("#logDlgTitle").textContent=`Log ${t?t.name:"mix"} · ${litres().toFixed(2)} L`;
-  $("#logPlants").innerHTML=subjectsIn("plants").map(p=>{
-    const ph=latestPhoto(p.id);
-    return `<label class="lu">
-    <span class="sw"><input type="checkbox" data-lp="${p.id}"${
-      !pendingPlants||pendingPlants.includes(p.id)?" checked":""}><i></i></span>
-    <span class="lu-name">${esc(p.name)}<small>${p.spot?esc(p.spot):""}</small></span>
-    ${ph?`<img class="lu-thumb" src="${ph.data}" alt="">`:'<span class="lu-thumb none">🌿</span>'}</label>`;
-  }).join("");
+  $("#logPlants").innerHTML=subjectsIn("plants")
+    .map(p=>pickerPlantRowHtml(p,!pendingPlants||pendingPlants.includes(p.id))).join("");
   $("#logNote").value="";
   $("#logDlg").showModal();
 });
@@ -14626,6 +14671,47 @@ $("#logForm").addEventListener("submit",async e=>{
   });
   pendingPlants=null;
   renderSubjects(); renderLog(); renderDue(); renderHow(); $("#logDlg").close(); show("log");
+});
+
+/* ---------------- batch care ----------------
+   Reached from Garden or Library — same dialog either way, since both show
+   the same plant list, just laid out differently. Unlike the Bench log
+   dialog, this isn't tied to a specific mix or product: it just records
+   that watering/feeding/spraying (any combination) happened, against
+   whichever plants are checked. Nothing is pre-checked — Select all is a
+   deliberate action, not a default, so a stray tap can't log every plant. */
+function openBatchCareDlg(){
+  if(!S.subjects.length){ say("Add a plant first — then you can log care against it."); return; }
+  $("#batchPlantList").innerHTML=subjectsIn("plants").map(p=>pickerPlantRowHtml(p,false)).join("");
+  $("#batchWater").checked=false; $("#batchFeed").checked=false; $("#batchSpray").checked=false;
+  $("#batchSelectAll").textContent="Select all";
+  $("#batchCareDlg").showModal();
+}
+$("#gardenBatchCare").addEventListener("click",openBatchCareDlg);
+$("#plantsBatchCare").addEventListener("click",openBatchCareDlg);
+$("#batchCareCancel").addEventListener("click",()=>$("#batchCareDlg").close());
+$("#batchSelectAll").addEventListener("click",()=>{
+  const boxes=[...$("#batchPlantList").querySelectorAll("input[type=checkbox]")];
+  const allChecked=boxes.length>0&&boxes.every(b=>b.checked);
+  boxes.forEach(b=>b.checked=!allChecked);
+  $("#batchSelectAll").textContent=allChecked?"Select all":"Deselect all";
+});
+$("#batchCareApply").addEventListener("click",()=>{
+  const ids=[...$("#batchPlantList").querySelectorAll("input:checked")].map(c=>c.dataset.lp);
+  const kindBoxes={water:$("#batchWater"), feed:$("#batchFeed"), spray:$("#batchSpray")};
+  const kinds=Object.keys(kindBoxes).filter(k=>kindBoxes[k].checked);
+  if(!ids.length){ say("Pick at least one plant first."); return; }
+  if(!kinds.length){ say("Pick at least one of Watered, Fed or Sprayed."); return; }
+  /* one routine (if the plant has one of that kind) or one bare event per
+     plant×kind — the same fallback the Bench log dialog's submit uses, so a
+     plant with no spray routine yet still gets a spray logged rather than
+     being silently skipped. */
+  ids.forEach(id=>kinds.forEach(kind=>{
+    const r=routineOf(id,kind);
+    if(r) logRoutine(r); else logEvent(id,kind);
+  }));
+  $("#batchCareDlg").close();
+  renderGarden(); renderSubjects(); renderAgenda(); renderLog();
 });
 
 /* ---------------- advanced mode ---------------- */
