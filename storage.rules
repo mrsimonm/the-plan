@@ -1,0 +1,45 @@
+rules_version = '2';
+
+// Teachbench student app — Cloud Storage security rules (homework photos).
+// Mirrors firestore.rules: owner sees all, a teacher only their own
+// students, a student only their own folder. Role lookups read Firestore
+// directly (cross-service rules).
+//
+// Paste into Firebase console → Storage → Rules → Publish.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function signedIn() { return request.auth != null; }
+
+    function staffPath() {
+      return /databases/(default)/documents/staff/$(request.auth.uid);
+    }
+    function isStaff() { return signedIn() && firestore.exists(staffPath()); }
+    function isOwner() {
+      return isStaff() && firestore.get(staffPath()).data.role == "owner";
+    }
+    function canManage(studentId) {
+      return isOwner() || (isStaff()
+        && firestore.get(/databases/(default)/documents/teachbenchStudents/$(studentId))
+             .data.teacherId == request.auth.uid);
+    }
+    function authPath() {
+      return /databases/(default)/documents/studentAuth/$(request.auth.uid);
+    }
+    function isThisStudent(studentId) {
+      return signedIn() && firestore.exists(authPath())
+        && firestore.get(authPath()).data.studentId == studentId;
+    }
+
+    // teachbenchHomework/{studentId}/{homeworkItemId}/{fileName}
+    match /teachbenchHomework/{studentId}/{itemId}/{fileName} {
+      allow read: if canManage(studentId) || isThisStudent(studentId);
+      allow write: if (canManage(studentId) || isThisStudent(studentId))
+        && request.resource != null
+        && request.resource.size < 10 * 1024 * 1024        // 10 MB cap
+        && request.resource.contentType.matches('image/.*'); // images only
+      allow delete: if canManage(studentId);
+    }
+  }
+}

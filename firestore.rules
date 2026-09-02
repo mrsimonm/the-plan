@@ -1,0 +1,121 @@
+rules_version = '2';
+
+// Teachbench student app — Firestore security rules.
+//
+// Roles:
+//   owner    staff/{uid}.role == "owner"   — everything, all students, manages staff
+//   teacher  staff/{uid}.role == "teacher" — only students whose teacherId is their uid
+//   student  anonymous Auth uid mapped to a studentId via studentAuth/{uid}
+//
+// Everything not explicitly allowed below is denied (Firestore default).
+// Paste the whole file into Firebase console → Firestore → Rules → Publish.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- helpers ----------
+    function signedIn() { return request.auth != null; }
+
+    function staffPath() {
+      return /databases/$(database)/documents/staff/$(request.auth.uid);
+    }
+    function isStaff() { return signedIn() && exists(staffPath()); }
+    function isOwner() { return isStaff() && get(staffPath()).data.role == "owner"; }
+
+    function studentDoc(studentId) {
+      return get(/databases/$(database)/documents/teachbenchStudents/$(studentId)).data;
+    }
+    // owner: any student. teacher: only students assigned to them.
+    function canManage(studentId) {
+      return isOwner()
+        || (isStaff() && studentDoc(studentId).teacherId == request.auth.uid);
+    }
+
+    function authPath() {
+      return /databases/$(database)/documents/studentAuth/$(request.auth.uid);
+    }
+    function isThisStudent(studentId) {
+      return signedIn() && exists(authPath())
+        && get(authPath()).data.studentId == studentId;
+    }
+
+    // A student may only touch the spaced-repetition scheduling fields of a
+    // card — never its content, type, or which student it belongs to.
+    function onlyReviewFieldsChanged() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+        ['intervalStage', 'easeFactor', 'intervalDays',
+         'nextReviewDate', 'lastReviewedAt', 'reviewCount', 'lapses']);
+    }
+
+    // ---------- staff ----------
+    match /staff/{uid} {
+      allow get: if signedIn() && (request.auth.uid == uid || isOwner());
+      allow list: if isOwner();
+      // The first owner document is created by hand in the console
+      // (bootstrap); after that only the owner can add or change staff.
+      allow create, update, delete: if isOwner();
+    }
+
+    // ---------- access codes ----------
+    // Doc id is the SHA-256 hex of the plain code. A signed-in (anonymous)
+    // client may fetch ONE doc by exact id — i.e. it must already know the
+    // code. Listing is owner-only, so codes cannot be enumerated.
+    match /accessCodes/{codeHash} {
+      allow get: if signedIn();
+      allow list: if isOwner();
+      allow create: if canManage(request.resource.data.studentId);
+      allow delete: if canManage(resource.data.studentId);
+      allow update: if false;
+    }
+
+    // ---------- device → student mapping ----------
+    // Written once by the student's own device after redeeming a code.
+    // Idempotent: a wiped browser simply redeems again under a new uid.
+    match /studentAuth/{uid} {
+      allow get: if signedIn() && (request.auth.uid == uid || isStaff());
+      allow list: if isOwner();
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['studentId', 'codeHash', 'createdAt'])
+        && exists(/databases/$(database)/documents/accessCodes/$(request.resource.data.codeHash))
+        && get(/databases/$(database)/documents/accessCodes/$(request.resource.data.codeHash))
+             .data.studentId == request.resource.data.studentId;
+      allow update: if false;
+      // staff can revoke a device for a student they manage
+      allow delete: if canManage(resource.data.studentId);
+    }
+
+    // ---------- students ----------
+    match /teachbenchStudents/{studentId} {
+      allow get: if canManage(studentId) || isThisStudent(studentId);
+      // teachers list with where('teacherId','==',uid); owner lists all
+      allow list: if isOwner()
+        || (isStaff() && resource.data.teacherId == request.auth.uid);
+      allow create: if isStaff()
+        && (isOwner() || request.resource.data.teacherId == request.auth.uid);
+      // a teacher cannot reassign a student to someone else; owner can
+      allow update: if canManage(studentId)
+        && (isOwner() || request.resource.data.teacherId == resource.data.teacherId);
+      allow delete: if canManage(studentId);
+
+      match /flashcards/{cardId} {
+        allow read: if canManage(studentId) || isThisStudent(studentId);
+        allow create, delete: if canManage(studentId);
+        allow update: if canManage(studentId)
+          || (isThisStudent(studentId) && onlyReviewFieldsChanged());
+      }
+
+      match /homework/{itemId} {
+        allow read: if canManage(studentId) || isThisStudent(studentId);
+        allow create: if canManage(studentId)
+          || (isThisStudent(studentId)
+              && request.resource.data.direction == "student-to-teacher");
+        // student may only flip status (e.g. mark as read)
+        allow update: if canManage(studentId)
+          || (isThisStudent(studentId)
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
+        allow delete: if canManage(studentId);
+      }
+    }
+  }
+}
