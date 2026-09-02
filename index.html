@@ -879,6 +879,9 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
    that each is a fragment of one night, not two separate, complete sleeps. */
 /* the daytime rest: same muted family as the night block so it reads as the
    same kind of thing, a shade warmer so it is not mistaken for one */
+.wb-blk.wb-buf{background:color-mix(in srgb, var(--ink-3) 7%, var(--surface)); opacity:.62;
+  border-left-style:none; z-index:0}
+.wb-blk.wb-buf b{font-size:9px; color:var(--ink-3)}
 .wb-blk.wb-nap{background:color-mix(in srgb, var(--ink-3) 11%, var(--surface));
   border-left-style:dotted}
 .wb-blk.wb-sleep-cont-b{border-bottom-left-radius:0; border-bottom-right-radius:0}
@@ -899,6 +902,13 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
    "a block"; .done still overrides both, since finished beats either. */
 .wb-blk.wb-ev{border-left-color:var(--accent);
   background:color-mix(in srgb, var(--accent) 20%, var(--glass-fill))}
+/* filed under a project: wear that project's colour, so the board groups by
+   what things belong to. Keeps the Event/Task edge STYLE (solid vs dashed) so
+   the two are still tellable apart — only the hue moves. Three-class
+   selectors on purpose: .wb-ev/.wb-tk come later in the sheet and would
+   otherwise win the background back. */
+.wb-blk.wb-ev.filed,.wb-blk.wb-tk.filed{border-left-color:var(--pc);
+  background:color-mix(in srgb, var(--pc) 22%, var(--glass-fill))}
 .wb-blk.wb-tk{border-left-style:dashed; border-left-color:var(--ink-2);
   background:color-mix(in srgb, var(--ink-2) 13%, var(--glass-fill))}
 /* passed its time and still not ticked — a quiet marker, not an alarm */
@@ -2247,6 +2257,107 @@ html{overscroll-behavior-y:none}
 #view-projplan[hidden]{display:none}
 .pphead2{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap}
 .pphead2 .eyebrow{color:var(--accent)}
+
+/* ---------- Notes ----------
+   Everything here is token-only, so the dark palette at :root[data-theme=dark]
+   recolours it without a single override of its own. The one thing worth
+   knowing: .n-block-ta must stay visually invisible — the block IS the text, so
+   the textarea contributes no background, border, ring or resize grip, and its
+   line-height has to match the rendered type exactly or auto-grow overshoots. */
+.n-list-head{display:flex; gap:8px; align-items:center}
+.n-search{flex:1 1 auto; min-width:0}
+
+.n-row{display:flex; align-items:center; gap:6px; padding:0 6px 0 0;
+  border-bottom:1px solid var(--line-soft)}
+.n-row:last-child{border-bottom:0}
+.n-row-main{flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:2px;
+  text-align:left; background:none; border:0; padding:13px 4px 13px 14px;
+  font:inherit; color:inherit; cursor:pointer; border-radius:12px}
+.n-row-main:hover{background:var(--surface-2)}
+.n-row-main:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+.n-row-title{font-weight:600; color:var(--ink-strong); font-size:15px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.n-row-sub{color:var(--ink-3); font-size:13px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.n-row-date{flex:0 0 auto; color:var(--ink-3); font-size:12px; white-space:nowrap}
+.n-pin{flex:0 0 auto; width:40px; height:40px; border:0; background:none; cursor:pointer;
+  color:var(--line-strong); font-size:16px; line-height:1; border-radius:10px}
+.n-pin.on{color:var(--amber)}
+.n-pin:hover{background:var(--surface-2)}
+
+.n-editor-head{display:flex; flex-direction:column; gap:4px; margin-bottom:6px}
+.n-title-input{width:100%; border:0; background:none; padding:2px 0; font:inherit;
+  font-size:26px; font-weight:700; letter-spacing:-.02em; color:var(--ink-strong)}
+.n-title-input:focus{outline:none}
+.n-title-input::placeholder{color:var(--line-strong)}
+.n-meta{color:var(--ink-3); font-size:12px}
+
+.n-blocks{display:flex; flex-direction:column; gap:1px}
+.n-block{position:relative; display:flex; align-items:flex-start; gap:8px;
+  padding:2px 4px 2px 30px; border-radius:8px}
+.n-block:focus-within{background:var(--accent-soft)}
+.n-btype{position:absolute; left:0; top:2px; width:26px; height:28px; border:0; padding:0;
+  background:none; color:var(--line-strong); cursor:pointer; border-radius:7px;
+  font-size:15px; line-height:1; opacity:0; transition:opacity .12s ease}
+.n-block:hover .n-btype, .n-block:focus-within .n-btype, .n-btype:focus-visible{opacity:1}
+.n-btype:hover{background:var(--surface-2); color:var(--ink)}
+
+/* min-height:0 is load-bearing, not tidying. The app sets a global
+   textarea{min-height:110px}, so "height:auto" in nAutoGrow could never measure
+   below 110px: every block came out a tenth of a screen tall and each remeasure
+   compounded the last one. Overriding it here is what makes auto-grow exact. */
+.n-block-ta{flex:1 1 auto; min-width:0; width:100%; display:block; resize:none; overflow:hidden;
+  border:0; background:none; padding:4px 0; margin:0; font:inherit; color:var(--ink-strong);
+  font-size:15px; line-height:1.55; box-shadow:none; min-height:0; height:auto}
+.n-block-ta:focus{outline:none}
+.n-block-ta::placeholder{color:var(--line-strong)}
+
+.n-block[data-type="h1"] .n-block-ta{font-size:24px; font-weight:700; line-height:1.3; letter-spacing:-.02em}
+.n-block[data-type="h2"] .n-block-ta{font-size:19px; font-weight:700; line-height:1.35; letter-spacing:-.01em}
+.n-block[data-type="h3"] .n-block-ta{font-size:16px; font-weight:700; line-height:1.4}
+.n-block[data-type="h1"], .n-block[data-type="h2"], .n-block[data-type="h3"]{margin-top:10px}
+
+.n-bullet, .n-num{flex:0 0 auto; color:var(--ink-3); font-size:15px; line-height:1.55;
+  padding:4px 0; min-width:18px; text-align:right; font-variant-numeric:tabular-nums}
+
+.n-todo-box{flex:0 0 auto; position:relative; display:inline-flex; align-items:center;
+  justify-content:center; width:18px; height:18px; margin:8px 0 0; cursor:pointer}
+.n-todo-box input{position:absolute; inset:0; opacity:0; margin:0; cursor:pointer}
+.n-todo-box i{width:17px; height:17px; border:1.5px solid var(--line-strong); border-radius:5px;
+  background:var(--surface); transition:background .12s ease, border-color .12s ease}
+.n-todo-box input:checked + i{background:var(--accent); border-color:var(--accent)}
+.n-todo-box input:checked + i::after{content:""; position:absolute; left:6px; top:2px;
+  width:4px; height:9px; border:solid var(--on-accent); border-width:0 2px 2px 0; transform:rotate(42deg)}
+.n-todo-box input:focus-visible + i{outline:2px solid var(--accent); outline-offset:2px}
+.n-block[data-done="1"] .n-block-ta{text-decoration:line-through; color:var(--ink-3)}
+
+.n-block[data-type="quote"]{padding-left:30px}
+.n-block[data-type="quote"] .n-block-ta{border-left:3px solid var(--accent);
+  padding-left:12px; color:var(--ink); font-style:italic}
+.n-block[data-type="code"] .n-block-ta{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:13.5px; background:var(--sunk); border-radius:9px; padding:10px 12px;
+  border:1px solid var(--line-soft)}
+.n-hr{flex:1 1 auto; border:0; border-top:1px solid var(--line); margin:12px 0}
+
+.n-btype-menu{position:absolute; z-index:60; min-width:186px; padding:6px;
+  background:var(--surface); border:1px solid var(--line); border-radius:13px;
+  box-shadow:0 14px 38px -10px rgba(0,0,0,.28); display:flex; flex-direction:column; gap:1px}
+.n-btype-menu button{display:block; width:100%; text-align:left; border:0; background:none;
+  font:inherit; font-size:14px; color:var(--ink-strong); padding:9px 11px; border-radius:9px; cursor:pointer}
+.n-btype-menu button:hover, .n-btype-menu button:focus-visible{background:var(--surface-2); outline:none}
+.n-btype-menu button[aria-current="true"]{color:var(--accent); font-weight:600}
+.n-btype-menu .n-danger{color:var(--crit)}
+.n-menu-sep{height:1px; background:var(--line-soft); margin:5px 2px}
+
+@media (max-width:420px){
+  .n-title-input{font-size:22px}
+  .n-row-date{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .n-btype, .n-todo-box i{transition:none}
+}
+.n-sr{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
+  clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; border:0}
 
 </style>
 
@@ -4041,6 +4152,12 @@ html{overscroll-behavior-y:none}
       <span class="sw"><input type="checkbox" id="pNapOn"><i></i></span>
       <span class="lu-name" id="pNapLabel">Also a rest during the day</span>
     </label>
+    <div class="pslot-row">
+      <span class="field-label" id="pBufLabel">Wind-down either side</span>
+      <input type="number" id="pBufInput" class="mono-input hrs" min="0" max="3" step="0.25">
+      <span class="field-label">h</span>
+    </div>
+    <p class="hint" id="pBufHint"></p>
     <div class="pslot-row" id="pNapRow" hidden>
       <span class="field-label" id="pNapFromLabel">from</span>
       <input type="time" id="pNapFromInput" class="mono-input">
@@ -5170,6 +5287,7 @@ function seed(){return{
   v:6, users:[{id:"u1",name:"Me"}],
   actionDaysOn:true, actionDays:[3,0],          // Wednesday & Sunday
   cuttings:[], photos:[], products:[], formulas:[], schedules:[], subjects:[], routines:[], events:[], tasks:[],
+  notes:[], notebooks:[],
   planner:{sleepWeekday:{from:"23:00",hours:8}, sleepWeekend:{from:"23:00",hours:8}, sleepEx:{}, tasks:[], blocks:[], linkCare:true, linkHours:true, linkProjects:true, carePace:3},
   hours:{projects:[], sessions:[], running:null,
     settings:{currency:"Kč", pomoWork:25, pomoShort:5, pomoLong:15, pomoCycle:4}},
@@ -6541,6 +6659,14 @@ function pIsWeekendNight(iso){ const g=pParseISO(iso).getDay(); return g===5||g=
    second daytime one — the afternoon lie-down asked for on the beta call
    ("rozdělení na dva bloky za den"). Anything stored before naps existed is a
    bare {from,hours} and reads back as nap:null, so old records stay valid. */
+/* An hour or so either side of sleep, for winding down and getting going —
+   asked for on the beta call. It is not sleep and not free time either: it is
+   drawn as a lighter band butted against the sleep block so the evening does
+   not look emptier than it really is, and it is counted in the day's rest
+   total the same way the nap is. */
+function pHHMM(v){ const m=Math.round(Math.max(0,Math.min(v,24))*60)%1440;
+  return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"); }
+function pBufOf(v){ const n=v&&Number(v.buffer); return isFinite(n)&&n>0?Math.min(3,n):0; }
 function pNapOk(v){ return !!(v&&/^\d{2}:\d{2}$/.test(v.from)&&typeof v.hours==="number"&&v.hours>0); }
 function pNapOf(v){ return pNapOk(v&&v.nap)?{from:v.nap.from,hours:Math.min(24,Math.max(0,v.nap.hours))}:null; }
 /* what the day actually loses to rest — night plus any daytime period. Every
@@ -6548,32 +6674,35 @@ function pNapOf(v){ return pNapOk(v&&v.nap)?{from:v.nap.from,hours:Math.min(24,M
    the free-time arithmetic pretended it wasn't there. */
 function pSleepHoursFor(iso){
   const s=pSleepFor(iso);
-  return Math.min(24,Math.max(0,s.hours)+(s.nap?Math.max(0,s.nap.hours):0));
+  return Math.min(24,Math.max(0,s.hours)+(s.nap?Math.max(0,s.nap.hours):0)+2*(s.buffer||0));
 }
 function pSleepBucket(iso){
   const key=pIsWeekendNight(iso)?"sleepWeekend":"sleepWeekday";
   const v=S.planner[key];
   const from=(v&&/^\d{2}:\d{2}$/.test(v.from))?v.from:"23:00";
   const hours=(v&&typeof v.hours==="number")?Math.min(24,Math.max(0,v.hours)):8;
-  return {from,hours,nap:pNapOf(v)};
+  return {from,hours,nap:pNapOf(v),buffer:pBufOf(v)};
 }
 function pSleepDefault(iso){ return pSleepBucket(iso); }
 function pSleepFor(iso){
   const ex=S.planner.sleepEx&&S.planner.sleepEx[iso];
   if(ex&&/^\d{2}:\d{2}$/.test(ex.from)&&typeof ex.hours==="number")
-    return {from:ex.from, hours:Math.min(24,Math.max(0,ex.hours)), nap:pNapOf(ex)};
+    return {from:ex.from, hours:Math.min(24,Math.max(0,ex.hours)), nap:pNapOf(ex), buffer:pBufOf(ex)};
   return pSleepDefault(iso);
 }
-function pSleepSetFor(iso,from,hours,nap){
+function pSleepSetFor(iso,from,hours,nap,buffer){
   const def=pSleepDefault(iso);
   S.planner.sleepEx=S.planner.sleepEx||{};
+  const buf=Math.min(3,Math.max(0,Number(buffer)||0));
   const napSame=(!nap&&!def.nap)||(nap&&def.nap&&nap.from===def.nap.from&&Math.abs(nap.hours-def.nap.hours)<1e-6);
+  const bufSame=Math.abs(buf-(def.buffer||0))<1e-6;
   /* matches the default exactly → no exception needed, same tidy-up rule
      ppSetDayHours uses for a Project day that drifts back to its default */
-  if(from===def.from&&Math.abs(hours-def.hours)<1e-6&&napSame) delete S.planner.sleepEx[iso];
+  if(from===def.from&&Math.abs(hours-def.hours)<1e-6&&napSame&&bufSame) delete S.planner.sleepEx[iso];
   else {
     const rec={from,hours:Math.min(24,Math.max(0,hours))};
     if(nap) rec.nap={from:nap.from,hours:Math.min(24,Math.max(0,nap.hours))};
+    if(buf>0) rec.buffer=buf;
     S.planner.sleepEx[iso]=rec;
   }
 }
@@ -6599,6 +6728,23 @@ function pSleepBlocksFor(iso){
     const pstart=ph+(pm||0)/60;
     const spill=Math.max(0,p.hours-(24-pstart));
     if(spill>0) out.push({time:"00:00",hours:spill,owner:prev});
+  }
+  /* wind-down: a band butted against each end of the night, so the hour
+     before bed and the hour after waking do not read as free time. Clipped to
+     the day like everything else here — a buffer that would run past midnight
+     simply shows the part that fits. */
+  const me=pSleepFor(iso), buf=me.buffer||0;
+  if(buf>0){
+    const [bh,bm]=me.from.split(":").map(Number);
+    const bedtime=bh+(bm||0)/60;
+    const preS=Math.max(0,bedtime-buf);
+    if(bedtime>0) out.push({time:pHHMM(preS),hours:bedtime-preS,owner:iso,buffer:true});
+    const p2=pSleepFor(prev);
+    if(p2.buffer>0){
+      const [ph2,pm2]=p2.from.split(":").map(Number);
+      const wake=Math.max(0,ph2+(pm2||0)/60+p2.hours-24);   // this morning's wake, if it spilled
+      if(wake>0&&wake+p2.buffer<=24) out.push({time:pHHMM(wake),hours:p2.buffer,owner:prev,buffer:true});
+    }
   }
   /* the optional second period — a daytime rest, drawn like the night one but
      never split, since a nap that ran past midnight would just be a night */
@@ -6648,8 +6794,13 @@ function pItemsFor(iso){
        dragged forward onto today */
     const overdue=!isEvent&&!isQuick&&!tk.done&&tk.due<pToday();
     if(!(tk.due===iso||(isToday&&overdue))) return;
+    /* carry the project's colour through, so a Task or Event filed under a
+       project draws in that project's colour on the board — asked for on the
+       beta call, where every block looked the same regardless of what it
+       belonged to. Unfiled ones keep the plain Task/Event styling. */
+    const pj=tk.projectId?((S.projplan&&S.projplan.projects)||[]).find(p=>p.id===tk.projectId):null;
     out.push({kind:"task",ref:tk,name:tk.title||t("Untitled task"),hours:+tk.hours||0,
-      time:overdue?"":(tk.time||""),overdue});
+      time:overdue?"":(tk.time||""),overdue,color:pj?pj.color:null});
   });
   /* ---- the other two apps' claims on the same 24 hours ---- */
   if(S.planner.linkHours!==false){
@@ -7358,6 +7509,9 @@ function pNapDlgHours(){
 }
 function pSleepHintUpdate(){
   $("#pSleepHint").textContent=t("{h}h of sleep").replace("{h}",pFmtH(pSleepDlgDiffHours()));
+  const bf=Math.min(3,Math.max(0,+$("#pBufInput").value||0));
+  $("#pBufHint").textContent=bf>0
+    ? t("{h}h before bed and {h}h after waking, kept clear.").replace(/\{h\}/g,pFmtH(bf)) : "";
   const on=$("#pNapOn").checked;
   $("#pNapRow").hidden=!on;
   $("#pNapHint").textContent=on?t("{h}h of rest").replace("{h}",pFmtH(pNapDlgHours())):"";
@@ -7369,6 +7523,8 @@ function pOpenSleepDialog(iso){
   $("#pNapLabel").textContent=t("Also a rest during the day");
   $("#pNapFromLabel").textContent=t("from");
   $("#pNapUntilLabel").textContent=t("until");
+  $("#pBufLabel").textContent=t("Wind-down either side");
+  $("#pBufInput").value=pSleepFor(pSleepCtx).buffer||0;
   $("#pNapOn").checked=!!nap;
   $("#pNapFromInput").value=nap?nap.from:"14:00";
   $("#pNapUntilInput").value=nap?pSleepUntilStr(nap.from,nap.hours):"15:00";
@@ -7387,6 +7543,7 @@ function pOpenSleepDialog(iso){
 }
 $("#pSleepFromInput").addEventListener("input",pSleepHintUpdate);
 $("#pSleepUntilInput").addEventListener("input",pSleepHintUpdate);
+$("#pBufInput").addEventListener("input",pSleepHintUpdate);
 $("#pNapOn").addEventListener("change",pSleepHintUpdate);
 $("#pNapFromInput").addEventListener("input",pSleepHintUpdate);
 $("#pNapUntilInput").addEventListener("input",pSleepHintUpdate);
@@ -7400,7 +7557,8 @@ $("#pSleepSave").addEventListener("click",()=>{
   const from=$("#pSleepFromInput").value||"23:00";
   const napH=pNapDlgHours();
   const nap=($("#pNapOn").checked&&napH>0)?{from:$("#pNapFromInput").value||"14:00",hours:napH}:null;
-  pSleepSetFor(pSleepCtx,from,Math.min(24,Math.max(0,pSleepDlgDiffHours())),nap);
+  pSleepSetFor(pSleepCtx,from,Math.min(24,Math.max(0,pSleepDlgDiffHours())),nap,
+    Math.min(3,Math.max(0,+$("#pBufInput").value||0)));
   $("#pSleepDlg").close(); touch(); renderPlanner();
 });
 $("#pSlotKind").addEventListener("click",e=>{
@@ -7765,7 +7923,10 @@ function pBoardHtml(days,opts){
       const drag=it.kind==="task"?` data-wb="task:${it.ref.id}" data-day="${d}"`
                : it.kind==="block"?` data-wb="block:${it.ref.id}" data-day="${d}"`
                : it.kind==="proj"?` data-wbp="${it.id}" data-day="${d}" tabindex="0"`:"";
-      const tint=it.kind==="proj"?` --pc:${ppSafeColor(it.color)};`:"";
+      /* a Project block carries its own colour, and so now does any Task or
+         Event filed under one (pItemsFor passes it through) */
+      const tint=it.color?` --pc:${ppSafeColor(it.color)};`:"";
+      const filed=!!(it.color&&it.kind==="task");
       /* what you are in the middle of right now gets a live countdown — the
          now-line says where you are, this says how much of it is left */
       /* a project's slot is invented by pPlaceProjects, so "2h left" on one
@@ -7805,7 +7966,7 @@ function pBoardHtml(days,opts){
          height, the middle is always at least ~60% of the block. */
       const grip=Math.max(3,Math.min(8,Math.round(hpx*0.2)));
       const miss=missed?'<i class="miss" title="'+esc(t("Still not done"))+'">!</i> ':"";
-      return `<div class="wb-blk wb-${kind}${evkind}${live?" live":""}${compact?" compact":""}${done?" done":""}${missed?" missed":""}"${drag} style="top:${top}px; height:${hpx}px; --grip:${grip}px;${tint} ${lane}">
+      return `<div class="wb-blk wb-${kind}${evkind}${filed?" filed":""}${live?" live":""}${compact?" compact":""}${done?" done":""}${missed?" missed":""}"${drag} style="top:${top}px; height:${hpx}px; --grip:${grip}px;${tint} ${lane}">
         ${compact
           ? `<b>${warn}${miss}${it.kind==="block"?"↻ ":""}${esc(it.name)}${done?" — "+esc(t("Done")):" "+esc(it.time)}</b>`
           : `<b>${warn}${miss}${it.kind==="block"?"↻ ":""}${esc(it.name)}</b><span>${meta}</span>`}
@@ -7881,6 +8042,11 @@ function pBoardHtml(days,opts){
       const full=pSleepFor(sp.owner);
       /* the daytime rest is its own short period: it never crosses midnight,
          so none of the continuation machinery below applies to it */
+      if(sp.buffer){
+        return `<div class="wb-blk wb-sleep wb-buf" data-sleepblk="${sp.owner}" style="top:${top}px; height:${hpx}px; left:0; width:100%"
+          role="button" tabindex="0" aria-label="${esc(t("Sleep settings"))}">
+          <b>${esc(t("Wind-down"))}</b></div>`;
+      }
       if(sp.nap){
         const n=full.nap||{from:sp.time,hours:sp.hours};
         return `<div class="wb-blk wb-sleep wb-nap" data-sleepblk="${sp.owner}" style="top:${top}px; height:${hpx}px; left:0; width:100%"
@@ -16089,6 +16255,7 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "Unscheduled":"Nenaplánované","Parking lot":"Parkoviště","Still not done":"Pořád nesplněno","Duplicate":"Duplikovat",
 "New — parked":"Nové — na parkovišti","Add project":"Přidat projekt",
 "An event happens at a set time — it sits on the clock.":"Událost se děje v daný čas — sedí na hodinách.","A task is something to get done — it can wait in the parking lot.":"Úkol je něco, co je potřeba udělat — může počkat na parkovišti.",
+"Wind-down":"Zklidnění","Wind-down either side":"Zklidnění před a po","{h}h before bed and {h}h after waking, kept clear.":"{h}h před spaním a {h}h po probuzení, volno.",
 "Rest":"Odpočinek","Also a rest during the day":"K tomu odpočinek přes den","{h}h of rest":"{h}h odpočinku",
 "Select":"Vybrat","Done selecting":"Hotovo","{n} selected":"{n} vybráno","Mark done":"Označit hotové","Not done":"Nesplněno","To parking lot":"Na parkoviště","Clear":"Zrušit výběr","Delete {n} blocks? This cannot be undone.":"Smazat {n} bloků? Nelze vzít zpět.","double-booked — drag onto a free hour":"dvojitá rezervace — přetáhni na volnou hodinu","unassigned — tap to set a time":"bez času — klepnutím nastavíš čas","Nothing parked — everything has a time.":"Nic tu neparkuje — všechno má svůj čas.","planned lc":"v plánu","Routine":"Rutina","drag one onto the hours above to schedule it":"přetáhni na hodiny výš a naplánuje se","Pause":"Pauza","Resume":"Pokračovat","Paused":"Pozastaveno","Skip":"Přeskočit","End this phase and start the next":"Ukončit tuto fázi a začít další","drag to move, edge to resize":"tažením přesuneš, okrajem změníš hodiny","Previous week":"Předchozí týden","Next week":"Další týden",
 "Previous day":"Předchozí den","Next day":"Další den","Yesterday":"Včera",
