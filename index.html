@@ -3867,6 +3867,7 @@ html{overscroll-behavior-y:none}
     <button class="btn" type="button" id="pSlotAddTask">Add task</button>
     <button class="btn primary" type="button" id="pSlotAddEvent">Add event</button>
     <button class="btn danger" type="button" id="pSlotDelete" hidden>Delete</button>
+    <button class="btn" type="button" id="pSlotDup" hidden>Duplicate</button>
     <button class="btn primary" type="button" id="pSlotSave" hidden>Save</button>
   </div>
 </dialog>
@@ -6847,7 +6848,7 @@ function pOpenEditDialog(id){
   const span=sp.members.length>1?" · "+sp.members.length+" "+t("days"):"";
   $("#pSlotWhen").textContent=$("#pSlotWhen").textContent+span;
   $("#pSlotAddTask").hidden=true; $("#pSlotAddEvent").hidden=true;
-  $("#pSlotSave").hidden=false; $("#pSlotDelete").hidden=false;
+  $("#pSlotSave").hidden=false; $("#pSlotDelete").hidden=false; $("#pSlotDup").hidden=false;
   document.querySelectorAll("#pSlotDlg .pslot-edit-only").forEach(el=>{ el.style.display=""; });
   /* "Close", not "Cancel": ticking or adding a subtask writes straight to the
      record — which is what you want from a checklist — so this button cannot
@@ -6859,7 +6860,7 @@ function pOpenSlotDialog(day,fromH,hours){
   pSlotEditId=null;
   $("#pSlotTitle").textContent=t("New");
   $("#pSlotAddTask").hidden=false; $("#pSlotAddEvent").hidden=false;
-  $("#pSlotSave").hidden=true; $("#pSlotDelete").hidden=true;
+  $("#pSlotSave").hidden=true; $("#pSlotDelete").hidden=true; $("#pSlotDup").hidden=true;
   /* creating, not editing: the edit-only controls stay out of the way, and
      none of them may carry a value over from the last record opened */
   $("#pSlotKind").hidden=true;
@@ -6947,6 +6948,54 @@ function pDetachFromRun(tk){
   });
   flush();
 }
+/* ---- Duplicate ----
+   Asked for repeatedly on the beta call ("potřebuju vzít blok a hodit ho
+   jinam") and nothing in the app could do it. A button in the editor works
+   the same on a desktop and a phone, which was the other half of the ask —
+   no modifier key, no right-click, no long-press to discover.
+
+   The copy is a fresh, independent record: never `done` (you have not done
+   the new one), and never in the original's multi-day run — copying one day
+   of a stretched Event should not silently extend that stretch. Subtasks are
+   copied by value so ticking one does not tick the other's.
+
+   Where it lands: an Event goes to the first free slot at or after the
+   original's end that day, so the copy never opens double-booked on top of
+   its own source; if the day is too full it parks (no time), which the
+   parking lot is exactly for. A Task with no time just parks alongside it.
+   The editor then reopens on the COPY, since the point of duplicating is
+   almost always to change something about it. */
+function pDupTask(id){
+  const src=pFindTask(id); if(!src||src.kind==="quick") return null;
+  const copy=Object.assign({},src,{id:uid(), groupId:null, done:false});
+  delete copy.doneAt;
+  copy.steps=(src.steps||[]).map(s=>({id:uid(), text:s.text, done:false}));
+  if(src.kind==="event"&&src.time){
+    const [h,m]=src.time.split(":").map(Number);
+    const dur=Math.max(0.25,+src.hours||1);
+    const busy=pItemsFor(src.due).filter(i=>i.time&&i.hours>0&&i.kind!=="care")
+      .map(i=>{ const [bh,bm]=i.time.split(":").map(Number);
+        return {s:bh+bm/60, e:bh+bm/60+i.hours}; });
+    let s=h+m/60+dur;
+    for(let guard=0; guard<=busy.length; guard++){
+      const hit=busy.find(b=>b.e>s&&b.s<s+dur);
+      if(!hit) break;
+      s=hit.e;
+    }
+    if(s+dur<=24){ const mins=Math.round(s*60);
+      copy.time=String(Math.floor(mins/60)).padStart(2,"0")+":"+String(mins%60).padStart(2,"0"); }
+    else { copy.time=""; copy.kind="task"; }   // no room left today — park it
+  }
+  S.planner.tasks.push(copy);
+  touch();
+  return copy;
+}
+$("#pSlotDup").addEventListener("click",()=>{
+  const copy=pDupTask(pSlotEditId);
+  if(!copy){ $("#pSlotDlg").close(); return; }
+  renderPlanner();
+  pOpenEditDialog(copy.id);        // reopen on the copy — you nearly always want to edit it
+});
 $("#pSlotDelete").addEventListener("click",()=>{
   const tk=pFindTask(pSlotEditId); if(!tk){ $("#pSlotDlg").close(); return; }
   /* only this day goes; the survivors stay linked, and a lone survivor stops
@@ -15704,7 +15753,7 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "Linked time":"Propojený čas","Plant care counts here":"Péče o rostliny se počítá sem",
 "Tracked hours count here":"Měřené hodiny se počítají sem",
 "Projects count here":"Projekty se počítají sem",
-"Unscheduled":"Nenaplánované","Parking lot":"Parkoviště","Still not done":"Pořád nesplněno","double-booked — drag onto a free hour":"dvojitá rezervace — přetáhni na volnou hodinu","unassigned — tap to set a time":"bez času — klepnutím nastavíš čas","Nothing parked — everything has a time.":"Nic tu neparkuje — všechno má svůj čas.","planned lc":"v plánu","Routine":"Rutina","drag one onto the hours above to schedule it":"přetáhni na hodiny výš a naplánuje se","Pause":"Pauza","Resume":"Pokračovat","Paused":"Pozastaveno","Skip":"Přeskočit","End this phase and start the next":"Ukončit tuto fázi a začít další","drag to move, edge to resize":"tažením přesuneš, okrajem změníš hodiny","Previous week":"Předchozí týden","Next week":"Další týden",
+"Unscheduled":"Nenaplánované","Parking lot":"Parkoviště","Still not done":"Pořád nesplněno","Duplicate":"Duplikovat","double-booked — drag onto a free hour":"dvojitá rezervace — přetáhni na volnou hodinu","unassigned — tap to set a time":"bez času — klepnutím nastavíš čas","Nothing parked — everything has a time.":"Nic tu neparkuje — všechno má svůj čas.","planned lc":"v plánu","Routine":"Rutina","drag one onto the hours above to schedule it":"přetáhni na hodiny výš a naplánuje se","Pause":"Pauza","Resume":"Pokračovat","Paused":"Pozastaveno","Skip":"Přeskočit","End this phase and start the next":"Ukončit tuto fázi a začít další","drag to move, edge to resize":"tažením přesuneš, okrajem změníš hodiny","Previous week":"Předchozí týden","Next week":"Další týden",
 "Previous day":"Předchozí den","Next day":"Další den","Yesterday":"Včera",
 "No projects scheduled for this day.":"Na tento den nejsou naplánované žádné projekty.","Drag a task onto the board to give it a time.":"Přetáhni úkol do tabulky a dostane čas.",
 "What the garden and the timer already claim from the same 24 hours.":"Co si zahrada a stopky už berou ze stejných 24 hodin.",
