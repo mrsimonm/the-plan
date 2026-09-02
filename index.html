@@ -2201,6 +2201,43 @@ html{overscroll-behavior-y:none}
 .tbs-hw:last-child{border-bottom:0}
 .tbs-hw.mine{background:var(--surface-2)}
 .tbs-hw p{margin:4px 0 0; line-height:1.5}
+/* a homework photo: a thumbnail in the thread, full size on tap */
+.tbs-hwimg{margin-top:8px; max-width:min(240px,60%); border-radius:var(--r-sm);
+  border:1px solid var(--line); cursor:zoom-in; display:block}
+.tbs-photodlg{padding:0; border:0; background:transparent; max-width:96vw; max-height:96vh}
+.tbs-photodlg img{max-width:96vw; max-height:82vh; border-radius:var(--r); display:block}
+.tbs-photodlg .btn{display:block; margin:10px auto 0}
+/* calendar: a plain month grid, dots where reviews fall */
+.tbs-calhead{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px}
+.tbs-caldow,.tbs-calgrid{display:grid; grid-template-columns:repeat(7,1fr); gap:4px}
+.tbs-caldow{margin-bottom:4px}
+.tbs-caldow span{text-align:center; font-size:10.5px; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--ink-3)}
+.tbs-calcell{aspect-ratio:1; border-radius:var(--r-sm); border:1px solid transparent;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  font-size:12.5px; color:var(--ink-2); background:var(--surface-2)}
+.tbs-calcell.out{visibility:hidden}
+.tbs-calcell.today{border-color:var(--ink); color:var(--ink); font-weight:600}
+.tbs-calcell.has{background:color-mix(in srgb,var(--accent) 16%,var(--surface-2));
+  color:var(--ink); cursor:pointer}
+.tbs-calcell.overdue{background:color-mix(in srgb,var(--crit) 18%,var(--surface-2))}
+.tbs-caldot{width:5px; height:5px; border-radius:50%; background:var(--accent)}
+.tbs-calcell.overdue .tbs-caldot{background:var(--crit)}
+.tbs-calcell b{font-weight:600; font-size:10px; color:var(--accent)}
+.tbs-calcell.overdue b{color:var(--crit)}
+/* teacher dashboard: a compact status per student, readable at a glance */
+.tbs-stats{display:flex; gap:8px; flex-wrap:wrap}
+.tbs-stat{flex:1 1 70px; text-align:center; padding:9px 6px; border-radius:var(--r-sm);
+  background:var(--surface-2)}
+.tbs-stat b{display:block; font-size:19px; line-height:1.2; font-weight:600}
+.tbs-stat small{color:var(--ink-3); font-size:10.5px; letter-spacing:.04em; text-transform:uppercase}
+.tbs-stat.warn b{color:var(--crit)}
+.tbs-stat.good b{color:var(--accent)}
+/* the roster's traffic light — colour first, text second */
+.tbs-dot{width:9px; height:9px; border-radius:50%; flex:0 0 auto; background:var(--ink-3)}
+.tbs-dot.ok{background:var(--accent)}
+.tbs-dot.warn{background:var(--amber)}
+.tbs-dot.late{background:var(--crit)}
 
 /* dialog internals (chrome itself comes from the app's dialog styles) */
 .ppdlg form{display:flex; flex-direction:column; gap:.95rem; padding:1.35rem}
@@ -3526,6 +3563,19 @@ html{overscroll-behavior-y:none}
         <div class="card" id="tbsCardList"></div>
       </div>
 
+      <div id="tbsScopeCal" hidden>
+        <div class="card pad">
+          <div class="tbs-calhead">
+            <button class="btn mini" id="tbsCalPrev" aria-label="Previous month">‹</button>
+            <b id="tbsCalTitle">Month</b>
+            <button class="btn mini" id="tbsCalNext" aria-label="Next month">›</button>
+          </div>
+          <div class="tbs-caldow" id="tbsCalDow"></div>
+          <div class="tbs-calgrid" id="tbsCalGrid"></div>
+          <p class="tbs-muted" id="tbsCalNote" style="font-size:12.5px; margin:10px 0 0"></p>
+        </div>
+      </div>
+
       <div id="tbsScopeHomework" hidden>
         <div class="stack" id="tbsHomeworkList"></div>
       </div>
@@ -3608,6 +3658,7 @@ html{overscroll-behavior-y:none}
         <h2 id="tbsStuName">Student</h2>
         <button class="btn" id="tbsStuBack">← Students</button>
       </div>
+      <div class="card pad stack" id="tbsStuStats"></div>
       <div class="card pad stack">
         <span class="eyebrow">Access link</span>
         <p class="tbs-muted" style="font-size:12px">Send this once — it opens their own app on their own device.</p>
@@ -3631,12 +3682,24 @@ html{overscroll-behavior-y:none}
       <div class="card pad stack">
         <span class="eyebrow">Send homework</span>
         <textarea id="tbsHwText" rows="3" placeholder="Write the homework…" aria-label="Homework text"></textarea>
-        <button class="btn primary" id="tbsSendHw">Send</button>
+        <div class="row" style="gap:8px; align-items:center">
+          <label class="btn" for="tbsHwPhoto">📷 Photo</label>
+          <input id="tbsHwPhoto" type="file" accept="image/*" hidden>
+          <span class="tbs-muted" id="tbsHwPhotoName" style="font-size:12px; flex:1"></span>
+          <button class="btn primary" id="tbsSendHw">Send</button>
+        </div>
       </div>
       <div class="card" id="tbsStuCards"></div>
       <div class="card" id="tbsStuHw"></div>
     </div>
   </section>
+
+  <!-- full-size homework photo; body-level so it is never inside a hidden
+       ancestor when it opens -->
+  <dialog id="tbsPhotoDlg" class="tbs-photodlg">
+    <img id="tbsPhotoBig" alt="Homework photo">
+    <button class="btn" id="tbsPhotoClose">Close</button>
+  </dialog>
 
 <!-- projects-timeline dialogs: body-level, because a <dialog> inside a
      display:none ancestor opens invisible AND blocks the whole document -->
@@ -16727,8 +16790,9 @@ const SRS = (() => {
    as network-free as they have always been. */
 const TBS = (() => {
   const SDK = "https://www.gstatic.com/firebasejs/10.12.2/";
-  const PARTS = ["firebase-app-compat.js","firebase-auth-compat.js","firebase-firestore-compat.js"];
-  let ready = null, db = null, auth = null;
+  const PARTS = ["firebase-app-compat.js","firebase-auth-compat.js",
+                 "firebase-firestore-compat.js","firebase-storage-compat.js"];
+  let ready = null, db = null, auth = null, store = null;
 
   function loadScript(src){
     return new Promise((ok, fail) => {
@@ -16746,8 +16810,9 @@ const TBS = (() => {
     ready = (async () => {
       for(const p of PARTS) await loadScript(SDK + p);
       firebase.initializeApp(FIREBASE_CONFIG);
-      auth = firebase.auth();
-      db   = firebase.firestore();
+      auth  = firebase.auth();
+      db    = firebase.firestore();
+      store = firebase.storage();
       /* Cached reads survive a dropped connection once the SDK itself
          has loaded at least once. Failure here is not fatal — several
          tabs open at once is the usual cause. */
@@ -16935,18 +17000,67 @@ const TBS = (() => {
                .sort((a,b) => String(a.createdAt).localeCompare(String(b.createdAt)))),
       err => { console.warn("homework", err); cb([]); });
   }
-  async function sendHomework(studentId, text, direction){
+  /* A phone photo is 3-5 MB of detail nobody needs to read a worksheet,
+     and the teacher is often on mobile data. Downscale to something
+     legible and small before it ever leaves the device. Falls back to
+     the original file if the browser refuses to decode it. */
+  async function shrinkImage(file, maxEdge = 1600, quality = 0.82){
+    try{
+      const bmp = await createImageBitmap(file);
+      const scale = Math.min(1, maxEdge / Math.max(bmp.width, bmp.height));
+      if(scale === 1 && file.size < 900_000) return file;
+      const w = Math.round(bmp.width * scale), h = Math.round(bmp.height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(bmp, 0, 0, w, h);
+      bmp.close?.();
+      const blob = await new Promise(ok => canvas.toBlob(ok, "image/jpeg", quality));
+      return blob && blob.size < file.size ? blob : file;
+    }catch(e){ return file; }
+  }
+
+  /* Upload first, then write the document, because the rules let a
+     student CREATE a homework item but not edit its photoPath
+     afterwards — so the path has to be known before the doc exists.
+     The doc id is generated here so both halves agree on it. */
+  async function sendHomework(studentId, text, direction, file){
     await init();
-    return hwOf(studentId).add({
-      direction, kind:"text", text:String(text||"").trim(), photoPath:null,
+    const ref = hwOf(studentId).doc();
+    let photoPath = null;
+
+    if(file){
+      const blob = await shrinkImage(file);
+      if(blob.size > 10 * 1024 * 1024) throw new Error("too-big");
+      const clean = String(file.name || "photo.jpg").replace(/[^\w.\-]/g, "_").slice(-60);
+      photoPath = `teachbenchHomework/${studentId}/${ref.id}/${clean}`;
+      await store.ref(photoPath).put(blob, {
+        contentType: blob.type && blob.type.startsWith("image/") ? blob.type : "image/jpeg"
+      });
+    }
+
+    await ref.set({
+      direction, kind: photoPath ? "photo" : "text",
+      text: String(text||"").trim(), photoPath,
       status:"sent", createdAt:new Date().toISOString()
     });
+    return ref.id;
+  }
+
+  /* Storage paths are not URLs; each needs a signed download link.
+     Cached because the homework thread re-renders on every snapshot. */
+  const urlCache = new Map();
+  async function photoUrl(path){
+    if(!path) return null;
+    if(urlCache.has(path)) return urlCache.get(path);
+    const p = store.ref(path).getDownloadURL().catch(() => null);
+    urlCache.set(path, p);
+    return p;
   }
 
   return { init, redeemCode, myStudentId, signInStaff, currentStaff, signOut,
            onRoster, onStudent, addStudent, knownCode, reissueCode,
            onCards, addCard, deleteCard, submitReview,
-           onHomework, sendHomework };
+           onHomework, sendHomework, photoUrl };
 })();
 
 /* ------------------------------------------------------------- TBS_UI ----
@@ -16962,7 +17076,9 @@ const TBS_UI = (() => {
     studentOnly:false, studentId:null, staff:null,
     cards:[], homework:[], roster:[], openStudent:null,
     queue:[], current:null, revealed:false, doneCount:0,
-    newType:"vocab", unsub:[]
+    newType:"vocab", unsub:[],
+    calOffset:0,                    // months from the current one
+    stats:{}, statUnsub:{}          // per-student rollups for the roster
   };
 
   function show(id){ SCREENS.forEach(s => { const el=$$(s); if(el) el.hidden = s!==id; }); }
@@ -17010,7 +17126,7 @@ const TBS_UI = (() => {
       $$("tbsGreeting").textContent = s ? `Hello, ${s.name}` : "Hello";
     }));
     state.unsub.push(TBS.onCards(studentId, cards => {
-      state.cards = cards; renderStudentToday(); renderCardList();
+      state.cards = cards; renderStudentToday(); renderCardList(); renderCalendar();
     }));
     state.unsub.push(TBS.onHomework(studentId, hw => {
       state.homework = hw; renderHomework();
@@ -17060,30 +17176,151 @@ const TBS_UI = (() => {
       </div>`).join("");
   }
 
+  /* One homework bubble. Photos are drawn as a placeholder first and
+     filled in when their download URL resolves, so a slow image never
+     holds up the text. */
+  function hwBubble(h, mineLabel, theirLabel){
+    const mine = h.direction === "student-to-teacher";
+    return `<div class="tbs-hw${mine?" mine":""}">
+      <small class="tbs-muted">${mine?mineLabel:theirLabel} · ${esc(shortDate(h.createdAt))}</small>
+      ${h.text ? `<p>${esc(h.text)}</p>` : ""}
+      ${h.photoPath ? `<img class="tbs-hwimg" data-photo="${esc(h.photoPath)}" alt="Homework photo">` : ""}
+    </div>`;
+  }
+  function fillPhotos(root){
+    root.querySelectorAll("[data-photo]").forEach(async img => {
+      if(img.dataset.filled) return;
+      img.dataset.filled = "1";
+      const url = await TBS.photoUrl(img.dataset.photo);
+      if(url){ img.src = url; img.onclick = () => openPhoto(url); }
+      else img.remove();
+    });
+  }
+  function openPhoto(url){
+    const dlg = $$("tbsPhotoDlg");
+    $$("tbsPhotoBig").src = url;
+    if(typeof dlg.showModal === "function") dlg.showModal(); else window.open(url,"_blank");
+  }
+
   function renderHomework(){
     const box = $$("tbsHomeworkList");
-    if(!state.homework.length){ box.innerHTML = `<div class="card pad"><p class="empty">No homework yet.</p></div>`; return; }
-    box.innerHTML = `<div class="card">` + state.homework.map(h => `
-      <div class="tbs-hw${h.direction==="student-to-teacher"?" mine":""}">
-        <small class="tbs-muted">${h.direction==="student-to-teacher"?"You":"Teacher"} · ${esc(shortDate(h.createdAt))}</small>
-        <p>${esc(h.text||"")}</p>
-      </div>`).join("") + `</div>
+    if(!state.homework.length){
+      box.innerHTML = `<div class="card pad"><p class="empty">No homework yet.</p></div>`;
+    }else{
+      box.innerHTML = `<div class="card">` +
+        state.homework.map(h => hwBubble(h, "You", "Teacher")).join("") + `</div>`;
+    }
+    box.insertAdjacentHTML("beforeend", `
       <div class="card pad stack">
         <textarea id="tbsHwReply" rows="3" placeholder="Write your answer…" aria-label="Your answer"></textarea>
-        <button class="btn primary" id="tbsHwSend">Send to teacher</button>
-      </div>`;
+        <div class="row" style="gap:8px; align-items:center">
+          <label class="btn" for="tbsHwReplyPhoto">📷 Photo</label>
+          <input id="tbsHwReplyPhoto" type="file" accept="image/*" hidden>
+          <span class="tbs-muted" id="tbsHwReplyName" style="font-size:12px; flex:1"></span>
+          <button class="btn primary" id="tbsHwSend">Send</button>
+        </div>
+        <p class="tbs-err" id="tbsHwErr" hidden></p>
+      </div>`);
+    fillPhotos(box);
+
+    const picker = $$("tbsHwReplyPhoto");
+    picker.onchange = () => {
+      $$("tbsHwReplyName").textContent = picker.files[0] ? picker.files[0].name : "";
+    };
     $$("tbsHwSend").onclick = async () => {
       const t = $$("tbsHwReply").value.trim();
-      if(!t) return;
-      $$("tbsHwSend").disabled = true;
-      try{ await TBS.sendHomework(state.studentId, t, "student-to-teacher"); }
-      finally{ $$("tbsHwSend").disabled = false; }
+      const f = picker.files[0] || null;
+      if(!t && !f) return;
+      const btn = $$("tbsHwSend"), err = $$("tbsHwErr");
+      err.hidden = true; btn.disabled = true; btn.textContent = f ? "Sending photo…" : "Sending…";
+      try{
+        await TBS.sendHomework(state.studentId, t, "student-to-teacher", f);
+        $$("tbsHwReply").value = ""; picker.value = ""; $$("tbsHwReplyName").textContent = "";
+      }catch(e){
+        err.textContent = e && e.message === "too-big"
+          ? "That photo is too large. Try a smaller one."
+          : "Couldn't send. Check your internet and try again.";
+        err.hidden = false;
+      }finally{ btn.disabled = false; btn.textContent = "Send"; }
     };
   }
 
   function shortDate(iso){
     const d = new Date(iso||0);
     return Number.isFinite(d.getTime()) ? d.toLocaleDateString(undefined,{day:"numeric",month:"short"}) : "";
+  }
+
+  /* ---------- calendar ----------
+     A month at a time, showing where the spaced-repetition intervals
+     land. Anything already due — including cards whose date has passed
+     — is folded onto today, because that is the day it actually wants
+     attention. Lesson times are not here yet: they live only in the
+     teacher's own local Teachbench, not in Firestore. */
+  const DAY_MS = 86400000;
+  const dayKey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+
+  function dueByDay(){
+    const map = new Map();
+    const today = new Date(); today.setHours(0,0,0,0);
+    const todayKey = dayKey(today);
+    state.cards.forEach(c => {
+      const t = Date.parse(c.nextReviewDate);
+      if(!Number.isFinite(t)) return;
+      const d = new Date(t); d.setHours(0,0,0,0);
+      const key = d.getTime() < today.getTime() ? todayKey : dayKey(d);
+      const entry = map.get(key) || { count:0, overdue:false };
+      entry.count += 1;
+      if(d.getTime() < today.getTime()) entry.overdue = true;
+      map.set(key, entry);
+    });
+    return map;
+  }
+
+  function renderCalendar(){
+    const grid = $$("tbsCalGrid"); if(!grid) return;
+    const today = new Date(); today.setHours(0,0,0,0);
+    const view = new Date(today.getFullYear(), today.getMonth() + state.calOffset, 1);
+    const due = dueByDay();
+
+    $$("tbsCalTitle").textContent =
+      view.toLocaleDateString(undefined, { month:"long", year:"numeric" });
+
+    /* Week starts Monday, matching the rest of the app and most of
+       Europe — getDay() is Sunday-first, hence the shift. */
+    const dows = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+    $$("tbsCalDow").innerHTML = dows.map(d => `<span>${d}</span>`).join("");
+
+    const firstDow = (view.getDay() + 6) % 7;
+    const daysInMonth = new Date(view.getFullYear(), view.getMonth()+1, 0).getDate();
+    const cells = [];
+    for(let i=0;i<firstDow;i++) cells.push(`<div class="tbs-calcell out"></div>`);
+    for(let day=1; day<=daysInMonth; day++){
+      const d = new Date(view.getFullYear(), view.getMonth(), day);
+      const key = dayKey(d);
+      const hit = due.get(key);
+      const isToday = d.getTime() === today.getTime();
+      const cls = ["tbs-calcell"];
+      if(isToday) cls.push("today");
+      if(hit){ cls.push("has"); if(hit.overdue) cls.push("overdue"); }
+      cells.push(`<div class="${cls.join(" ")}"${hit?` data-cal="${key}"`:""}>
+        <span>${day}</span>
+        ${hit ? `<i class="tbs-caldot"></i><b>${hit.count}</b>` : ""}
+      </div>`);
+    }
+    grid.innerHTML = cells.join("");
+
+    const total = [...due.values()].reduce((n,e) => n+e.count, 0);
+    $$("tbsCalNote").textContent = !state.cards.length
+      ? "No words yet — your teacher will add some."
+      : total ? "Dots show how many words come back for review that day."
+              : "Nothing scheduled this month.";
+
+    grid.querySelectorAll("[data-cal]").forEach(cell => cell.onclick = () => {
+      const e = due.get(cell.dataset.cal);
+      $$("tbsCalNote").textContent = e.overdue
+        ? `${e.count} ${e.count===1?"word is":"words are"} waiting — review them today.`
+        : `${e.count} ${e.count===1?"word":"words"} on this day.`;
+    });
   }
 
   /* ---------- review session ---------- */
@@ -17171,19 +17408,106 @@ const TBS_UI = (() => {
     state.unsub.push(TBS.onRoster(staff, list => {
       state.roster = list.slice().sort((a,b) => String(a.name).localeCompare(String(b.name)));
       renderRoster();
+      watchRosterStats();
     }));
+  }
+
+  /* ---------- progress ----------
+     One rollup shape used by both the roster line and the per-student
+     panel, so the traffic light and the numbers can never disagree. */
+  function statsFor(cards, homework){
+    const now = Date.now();
+    const due = cards.filter(c => SRS.isDue(c));
+    /* "Overdue" means more than a day past its slot — a card that came
+       due this morning is not a problem yet. */
+    const overdue = cards.filter(c => {
+      const t = Date.parse(c.nextReviewDate);
+      return Number.isFinite(t) && (now - t) > DAY_MS;
+    });
+    /* An interval of three weeks or more is the usual SM-2 line between
+       "still learning" and "in long-term memory". */
+    const learned = cards.filter(c => (Number(c.intervalDays)||0) >= 21);
+    const reviews = cards.reduce((n,c) => n + (Number(c.reviewCount)||0), 0);
+    const lapses  = cards.reduce((n,c) => n + (Number(c.lapses)||0), 0);
+    const lastSeen = cards.map(c => Date.parse(c.lastReviewedAt))
+      .filter(Number.isFinite).sort((a,b) => b-a)[0] || null;
+    /* Waiting on the student: the teacher spoke last. */
+    const waiting = homework && homework.length
+      ? homework[homework.length-1].direction === "teacher-to-student" : false;
+
+    let status = "ok";
+    if(!cards.length) status = "";
+    else if(overdue.length >= 5 || (lastSeen && now - lastSeen > 7*DAY_MS)) status = "late";
+    else if(overdue.length) status = "warn";
+
+    return { total:cards.length, due:due.length, overdue:overdue.length,
+             learned:learned.length, reviews, lapses, lastSeen, waiting, status,
+             accuracy: reviews ? Math.round((1 - lapses/reviews) * 100) : null };
+  }
+
+  function agoText(ms){
+    if(!ms) return "never";
+    const days = Math.floor((Date.now() - ms) / DAY_MS);
+    if(days <= 0) return "today";
+    if(days === 1) return "yesterday";
+    if(days < 30) return `${days} days ago`;
+    return `${Math.round(days/30)} months ago`;
   }
 
   function renderRoster(){
     const box = $$("tbsStudentList");
     if(!state.roster.length){ box.innerHTML = `<p class="empty">No students yet — add one above.</p>`; return; }
-    box.innerHTML = state.roster.map(s => `
-      <div class="tbs-row" data-student="${esc(s.id)}">
-        <span class="grow"><b>${esc(s.name)}</b><small>${esc(s.id.slice(0,6))}</small></span>
-        <span class="tbs-pill">open</span>
-      </div>`).join("");
+    box.innerHTML = state.roster.map(s => {
+      const st = state.stats[s.id];
+      const line = !st ? "…"
+        : !st.total ? "no words yet"
+        : `${st.total} words · ${st.learned} learned${st.overdue?` · ${st.overdue} overdue`:""}`;
+      return `<div class="tbs-row" data-student="${esc(s.id)}">
+        <i class="tbs-dot ${st ? st.status : ""}"></i>
+        <span class="grow"><b>${esc(s.name)}</b><small>${esc(line)}</small></span>
+        ${st && st.waiting ? `<span class="tbs-pill">homework sent</span>` : ""}
+        ${st && st.due ? `<span class="tbs-pill due">${st.due} due</span>` : ""}
+      </div>`;
+    }).join("");
     box.querySelectorAll("[data-student]").forEach(row =>
       row.onclick = () => openStudent(row.dataset.student));
+  }
+
+  /* The roster needs each student's cards to show progress at all, so
+     one listener per student. Fine at this size — a private teacher has
+     a handful of students, not a school. */
+  function watchRosterStats(){
+    const wanted = new Set(state.roster.map(s => s.id));
+    /* drop listeners for students who have gone */
+    Object.keys(state.statUnsub).forEach(id => {
+      if(!wanted.has(id)){ try{ state.statUnsub[id](); }catch(e){}
+        delete state.statUnsub[id]; delete state.stats[id]; }
+    });
+    state.roster.forEach(s => {
+      if(state.statUnsub[s.id]) return;
+      let cards = [], hw = [];
+      const recompute = () => { state.stats[s.id] = statsFor(cards, hw); renderRoster(); };
+      const offCards = TBS.onCards(s.id, list => { cards = list; recompute(); });
+      const offHw    = TBS.onHomework(s.id, list => { hw = list; recompute(); });
+      state.statUnsub[s.id] = () => { offCards(); offHw(); };
+    });
+  }
+
+  function renderStudentStats(cards, homework){
+    const box = $$("tbsStuStats"); if(!box) return;
+    const st = statsFor(cards, homework);
+    if(!st.total){ box.innerHTML = `<p class="empty">No cards yet — add one below.</p>`; return; }
+    box.innerHTML = `
+      <div class="tbs-stats">
+        <div class="tbs-stat"><b>${st.total}</b><small>words</small></div>
+        <div class="tbs-stat good"><b>${st.learned}</b><small>learned</small></div>
+        <div class="tbs-stat${st.overdue?" warn":""}"><b>${st.overdue}</b><small>overdue</small></div>
+        <div class="tbs-stat"><b>${st.accuracy===null?"—":st.accuracy+"%"}</b><small>recall</small></div>
+      </div>
+      <p class="tbs-muted" style="font-size:12.5px; margin:10px 0 0">
+        ${st.reviews} ${st.reviews===1?"review":"reviews"} so far · last studied ${esc(agoText(st.lastSeen))}${
+          st.waiting ? " · waiting on their homework reply" : ""}
+      </p>`;
   }
 
   function studentLink(code){
@@ -17201,14 +17525,21 @@ const TBS_UI = (() => {
     $$("tbsStuLink").dataset.code = code || "";
 
     dropStudentListeners();
+    /* The detail panel shows cards, homework and a rollup over both, so
+       each side keeps the other's latest copy to recompute against. */
+    let cards = [], hw = [];
     state._stuUnsub = [
-      TBS.onCards(id, cards => renderStaffCards(cards)),
-      TBS.onHomework(id, hw => renderStaffHomework(hw))
+      TBS.onCards(id, list => { cards = list; renderStaffCards(list); renderStudentStats(cards, hw); }),
+      TBS.onHomework(id, list => { hw = list; renderStaffHomework(list); renderStudentStats(cards, hw); })
     ];
   }
   function dropStudentListeners(){
     (state._stuUnsub||[]).forEach(f => { try{ f(); }catch(e){} });
     state._stuUnsub = [];
+  }
+  function dropStatListeners(){
+    Object.values(state.statUnsub).forEach(f => { try{ f(); }catch(e){} });
+    state.statUnsub = {};
   }
 
   function renderStaffCards(cards){
@@ -17226,11 +17557,8 @@ const TBS_UI = (() => {
   function renderStaffHomework(hw){
     const box = $$("tbsStuHw");
     if(!hw.length){ box.innerHTML = `<p class="empty">No homework yet.</p>`; return; }
-    box.innerHTML = hw.map(h => `
-      <div class="tbs-hw${h.direction==="student-to-teacher"?" mine":""}">
-        <small class="tbs-muted">${h.direction==="student-to-teacher"?"Student":"You"} · ${esc(shortDate(h.createdAt))}</small>
-        <p>${esc(h.text||"")}</p>
-      </div>`).join("");
+    box.innerHTML = hw.map(h => hwBubble(h, "Student", "You")).join("");
+    fillPhotos(box);
   }
 
   /* ---------- wiring ---------- */
@@ -17265,8 +17593,18 @@ const TBS_UI = (() => {
         x.setAttribute("aria-pressed", String(x === b)));
       $$("tbsScopeToday").hidden    = scope !== "today";
       $$("tbsScopeCards").hidden    = scope !== "cards";
+      $$("tbsScopeCal").hidden      = scope !== "cal";
       $$("tbsScopeHomework").hidden = scope !== "homework";
+      /* the grid is laid out from the live card list, so draw it when
+         it is actually on screen rather than keeping it warm */
+      if(scope === "cal") renderCalendar();
     };
+
+    /* student: calendar */
+    $$("tbsCalPrev").onclick = () => { state.calOffset -= 1; renderCalendar(); };
+    $$("tbsCalNext").onclick = () => { state.calOffset += 1; renderCalendar(); };
+    $$("tbsPhotoClose").onclick = () => $$("tbsPhotoDlg").close();
+    $$("tbsPhotoDlg").onclick = e => { if(e.target === $$("tbsPhotoDlg")) $$("tbsPhotoDlg").close(); };
 
     /* student: review */
     $$("tbsStartReview").onclick = startReview;
@@ -17297,8 +17635,8 @@ const TBS_UI = (() => {
     $$("tbsStaffGo").onclick = tryStaff;
     $$("tbsPass").onkeydown = e => { if(e.key === "Enter") tryStaff(); };
     $$("tbsStaffOut").onclick = async () => {
-      dropListeners(); dropStudentListeners();
-      state.staff = null; state.roster = [];
+      dropListeners(); dropStudentListeners(); dropStatListeners();
+      state.staff = null; state.roster = []; state.stats = {};
       await TBS.signOut();
       show("tbsStaffLogin");
     };
@@ -17357,15 +17695,25 @@ const TBS_UI = (() => {
     };
 
     /* staff: homework */
+    const hwPicker = $$("tbsHwPhoto");
+    hwPicker.onchange = () => {
+      $$("tbsHwPhotoName").textContent = hwPicker.files[0] ? hwPicker.files[0].name : "";
+    };
     $$("tbsSendHw").onclick = async () => {
       const t = $$("tbsHwText").value.trim();
-      if(!t || !state.openStudent) return;
-      $$("tbsSendHw").disabled = true;
+      const f = hwPicker.files[0] || null;
+      if((!t && !f) || !state.openStudent) return;
+      const btn = $$("tbsSendHw");
+      btn.disabled = true; btn.textContent = f ? "Sending photo…" : "Sending…";
       try{
-        await TBS.sendHomework(state.openStudent, t, "teacher-to-student");
-        $$("tbsHwText").value = "";
-      }catch(e){ console.warn("sendHomework", e); }
-      finally{ $$("tbsSendHw").disabled = false; }
+        await TBS.sendHomework(state.openStudent, t, "teacher-to-student", f);
+        $$("tbsHwText").value = ""; hwPicker.value = ""; $$("tbsHwPhotoName").textContent = "";
+      }catch(e){
+        console.warn("sendHomework", e);
+        $$("tbsHwPhotoName").textContent = e && e.message === "too-big"
+          ? "That photo is too large." : "Couldn't send — try again.";
+      }
+      finally{ btn.disabled = false; btn.textContent = "Send"; }
     };
   }
 
