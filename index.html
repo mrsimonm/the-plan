@@ -3647,6 +3647,12 @@ html{overscroll-behavior-y:none}
       <div class="f"><label for="ppFH">Usual hours per day</label><input class="num" id="ppFH" type="number" min="0.5" max="24" step="0.5" required></div>
     </div>
     <p class="info" id="ppPdInfo"></p>
+    <div class="f"><label>Days it happens</label>
+      <div class="dowchips" id="ppDow"></div>
+      <p class="hint" style="margin:5px 0 0">Untick a day and the project skips it.</p></div>
+    <div class="f"><label for="ppFU">Usual time</label>
+      <input id="ppFU" type="time" class="mono-input">
+      <p class="hint" style="margin:5px 0 0">Optional. Blocks start here instead of waiting in the parking lot.</p></div>
     <div class="f"><label>Color</label><div class="swatch" id="ppSwatch"></div></div>
     <div class="acts">
       <button type="button" class="btn danger" id="ppPdDel">Delete project</button>
@@ -17453,6 +17459,14 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
         });
       }
       p.days = days;
+      /* which weekdays it happens on, and the hour it normally starts —
+         both optional, both absent on every project made before they
+         existed, so absent must keep meaning "every day" / "no time" */
+      p.dow = (Array.isArray(p.dow) && p.dow.length && p.dow.length < 7)
+        ? p.dow.map(Number).filter(function (n) { return n >= 0 && n <= 6; })
+        : null;
+      if (p.dow && !p.dow.length) p.dow = null;
+      p.usualTime = /^\d{2}:\d{2}$/.test(String(p.usualTime || "")) ? p.usualTime : "";
       if (p.total === undefined && p.end && ISODATE.test(String(p.end))) {
         var t = 0, d2 = p.start, g = 0;
         while (d2 <= p.end && g++ < MAXSPAN) {
@@ -17525,7 +17539,18 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
   }
 
   /* ---------- schedule engine ---------- */
-  function defFor(p, day) { return (PS.weekendsOff && isWE(day)) ? 0 : Number(p.hours) || 0; }
+  /* A project can name the weekdays it actually happens on ("jen pondělí až
+     pátek, protože jsem v práci jen tehdy"). p.dow is a list of JS weekday
+     numbers; absent means every day, so projects made before this behave
+     exactly as they did. The global weekendsOff still applies on top. */
+  function dowOk(p, day) {
+    if (!Array.isArray(p.dow) || !p.dow.length) return true;
+    return p.dow.indexOf(P(day).getUTCDay()) >= 0;
+  }
+  function defFor(p, day) {
+    if (!dowOk(p, day)) return 0;
+    return (PS.weekendsOff && isWE(day)) ? 0 : Number(p.hours) || 0;
+  }
   function want(p, day) {
     var o = p.days[day];
     return o === undefined ? defFor(p, day) : Math.max(0, Number(o) || 0);
@@ -17958,6 +17983,32 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
     var b = e.target.closest(".ppsw"); if (!b) return;
     col = b.getAttribute("data-c"); markCol();
   });
+  /* Monday-first chips, matching the recurring-block editor's day picker.
+     All seven ticked is the same as "no restriction", so it stores null and
+     the record stays identical to one made before this existed. */
+  var ppDowSel = [0,1,2,3,4,5,6];
+  var PP_DOW_ORDER = [1,2,3,4,5,6,0];
+  function ppDowDraw() {
+    document.getElementById("ppDow").innerHTML = PP_DOW_ORDER.map(function (n) {
+      var on = ppDowSel.indexOf(n) >= 0;
+      return '<button type="button" class="btn mini' + (on ? " primary" : "") + '" data-ppdow="' + n +
+        '" aria-pressed="' + on + '">' +
+        (typeof dowName === "function" ? dowName(n).slice(0, 2) : String(n)) + '</button>';
+    }).join("");
+  }
+  function ppDowVal() { return ppDowSel.length === 7 ? null : ppDowSel.slice().sort(); }
+  function ppUsualVal() {
+    var v = document.getElementById("ppFU").value;
+    return /^\d{2}:\d{2}$/.test(v) ? v : "";
+  }
+  document.getElementById("ppDow").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-ppdow]"); if (!b) return;
+    var n = Number(b.getAttribute("data-ppdow"));
+    var i = ppDowSel.indexOf(n);
+    if (i >= 0) { if (ppDowSel.length > 1) ppDowSel.splice(i, 1); }   // never zero days
+    else ppDowSel.push(n);
+    ppDowDraw();
+  });
   function markCol() {
     /* query the swatch container, not ppRoot: the dialog holding these lives
        at body level, outside the view, so scoping to the view found nothing
@@ -18005,6 +18056,9 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
     document.getElementById("ppFS").value = p ? p.start : (typeof pToday === "function" ? pToday() : today());
     document.getElementById("ppFT").value = p ? p.total : 40;
     document.getElementById("ppFH").value = p ? p.hours : 4;
+    document.getElementById("ppFU").value = (p && p.usualTime) || "";
+    ppDowSel = (p && Array.isArray(p.dow) && p.dow.length) ? p.dow.slice() : [0,1,2,3,4,5,6];
+    ppDowDraw();
     col = p ? p.color : PAL[PS.projects.length % PAL.length];
     markCol(); calc();
     document.getElementById("ppPdDel").style.display = p ? "" : "none";
@@ -18066,9 +18120,11 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
         ed.days = shiftMap(ed.days, sh);
       }
       ed.name = nm; ed.start = st; ed.total = tt; ed.hours = hh; ed.color = col;
+      ed.dow = ppDowVal(); ed.usualTime = ppUsualVal();
       touchP(ed);
     } else {
-      PS.projects.push({ id: uid(), name: nm, start: st, total: tt, hours: hh, days: {}, color: col });
+      PS.projects.push({ id: uid(), name: nm, start: st, total: tt, hours: hh, days: {}, color: col,
+        dow: ppDowVal(), usualTime: ppUsualVal() });
     }
     persist(); draw(); pd.close();
     /* the calendar shows these too — repaint it when the editor commits */
@@ -18449,7 +18505,13 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
      it) — it is purely where today's chunk happens to sit on the clock. */
   window.ppDayTimeOf = function (id, iso) {
     PS = S.projplan; var p = byId(id);
-    return (p && p.dayTime && p.dayTime[iso]) || null;
+    if (!p) return null;
+    /* a slot set for THIS day wins; otherwise the project's usual hour, if it
+       has one. Falling back to the usual time is not the app inventing a slot
+       — it is the time the person said they normally do this work, which is
+       exactly what they asked for ("obvykle v 18:00, ať to tam rovnou sedí").
+       With neither, it stays unassigned and waits in the parking lot. */
+    return (p.dayTime && p.dayTime[iso]) || p.usualTime || null;
   };
   window.ppSetDayTime = function (id, iso, time) {
     PS = S.projplan; var p = byId(id); if (!p) return false;
