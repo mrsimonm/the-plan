@@ -430,6 +430,18 @@ input[type="time"].mono-input{width:88px}
 .plant-search{width:100%; box-sizing:border-box}
 .ppl-search-row{display:flex; gap:8px; align-items:center}
 .ppl-input{flex:1 1 auto; min-width:0}
+/* On a phone-width screen, the search box and the Upcoming/Past toggle
+   fighting for one row squeezed the input down to ~140px — "Search this
+   calendar…" read as "Search this calenc…", not from any real overflow (the
+   row itself fit fine) but because flex just kept shrinking the input rather
+   than ever giving up and wrapping. Forcing both onto their own full-width
+   line below this size fixes it predictably, without depending on exactly
+   how wide the toggle happens to render. */
+@media (max-width:480px){
+  .ppl-search-row{flex-wrap:wrap}
+  .ppl-input{flex:1 1 100%}
+  #pplWhenSeg{flex:1 1 100%}
+}
 #pplWhenSeg{flex:0 0 auto; width:auto}
 #pplWhenSeg button{padding:6px 12px}
 .ppl-results{margin-top:8px; max-height:280px; overflow-y:auto;
