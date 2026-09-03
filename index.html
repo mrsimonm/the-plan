@@ -2749,6 +2749,37 @@ main > #view-note:not([hidden]) ~ .n-quick, main > #view-teachbench-student:not(
 html.pfocus .n-quick{display:none}
 /* display:flex above would otherwise beat the hidden attribute */
 .n-undo[hidden], .n-tagrow[hidden], .n-trashbar[hidden], .n-nb-tools[hidden]{display:none}
+
+/* ---- notes, part three: drag handles, slash menu, links, AI ---- */
+.n-btype{touch-action:none; cursor:grab}
+.n-block.n-dragging{opacity:.35}
+.n-block[data-drop="before"]{box-shadow:0 -2px 0 0 var(--accent)}
+.n-block[data-drop="after"]{box-shadow:0 2px 0 0 var(--accent)}
+.n-btype-menu button[hidden]{display:none}
+.n-btype-menu .n-menu-hint{font-size:11px; color:var(--ink-3); padding:4px 11px 2px; letter-spacing:.04em; text-transform:uppercase}
+.n-linkpop{position:absolute; z-index:61; min-width:220px; max-width:320px; padding:6px; background:var(--surface);
+  border:1px solid var(--line); border-radius:13px; box-shadow:0 14px 38px -10px rgba(0,0,0,.28);
+  display:flex; flex-direction:column; gap:1px}
+.n-linkpop button{display:block; width:100%; text-align:left; border:0; background:none; font:inherit; font-size:14px;
+  color:var(--ink-strong); padding:8px 11px; border-radius:9px; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.n-linkpop button[aria-selected="true"], .n-linkpop button:hover{background:var(--surface-2)}
+.n-linkpop .n-linkpop-new{color:var(--accent)}
+.n-links{display:flex; flex-direction:column; gap:12px}
+.n-links-sec{display:flex; flex-direction:column; gap:4px}
+.n-links-sec .eyebrow{margin-bottom:2px}
+.n-links-row{display:flex; align-items:baseline; gap:8px; min-width:0}
+.n-links-row button{border:0; background:none; font:inherit; color:var(--ink-strong); font-weight:600; cursor:pointer;
+  padding:4px 0; text-align:left; border-radius:6px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.n-links-row button:hover{color:var(--accent)}
+.n-links-row small{color:var(--ink-3); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0}
+.n-links-row .n-links-mk{color:var(--accent); font-size:12px; cursor:pointer; background:none; border:0; font-weight:600; flex:0 0 auto}
+.n-ai-row{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+.n-ai-row input[type="password"], .n-ai-row input[type="text"]{flex:1 1 200px; min-width:0}
+.n-busy{display:inline-block; width:14px; height:14px; border:2px solid var(--line-strong); border-top-color:var(--accent);
+  border-radius:50%; animation:n-spin .8s linear infinite; vertical-align:middle; margin-right:6px}
+@keyframes n-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){ .n-busy{animation:none} }
+.n-undo[data-busy="1"] #nUndoBtn{display:none}
 .n-plist{display:flex; flex-direction:column; padding-top:6px}
 .n-prow{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:0 10px; text-align:left; border:0;
   background:none; font:inherit; color:inherit; padding:8px 0; border-top:1px solid var(--line-soft); cursor:pointer}
@@ -4794,6 +4825,10 @@ input:focus, select:focus, textarea:focus{
         <button class="btn mini" type="button" id="nAddPhoto">+ Photo</button>
         <input type="file" id="nPhotoIn" accept="image/*" hidden>
       </div>
+    </div>
+
+    <div class="card pad" id="nLinksCard" hidden>
+      <div class="n-links" id="nLinks"></div>
     </div>
 
     <div class="card pad" id="nFootCard">
@@ -21979,6 +22014,10 @@ Object.assign(CS,{
 "Delete this notebook? Its notes stay, they just lose the notebook.":"Smazat tento zápisník? Poznámky zůstanou, jen přijdou o zápisník.",
 "Delete this note forever? This cannot be undone.":"Smazat tuto poznámku navždy? Tohle se nedá vzít zpět.",
 "Photo storage is getting full — delete a few older shots to make room.":"Úložiště fotek se plní — smažte pár starších snímků.",
+"Photo":"Fotka","Break into steps":"Rozložit na kroky","Notes & AI":"Poznámky a AI","Anthropic API key":"Klíč Anthropic API",
+"Show":"Zobrazit","Hide":"Skrýt","Test":"Vyzkoušet","Model":"Model","Leave empty for the default.":"Prázdné = výchozí.",
+"Stays on this device only — it is never synced. Powers voice extraction, breaking tasks into steps, Cornell questions and auto-clustering. Without a key those fall back to simpler built-in methods.":"Zůstává jen v tomto zařízení — nikdy se nesynchronizuje. Pohání přepis hlasu, rozklad úkolů na kroky, cornellské otázky a automatické shlukování. Bez klíče se použijí jednodušší vestavěné postupy.",
+"Links to":"Odkazuje na","Linked from":"Odkazováno z","Unlinked mentions":"Nepropojené zmínky","Create note":"Vytvořit poznámku","Link":"Propojit",
 });
 
 
@@ -22253,7 +22292,24 @@ function renderNotes(){
     if(tagQ!==null&&!(n.tags||[]).some(x=>nFold(x).indexOf(tagQ)===0)) return false;
     return nMatches(n,q);
   });
-  list.sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)
+  /* With a query the list is ranked, not just filtered: exact title first,
+     then tags, body, near-misses (a typo, a stem), and finally notes that
+     merely link to a hit. Without one it is the sort control's job. */
+  let score=null;
+  if(q){
+    score={};
+    list.forEach(n=>{ score[n.id]=nScore(n,q); });
+    /* near-miss matches that the plain filter above threw out */
+    (S.notes||[]).forEach(n=>{
+      if(score[n.id]!=null||n.trashedAt) return;
+      if(n.archived&&V.nb!=="all") return;
+      if(V.nb!=="all"&&V.nb!=="archive"&&n.notebook!==V.nb) return;
+      if(V.tag&&!(n.tags||[]).includes(V.tag)) return;
+      const s=nScore(n,q); if(s>0){ score[n.id]=s; list.push(n); }
+    });
+  }
+  list.sort((a,b)=>(score?(score[b.id]-score[a.id]):0)
+    ||(b.pinned?1:0)-(a.pinned?1:0)
     ||(V.sort==="title" ? nFold(a.title).localeCompare(nFold(b.title))
       :V.sort==="created" ? (b.createdAt||0)-(a.createdAt||0)
       :(b.updatedAt||0)-(a.updatedAt||0)));
@@ -22364,7 +22420,7 @@ function nRenderEditor(){
   const host=$("#nBlocks"); if(!host) return;
   const n=nOpenNote(), title=$("#nTitle");
   if(!n){ host.innerHTML=""; if(title) title.value=""; nRenderMeta(); return; }
-  nPullPlanner(n); nRenderFiling(n);
+  nPullPlanner(n); nRenderFiling(n); nRenderLinks(n);
   /* Don't stamp over the title while it is being typed into — the caret would
      jump to the end on every keystroke. */
   if(title&&document.activeElement!==title) title.value=n.title||"";
@@ -22447,22 +22503,41 @@ function nTryMarkdown(n,b,ta){
 
 /* ---------------- block type menu ---------------- */
 function nCloseMenu(){ const m=$("#nTypeMenu"); if(m) m.remove(); }
-function nOpenTypeMenu(bid,anchorEl){
+function nOpenTypeMenu(bid,anchorEl,slash){
   nCloseMenu();
   const n=nOpenNote(); if(!n) return;
   const b=n.blocks.find(x=>x.id===bid); if(!b) return;
   const m=document.createElement("div");
   m.id="nTypeMenu"; m.className="n-btype-menu"; m.setAttribute("role","menu"); m.dataset.b=bid;
+  if(slash) m.dataset.slash="1";
   /* a photo block is a photo or nothing — retyping it as text makes no sense */
-  m.innerHTML=(b.type==="img"?"":N_TYPES.map(p=>`<button type="button" role="menuitem" data-settype="${esc(p[0])}"${p[0]===b.type?' aria-current="true"':""}>${esc(p[1])}</button>`).join("")
+  /* data-en keeps the English name so "/head" finds "Nadpis 1" in Czech too */
+  m.innerHTML=(b.type==="img"?"":N_TYPES.map(p=>`<button type="button" role="menuitem" data-settype="${esc(p[0])}" data-en="${esc(p[1])}"${p[0]===b.type?' aria-current="true"':""}>${esc(p[1])}</button>`).join("")
     +'<div class="n-menu-sep"></div>')
+    +`<button type="button" role="menuitem" data-cmd="photo" data-en="Photo">${esc(t("Photo"))}</button>`
+    +(b.type==="todo"?`<button type="button" role="menuitem" data-cmd="plan" data-en="Send to Daily Planner">${esc(t("Send to Daily Planner"))}</button>`
+      +`<button type="button" role="menuitem" data-cmd="steps" data-en="Break into steps">${esc(t("Break into steps"))}</button>`:"")
+    +'<div class="n-menu-sep"></div>'
     +'<button type="button" role="menuitem" class="n-danger" data-delblock="1">Delete block</button>';
   document.body.appendChild(m);
   const r=anchorEl.getBoundingClientRect();
   m.style.top=(window.scrollY+r.bottom+6)+"px";
   m.style.left=Math.max(8,Math.min(window.scrollX+r.left,
     window.scrollX+window.innerWidth-m.offsetWidth-8))+"px";
-  const first=m.querySelector("button"); if(first) first.focus();
+  /* opened from the keyboard the caret stays in the block; opened by tap the
+     menu takes focus so arrow keys work on it */
+  if(!slash){ const first=m.querySelector("button"); if(first) first.focus(); }
+}
+/* the "/" palette: hide what does not match, mark the first that does */
+function nFilterMenu(q){
+  const m=$("#nTypeMenu"); if(!m) return;
+  const f=nFold(q); let first=true;
+  m.querySelectorAll("button").forEach(bt=>{
+    const hit=!f||nFold(bt.textContent).indexOf(f)>=0||nFold(bt.dataset.en||"").indexOf(f)>=0;
+    bt.hidden=!hit;
+    if(hit&&first){ bt.setAttribute("aria-current","true"); first=false; } else bt.removeAttribute("aria-current");
+  });
+  m.querySelectorAll(".n-menu-sep").forEach(s=>{ s.hidden=!!f; });
 }
 
 /* ---------------- wiring: attached once, never inside a render ---------------- */
@@ -22512,7 +22587,16 @@ function nOpenTypeMenu(bid,anchorEl){
     const b=n.blocks.find(x=>x.id===ta.dataset.ta); if(!b) return;
     b.text=ta.value;
     nAutoGrow(ta);
+    /* "/" alone at the start of a block opens the block menu as a command
+       palette; keep typing to filter it. Enter picks the first match. */
+    if(b.type!=="code"&&ta.value.charAt(0)==="/"&&!/\s/.test(ta.value)){
+      const menu=$("#nTypeMenu");
+      if(!menu||menu.dataset.b!==b.id){ nOpenTypeMenu(b.id,ta.closest(".n-block").querySelector(".n-btype"),true); }
+      nFilterMenu(ta.value.slice(1));
+      nQueueSave(); return;
+    } else if($("#nTypeMenu")&&$("#nTypeMenu").dataset.slash) nCloseMenu();
     if(nTryMarkdown(n,b,ta)) return;
+    nLinkPopupCheck(b,ta);
     nQueueSave();
   });
 
@@ -22540,6 +22624,22 @@ function nOpenTypeMenu(bid,anchorEl){
     const n=nOpenNote(); if(!n) return;
     const at=nIdx(n,ta.dataset.ta); if(at<0) return;
     const b=n.blocks[at];
+
+    /* a popup owns Enter/arrows while it is open: the "/" palette, or the
+       [[link]] completer */
+    const pop=$("#nLinkPop")||($("#nTypeMenu")&&$("#nTypeMenu").dataset.slash?$("#nTypeMenu"):null);
+    if(pop&&(e.key==="Enter"||e.key==="ArrowDown"||e.key==="ArrowUp"||e.key==="Tab")){
+      const items=[...pop.querySelectorAll("button")].filter(x=>!x.hidden);
+      if(!items.length){ nCloseMenu(); nCloseLinkPop(); }
+      else{
+        e.preventDefault();
+        let i=items.findIndex(x=>x.getAttribute("aria-current")==="true"||x.getAttribute("aria-selected")==="true");
+        if(e.key==="Enter"||e.key==="Tab"){ items[Math.max(0,i)].click(); return; }
+        i=(i+(e.key==="ArrowDown"?1:-1)+items.length)%items.length;
+        items.forEach((x,k)=>{ x.setAttribute(pop.id==="nLinkPop"?"aria-selected":"aria-current",String(k===i)); });
+        return;
+      }
+    }
 
     if(e.key==="Enter"&&!e.shiftKey&&b.type!=="code"){
       e.preventDefault();
@@ -22600,9 +22700,16 @@ function nOpenTypeMenu(bid,anchorEl){
     if(st){
       b.type=st.dataset.settype;
       if(b.type!=="todo") b.checked=false;
-      if(b.type==="hr") b.text="";
+      if(b.type==="hr"||m.dataset.slash) b.text=b.type==="hr"?"":b.text.replace(/^\/\S*/,"");
       nCloseMenu(); nTouchNote(n);
       nRestructure(b.type==="hr"?null:b.id,null);
+      return;
+    }
+    const cmd=e.target.closest("[data-cmd]");
+    if(cmd){
+      if(m.dataset.slash) b.text=b.text.replace(/^\/\S*/,"");
+      nCloseMenu(); nTouchNote(n);
+      nRunCmd(cmd.dataset.cmd,n,b);
       return;
     }
     if(e.target.closest("[data-delblock]")){
@@ -22635,7 +22742,7 @@ function nQueueSave(){
   const n=nOpenNote(); if(n){ n.updatedAt=Date.now(); nSyncTaskTitles(n); }
   touch();
   clearTimeout(nMetaTimer);
-  nMetaTimer=setTimeout(nRenderMeta,250);
+  nMetaTimer=setTimeout(()=>{ nRenderMeta(); const o=nOpenNote(); if(o) nRenderLinks(o); },250);
 }
 
 /* ============================================================================
@@ -22766,7 +22873,9 @@ function nHideUndo(){ const bar=$("#nUndo"); if(bar) bar.hidden=true; nUndoFn=nu
 
 /* ---------------- leaving a note ---------------- */
 function nGoBack(){
-  nCloseMenu();
+  nCloseMenu(); nCloseLinkPop();
+  /* following [[links]] builds a trail; Back walks it before leaving */
+  while(nHist.length){ const id=nHist.pop(); if(nNoteById(id)&&!nNoteById(id).trashedAt){ openNote(id); return; } }
   if(nReturn&&nReturn.view==="plant"&&typeof subject==="function"&&pvId&&subject(pvId)){
     nReturn=null; setApp("bench"); show("plant"); return;
   }
@@ -22952,6 +23061,320 @@ function nPlantCardHtml(p){
     if(o){ nReturn={view:"plant"}; setApp("notes"); openNote(o.dataset.nopen); return; }
     if(nw){ nReturn={view:"plant"}; setApp("notes"); nNewNote({title:"",blocks:[["p",""]],plantId:nw.dataset.nnew}); }
   });
+})();
+
+/* ============================================================================
+   Notes, part three — the editor grows up: "/" commands, drag to reorder,
+   [[links]] with backlinks and unlinked mentions, ranked search, and the AI
+   plumbing everything later leans on.
+
+   The AI key lives in L (per-device, saved by saveLocal), NEVER in S: S is
+   what PSYNC uploads to Firestore and mirrors to every device on the account.
+   Every AI feature has a plain fallback, so the app is complete without a key.
+   ============================================================================ */
+var nHist=[];                 /* note ids walked through by following links */
+var nDrag=null;               /* {bid, startY, moved, over, where} while a block is being dragged */
+var nLinkSel=0;
+
+/* ---------------- AI plumbing ---------------- */
+function nAiKey(){ return (L.aiKey||"").trim(); }
+function nAiModel(){ return (L.aiModel||"").trim()||"claude-opus-5"; }
+/* One call, one answer. Thinking stays on (the model's default) at low effort:
+   these are extraction jobs, not proofs. Errors come back as plain messages
+   the UI can show; "nokey" is the one callers branch on. */
+async function nAI(system,user,opts){
+  opts=opts||{};
+  const key=nAiKey(); if(!key) throw new Error("nokey");
+  let res;
+  try{
+    res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",
+      headers:{"content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01",
+               "anthropic-dangerous-direct-browser-access":"true"},
+      body:JSON.stringify({model:nAiModel(),max_tokens:opts.maxTokens||4000,system:system||"",
+        output_config:{effort:opts.effort||"low"},
+        messages:[{role:"user",content:user}]})});
+  }catch(e){ throw new Error(L.lang==="cs"?"Bez připojení.":"No connection."); }
+  if(!res.ok){
+    let msg=""; try{ const j=await res.json(); msg=j&&j.error&&j.error.message||""; }catch(e){}
+    throw new Error(msg||("HTTP "+res.status));
+  }
+  const j=await res.json();
+  if(j.stop_reason==="refusal") throw new Error(L.lang==="cs"?"Model to odmítl.":"The model declined.");
+  return (j.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("");
+}
+/* the models are asked for JSON; this digs it out of whatever prose wraps it */
+function nAiJson(text){
+  const m=String(text||"").match(/[\[{][\s\S]*[\]}]/); if(!m) return null;
+  try{ return JSON.parse(m[0]); }catch(e){ return null; }
+}
+function nToast(text,busy){
+  const bar=$("#nUndo"), tx=$("#nUndoText"); if(!bar||!tx) return;
+  clearTimeout(nUndoTimer); nUndoFn=null;
+  tx.innerHTML=(busy?'<span class="n-busy" aria-hidden="true"></span>':"")+esc(text);
+  bar.dataset.busy=busy?"1":""; bar.hidden=false;
+  if(!busy) nUndoTimer=setTimeout(nHideUndo,4000);
+}
+function nAiFail(err){
+  const m=err&&err.message||"";
+  if(m==="nokey") nToast(L.lang==="cs"?"Bez klíče API — použit jednoduchý postup. Klíč vložíte v Nastavení.":"No API key — used the simple method. Add a key in Settings.");
+  else nToast((L.lang==="cs"?"AI selhala: ":"AI failed: ")+m);
+}
+
+/* ---------------- settings card: Notes & AI ---------------- */
+(function nSettingsCard(){
+  const after=$("#setCatHours"); if(!after||$("#setCatNotes")) return;
+  const d=document.createElement("details"); d.className="setcat"; d.id="setCatNotes";
+  d.innerHTML=`<summary><span class="setcat-t">Notes &amp; AI</span><span class="chev" aria-hidden="true">›</span></summary>
+    <div class="stack setcat-body">
+      <div class="card pad">
+        <div class="stack">
+          <div class="field"><label for="nAiKeyIn">Anthropic API key</label>
+            <div class="n-ai-row"><input type="password" id="nAiKeyIn" autocomplete="off" placeholder="sk-ant-…">
+              <button type="button" class="btn mini" id="nAiKeyShow">Show</button>
+              <button type="button" class="btn mini" id="nAiTest">Test</button></div>
+            <p class="hint">Stays on this device only — it is never synced. Powers voice extraction, breaking tasks into steps, Cornell questions and auto-clustering. Without a key those fall back to simpler built-in methods.</p></div>
+          <div class="field"><label for="nAiModelIn">Model</label>
+            <input type="text" id="nAiModelIn" placeholder="claude-opus-5" autocomplete="off">
+            <p class="hint">Leave empty for the default.</p></div>
+        </div>
+      </div>
+    </div>`;
+  after.parentNode.insertBefore(d,after.nextSibling);
+  const k=$("#nAiKeyIn"), mo=$("#nAiModelIn");
+  k.value=L.aiKey||""; mo.value=L.aiModel||"";
+  k.addEventListener("change",()=>{ L.aiKey=k.value.trim(); saveLocal(); });
+  mo.addEventListener("change",()=>{ L.aiModel=mo.value.trim(); saveLocal(); });
+  $("#nAiKeyShow").addEventListener("click",()=>{ k.type=k.type==="password"?"text":"password"; $("#nAiKeyShow").textContent=k.type==="password"?t("Show"):t("Hide"); });
+  $("#nAiTest").addEventListener("click",async()=>{
+    L.aiKey=k.value.trim(); L.aiModel=mo.value.trim(); saveLocal();
+    nToast(L.lang==="cs"?"Zkouším klíč…":"Testing the key…",true);
+    try{ const r=await nAI("Reply with the single word OK.","ping",{maxTokens:50}); nToast((L.lang==="cs"?"Funguje: ":"Works: ")+r.trim().slice(0,40)); }
+    catch(e){ nToast((L.lang==="cs"?"Nefunguje: ":"Not working: ")+(e.message==="nokey"?(L.lang==="cs"?"žádný klíč":"no key"):e.message)); }
+  });
+})();
+
+/* ---------------- block commands (from the "/" palette or the ⋯ menu) ---------------- */
+function nRunCmd(cmd,n,b){
+  if(cmd==="photo"){ nRestructure(b.id,null); const i=$("#nPhotoIn"); if(i) i.click(); return; }
+  if(cmd==="plan"){ nRestructure(b.id,null); nOpenPlanPop(b); return; }
+  if(cmd==="steps"){ nRestructure(b.id,null); nBreakDown(n,b); return; }
+  nRestructure(b.id,null);
+}
+/* placeholders until parts four and five land; both exist so the menu never dead-ends */
+function nOpenPlanPop(b){ const n=nOpenNote(); if(n){ nPushTodo(n,b); nRestructure(b.id,null); } }
+async function nBreakDown(n,b){
+  const task=(b.text||"").trim(); if(!task) return;
+  const cs=L.lang==="cs";
+  let steps=null;
+  nToast(cs?"Rozkládám na kroky…":"Breaking it into steps…",true);
+  try{
+    const r=await nAI(
+      "You break one vague or overwhelming task into 3 to 7 concrete, sequential micro-steps a person can start on immediately. Each step is one short imperative sentence, small enough to finish in under 25 minutes. Answer in the same language as the task. Return ONLY a JSON array of strings.",
+      task,{maxTokens:800});
+    const j=nAiJson(r); if(Array.isArray(j)&&j.length) steps=j.map(String);
+  }catch(e){ if(e.message!=="nokey") nAiFail(e); else nToast(cs?"Bez klíče API — použit jednoduchý rozklad.":"No API key — used a simple breakdown."); }
+  if(!steps){
+    steps=cs
+      ? ["Napsat, jak přesně vypadá hotovo: "+task, "Sepsat, co k tomu potřebuju (věci, informace, lidi)", "Udělat první krok, který trvá do 10 minut", "Odpracovat 25 minut a zapsat, kde jsem skončil", "Zkontrolovat proti „hotovo“ a dokončit"]
+      : ["Write down what done looks like for: "+task, "List what it needs (things, information, people)", "Do the first step that takes under 10 minutes", "Work 25 minutes and note where you stopped", "Check against “done” and finish"];
+  }
+  const at=nIdx(n,b.id);
+  const made=steps.map(s=>nBlock("todo","↳ "+s));
+  n.blocks.splice(at+1,0,...made);
+  nTouchNote(n); nRestructure(made[0].id,null); nHideUndo();
+}
+
+/* ---------------- drag to reorder ----------------
+   The ⋯ handle is the grip: press and move past a threshold and it drags,
+   release without moving and it is still the menu button. Pointer events so
+   the same code serves a finger and a mouse. */
+(function nDragWire(){
+  const blocks=$("#nBlocks"); if(!blocks) return;
+  blocks.addEventListener("pointerdown",e=>{
+    const h=e.target.closest(".n-btype"); if(!h||e.button) return;
+    nDrag={bid:h.dataset.menu,startY:e.clientY,moved:false,over:null,where:null,ptr:e.pointerId};
+  });
+  const clearMarks=()=>blocks.querySelectorAll("[data-drop]").forEach(x=>x.removeAttribute("data-drop"));
+  window.addEventListener("pointermove",e=>{
+    if(!nDrag) return;
+    if(!nDrag.moved){ if(Math.abs(e.clientY-nDrag.startY)<8) return; nDrag.moved=true; nCloseMenu();
+      const src=blocks.querySelector('[data-b="'+nDrag.bid+'"]'); if(src) src.classList.add("n-dragging"); }
+    e.preventDefault();
+    const el=document.elementFromPoint(e.clientX,e.clientY);
+    const tgt=el&&el.closest?el.closest("#nBlocks .n-block"):null;
+    clearMarks(); nDrag.over=null;
+    if(!tgt||tgt.dataset.b===nDrag.bid) return;
+    const r=tgt.getBoundingClientRect();
+    nDrag.over=tgt.dataset.b; nDrag.where=e.clientY<r.top+r.height/2?"before":"after";
+    tgt.dataset.drop=nDrag.where;
+  },{passive:false});
+  const finish=e=>{
+    if(!nDrag) return;
+    const d=nDrag; nDrag=null; clearMarks();
+    const src=blocks.querySelector('[data-b="'+d.bid+'"]'); if(src) src.classList.remove("n-dragging");
+    if(!d.moved) return;                       /* it was a tap: the click handler opens the menu */
+    nDragSuppressClick=true; setTimeout(()=>{ nDragSuppressClick=false; },0);
+    const n=nOpenNote(); if(!n||!d.over) return;
+    const from=nIdx(n,d.bid), to0=nIdx(n,d.over); if(from<0||to0<0) return;
+    const [b]=n.blocks.splice(from,1);
+    let to=nIdx(n,d.over)+(d.where==="after"?1:0);
+    n.blocks.splice(to,0,b);
+    nTouchNote(n); nRestructure(nNoTa(b.type)?null:b.id,null);
+  };
+  window.addEventListener("pointerup",finish); window.addEventListener("pointercancel",finish);
+})();
+var nDragSuppressClick=false;
+
+/* ---------------- links ----------------
+   [[Title]] anywhere in a block links to the note with that title (case and
+   accents ignored). Backlinks are found by scanning — a few hundred notes
+   scan in a millisecond, and it means nothing can ever go stale. */
+const N_LINK_RE=/\[\[([^\[\]]+?)\]\]/g;
+function nNoteByTitle(title){
+  const f=nFold(title).trim(); if(!f) return null;
+  return (S.notes||[]).find(n=>!n.trashedAt&&nFold(n.title).trim()===f)||null;
+}
+function nLinksOut(n){
+  const out=[], seen={};
+  (n.blocks||[]).forEach(b=>{ let m; N_LINK_RE.lastIndex=0;
+    while((m=N_LINK_RE.exec(b.text||""))){ const k=nFold(m[1]).trim(); if(!k||seen[k]) continue; seen[k]=1; out.push({title:m[1].trim(),note:nNoteByTitle(m[1])}); } });
+  return out;
+}
+function nLinksIn(n){
+  const f=nFold(n.title).trim(); if(!f) return [];
+  return (S.notes||[]).filter(o=>o.id!==n.id&&!o.trashedAt&&(o.blocks||[]).some(b=>{ let m; N_LINK_RE.lastIndex=0;
+    while((m=N_LINK_RE.exec(b.text||""))) if(nFold(m[1]).trim()===f) return true; return false; }));
+}
+function nMentions(n){
+  const f=nFold(n.title).trim(); if(f.length<3) return [];
+  const linked=new Set(nLinksIn(n).map(o=>o.id));
+  return (S.notes||[]).filter(o=>o.id!==n.id&&!o.trashedAt&&!linked.has(o.id)
+    &&(o.blocks||[]).some(b=>nFold(b.text).indexOf(f)>=0)).map(o=>{
+      const b=(o.blocks||[]).find(x=>nFold(x.text).indexOf(f)>=0);
+      const i=nFold(b.text).indexOf(f);
+      return {note:o, ctx:(b.text||"").slice(Math.max(0,i-30),i+f.length+40).replace(/\s+/g," ")};
+    });
+}
+function nRenderLinks(n){
+  const host=$("#nLinks"), card=$("#nLinksCard"); if(!host||!card) return;
+  const out=nLinksOut(n), inn=nLinksIn(n), men=nMentions(n);
+  if(!out.length&&!inn.length&&!men.length){ card.hidden=true; host.innerHTML=""; return; }
+  card.hidden=false;
+  const row=(o,extra)=>`<div class="n-links-row"><button type="button" data-lopen="${esc(o.id)}" data-no-i18n>${esc(o.title||"Untitled")}</button>${extra||""}</div>`;
+  let h="";
+  if(out.length) h+=`<div class="n-links-sec"><span class="eyebrow">${esc(t("Links to"))}</span>`+out.map(l=>l.note?row(l.note)
+    :`<div class="n-links-row"><small data-no-i18n>[[${esc(l.title)}]]</small><button type="button" class="n-links-mk" data-lmake="${esc(l.title)}">${esc(t("Create note"))}</button></div>`).join("")+`</div>`;
+  if(inn.length) h+=`<div class="n-links-sec"><span class="eyebrow">${esc(t("Linked from"))}</span>`+inn.map(o=>row(o,`<small data-no-i18n>${esc(nSnippet(o))}</small>`)).join("")+`</div>`;
+  if(men.length) h+=`<div class="n-links-sec"><span class="eyebrow">${esc(t("Unlinked mentions"))}</span>`+men.map(m=>row(m.note,`<small data-no-i18n>…${esc(m.ctx)}…</small><button type="button" class="n-links-mk" data-llink="${esc(m.note.id)}">${esc(t("Link"))}</button>`)).join("")+`</div>`;
+  host.innerHTML=h;
+}
+/* turn the first plain mention of this note's title inside another note into a [[link]] */
+function nLinkMention(target,other){
+  const f=nFold(target.title).trim(); if(!f) return;
+  for(const b of other.blocks||[]){
+    const i=nFold(b.text).indexOf(f); if(i<0) continue;
+    /* nFold keeps length (it only strips combining marks and lowercases), so
+       the index maps straight back onto the original text */
+    b.text=b.text.slice(0,i)+"[["+b.text.slice(i,i+f.length)+"]]"+b.text.slice(i+f.length);
+    other.updatedAt=Date.now(); touch(); return;
+  }
+}
+/* the [[ completer */
+function nCloseLinkPop(){ const p=$("#nLinkPop"); if(p) p.remove(); }
+function nLinkPopupCheck(b,ta){
+  const pos=ta.selectionStart, before=ta.value.slice(0,pos);
+  const m=before.match(/\[\[([^\[\]]*)$/);
+  if(!m){ nCloseLinkPop(); return; }
+  const q=nFold(m[1]).trim(), me=nOpenNote();
+  const hits=(S.notes||[]).filter(n=>n!==me&&!n.trashedAt&&n.title&&(!q||nFold(n.title).indexOf(q)>=0))
+    .sort((a,c)=>(nFold(a.title).indexOf(q)===0?0:1)-(nFold(c.title).indexOf(q)===0?0:1)||(c.updatedAt||0)-(a.updatedAt||0)).slice(0,8);
+  let p=$("#nLinkPop");
+  if(!p){ p=document.createElement("div"); p.id="nLinkPop"; p.className="n-linkpop"; p.setAttribute("role","listbox"); document.body.appendChild(p); }
+  p.dataset.b=b.id; p.dataset.start=String(pos-m[1].length);
+  const exact=hits.some(n=>nFold(n.title).trim()===q);
+  p.innerHTML=hits.map((n,i)=>`<button type="button" role="option" data-ltitle="${esc(n.title)}" aria-selected="${i===0}" data-no-i18n>${esc(n.title)}</button>`).join("")
+    +((m[1].trim()&&!exact)?`<button type="button" role="option" class="n-linkpop-new" data-ltitle="${esc(m[1].trim())}" data-lnew="1" aria-selected="${hits.length?"false":"true"}">${esc(t("New note"))} “${esc(m[1].trim())}”</button>`:"");
+  if(!p.innerHTML){ nCloseLinkPop(); return; }
+  const r=ta.getBoundingClientRect();
+  p.style.top=(window.scrollY+r.bottom+4)+"px";
+  p.style.left=Math.max(8,Math.min(window.scrollX+r.left,window.scrollX+window.innerWidth-p.offsetWidth-8))+"px";
+}
+function nInsertLink(title){
+  const p=$("#nLinkPop"); if(!p) return;
+  const n=nOpenNote(); if(!n) return;
+  const b=n.blocks.find(x=>x.id===p.dataset.b); if(!b) return;
+  const ta=document.querySelector('#nBlocks [data-ta="'+b.id+'"]'); if(!ta) return;
+  const start=+p.dataset.start, pos=ta.selectionStart;
+  let after=ta.value.slice(pos); if(after.indexOf("]]")===0) after=after.slice(2);
+  const v=ta.value.slice(0,start)+title+"]]"+after;
+  ta.value=v; b.text=v;
+  const c=start+title.length+2; try{ ta.setSelectionRange(c,c); }catch(e){}
+  nCloseLinkPop(); nAutoGrow(ta); nQueueSave();
+  if(!nNoteByTitle(title)){
+    /* a link to nothing gets its note straight away, so it is never dangling */
+    const now=Date.now();
+    S.notes.push({id:uid(),title,blocks:[nBlock("p","")],notebook:n.notebook,plantId:null,tags:[],pinned:false,archived:false,trashedAt:null,createdAt:now,updatedAt:now});
+    touch();
+  }
+}
+
+/* ---------------- ranked search ---------------- */
+function nWordsOf(s){ return nFold(s).split(/[^a-z0-9]+/).filter(Boolean); }
+function nNear(a,b){                          /* one edit apart, for words of 5+ */
+  if(a===b) return true;
+  if(Math.abs(a.length-b.length)>1||Math.min(a.length,b.length)<5) return false;
+  let i=0,j=0,edits=0;
+  while(i<a.length&&j<b.length){
+    if(a[i]===b[j]){ i++; j++; continue; }
+    if(++edits>1) return false;
+    if(a.length>b.length) i++; else if(b.length>a.length) j++; else { i++; j++; }
+  }
+  return edits+(a.length-i)+(b.length-j)<=1;
+}
+function nScore(n,q){
+  const title=nFold(n.title), body=nFold((n.blocks||[]).map(b=>b.text||"").join(" \n "));
+  let s=0;
+  if(title===q) s+=100; else if(title.indexOf(q)===0) s+=70; else if(title.indexOf(q)>=0) s+=50;
+  if((n.tags||[]).some(tg=>nFold(tg).indexOf(q)>=0)) s+=40;
+  if(body.indexOf(q)>=0) s+=30;
+  const nb=nNbById(n.notebook); if(nb&&nFold(nb.name).indexOf(q)>=0) s+=20;
+  if(n.plantId&&nFold(nPlantName(n.plantId)).indexOf(q)>=0) s+=20;
+  /* near misses, word by word */
+  const qw=nWordsOf(q).filter(w=>w.length>=3);
+  if(qw.length){
+    const tw=nWordsOf(n.title), bw=nWordsOf(body);
+    qw.forEach(w=>{
+      if(tw.some(x=>x.indexOf(w)===0||nNear(x,w))) s+=12;
+      else if(bw.some(x=>x.indexOf(w)===0||nNear(x,w))) s+=6;
+    });
+  }
+  return s;
+}
+
+/* ---------------- wiring for part three ---------------- */
+(function nWire3(){
+  const blocks=$("#nBlocks"); if(!blocks) return;
+  /* a drag that ended on the handle must not also open the menu */
+  blocks.addEventListener("click",e=>{ if(nDragSuppressClick&&e.target.closest(".n-btype")){ e.stopImmediatePropagation(); e.preventDefault(); } },true);
+  document.addEventListener("click",e=>{
+    const p=$("#nLinkPop");
+    if(p){ const it=e.target.closest("#nLinkPop [data-ltitle]"); if(it){ nInsertLink(it.dataset.ltitle); return; } if(!p.contains(e.target)&&!e.target.closest(".n-block-ta")) nCloseLinkPop(); }
+    const lo=e.target.closest("#nLinks [data-lopen]");
+    if(lo){ const cur=nOpenNote(); if(cur) nHist.push(cur.id); openNote(lo.dataset.lopen); return; }
+    const mk=e.target.closest("#nLinks [data-lmake]");
+    if(mk){ const cur=nOpenNote(); if(cur) nHist.push(cur.id); nNewNote({title:mk.dataset.lmake,blocks:[["p",""]]}); return; }
+    const ll=e.target.closest("#nLinks [data-llink]");
+    if(ll){ const cur=nOpenNote(), o=nNoteById(ll.dataset.llink); if(cur&&o){ nLinkMention(cur,o); nRenderLinks(cur); } return; }
+  });
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape") nCloseLinkPop(); });
+  blocks.addEventListener("keyup",e=>{
+    /* the caret moved without input (arrow keys): re-check whether we are still inside a [[ */
+    if(e.key!=="ArrowLeft"&&e.key!=="ArrowRight") return;
+    const ta=e.target.closest(".n-block-ta"); if(!ta) return;
+    const n=nOpenNote(); if(!n) return; const b=n.blocks.find(x=>x.id===ta.dataset.ta); if(b) nLinkPopupCheck(b,ta);
+  });
+  /* leaving a note or the app closes the popups */
+  const back=$("#nBack"); if(back) back.addEventListener("click",nCloseLinkPop,true);
 })();
 
 
