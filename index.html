@@ -2817,6 +2817,30 @@ main > #view-teachbench-student:not([hidden]) ~ .n-quick-pad, html.pfocus .n-qui
 .n-voice-text i{color:var(--ink-3)}
 .n-voice-acts{display:flex; gap:8px; justify-content:flex-end}
 #nClipText{width:100%; font:inherit; font-size:14px}
+
+/* ---- notes, part five: time blocks, auto tasks, Cornell ---- */
+.n-file-auto{gap:6px; cursor:pointer; flex:0 0 auto; white-space:nowrap}
+.n-file-auto input{margin:0}
+.n-cn-col > .btn{align-self:flex-start}
+.n-planpop{position:absolute; z-index:61; width:min(300px,calc(100vw - 16px)); padding:12px; background:var(--surface);
+  border:1px solid var(--line); border-radius:13px; box-shadow:0 14px 38px -10px rgba(0,0,0,.28); display:flex; flex-direction:column; gap:8px}
+.n-planpop .n-pp-row{display:flex; gap:8px; align-items:center; font-size:13px}
+.n-planpop .n-pp-row label{flex:0 0 68px; color:var(--ink-3); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.04em}
+.n-planpop input{flex:1 1 auto; min-width:0; font:inherit; font-size:13px}
+.n-planpop .n-pp-acts{display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap; margin-top:2px}
+.n-planpop .n-pp-linked{font-size:13px; color:var(--ink-2)}
+.n-cornell{display:grid; grid-template-columns:minmax(0,34%) minmax(0,1fr); gap:0 14px}
+.n-cn-col{display:flex; flex-direction:column; gap:1px; min-width:0}
+.n-cn-cue{border-right:1px solid var(--line-soft); padding-right:10px}
+.n-cn-sum{grid-column:1 / -1; border-top:1px solid var(--line-soft); margin-top:10px; padding-top:8px}
+.n-cn-h{display:flex; align-items:center; gap:8px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-3); padding:4px 0 6px 30px}
+.n-cn-h button{margin-left:auto}
+.n-cn-cue .n-block-ta{font-size:14px; color:var(--ink-2)}
+.n-cn-empty{color:var(--line-strong); font-size:13px; padding:6px 0 6px 30px}
+@media (max-width:560px){
+  .n-cornell{grid-template-columns:1fr}
+  .n-cn-cue{border-right:0; border-bottom:1px solid var(--line-soft); padding-right:0; padding-bottom:8px; margin-bottom:6px}
+}
 .n-plist{display:flex; flex-direction:column; padding-top:6px}
 .n-prow{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:0 10px; text-align:left; border:0;
   background:none; font:inherit; color:inherit; padding:8px 0; border-top:1px solid var(--line-soft); cursor:pointer}
@@ -5023,6 +5047,7 @@ html[data-design="r2"]{
           <select id="nNbSel" aria-label="Notebook" data-no-i18n></select></label>
         <label class="n-file-item"><span class="n-file-k">Plant</span>
           <select id="nPlantSel" aria-label="Plant" data-no-i18n></select></label>
+        <label class="n-file-item n-file-auto"><input type="checkbox" id="nAutoTasks"> <span>To-dos go to the planner</span></label>
         <div class="n-file-item n-file-tags"><span class="n-file-k">Tags</span>
           <div class="n-tags" id="nTags"></div>
           <input type="text" id="nTagIn" class="n-tag-in" placeholder="Add a tag…"
@@ -22283,6 +22308,10 @@ Object.assign(CS,{
 "Pasted pages are cleaned down to their text. A link is fetched when the site allows it; most don't, so paste the text itself.":"Vložené stránky se očistí na samotný text. Odkaz se stáhne, pokud to web dovolí; většina nedovolí, tak vložte rovnou text.",
 "Image, whiteboard or scan":"Obrázek, tabule nebo sken","Choose image":"Vybrat obrázek",
 "The text in the picture is read on this device and becomes searchable. The first run downloads the reader (a few MB).":"Text z obrázku se přečte v tomto zařízení a dá se pak hledat. První spuštění stáhne čtečku (pár MB).",
+"To-dos go to the planner":"Úkoly jdou do plánovače","Open planner":"Otevřít plánovač","Unlink":"Odpojit","Day":"Den","Time":"Čas","Hours":"Hodin",
+"Add as task":"Přidat jako úkol","Block the time":"Zablokovat čas",
+"Cues & questions":"Otázky a hesla","Generate":"Vygenerovat","Questions you'd ask yourself about the notes":"Otázky, které byste si k poznámkám položili",
+"Summary":"Shrnutí","In your own words, what was this about?":"Vlastními slovy: o čem to bylo?",
 });
 
 
@@ -22472,7 +22501,10 @@ function nNormalise(d){
                   text:typeof b.text==="string"?b.text:String(b.text==null?"":b.text),
                   checked:b.checked===true,
                   photoId:typeof b.photoId==="string"?b.photoId:null,   /* "img" blocks: which S.photos entry */
-                  taskId:typeof b.taskId==="string"?b.taskId:null}));   /* "todo" blocks sent to the planner */
+                  taskId:typeof b.taskId==="string"?b.taskId:null,      /* "todo" blocks sent to the planner */
+                  hours:Number(b.hours)>0?Number(b.hours):null,         /* estimated duration, for time blocking */
+                  col:(b.col==="cue"||b.col==="sum")?b.col:null,        /* Cornell column; null = the notes column */
+                  gen:b.gen===true}));                                  /* written by "Generate"; a rerun replaces these */
       /* A note with no blocks renders nothing to put a caret in, so it would be
          permanently untypable. Every note keeps at least one empty paragraph. */
       if(!blocks.length) blocks=[{id:rid(),type:"p",text:"",checked:false}];
@@ -22485,6 +22517,8 @@ function nNormalise(d){
               pinned:n.pinned===true, archived:n.archived===true,
               plantId:typeof n.plantId==="string"?n.plantId:null,
               daily:(typeof n.daily==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(n.daily))?n.daily:null,   /* the day this is the daily note of */
+              layout:n.layout==="cornell"?"cornell":null,
+              autoTasks:n.autoTasks===true,
               source:typeof n.source==="string"?n.source.slice(0,500):null,                        /* where a clipping came from */
               trashedAt:Number(n.trashedAt)||null,
               createdAt:made, updatedAt:Number(n.updatedAt)||made};
@@ -22692,7 +22726,19 @@ function nRenderEditor(){
      jump to the end on every keystroke. */
   if(title&&document.activeElement!==title) title.value=n.title||"";
   let ord=0;
-  host.innerHTML=n.blocks.map(b=>{ ord=(b.type==="ol")?ord+1:0; return nBlockHtml(b,ord); }).join("");
+  const draw=list=>list.map(b=>{ ord=(b.type==="ol")?ord+1:0; return nBlockHtml(b,ord); }).join("");
+  if(n.layout==="cornell"){
+    /* three areas, one array: the column is a tag on the block, so the
+       keyboard handlers, saves and search all work on the flat list */
+    const cue=n.blocks.filter(b=>b.col==="cue"), sum=n.blocks.filter(b=>b.col==="sum"), notes=n.blocks.filter(b=>!b.col);
+    host.classList.add("n-cornell");
+    host.innerHTML=`<div class="n-cn-col n-cn-cue"><div class="n-cn-h">${esc(t("Cues & questions"))}<button type="button" class="btn mini" data-cnai="1">${esc(t("Generate"))}</button></div>${draw(cue)||`<div class="n-cn-empty">${esc(t("Questions you'd ask yourself about the notes"))}</div>`}<button type="button" class="btn mini" data-cnadd="cue" style="margin:6px 0 0 30px">+</button></div>
+      <div class="n-cn-col n-cn-notes"><div class="n-cn-h">${esc(t("Notes"))}</div>${draw(notes)}</div>
+      <div class="n-cn-col n-cn-sum"><div class="n-cn-h">${esc(t("Summary"))}</div>${draw(sum)||`<div class="n-cn-empty">${esc(t("In your own words, what was this about?"))}</div>`}<button type="button" class="btn mini" data-cnadd="sum" style="margin:6px 0 0 30px">+</button></div>`;
+  }else{
+    host.classList.remove("n-cornell");
+    host.innerHTML=draw(n.blocks);
+  }
   nGrowAll();
   nRenderMeta();
 }
@@ -22714,8 +22760,8 @@ function openNote(id){
 function nNewNote(tpl){
   tpl=(tpl&&Array.isArray(tpl.blocks))?tpl:null;
   const V=nV(), inNb=nNbById(V.nb)?V.nb:null;
-  const now=Date.now(), n={id:uid(),title:tpl?(tpl.title||""):"",
-    blocks:tpl?tpl.blocks.map(x=>nBlock(x[0],x[1])):[nBlock("p","")],
+  const now=Date.now(), n={id:uid(),title:tpl?(tpl.title||""):"",layout:(tpl&&tpl.layout)||null,
+    blocks:tpl?tpl.blocks.map(x=>{ const b=nBlock(x[0],x[1]); if(x[2]) b.col=x[2]; return b; }):[nBlock("p","")],
     notebook:inNb, plantId:(tpl&&tpl.plantId)||null,
     tags:[],pinned:false,archived:false,trashedAt:null,createdAt:now,updatedAt:now};
   S.notes=S.notes||[]; S.notes.unshift(n); touch();
@@ -22920,6 +22966,7 @@ function nFilterMenu(q){
       const pos=ta.selectionStart;
       b.text=ta.value.slice(0,pos);
       const nb=nBlock(N_LIST_TYPES[b.type]?b.type:"p", ta.value.slice(pos));
+      if(b.col) nb.col=b.col;                 /* Cornell: stay in the same column */
       n.blocks.splice(at+1,0,nb);
       nTouchNote(n); nRestructure(nb.id,0);
       return;
@@ -23098,6 +23145,7 @@ function nRenderFiling(n){
   if(arch) arch.textContent=n.archived?t("Unarchive"):t("Archive");
   if(bar) bar.hidden=!n.trashedAt;
   if(foot) foot.hidden=!!n.trashedAt;
+  const auto=$("#nAutoTasks"); if(auto) auto.checked=!!n.autoTasks;
 }
 
 /* ---------------- planner bridge ----------------
@@ -23192,7 +23240,9 @@ function nTemplates(){
        ["p",cs?"Stav kořenů: ":"Root condition: "],["todo",cs?"Týden zalévat jen lehce":"Water lightly for a week"]]},
     {id:"obs", name:cs?"Pozorování":"Observation", title:(cs?"Pozorování — ":"Observation — ")+d,
      blocks:[["h2",cs?"Pozorování":"Observation"],["p",cs?"Co jsem viděl: ":"What I saw: "],["p",cs?"Kde: ":"Where: "],
-       ["p",cs?"Podmínky: ":"Conditions: "],["p",cs?"Další krok: ":"Follow up: "]]}
+       ["p",cs?"Podmínky: ":"Conditions: "],["p",cs?"Další krok: ":"Follow up: "]]},
+    {id:"cornell", name:cs?"Cornellovy poznámky":"Cornell notes", title:(cs?"Přednáška — ":"Lecture — ")+d, layout:"cornell",
+     blocks:[["p","","cue"],["h2",cs?"Téma":"Topic"],["p",""],["p","","sum"]]}
   ];
 }
 function nOpenTplMenu(anchorEl){
@@ -23318,8 +23368,7 @@ function nPlantCardHtml(p){
     const tp=e.target.closest("[data-toplanner]"); if(!tp) return;
     const n=nOpenNote(); if(!n) return;
     const b=n.blocks.find(x=>x.id===tp.dataset.toplanner); if(!b) return;
-    if(b.taskId&&pFindTask(b.taskId)){ setApp("planner"); return; }   /* already there — go and look */
-    nPushTodo(n,b); nRestructure(b.id,null);
+    nOpenPlanPop(b,tp);
   });
 
   on("#nUndoBtn","click",()=>{ const fn=nUndoFn; nHideUndo(); if(fn) fn(); });
@@ -23431,8 +23480,118 @@ function nRunCmd(cmd,n,b){
   if(cmd==="ocr"){ nRestructure(null,null); nOcrBlock(n,b); return; }
   nRestructure(b.id,null);
 }
-/* placeholders until parts four and five land; both exist so the menu never dead-ends */
-function nOpenPlanPop(b){ const n=nOpenNote(); if(n){ nPushTodo(n,b); nRestructure(b.id,null); } }
+/* ---------------- time blocking ----------------
+   The popover under a to-do: which day, optionally what time, and how long.
+   With a time it becomes a timed event on the planner's calendar; without,
+   a task for that day carrying its estimate. The estimate is kept on the
+   block, so sending it again remembers it. */
+function nClosePlanPop(){ const p=$("#nPlanPop"); if(p) p.remove(); }
+function nOpenPlanPop(b,anchorEl){
+  nClosePlanPop(); nCloseMenu();
+  const n=nOpenNote(); if(!n) return;
+  anchorEl=anchorEl||document.querySelector('#nBlocks [data-toplanner="'+b.id+'"]')||document.querySelector('#nBlocks [data-b="'+b.id+'"]');
+  const cs=L.lang==="cs", tk=b.taskId?pFindTask(b.taskId):null;
+  const p=document.createElement("div"); p.id="nPlanPop"; p.className="n-planpop"; p.dataset.b=b.id;
+  p.innerHTML=tk
+    ? `<div class="n-pp-linked" data-no-i18n>${esc(cs?"V plánovači: ":"In the planner: ")}${esc(tk.due||"")}${tk.time?" "+esc(tk.time):""}${tk.hours?" · "+esc(String(tk.hours))+" h":""}${tk.done?(cs?" · hotovo":" · done"):""}</div>
+       <div class="n-pp-acts"><button type="button" class="btn mini" data-pp="open">${esc(t("Open planner"))}</button><button type="button" class="btn mini" data-pp="unlink">${esc(t("Unlink"))}</button></div>`
+    : `<div class="n-pp-row"><label for="nPpDay">${esc(t("Day"))}</label><input type="date" id="nPpDay" value="${esc(pToday())}"></div>
+       <div class="n-pp-row"><label for="nPpTime">${esc(t("Time"))}</label><input type="time" id="nPpTime" value=""></div>
+       <div class="n-pp-row"><label for="nPpHours">${esc(t("Hours"))}</label><input type="number" id="nPpHours" min="0" max="12" step="0.25" value="${esc(String(b.hours||0.5))}"></div>
+       <div class="n-pp-acts"><button type="button" class="btn mini" data-pp="task">${esc(t("Add as task"))}</button><button type="button" class="btn primary mini" data-pp="event">${esc(t("Block the time"))}</button></div>`;
+  document.body.appendChild(p);
+  const r=anchorEl.getBoundingClientRect();
+  p.style.top=(window.scrollY+r.bottom+6)+"px";
+  p.style.left=Math.max(8,Math.min(window.scrollX+r.left,window.scrollX+window.innerWidth-p.offsetWidth-8))+"px";
+  const first=p.querySelector("input,button"); if(first) first.focus();
+}
+function nPlanFromPop(kind){
+  const p=$("#nPlanPop"); if(!p) return;
+  const n=nOpenNote(); if(!n) return;
+  const b=n.blocks.find(x=>x.id===p.dataset.b); if(!b) return;
+  const day=($("#nPpDay")||{}).value||pToday(), time=($("#nPpTime")||{}).value||"", hours=Math.max(0,+(($("#nPpHours")||{}).value||0));
+  b.hours=hours||null;
+  S.planner.tasks=S.planner.tasks||[];
+  const isEvent=kind==="event"&&!!time;
+  const tk={id:uid(), title:(b.text||"").trim()||(n.title||"").trim()||t("Untitled task"),
+    due:day, time:isEvent?time:"", hours:isEvent?Math.max(0.25,hours||0.5):hours, done:!!b.checked,
+    kind:isEvent?"event":"task", steps:[], projectId:null, untracked:false, noteId:n.id, blockId:b.id};
+  S.planner.tasks.push(tk); b.taskId=tk.id;
+  nTouchNote(n); nClosePlanPop(); nRestructure(b.id,null);
+  nToast(isEvent?(L.lang==="cs"?"Čas zablokován v plánovači.":"Time blocked in the planner."):(L.lang==="cs"?"Úkol je v plánovači.":"Task added to the planner."));
+}
+/* auto mode: every finished to-do line goes to the planner as a task for
+   today, without the popover. "Finished" means focus left the line, or the
+   note was closed. */
+function nAutoPush(n,b){
+  if(!n||!n.autoTasks||!b||b.type!=="todo"||b.taskId||!(b.text||"").trim()) return false;
+  nPushTodo(n,b);
+  const bt=document.querySelector('#nBlocks [data-toplanner="'+b.id+'"]');
+  if(bt){ bt.classList.add("on"); bt.textContent=t("in planner"); }
+  return true;
+}
+function nAutoPushAll(n){ if(n&&n.autoTasks) n.blocks.forEach(b=>nAutoPush(n,b)); }
+
+/* ---------------- Cornell: questions and a summary ----------------
+   The model reads the notes column and writes cue questions plus a summary;
+   without a key the headings become questions and the first sentence of each
+   paragraph becomes the summary — crude, but it gets the recall loop started. */
+async function nCornellGenerate(n){
+  const cs=L.lang==="cs";
+  const notes=n.blocks.filter(b=>!b.col&&(b.text||"").trim()&&!nNoTa(b.type));
+  if(!notes.length){ nToast(cs?"Nejdřív něco napište do sloupce poznámek.":"Write something in the notes column first."); return; }
+  const text=notes.map(b=>(b.type.charAt(0)==="h"?"# ":"")+b.text).join("\n");
+  let qs=null, sum=null;
+  nToast(cs?"Připravuji otázky a shrnutí…":"Writing questions and a summary…",true);
+  try{
+    const r=await nAI("You are helping a student use the Cornell method. From their lecture notes write 4 to 8 short recall questions a student would test themselves with (the answers must be in the notes), and a 2 to 3 sentence summary in plain words. Same language as the notes. Return ONLY JSON: {\"questions\":[...],\"summary\":\"...\"}",text,{maxTokens:1200});
+    const j=nAiJson(r); if(j&&Array.isArray(j.questions)){ qs=j.questions.map(String); sum=String(j.summary||""); }
+  }catch(e){ if(e.message!=="nokey") nAiFail(e); else nToast(cs?"Bez klíče API — otázky z nadpisů.":"No API key — questions from the headings."); }
+  if(!qs){
+    qs=notes.filter(b=>b.type.charAt(0)==="h").map(b=>(cs?"Co víš o: ":"What do you know about: ")+b.text.trim()+"?");
+    if(!qs.length) qs=notes.slice(0,5).map(b=>{ const s=b.text.trim().split(/(?<=[.!?])\s/)[0]; return (cs?"Proč platí: ":"Why is it that: ")+s.replace(/[.!?]$/,"")+"?"; });
+    sum=notes.filter(b=>b.type==="p").slice(0,3).map(b=>b.text.trim().split(/(?<=[.!?])\s/)[0]).join(" ");
+  }
+  /* replace what a previous run generated, keep what was typed by hand */
+  n.blocks=n.blocks.filter(b=>!b.gen);
+  const made=qs.map(q=>{ const b=nBlock("p",q); b.col="cue"; b.gen=true; return b; });
+  if(sum){ const b=nBlock("p",sum); b.col="sum"; b.gen=true; made.push(b); }
+  /* drop the empty placeholders the template started with */
+  n.blocks=n.blocks.filter(b=>!((b.col==="cue"||b.col==="sum")&&!(b.text||"").trim()));
+  n.blocks.push(...made);
+  nTouchNote(n); nHideUndo(); nRestructure(made[0].id,null);
+}
+
+(function nWire5(){
+  const blocks=$("#nBlocks"); if(!blocks) return;
+  const on=(sel,ev,fn)=>{ const el=$(sel); if(el) el.addEventListener(ev,fn); };
+  document.addEventListener("click",async e=>{
+    const p=$("#nPlanPop");
+    if(p){
+      const act=e.target.closest("#nPlanPop [data-pp]");
+      if(act){
+        const n=nOpenNote(), b=n&&n.blocks.find(x=>x.id===p.dataset.b);
+        const k=act.dataset.pp;
+        if(k==="task"||k==="event") nPlanFromPop(k);
+        else if(k==="open"){ nClosePlanPop(); setApp("planner"); }
+        else if(k==="unlink"&&b){ b.taskId=null; nTouchNote(n); nClosePlanPop(); nRestructure(b.id,null); }
+        return;
+      }
+      if(!p.contains(e.target)&&!e.target.closest("[data-toplanner]")) nClosePlanPop();
+    }
+    const add=e.target.closest("#nBlocks [data-cnadd]");
+    if(add){ const n=nOpenNote(); if(!n) return; const b=nBlock("p",""); b.col=add.dataset.cnadd; n.blocks.push(b); nTouchNote(n); nRestructure(b.id,0); return; }
+    if(e.target.closest("#nBlocks [data-cnai]")){ const n=nOpenNote(); if(n) nCornellGenerate(n); }
+  });
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape") nClosePlanPop(); });
+  on("#nAutoTasks","change",()=>{ const n=nOpenNote(); if(!n) return; n.autoTasks=$("#nAutoTasks").checked; nTouchNote(n); if(n.autoTasks){ nAutoPushAll(n); nRestructure(null,null); } });
+  blocks.addEventListener("focusout",e=>{
+    const ta=e.target.closest(".n-block-ta"); if(!ta) return;
+    const n=nOpenNote(); if(!n||!n.autoTasks) return;
+    const b=n.blocks.find(x=>x.id===ta.dataset.ta); if(b) nAutoPush(n,b);
+  });
+  const back=$("#nBack"); if(back) back.addEventListener("click",()=>{ nClosePlanPop(); nAutoPushAll(nOpenNote()); },true);
+})();
 async function nBreakDown(n,b){
   const task=(b.text||"").trim(); if(!task) return;
   const cs=L.lang==="cs";
