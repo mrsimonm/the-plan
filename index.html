@@ -3388,8 +3388,8 @@ html{overscroll-behavior-y:none}
                 <label for="themeToggle">Colour scheme</label>
                 <select id="themeToggle">
                   <option value="null">System (follow device setting)</option>
-                  <option value="light">Light</option>
-                  <option value="dark">Dark</option>
+                  <option value="light">Light mode</option>
+                  <option value="dark">Dark mode</option>
                 </select>
                 <p class="hint">Choose light or dark, or follow your device's system setting.</p>
               </div>
@@ -6055,7 +6055,7 @@ const $=s=>document.querySelector(s);
 /* Build stamp. `n` is incremented by bump.py at publish time so two phones can
    be compared at a glance — an installed PWA serving a stale service-worker
    cache is otherwise indistinguishable from an up-to-date one. */
-const BUILD={ver:"1.0",n:49,at:"2026-09-03"};
+const BUILD={ver:"1.0",n:50,at:"2026-09-03"};
 const uid=()=>Math.random().toString(36).slice(2,9);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
@@ -6133,11 +6133,13 @@ function weekOf(sc,n){
 /* the week label only earns its place when it says something the formula name doesn't */
 const weekLine=(sc,n,fm)=>{
   const w=weekOf(sc,n); if(!w) return "";
-  return (w.label&&(!fm||w.label!==fm.name))?`Week ${n} · ${w.label}`:`Week ${n}`;
+  const wk=t("Week");
+  return (w.label&&(!fm||w.label!==fm.name))?`${wk} ${n} · ${w.label}`:`${wk} ${n}`;
 };
 const weekName=(sc,n)=>{
   const w=weekOf(sc,n); if(!w) return "";
-  return w.label?`Week ${n} · ${w.label}`:`Week ${n}`;
+  const wk=t("Week");
+  return w.label?`${wk} ${n} · ${w.label}`:`${wk} ${n}`;
 };
 /* the formula a plant is due, from its schedule and week */
 function plantFormula(p){
@@ -6635,7 +6637,9 @@ function renderMix(){
     <div class="step frame">
       <span class="step-no"><b>·</b></span>
       <span class="step-cat">Start</span>
-      <span class="step-name">Fill the ${t.spray?"bottle":"tank"} with ${esc(t.water||"water")}</span>
+      <span class="step-name">${L.lang==="cs"
+        ? `Naplň ${t.spray?"rozprašovač":"nádobu"} — ${esc(t.water||"voda")}`
+        : `Fill the ${t.spray?"bottle":"tank"} with ${esc(t.water||"water")}`}</span>
       <span class="step-amt">${V.toFixed(2)}<em>L</em></span>
       <span class="step-rule">Room temperature. If you pH your water, do it at the end, not now.</span>
     </div>`;
@@ -6665,8 +6669,10 @@ function renderMix(){
       <span class="step-rule">Give it a good stir before you pour.</span>
     </div>`;
   const none=t.noDose
-    ? `<p class="empty">${esc(t.name)} has no rate set yet. Open it and add the ml/L from the label.</p>`
-    : `<p class="empty">Nothing switched on in this formula — it's plain ${esc(t.water||"water")}.</p>`;
+    ? `<p class="empty"><b>${esc(t.name)}</b> <span>has no rate set yet. Open it and add the ml/L from the label.</span></p>`
+    : `<p class="empty">${L.lang==="cs"
+        ? `V téhle receptuře není nic zapnuté — je to čistá ${esc(t.water||"voda")}.`
+        : `Nothing switched on in this formula — it's plain ${esc(t.water||"water")}.`}</p>`;
   $("#steps").innerHTML=head+(body||none)+tail;
   applyWhy();
   $("#readout").innerHTML=adv()?[
@@ -6730,8 +6736,11 @@ function renderShelf(){
     S.products=S.products.concat(starterShelf()); touch(); renderShelf(); renderMix(); }); }
 
   const noDose=S.products.filter(p=>!p.dose).length;
-  $("#shelfNote").innerHTML=noDose?`<div class="note flag"><span>◆</span><span><b>${noDose} product${noDose>1?"s have":" has"} no dose yet.</b>
-    Open ${noDose>1?"them":"it"} and add the ml/L off the label — until then ${noDose>1?"they":"it"} can't go into a mix.</span></div>`:"";
+  $("#shelfNote").innerHTML=noDose?`<div class="note flag"><span>◆</span><span>${L.lang==="cs"
+    ? `<b>${noDose} ${pl3(noDose,"produkt nemá","produkty nemají","produktů nemá")} zadanou dávku.</b>
+    Otevři ${noDose>1?"je":"ho"} a doplň ml/l z etikety — do té doby ${noDose>1?"nemůžou":"nemůže"} jít do mixu.`
+    : `<b>${noDose} product${noDose>1?"s have":" has"} no dose yet.</b>
+    Open ${noDose>1?"them":"it"} and add the ml/L off the label — until then ${noDose>1?"they":"it"} can't go into a mix.`}</span></div>`:"";
   $("#dataBox").value=JSON.stringify(S,null,1);
   $("#shareHint").textContent=ART
     ? "Shared: this page is the record. Use the share menu to give others edit access and everyone writes to the same log."
@@ -6812,7 +6821,9 @@ function renderSubjects(){
     return;
   }
   if(!list.length){
-    $("#subjectList").innerHTML=`<p class="empty">No plants match "${esc(gPlantsQuery)}".</p>`;
+    $("#subjectList").innerHTML=`<p class="empty">${L.lang==="cs"
+      ? `Žádná rostlina neodpovídá „${esc(gPlantsQuery)}“.`
+      : `No plants match "${esc(gPlantsQuery)}".`}</p>`;
     return;
   }
   $("#subjectList").innerHTML=list.map(p=>{
@@ -6904,7 +6915,9 @@ async function promoteCutting(c){
     S.routines.push({id:uid(),subjectId:sid,kind:"feed",name:"Feed",every:sp.f});
   }
   touch(); renderSubjects(); renderAgenda();
-  say(`Added as "${cutName(c)} cutting". It's on the Plants tab with ${sp?"its species' watering and feeding":"no routines yet"}.`,"Done");
+  say(L.lang==="cs"
+    ? `Přidáno jako „${cutName(c)} cutting“. Je na záložce Rostliny ${sp?"se zálivkou a hnojením podle druhu":"zatím bez rytmu"}.`
+    : `Added as "${cutName(c)} cutting". It's on the Plants tab with ${sp?"its species' watering and feeding":"no routines yet"}.`,"Done");
 }
 
 function renderCuttings(){
@@ -11445,7 +11458,8 @@ function renderGarden(){
       }).join("")
     : all.length
       ? `<div class="card pad" style="grid-column:1/-1"><p class="hint" style="margin:0">
-          No plants match "${esc(gGardenQuery)}".</p></div>`
+          ${L.lang==="cs"?`Žádná rostlina neodpovídá „${esc(gGardenQuery)}“.`
+                         :`No plants match "${esc(gGardenQuery)}".`}</p></div>`
       : `<div class="card pad" style="grid-column:1/-1"><p class="hint" style="margin:0">
         No plants yet. Tap <b>+ Plant</b> and pick what it is — the app fills in how often it wants
         watering, how much light it likes, and whether it's safe around animals.</p></div>`;
@@ -11586,9 +11600,11 @@ function since(p){
   if(!p.since) return "";
   const d=Math.floor((Date.now()-fromYmd(p.since))/DAY);
   if(d<0) return "";
-  if(d<31) return `${d} day${d===1?"":"s"} with you`;
+  const cs=L.lang==="cs";
+  if(d<31) return cs?`${d} ${pl3(d,"den","dny","dní")} s tebou`:`${d} day${d===1?"":"s"} with you`;
   const m=Math.round(d/30.4);
-  return m<24?`${m} month${m===1?"":"s"} with you`:`${(d/365).toFixed(1)} years with you`;
+  if(m<24) return cs?`${m} ${pl3(m,"měsíc","měsíce","měsíců")} s tebou`:`${m} month${m===1?"":"s"} with you`;
+  return cs?`${(d/365).toFixed(1)} let s tebou`:`${(d/365).toFixed(1)} years with you`;
 }
 /* height over time — plotted against real dates, so a gap in photos reads as a gap */
 function sparkline(pts){
@@ -11602,7 +11618,8 @@ function sparkline(pts){
   const area=`${line} L${pt[pt.length-1][0].toFixed(1)},${H-pad} L${pt[0][0].toFixed(1)},${H-pad} Z`;
   const last=pt[pt.length-1];
   return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img"
-      aria-label="Height from ${ys[0]} to ${ys[ys.length-1]} centimetres">
+      aria-label="${L.lang==="cs"?`Výška od ${ys[0]} do ${ys[ys.length-1]} centimetrů`
+        :`Height from ${ys[0]} to ${ys[ys.length-1]} centimetres`}">
     <path d="${area}" fill="var(--accent)" opacity=".14"></path>
     <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2"
       stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path>
@@ -11630,8 +11647,9 @@ function renderPlant(){
     const a=heights[0], b=heights[heights.length-1];
     const days=Math.max(1,Math.round((new Date(b.at)-new Date(a.at))/DAY));
     const perMonth=((b.h-a.h)/days)*30.4;
-    growth=`${a.h} cm → ${b.h} cm  ·  +${(b.h-a.h).toFixed(0)} cm in ${span(a.at,b.at)}`
-      +(days>=21?`  ·  about ${perMonth.toFixed(perMonth<10?1:0)} cm a month`:"");
+    growth=`${a.h} cm → ${b.h} cm  ·  +${(b.h-a.h).toFixed(0)} cm ${L.lang==="cs"?"za":"in"} ${span(a.at,b.at)}`
+      +(days>=21?(L.lang==="cs"?`  ·  asi ${perMonth.toFixed(perMonth<10?1:0)} cm za měsíc`
+                               :`  ·  about ${perMonth.toFixed(perMonth<10?1:0)} cm a month`):"");
     curve=sparkline(heights);
   } else if(heights.length===1) growth=`${heights[0].h} cm`;
 
@@ -11795,7 +11813,9 @@ $("#pvBody").addEventListener("click",async e=>{
   if(del){
     const n=S.events.filter(ev=>ev.subjectId===del.dataset.delPlant).length;
     const pl=subject(del.dataset.delPlant);
-    if(!await ask(`Delete "${pl.name}"${n?` and its ${n} log entr${n===1?"y":"ies"}`:""}? Photos go too.`)) return;
+    if(!await ask(L.lang==="cs"
+      ? `Smazat „${pl.name}“${n?` a ${n} ${pl3(n,"záznam","záznamy","záznamů")}`:""}? Fotky zmizí taky.`
+      : `Delete "${pl.name}"${n?` and its ${n} log entr${n===1?"y":"ies"}`:""}? Photos go too.`)) return;
     deletePlant(pl.id);
     show("plants");
   }
@@ -11828,7 +11848,7 @@ document.addEventListener("change",e=>{
 
 function openAction(){
   const p=subject(pvId); if(!p) return;
-  $("#actTitle").textContent="Schedule — "+p.name;
+  $("#actTitle").textContent=t("Schedule")+" — "+p.name;
   $("#actWhat").innerHTML=PLANT_ACTIONS.map(a=>`<option>${esc(a)}</option>`).join("")
     +'<option value="__other">Something else…</option>';
   $("#actOtherWrap").hidden=true; $("#actOther").value="";
@@ -13343,7 +13363,9 @@ $("#acSections").addEventListener("click",async e=>{
   if(add){ captureAcad(); editAcad.sections[+add.dataset.sadd].items.push({q:"",a:[]}); renderAcadSections(); return; }
   if(sx){
     const i=+sx.dataset.sx;
-    if(!await ask(`Remove "${editAcad.sections[i].t||"this section"}" and everything in it?`)) return;
+    if(!await ask(L.lang==="cs"
+      ? `Odebrat „${editAcad.sections[i].t||"tuhle sekci"}“ a všechno v ní?`
+      : `Remove "${editAcad.sections[i].t||"this section"}" and everything in it?`)) return;
     captureAcad(); editAcad.sections.splice(i,1); renderAcadSections(); return;
   }
   if(ix){
@@ -13397,7 +13419,9 @@ $("#logList").addEventListener("click",async e=>{
   const b=e.target.closest("[data-del-ev]"); if(!b) return;
   const ev=S.events.find(x=>x.id===b.dataset.delEv); if(!ev) return;
   const pl=subject(ev.subjectId);
-  if(!await ask(`Remove this ${esc(ev.kind||ev.type||"log")} entry${pl?` for ${pl.name}`:""}? It changes when that plant is next due.`)) return;
+  if(!await ask(L.lang==="cs"
+    ? `Odebrat tenhle záznam (${esc(t(ev.kind||ev.type||"log"))})${pl?` u ${pl.name}`:""}? Změní to, kdy je ta rostlina příště na řadě.`
+    : `Remove this ${esc(ev.kind||ev.type||"log")} entry${pl?` for ${pl.name}`:""}? It changes when that plant is next due.`)) return;
   S.events=S.events.filter(x=>x.id!==ev.id);
   touch(); renderLog(); renderSubjects();
 });
@@ -14280,7 +14304,10 @@ document.addEventListener("click",e=>{
   tbSyncTypeFields(m.type, $("#tbMatEditBodyField"), $("#tbMatEditUrlFields"));
   $("#tbMatEditWarn").hidden=true;
   const usage=tbMaterialUsageCount(data, m.id);
-  $("#tbMatEditUsage").textContent = usage ? `Assigned to ${usage} student${usage===1?"":"s"}.` : "Not assigned to anyone yet.";
+  $("#tbMatEditUsage").textContent = usage
+    ? (L.lang==="cs" ? `Zadáno ${usage} ${pl3(usage,"studentovi","studentům","studentům")}.`
+                     : `Assigned to ${usage} student${usage===1?"":"s"}.`)
+    : t("Not assigned to anyone yet.");
   $("#tbMatDelete").textContent="Delete…";
   $("#tbMatEditDlg").showModal();
 });
@@ -14308,8 +14335,9 @@ $("#tbMatDelete").addEventListener("click",()=>{
   const usage=tbMaterialUsageCount(data, tbMatEditId);
   if($("#tbMatDelete").textContent==="Delete…"){
     $("#tbMatDelete").textContent = usage
-      ? `Really delete? ${usage} student${usage===1?"":"s"} will lose it too.`
-      : "Really delete?";
+      ? (L.lang==="cs" ? `Opravdu smazat? ${usage} ${pl3(usage,"student o něj přijde","studenti o něj přijdou","studentů o něj přijde")} taky.`
+                       : `Really delete? ${usage} student${usage===1?"":"s"} will lose it too.`)
+      : t("Really delete?");
     return;
   }
   data.materials=data.materials.filter(m=>m.id!==tbMatEditId);
@@ -14591,10 +14619,15 @@ function tbOpenWordEdit(wordId){
   $("#tbWordEditOwnerNote").hidden=!w.ownerId;
   if(w.ownerId){
     const owner=data.students.find(s=>s.id===w.ownerId);
-    $("#tbWordEditOwnerNote").textContent=`Private word belonging to ${owner?owner.name:"a student"}. It is never offered to other students.`;
+    $("#tbWordEditOwnerNote").textContent=L.lang==="cs"
+      ? `Soukromé slovo studenta ${owner?owner.name:"(neznámého)"}. Ostatním se nikdy nenabídne.`
+      : `Private word belonging to ${owner?owner.name:"a student"}. It is never offered to other students.`;
   }
   const usage=tbWordUsageCount(data, w.id);
-  $("#tbWordEditUsage").textContent = usage ? `Held by ${usage} student${usage===1?"":"s"}.` : "Not held by anyone yet.";
+  $("#tbWordEditUsage").textContent = usage
+    ? (L.lang==="cs" ? `Má ho ${usage} ${pl3(usage,"student","studenti","studentů")}.`
+                     : `Held by ${usage} student${usage===1?"":"s"}.`)
+    : t("Not held by anyone yet.");
   $("#tbWordDelete").textContent="Delete…";
   $("#tbWordEditDlg").showModal();
 }
@@ -14626,8 +14659,9 @@ $("#tbWordDelete").addEventListener("click",()=>{
   const usage=tbWordUsageCount(data, tbWordEditId);
   if($("#tbWordDelete").textContent==="Delete…"){
     $("#tbWordDelete").textContent = usage
-      ? `Really delete? ${usage} student${usage===1?"":"s"} lose their progress on it too.`
-      : "Really delete?";
+      ? (L.lang==="cs" ? `Opravdu smazat? ${usage} ${pl3(usage,"student přijde","studenti přijdou","studentů přijde")} i o svůj postup.`
+                       : `Really delete? ${usage} student${usage===1?"":"s"} lose their progress on it too.`)
+      : t("Really delete?");
     return;
   }
   data.words=data.words.filter(w=>w.id!==tbWordEditId);
@@ -14665,7 +14699,10 @@ document.addEventListener("click",e=>{
   $("#tbListEditName").value=list.name;
   $("#tbListEditName").dataset.listId=list.id;
   const count=data.words.filter(w=>w.listId===list.id).length;
-  $("#tbListEditUsage").textContent=count?`${count} word${count===1?"":"s"} in this list.`:"No words in this list yet.";
+  $("#tbListEditUsage").textContent=count
+    ? (L.lang==="cs" ? `${count} ${pl3(count,"slovo","slova","slov")} v tomhle seznamu.`
+                     : `${count} word${count===1?"":"s"} in this list.`)
+    : t("No words in this list yet.");
   $("#tbListDelete").textContent="Delete…";
   $("#tbListEditDlg").showModal();
 });
@@ -15009,7 +15046,9 @@ function tbRenderSearch(){
       <span class="row-sub">${esc(tbMatTypeLabel(m.type))} · ${esc(tbMatSkillLabel(m.category))}</span></span></div>`);
 
   const blocks=[tbSearchGroup("Students",students), tbSearchGroup("Words",words), tbSearchGroup("Lessons",lessons), tbSearchGroup("Tasks",materials)].filter(Boolean).join("");
-  host.innerHTML = blocks || `<p class="pday-sub">Nothing matches "${esc($("#tbSearchInput").value.trim())}".</p>`;
+  host.innerHTML = blocks || `<p class="pday-sub">${L.lang==="cs"
+    ? `Nic neodpovídá „${esc($("#tbSearchInput").value.trim())}“.`
+    : `Nothing matches "${esc($("#tbSearchInput").value.trim())}".`}</p>`;
 }
 $("#tbSearchInput").addEventListener("input", tbRenderSearch);
 document.addEventListener("click",e=>{
@@ -15244,8 +15283,9 @@ function checkRanges(){
     if(!f||!inp) return;
     const v=+inp.value||0;
     if(!v||p.doseMin==null||p.doseMax==null){ f.textContent=""; return; }
-    f.textContent = v<p.doseMin ? `below the label's ${p.doseMin}`
-                  : v>p.doseMax ? `over the label's ${p.doseMax}` : "";
+    const cs=L.lang==="cs";
+    f.textContent = v<p.doseMin ? (cs?`pod dávkou z etikety ${p.doseMin}`:`below the label's ${p.doseMin}`)
+                  : v>p.doseMax ? (cs?`nad dávkou z etikety ${p.doseMax}`:`over the label's ${p.doseMax}`) : "";
   });
 }
 function captureFm(){
@@ -15286,7 +15326,9 @@ $("#fmSave").addEventListener("click",async()=>{
 });
 $("#fmDelete").addEventListener("click",async()=>{
   const inSched=S.schedules.filter(sc=>(sc.weeks||[]).some(w=>w.formulaId===editFm.id)).length;
-  if(!await ask(`Delete "${editFm.name}"?${inSched?` ${inSched} schedule${inSched>1?"s use":" uses"} it — those weeks will be left empty.`:""} Past log entries keep the name.`)) return;
+  if(!await ask(L.lang==="cs"
+    ? `Smazat „${editFm.name}“?${inSched?` Používá ${pl3(inSched,"ji","ji","ji")} ${inSched} ${pl3(inSched,"plán","plány","plánů")} — ty týdny zůstanou prázdné.`:""} Minulé záznamy si jméno nechají.`
+    : `Delete "${editFm.name}"?${inSched?` ${inSched} schedule${inSched>1?"s use":" uses"} it — those weeks will be left empty.`:""} Past log entries keep the name.`)) return;
   S.formulas=S.formulas.filter(x=>x.id!==editFm.id);
   S.schedules.forEach(sc=>(sc.weeks||[]).forEach(w=>{ if(w.formulaId===editFm.id) w.formulaId=null; }));
   L.formulaId=(S.formulas[0]||{}).id||null;
@@ -15492,7 +15534,7 @@ function agendaRows(list,actionable){
       </div>`;
     }
     const sub=feedSub(it), last=it.r?lastEvent(it.r.id):null;
-    const hist=last?`last done ${ago(last.at)} · ${userName(last.by)}`:"never done";
+    const hist=last?`${L.lang==="cs"?"naposled":"last done"} ${ago(last.at)} · ${userName(last.by)}`:t("never done");
     return `<div class="arow${actionable?"":" soon"}">
       <span class="arow-name">${esc(it.p.name)}<span class="ev-type ${it.type}">${esc(routineName(it))}</span></span>
       <span class="arow-sub">${esc([sub,hist].filter(Boolean).join("  ·  "))}</span>
@@ -15570,7 +15612,7 @@ $("#dayDlg").addEventListener("click",async e=>{
   }
   if(del){
     const t=S.tasks.find(x=>x.id===del.dataset.tdel); if(!t) return;
-    if(!await ask(`Delete "${t.text}"?`)) return;
+    if(!await ask(L.lang==="cs"?`Smazat „${t.text}“?`:`Delete "${t.text}"?`)) return;
     S.tasks=S.tasks.filter(x=>x.id!==t.id);
     touch(); renderDayDialog(); renderAgenda(); return;
   }
@@ -15820,7 +15862,9 @@ $("#schedSave").addEventListener("click",async()=>{
 });
 $("#schedDelete").addEventListener("click",async()=>{
   const used=S.subjects.filter(pl=>pl.schedId===editSched.id).length;
-  if(!await ask(`Delete "${editSched.name}"?${used?` ${used} plant${used>1?"s are":" is"} on it.`:""} Your formulas stay.`)) return;
+  if(!await ask(L.lang==="cs"
+    ? `Smazat „${editSched.name}“?${used?` Je na něm ${used} ${pl3(used,"rostlina","rostliny","rostlin")}.`:""} Tvoje receptury zůstanou.`
+    : `Delete "${editSched.name}"?${used?` ${used} plant${used>1?"s are":" is"} on it.`:""} Your formulas stay.`)) return;
   S.schedules=S.schedules.filter(x=>x.id!==editSched.id);
   S.subjects.forEach(pl=>{ if(pl.schedId===editSched.id){ pl.schedId=null; pl.week=1; } });
   touch(); renderPlan(); renderSubjects(); show("plan");
@@ -16234,7 +16278,8 @@ function renderSpeciesList(){
       `<button type="button" class="sp-o" role="option" data-sp="${esc(x.n)}"`
       +` aria-selected="${x.n===cur}"><span>${spLabel(x.n,q)}</span></button>`).join("");
   });
-  if(!hits) html=`<p class="sp-none">Nothing matches “${esc(spQuery.trim())}”.<br>`
+  if(!hits) html=`<p class="sp-none">${L.lang==="cs"?`Nic neodpovídá „${esc(spQuery.trim())}“.`
+    :`Nothing matches “${esc(spQuery.trim())}”.`}<br>`
     +`Tap + to add it yourself.</p>`;
   $("#plSpList").innerHTML=html;
   $("#plSpAdd").setAttribute("aria-pressed",String(cur==="__other"));
@@ -16511,7 +16556,9 @@ function pickerPlantRowHtml(p,checked){
 $("#logMix").addEventListener("click",async()=>{
   if(!S.subjects.length){ say("Add a plant first — then you can log a feed against it."); show("plants"); return; }
   const t=mixTarget();
-  $("#logDlgTitle").textContent=`Log ${t?t.name:"mix"} · ${litres().toFixed(2)} L`;
+  $("#logDlgTitle").textContent=L.lang==="cs"
+    ? `Zápis ${t?t.name:"mix"} · ${litres().toFixed(2)} l`
+    : `Log ${t?t.name:"mix"} · ${litres().toFixed(2)} L`;
   $("#logPlants").innerHTML=subjectsIn("plants")
     .map(p=>pickerPlantRowHtml(p,!pendingPlants||pendingPlants.includes(p.id))).join("");
   $("#logNote").value="";
@@ -16649,14 +16696,15 @@ $("#actSpread").addEventListener("click",async()=>{
   const days=actionDays();
   const plants=S.subjects.filter(x=>x.module==="plants");
   if(!plants.length){ say("No plants to spread yet."); return; }
-  if(!await ask(`Spread ${plants.length} ${plural(plants.length,"plant")} evenly across ${
-    dowList(days)}?`,"Spread")) return;
+  if(!await ask(L.lang==="cs"
+    ? `Rozprostřít ${plants.length} ${pl3(plants.length,"rostlinu","rostliny","rostlin")} rovnoměrně na ${dowList(days)}?`
+    : `Spread ${plants.length} ${plural(plants.length,"plant")} evenly across ${dowList(days)}?`,"Spread")) return;
   /* deal them round-robin so each day gets an equal share, keeping plants that
      live in the same spot together — you water a room at a time, not a list */
   plants.slice().sort((a,b)=>String(a.spot||"").localeCompare(String(b.spot||"")))
     .forEach((p,i)=>{ p.anchor=days[i%days.length]; });
   touch(); renderActionDays(); renderSubjects(); renderAgenda(); renderDue();
-  say(`Spread across ${dowList(days)}.`,"Done");
+  say(L.lang==="cs"?`Rozprostřeno na ${dowList(days)}.`:`Spread across ${dowList(days)}.`,"Done");
 });
 
 /* ---------------- people & data ---------------- */
@@ -16700,7 +16748,9 @@ $("#peopleRows").addEventListener("click",async e=>{
   const b=e.target.closest("[data-px]"); if(!b||b.disabled) return;
   const u=S.users.find(x=>x.id===b.dataset.px);
   const n=S.events.filter(ev=>ev.by===u.id).length;
-  if(n&&!await ask(`Remove ${u.name||"this person"}? Their ${n} log entr${n===1?"y stays":"ies stay"} in the history.`,"Remove")) return;
+  if(n&&!await ask(L.lang==="cs"
+    ? `Odebrat ${u.name||"tuhle osobu"}? ${n} ${pl3(n,"záznam zůstane","záznamy zůstanou","záznamů zůstane")} v historii.`
+    : `Remove ${u.name||"this person"}? Their ${n} log entr${n===1?"y stays":"ies stay"} in the history.`,"Remove")) return;
   capturePeople();
   S.users=S.users.filter(x=>x.id!==u.id);
   if(L.me===u.id){ L.me=S.users[0].id; saveLocal(); }
@@ -17836,7 +17886,925 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "Cover to hold humidity and keep somewhere warm.":"Přikryj, aby se držela vlhkost, a nech v teple.",
 "Light and patience — many take far longer than you expect.":"Světlo a trpělivost — spousta jich trvá mnohem déle, než čekáš.",
 "Two weeks to three months depending on the plant.":"Dva týdny až tři měsíce podle rostliny.",
-"Letting the surface dry out during germination, or giving up too early.":"Nechat povrch během klíčení vyschnout, nebo to vzdát moc brzy."
+"Letting the surface dry out during germination, or giving up too early.":"Nechat povrch během klíčení vyschnout, nebo to vzdát moc brzy.",
+/* ---- planner: projects timeline ---- */
+"Everything here is counted from what you have actually logged. Thin sections mean thin data, not a bug.":"Všechno tady se počítá z toho, co jsi opravdu zapsal. Hubená sekce znamená málo dat, ne chybu.",
+"Quick":"Rychlý","for":"pro","Link to a project":"Připojit k projektu",
+"Now":"Teď","Jump to today":"Skočit na dnešek","Select several blocks":"Vybrat víc bloků",
+"Fill the screen":"Na celou obrazovku","Search this calendar…":"Hledat v kalendáři…",
+"Upcoming":"Nadcházející","Past":"Minulé",
+"Delete every project and start over":"Smazat všechny projekty a začít znovu",
+"↶ Undo":"↶ Zpět","↷ Redo":"↷ Znovu",
+"Undo (Ctrl+Z)":"Zpět (Ctrl+Z)","Redo (Ctrl+Shift+Z)":"Znovu (Ctrl+Shift+Z)",
+"Dismiss":"Zavřít","Earlier":"Dřív","Later":"Později",
+"I don’t work weekends":"O víkendech nepracuju",
+"Brush — drag across days":"Štětec — táhni přes dny","Custom brush hours":"Vlastní počet hodin",
+"Light — up to 60%":"Volno — do 60 %","Busy — 60–100%":"Vytíženo — 60–100 %",
+"Well over — over 125%":"Hodně přes — přes 125 %",
+"Shaded columns are weekends · dimmed bars are in the past":"Šedé sloupce jsou víkendy · bledé pruhy jsou v minulosti",
+"A project here is a":"Projekt je tady","budget of hours":"rozpočet hodin",
+"— how much work it is in total, and how many hours you usually put in per day. The planner works out the finish date and keeps it honest as your days change.":"— kolik je to celkem práce a kolik hodin do toho obvykle dáš za den. Plánovač z toho spočítá datum dokončení a drží ho poctivé, jak se ti mění dny.",
+"You enter a project as a":"Projekt zadáváš jako",
+"— how much work it is in total and how many hours you usually get done in a day. The finish date is worked out for you and shifts as you adjust individual days. In":"— kolik je to celkem práce a kolik hodin denně obvykle uděláš. Datum dokončení se dopočítá samo a posouvá se, jak upravuješ jednotlivé dny. V režimu",
+"mode, drag a bar to reschedule it, or click any day to open it in detail. In":": táhni pruh a přesuň ho jinam, nebo klikni na kterýkoli den a otevři si ho v detailu. V režimu",
+"mode, pick a value and drag across the days it should apply to — press Esc when you’re done. The bottom band adds every project together: columns are hours, and the colored strip underneath shows how full each day is. Anything can be reverted with":": vyber hodnotu a táhni přes dny, na které má platit — až budeš hotový, zmáčkni Esc. Spodní pás sčítá všechny projekty dohromady: sloupce jsou hodiny a barevný proužek pod nimi ukazuje, jak plný ten den je. Cokoli se dá vrátit tlačítkem",
+/* ---- planner: sleep and linked time ---- */
+"I don't plan around sleep — hide it":"Neplánuju kolem spánku — schovat ho",
+"Weekday":"Všední den","Weekend":"Víkend",
+"Weekend covers Friday and Saturday night — every other night uses Weekday.":"Víkend jsou noci z pátku a ze soboty — všechny ostatní noci berou všední den.",
+"Apply":"Použít",
+"Subtracted from every day before anything else. Any single night can still be dragged or edited on its own from the calendar.":"Odečte se z každého dne dřív než cokoli jiného. Jednotlivou noc pořád můžeš přetáhnout nebo upravit zvlášť v kalendáři.",
+"min/job":"min/úkon",
+"Sleep is hidden: nothing is subtracted from the day and no sleep block is drawn. Your times are kept.":"Spánek je schovaný: nic se ze dne neodečítá a žádný blok spánku se nekreslí. Tvoje časy zůstávají uložené.",
+"Applies from today onwards. Earlier nights, and any locked night, stay as they are.":"Platí ode dneška dál. Dřívější noci a každá zamčená noc zůstanou, jak jsou.",
+"Saved.":"Uloženo.",
+"Kept exactly as set here. Changing the weekday or weekend times will not move it.":"Zůstane přesně tak, jak je nastavená tady. Změna časů pro všední dny ani pro víkend s ní nepohne.",
+"Follows the weekday/weekend times unless you change this night by hand.":"Řídí se časy pro všední dny a víkend, dokud tuhle noc nezměníš ručně.",
+"Removing this day moves its hours into the following days — the project finishes later, and its total is unchanged.":"Odebrání dne přesune jeho hodiny do dalších dnů — projekt skončí později, celek zůstane stejný.",
+"This changes only this day. The repeat pattern itself stays as it is.":"Mění to jen tenhle den. Samotný opakovací vzorec zůstává, jak je.",
+"Something to do that day":"Něco, co je ten den potřeba udělat",
+"Days it happens":"Ve které dny",
+"Untick a day and the project skips it.":"Odškrtni den a projekt ho přeskočí.",
+"Usual time":"Obvyklý čas",
+"Optional. Blocks start here instead of waiting in the parking lot.":"Nepovinné. Bloky pak začínají tady, místo aby čekaly v odstavném pruhu.",
+/* ---- settings ---- */
+"← Settings":"← Nastavení","← Hours":"← Hodiny",
+"Adds interval adherence, consistency and water-volume analysis to the Stats tab":"Přidá do záložky Statistiky rozbor dodržování intervalů, pravidelnosti a objemu vody",
+"Both are per device — you can have them on and the other phone off.":"Obojí platí pro tohle zařízení — můžeš to mít zapnuté, zatímco druhý telefon vypnuté.",
+"Appearance":"Vzhled","Theme":"Motiv",
+"Obsidian · black & white":"Obsidián · černá a bílá",
+"Rose Quartz · pink & violet":"Růženín · růžová a fialová",
+"Emerald · cream & forest":"Smaragd · krémová a lesní",
+"Amethyst · violet":"Ametyst · fialová",
+"Sapphire · deep blue":"Safír · sytě modrá",
+"Citrine · champagne gold":"Citrín · šampaňské zlato",
+"Pick a gem palette. The colour scheme below (light / dark) applies on top of any theme.":"Vyber si drahokamovou paletu. Barevné schéma níž (světlé / tmavé) se pak použije na kterýkoli motiv.",
+"Colour scheme":"Barevné schéma","System (follow device setting)":"Systém (podle zařízení)",
+"Choose light or dark, or follow your device's system setting.":"Vyber světlé nebo tmavé, nebo se řiď nastavením zařízení.",
+"Daily tasks":"Denní úkoly","Day resets at":"Den začíná v",
+"Midnight (11:59 PM)":"Půlnoc (23:59)","4 AM":"4:00","6 AM":"6:00","8 AM":"8:00","Noon":"Poledne",
+"Changes when your daily task counter resets. If you often do tasks after midnight, try 4 AM instead of midnight.":"Určuje, kdy se resetuje počítadlo denních úkolů. Když často děláš úkoly po půlnoci, zkus 4:00 místo půlnoci.",
+"Per device — every device can have a different reset time.":"Pro každé zařízení zvlášť — každé může mít jiný čas resetu.",
+"Export writes everything — plants, shelf, formulas, schedules, the whole log — to one file. Import replaces what is on this device with it.":"Export zapíše všechno — rostliny, polici, receptury, plány, celý záznamník — do jednoho souboru. Import tím nahradí to, co je v tomhle zařízení.",
+"Edit the plant-care guide":"Upravit průvodce péčí",
+"Rewrite the Do/Don't list and the Q&A sections shown in the Academy — your own words, in place of the built-in guidance.":"Přepiš seznam Dělej/Nedělej a sekce s otázkami v Akademii — vlastními slovy místo vestavěných rad.",
+"Edit the guide →":"Upravit průvodce →",
+"Sleep and linked-time settings live on the Planner's own Day card, since they change how today reads at a glance — open Daily Planner to adjust them.":"Nastavení spánku a propojeného času najdeš na kartě Den v Plánovači, protože mění, jak se dnešek čte na první pohled — otevři si Denní plánovač.",
+/* ---- teachbench: teacher ---- */
+"Students":"Studenti","Tasks":"Úkoly","Words":"Slovíčka","Search":"Hledat",
+"This week":"Tento týden","Student's name":"Jméno studenta","level":"úroveň",
+"No students yet.":"Zatím žádní studenti.","By student":"Po studentech",
+"Task title":"Název úkolu","type":"typ","skill":"dovednost",
+"Topic (optional)":"Téma (nepovinné)","Content — one word or phrase per line":"Obsah — jedno slovo nebo fráze na řádek",
+"Web address":"Webová adresa","Note (optional)":"Poznámka (nepovinná)",
+"Search title / topic":"Hledat název / téma","Assigned tasks":"Zadané úkoly","Add tasks":"Přidat úkoly",
+"Bank":"Zásobník","Review":"Opakování","Word or phrase":"Slovo nebo fráze",
+"Definition / translation (optional)":"Definice / překlad (nepovinné)",
+"Example sentence (optional)":"Příkladová věta (nepovinná)",
+"list":"seznam","Add word":"Přidat slovo","New list name":"Název nového seznamu","Add list":"Přidat seznam",
+"Vocabulary":"Slovní zásoba","Add from bank":"Přidat ze zásobníku","Word":"Slovo",
+"Definition (optional)":"Definice (nepovinná)","+ private word":"+ vlastní slovo",
+"Words marked \"Learning\" that have not been looked at for a week or more. Setting a status counts as looking at it.":"Slova označená „Učí se“, na která ses týden a víc nepodíval. Nastavení stavu se počítá jako podívání.",
+"Search students, words, lessons, tasks…":"Hledat studenty, slova, lekce, úkoly…",
+"← All students":"← Všichni studenti","Edit details":"Upravit údaje","At a glance":"Ve zkratce",
+"General observations — separate from vocabulary and lessons.":"Obecné postřehy — odděleně od slovíček a lekcí.",
+"e.g. struggles with past tense":"např. dělá mu potíže minulý čas",
+"Save note":"Uložit poznámku","Saved":"Uloženo","Lessons":"Lekce","New lesson":"Nová lekce",
+"New word…":"Nové slovo…","Meaning (optional)":"Význam (nepovinný)",
+"Lesson":"Lekce","Date":"Datum","Time":"Čas","What's planned":"Co je v plánu",
+"e.g. Review past simple; kitchen vocabulary":"např. zopakovat minulý čas prostý; slovíčka z kuchyně",
+"Notes and pasted material":"Poznámky a vložený materiál",
+"Paste a text, exercise or anything else.":"Vlož text, cvičení nebo cokoli jiného.",
+"Document link (optional)":"Odkaz na dokument (nepovinný)","Delete…":"Smazat…",
+"Edit task":"Upravit úkol","Title":"Název","Level":"Úroveň","Topic":"Téma","Content":"Obsah",
+"Edit word":"Upravit slovo","Term":"Výraz","Definition":"Definice","Example":"Příklad","List":"Seznam",
+"Edit list":"Upravit seznam","List name":"Název seznamu","Edit student":"Upravit studenta",
+"Regular days":"Pravidelné dny","Mon":"Po","Tue":"Út","Wed":"St","Thu":"Čt","Fri":"Pá",
+"Times aren't editable here yet — just which days.":"Časy se tady zatím upravit nedají — jen dny.",
+"New date":"Nové datum","New time (optional)":"Nový čas (nepovinný)",
+"Reschedule":"Přeložit","Back":"Zpět","Move it":"Přesunout",
+"Grammar":"Gramatika","Pronunciation":"Výslovnost",
+"Front — the word, or the sentence with ___":"Přední strana — slovo nebo věta s ___",
+"Card front":"Přední strana kartičky","Back — meaning or the missing word":"Zadní strana — význam nebo chybějící slovo",
+"Card back":"Zadní strana kartičky","Explanation (optional)":"Vysvětlení (nepovinné)","Explanation":"Vysvětlení",
+"Add card":"Přidat kartičku","Add a card":"Přidat kartičku","Send homework":"Poslat úkol",
+"Write the homework…":"Napiš zadání…","Homework text":"Text úkolu",
+"End of month":"Konec měsíce",
+"A plain-text summary of this student's month — what they have mastered, what keeps slipping, what you added — ready to paste into an LLM to help draft next month's lessons.":"Textové shrnutí studentova měsíce — co zvládl, co mu pořád utíká, co jsi přidal — připravené ke vložení do jazykového modelu, aby pomohl navrhnout lekce na další měsíc.",
+"Copy planning notes":"Zkopírovat poznámky k plánování","Preview":"Náhled","Planning notes":"Poznámky k plánování",
+"Access link":"Přístupový odkaz","Student access link":"Přístupový odkaz studenta",
+"Send this once — it opens their own app on their own device.":"Pošli ho jednou — otevře mu jeho vlastní aplikaci na jeho zařízení.",
+"← Students":"← Studenti","Student name":"Jméno studenta","New student name":"Jméno nového studenta",
+"Teacher sign-in":"Přihlášení učitele","Email":"E-mail","Password":"Heslo","Sign in":"Přihlásit se",
+"A student never sees this screen — they open their own link instead.":"Student tuhle obrazovku nikdy neuvidí — otevírá si svůj vlastní odkaz.",
+"Sign out":"Odhlásit se","All students":"Všichni studenti","Your students":"Tvoji studenti",
+"Student Bench":"Studentský ponk",
+/* teachbench: option lists */
+"Monday":"Pondělí","Tuesday":"Úterý","Wednesday":"Středa","Thursday":"Čtvrtek","Friday":"Pátek",
+"Saturday":"Sobota","Sunday":"Neděle",
+"Vocab":"Slovíčka","Reading":"Čtení","Listening":"Poslech","Speaking":"Mluvení",
+"Not started":"Nezačato","Learning":"Učí se","Learned":"Naučeno",
+"A1 Beginner":"A1 Začátečník","A1+ Beginner+":"A1+ Začátečník+",
+"A2 Elementary":"A2 Mírně pokročilý","A2+ Elementary+":"A2+ Mírně pokročilý+",
+"B1 Intermediate":"B1 Středně pokročilý","B1+ Intermediate+":"B1+ Středně pokročilý+",
+"B2 Upper-intermediate":"B2 Vyšší střední","B2+ Upper-intermediate+":"B2+ Vyšší střední+",
+"C1 Advanced":"C1 Pokročilý","C1+ Advanced+":"C1+ Pokročilý+","C2 Proficient":"C2 Zkušený",
+"Plain text":"Prostý text","Document":"Dokument","Web page":"Webová stránka",
+/* teachbench: states and messages */
+"No level yet":"Zatím bez úrovně","No level set":"Úroveň není nastavená","no regular day set":"bez pravidelného dne",
+"Mark inactive":"Označit jako neaktivního","Mark active":"Označit jako aktivního",
+"Name can't be empty.":"Jméno nemůže být prázdné.","· No time set":"· Bez času",
+"Restore this lesson":"Obnovit tuhle lekci","Cancel this lesson":"Zrušit tuhle lekci",
+"Please pick a new date.":"Vyber prosím nové datum.","Please pick a date.":"Vyber prosím datum.",
+"Any level":"Jakákoli úroveň","Any skill":"Jakákoli dovednost","Any type":"Jakýkoli typ",
+"Type":"Typ","Skill":"Dovednost",
+"Please add a title.":"Přidej prosím název.","Please add some content.":"Přidej prosím nějaký obsah.",
+"Unsafe or missing link":"Nebezpečný nebo chybějící odkaz","No content yet.":"Zatím žádný obsah.",
+"Nothing matches those filters.":"Nic neodpovídá těmhle filtrům.","No tasks yet — add one above.":"Zatím žádné úkoly — přidej jeden nahoře.",
+"Not assigned to anyone yet.":"Zatím nikomu nezadáno.","Really delete?":"Opravdu smazat?",
+"No tasks assigned yet.":"Zatím žádné zadané úkoly.","Add a student first.":"Nejdřív přidej studenta.",
+"No tasks in the library yet.":"V knihovně zatím žádné úkoly nejsou.","No list":"Bez seznamu",
+"Not held by anyone yet.":"Zatím ho nikdo nemá.","Rename":"Přejmenovat","Unsorted":"Nezařazené",
+"No words yet — add one above.":"Zatím žádná slova — přidej jedno nahoře.",
+"No words in this list yet.":"V tomhle seznamu zatím žádná slova nejsou.",
+"Really delete? Its words become unsorted.":"Opravdu smazat? Jeho slova se stanou nezařazenými.",
+"No words yet.":"Zatím žádná slova.","No words in the bank yet.":"V zásobníku zatím žádná slova nejsou.",
+"Nothing is overdue. Words appear here once they have been left alone for 7 days.":"Nic není po termínu. Slova se sem dostanou, až na ně nesáhneš 7 dní.",
+"words learned":"naučených slov","need review":"k zopakování","No plan":"Bez plánu","No lessons yet.":"Zatím žádné lekce.",
+"Really delete this lesson?":"Opravdu smazat tuhle lekci?","Type at least two letters.":"Napiš aspoň dvě písmena.",
+"Private ·":"Soukromé ·","In the bank, unassigned":"V zásobníku, nikomu nezadané",
+"That file is not valid JSON, so it cannot be read as a backup.":"Ten soubor není platný JSON, takže se nedá přečíst jako záloha.",
+"That file does not contain a Teachbench backup.":"Ten soubor neobsahuje zálohu Teachbench.",
+"That file does not look like a Teachbench backup.":"Ten soubor nevypadá jako záloha Teachbench.",
+"That backup file is damaged — it is missing its data.":"Ten soubor zálohy je poškozený — chybí mu data.",
+/* ---- teachbench: the student's own app ---- */
+"Connecting…":"Připojuji…","Welcome":"Vítej","Enter the code your teacher gave you.":"Zadej kód, který ti dal učitel.",
+"Access code":"Přístupový kód","Hello":"Ahoj","Homework":"Domácí úkol",
+"nothing to review right now":"teď není co opakovat","Start reviewing":"Začít opakovat",
+"points":"bodů","best":"nejlepší","This month":"Tento měsíc","new words":"nových slov",
+"mastered":"zvládnuto","recall":"úspěšnost","Next review":"Další opakování","Not you?":"Nejsi to ty?",
+"Write your answer…":"Napiš odpověď…","Your answer":"Tvoje odpověď","your answer":"tvoje odpověď",
+"📷 Photo":"📷 Fotka","Send":"Odeslat","🔊 Hear it":"🔊 Přehrát","Show answer":"Ukázat odpověď",
+"Again":"Znovu","Hard":"Těžké","Good":"Dobré","All done for now.":"Pro teď hotovo.","Card":"Kartička",
+"A fresh start — your first words are on their way.":"Čerstvý start — první slovíčka jsou na cestě.",
+"You are remembering nearly everything you meet. Keep going.":"Pamatuješ si skoro všechno, na co narazíš. Jen tak dál.",
+"A few words are being stubborn — that is normal, and they are the ones worth the time.":"Pár slov se vzpírá — to je normální a právě ta stojí za ten čas.",
+"Small and often beats long and rare. You are doing it right.":"Krátce a často je lepší než dlouho a málokdy. Děláš to správně.",
+"Can't connect. Check your internet and reload.":"Nedaří se připojit. Zkontroluj internet a načti stránku znovu.",
+"can't reach your words — check your internet":"nedaří se načíst tvoje slova — zkontroluj internet",
+"no words yet — your teacher will add some":"zatím žádná slova — učitel ti nějaká přidá",
+"word to review":"slovo k opakování","words to review":"slov k opakování","all caught up":"všechno hotovo",
+"Today is done. Come back when the next words are ready.":"Dnešek je hotový. Vrať se, až budou další slova připravená.",
+"Review what's due to keep the streak.":"Zopakuj, co je na řadě, ať ti série vydrží.",
+"Reviewing on time is what builds the streak.":"Sérii buduje opakování včas.",
+"in a moment":"za chvíli","in about an hour":"asi za hodinu",
+"Can't reach your words — check your internet.":"Nedaří se načíst tvoje slova — zkontroluj internet.",
+"Couldn't load your homework. Check your internet.":"Nepovedlo se načíst domácí úkol. Zkontroluj internet.",
+"No homework yet.":"Zatím žádný domácí úkol.","You":"Ty","Teacher":"Učitel",
+"No words yet — your teacher will add some.":"Zatím žádná slova — učitel ti nějaká přidá.",
+"Dots show how many words come back for review that day.":"Tečky ukazují, kolik slov se ten den vrátí k opakování.",
+"Nothing scheduled this month.":"Tenhle měsíc nic naplánovaného.",
+"No students yet — add one above.":"Zatím žádní studenti — přidej jednoho nahoře.",
+"no words yet":"zatím žádná slova","No cards yet — add one below.":"Zatím žádné kartičky — přidej jednu níž.",
+"No code on this device — press Copy to issue a new one":"V tomhle zařízení není kód — tlačítkem Kopírovat vytvoříš nový",
+"No cards yet.":"Zatím žádné kartičky.",
+"That code didn't work. Check it and try again.":"Ten kód nefunguje. Zkontroluj ho a zkus to znovu.",
+"Couldn't connect. Check your internet and try again.":"Nepovedlo se připojit. Zkontroluj internet a zkus to znovu.",
+"Sending photo…":"Odesílám fotku…","Sending…":"Odesílám…",
+"That photo is too large. Try a smaller one.":"Ta fotka je moc velká. Zkus menší.",
+"Couldn't send. Your answer is still here — try again.":"Nepovedlo se odeslat. Tvoje odpověď tu pořád je — zkus to znovu.",
+"This will sign this device out of the student app. Continue?":"Tímhle odhlásíš tohle zařízení ze studentské aplikace. Pokračovat?",
+"That account isn't set up as a teacher.":"Tenhle účet není nastavený jako učitelský.",
+"Sign-in failed. Check the email and password.":"Přihlášení se nepovedlo. Zkontroluj e-mail a heslo.",
+"Sentence with ___ for the gap":"Věta s ___ místo vynechaného slova",
+"Word or phrase to say":"Slovo nebo fráze k vyslovení","The word or phrase":"Slovo nebo fráze",
+"The missing word":"Chybějící slovo","Meaning or translation":"Význam nebo překlad",
+"That photo is too large.":"Ta fotka je moc velká.","Couldn't send — try again.":"Nepovedlo se odeslat — zkus to znovu.",
+/* ---- notes ---- */
+"+ New note":"+ Nová poznámka","Search notes":"Hledat v poznámkách","Search notes…":"Hledat v poznámkách…",
+"← Notes":"← Poznámky","Note title":"Název poznámky","Untitled":"Bez názvu",
+"+ Add block":"+ Přidat blok","Delete note":"Smazat poznámku",
+"Notes save as you type. \"# \" makes a heading, \"- \" a bullet, \"[] \" a to-do.":"Poznámky se ukládají, jak píšeš. „# “ udělá nadpis, „- “ odrážku, „[] “ úkol.",
+"Heading 1":"Nadpis 1","Heading 2":"Nadpis 2","Heading 3":"Nadpis 3","Heading":"Nadpis",
+"Bulleted list":"Odrážkový seznam","Numbered list":"Číslovaný seznam","To-do":"Úkol",
+"Quote":"Citace","Code":"Kód","Divider":"Oddělovač","Notebook":"Zápisník",
+"Pin this note":"Připnout poznámku","Change block type":"Změnit typ bloku","Delete block":"Smazat blok",
+"No notes yet — start one and it saves as you type.":"Zatím žádné poznámky — začni psát a uloží se samy.",
+"Type here, or \"- \" for a list":"Piš sem, nebo „- “ pro seznam","Edited":"Upraveno",
+/* ---- sync ---- */
+"Sync":"Synchronizace","Signed in":"Přihlášen","Syncing as":"Synchronizuje se jako",
+"Sign out of sync":"Odhlásit ze synchronizace","your account":"tvůj účet",
+"Sync across devices":"Synchronizace mezi zařízeními","Signing in…":"Přihlašuji…",
+"Wrong email or password.":"Špatný e-mail nebo heslo.","No account with that email.":"S tímhle e-mailem není žádný účet.",
+"No connection. Try again.":"Bez připojení. Zkus to znovu.","Could not sign in.":"Nepovedlo se přihlásit.",
+"syncing…":"synchronizuji…","sync: bad data":"synchronizace: špatná data","sync: not allowed":"synchronizace: nepovoleno",
+"Sign this device out of sync? Your data stays on this device.":"Odhlásit tohle zařízení ze synchronizace? Tvoje data v něm zůstanou.",
+"Build info":"Info o buildu",
+"Teal":"Modrozelená","Purple":"Fialová","Rust":"Rezavá","Green":"Zelená",
+"Ochre":"Okrová","Blue":"Modrá","Wine":"Vínová","Olive":"Olivová",
+/* ---- chrome and shared labels ---- */
+"Batch care":"Hromadná péče","Smart Search":"Chytré hledání","Product":"Produkt",
+"Select a brand":"Vyber značku","← Back":"← Zpět","(ml/L)":"(ml/l)","Plants":"Rostliny","Home":"Domů",
+"Heads up":"Pozor","Subtasks":"Podúkoly","Add a subtask":"Přidat podúkol","Add event":"Přidat událost",
+"This day":"Tenhle den","Whole series…":"Celá série…","Remove this day":"Odebrat tenhle den",
+"Save this day":"Uložit tenhle den","Lock this night":"Zamknout tuhle noc","Reset this night":"Vrátit tuhle noc",
+"Select all":"Vybrat vše","Deselect all":"Zrušit výběr","What did you do":"Co jsi dělal",
+"e.g. Workshop renovation":"např. Rekonstrukce dílny","Big Monstera":"Velká monstera",
+"Not in the list? Add it yourself":"Není v seznamu? Přidej si ji sám",
+"Add a plant that is not in the list":"Přidat rostlinu, která není v seznamu",
+"Remove":"Odebrat","Remove this photo":"Odebrat tuhle fotku",
+/* ---- saving and sharing state ---- */
+"storage full":"úložiště plné","view only":"jen ke čtení","saving…":"ukládám…","reloading…":"načítám znovu…",
+"not saved":"neuloženo","not saved — could not read your data":"neuloženo — nepovedlo se přečíst tvoje data",
+"too big to save":"moc velké na uložení",
+"This copy is read-only — changes stay on this device only. Export a backup if you want to keep them.":"Tahle kopie je jen ke čtení — změny zůstanou jen v tomhle zařízení. Když si je chceš nechat, udělej si zálohu exportem.",
+"There's too much stored to save — delete some photos and it'll go through.":"Je toho uloženo moc na to, aby se to dalo uložit — smaž pár fotek a projde to.",
+"Shared: this page is the record. Use the share menu to give others edit access and everyone writes to the same log.":"Sdíleno: tahle stránka je ten záznam. Přes nabídku sdílení dej ostatním právo upravovat a všichni pak píšou do stejného záznamníku.",
+"Not shared right now — changes stay on this device. Copy the text below into another device to move data across.":"Právě teď se nic nesdílí — změny zůstanou v tomhle zařízení. Zkopíruj text níž do jiného zařízení, aby se data přenesla.",
+/* ---- mixing order ---- */
+"Goes into plain water first, on its own. Silicic acid sits around pH 11 — if calcium or phosphate is already in the tank it drops both out as a solid. Stir until the water is clear again before anything else.":"Jde do čisté vody první a sám. Kyselina křemičitá má pH kolem 11 — když už je v nádobě vápník nebo fosfát, oba vysráží. Než přijde cokoli dalšího, míchej, dokud voda není zase čirá.",
+"Second, while the water is still otherwise empty. Calcium is the ion most likely to bind with something else and fall out, so it wants dilution around it.":"Druhý, dokud je voda jinak ještě prázdná. Vápník je iont, který se nejsnáz naváže na něco jiného a vysráží se, takže kolem sebe potřebuje hodně vody.",
+"One bottle at a time, stirring between each. Never pour two concentrates together — dilute is safe, neat is not.":"Jedna lahev po druhé a mezi nimi zamíchat. Nikdy nelij dva koncentráty k sobě — zředěné je bezpečné, neředěné ne.",
+"After the bases are fully dissolved.":"Až se základy úplně rozpustí.",
+"Late and into dilute solution. Humic acid meeting concentrated calcium makes calcium humate — brown flakes, and both are gone.":"Pozdě a do zředěného roztoku. Huminová kyselina, která potká koncentrovaný vápník, dá humát vápenatý — hnědé vločky, a obojí je pryč.",
+"Last, and only once the pH has settled. Swings either side kill them, so never add them next to a pH adjuster.":"Poslední, a až když se pH ustálí. Výkyvy na obě strany je zabíjejí, takže je nikdy nedávej hned vedle úpravy pH.",
+"Very last. Measure, adjust a little, stir, measure again — the reading drifts for a minute or two after each addition.":"Úplně poslední. Změř, trochu uprav, zamíchej, změř znovu — po každém přidání hodnota ještě minutu dvě putuje.",
+/* ---- mix screen ---- */
+"Nothing on the shelf":"Nic v polici","(rounded to the nearest half)":"(zaokrouhleno na půl litru)",
+"Every plant has a feeding interval. The log knows when it was last fed. Last fed plus the interval is the next due date, moved to the nearest action day — if that's today or already past, it's on the list.":"Každá rostlina má interval hnojení. Záznamy vědí, kdy byla naposled pohnojená. Poslední hnojení plus interval je další termín, posunutý na nejbližší akční den — a pokud je dnes nebo už minul, je na seznamu.",
+"Pot diameter gives the volume — a tapered pot is close to 0.00055·D³ litres, so 19 cm holds about 3.8 L. A fifth of that is roughly what a standard peat mix keeps when you water to slight runoff. Then the substrate adjusts it: bark and grit let most of it straight through, coir and moss hold more. A pot with no drainage hole gets half, because there's no runoff to carry the excess away. Add up, round to the nearest half litre.":"Průměr květináče dá objem — kónický květináč vyjde zhruba na 0,00055·D³ litru, takže 19 cm drží asi 3,8 l. Pětina z toho je zhruba to, co si běžný rašelinový substrát nechá, když zaléváš do mírného odtoku. Pak to upraví substrát: kůra a drť pustí většinu rovnou skrz, kokos a mech udrží víc. Květináč bez odtokové díry dostane polovinu, protože přebytek nemá kudy odtéct. Sečti a zaokrouhli na půl litru.",
+"No pot size means it assumes 1 L and says so. The substrate factors are capacities for the medium, not measurements of your plants — override the slider whenever it's wrong, it won't argue. Pot material isn't in the sum: terracotta breathes and so dries":"Když velikost květináče chybí, počítá s 1 l a řekne to. Koeficienty substrátů jsou kapacity daného média, ne měření tvých rostlin — kdykoli je to špatně, přejed posuvník ručně, aplikace se hádat nebude. Materiál květináče v součtu není: terakota dýchá, a tak vysychá",
+", but it doesn't change how much a single watering leaves behind. And it only ever suggests":", ale nemění to, kolik po sobě jedna zálivka nechá. A navrhuje vždycky jen",
+"Due now":"Teď na řadě","Set it up":"Nastavit","No formulas yet.":"Zatím žádné receptury.",
+"A formula is a protocol you can hand to someone else — what water to start with, what goes in, in what order. Hit":"Receptura je postup, který můžeš dát někomu do ruky — jakou vodou začít, co do ní jde a v jakém pořadí. Zmáčkni",
+"above, or switch to":"nahoře, nebo přepni na","to mix a single bottle.":"a namíchej jedinou lahev.",
+"Log this watering →":"Zapsat tuhle zálivku →","Log this spray →":"Zapsat tenhle postřik →",
+"Room temperature. If you pH your water, do it at the end, not now.":"Pokojová teplota. Jestli si vodu upravuješ na pH, dělej to až na konci, ne teď.",
+"Finish":"Dokončit","Stir, then check pH":"Zamíchej a změř pH",
+"Soil and organic media like 6.0–6.5. Give it a minute to settle before you trust the reading.":"Zemina a organická média mají rády 6,0–6,5. Dej tomu minutu, ať se to ustálí, než hodnotě uvěříš.",
+"Stir it through":"Pořádně zamíchej","Give it a good stir before you pour.":"Před litím to pořádně zamíchej.",
+"has no rate set yet. Open it and add the ml/L from the label.":"zatím nemá nastavenou dávku. Otevři ho a doplň ml/l z etikety.",
+"EC est.":"odhad EC","no dose set":"dávka není nastavená",
+"Above label rate.":"Nad dávkou z etikety.",
+"Organic feeds are more forgiving than mineral ones, but salt still accumulates. Water plain every third feed.":"Organická hnojiva odpouštějí víc než minerální, ale sůl se stejně hromadí. Každé třetí hnojení zalij jen vodou.",
+"Foliar goes on weak.":"Na list se dává slabé.",
+"A quarter to a half of what you'd feed the roots is plenty — leaves burn far more easily than roots. Spray early or late, never in direct sun, and get the undersides where the stomata are.":"Čtvrtina až polovina toho, co bys dal kořenům, bohatě stačí — listy se spálí mnohem snáz než kořeny. Stříkej brzy ráno nebo večer, nikdy na přímém slunci, a dostaň se na spodní stranu, kde jsou průduchy.",
+"EC is estimated from dissolved salt, and the biological products are discounted because organic nutrients barely conduct. Treat it as a sanity check against your meter, not a replacement for it.":"EC se odhaduje z rozpuštěné soli a biologické produkty se počítají níž, protože organické živiny skoro nevedou proud. Ber to jako hrubou kontrolu proti svému měřáku, ne jako jeho náhradu.",
+/* ---- cuttings, garden, one plant ---- */
+"Add it":"Přidat ji","Finished":"Dokončeno","tap to change":"ťukni a změň","How to do it":"Jak na to",
+"Usually goes wrong because:":"Nejčastěji se to zkazí kvůli:","Delete this batch":"Smazat tuhle sérii",
+"Delete this batch? The record goes with it.":"Smazat tuhle sérii? Záznam zmizí s ní.",
+"Nothing needs you today.":"Dnes tě nic nepotřebuje.",
+"Propagate":"Množit","Growth":"Růst","Actions":"Akce","Recent":"Poslední","Delete this plant":"Smazat tuhle rostlinu",
+"Photo storage is getting full — delete a few older shots to make room.":"Úložiště fotek se plní — smaž pár starších snímků, ať je místo.",
+"Couldn't use that image:":"Ten obrázek se nepovedlo použít:","Delete this photo?":"Smazat tuhle fotku?",
+"that file could not be read as an image":"ten soubor se nepovedlo přečíst jako obrázek",
+"Fungicide spray":"Postřik fungicidem","Insecticide spray":"Postřik insekticidem",
+"Neem oil treatment":"Ošetření neemovým olejem","Treat for spider mites":"Zásah proti sviluškám",
+"Repot":"Přesadit","Prune / trim":"Řez / zastřihnout","Take cuttings":"Odebrat řízky",
+"Flush the pot through":"Propláchnout květináč","Wipe the leaves":"Otřít listy","Top dress":"Doplnit substrát navrch",
+"Stake or tie up":"Podepřít nebo přivázat","Check the roots":"Zkontrolovat kořeny",
+"Move to more light":"Přesunout na víc světla","Rotate the pot":"Otočit květináč",
+/* ---- academy and log ---- */
+"The guide is empty.":"Průvodce je prázdný.","No plant here matches that.":"Žádná rostlina tady tomu neodpovídá.",
+"Section name":"Název sekce","Remove section":"Odebrat sekci","Delete this entry":"Smazat tenhle záznam",
+"Throw away your edits and go back to the guide the app shipped with?":"Zahodit tvoje úpravy a vrátit se k průvodci, se kterým aplikace přišla?",
+/* ---- statistics ---- */
+"Drift is the gap you actually left against the interval the plant is set to — positive means later than planned. Variability is how erratic those gaps are; under 30% is steady.":"Odchylka je mezera, kterou jsi opravdu nechal, proti intervalu nastavenému u rostliny — kladná znamená později, než bylo v plánu. Rozkolísanost říká, jak nepravidelné ty mezery jsou; pod 30 % je to stálé.",
+"Water figure is the sum for every plant whose watering is due or late, from its pot size and substrate.":"Údaj o vodě je součet za všechny rostliny, které mají zálivku na řadě nebo po termínu, spočítaný z velikosti květináče a substrátu.",
+"Nothing logged yet — water or feed something and this fills in.":"Zatím žádné záznamy — něco zalij nebo pohnoj a tohle se zaplní.",
+"A full round is every plant watered once — useful for knowing what to mix.":"Jedno celé kolo je každá rostlina jednou zalitá — hodí se, když chceš vědět, kolik namíchat.",
+"No batch has finished yet, so there's no success rate to show.":"Zatím neskončila žádná série, takže není co spočítat.",
+/* ---- formula and schedule editors ---- */
+"Show the why":"Ukázat vysvětlení",
+"Nothing on the shelf yet. Add your bottles first and they'll appear here.":"V polici zatím nic není. Nejdřív přidej svoje lahve a objeví se tady.",
+"Edit formula":"Upravit recepturu","New formula":"Nová receptura",
+"Give the formula a name first.":"Nejdřív recepturu pojmenuj.",
+"Edit schedule":"Upravit plán","New schedule":"Nový plán","No schedules yet.":"Zatím žádné plány.",
+"Build at least one formula first — a schedule is formulas in order.":"Nejdřív postav aspoň jednu recepturu — plán jsou receptury v pořadí.",
+"Give the schedule a name first.":"Nejdřív plán pojmenuj.",
+"What this week is (optional)":"Co je tenhle týden (nepovinné)","Remove week":"Odebrat týden",
+/* ---- plan, plants, batch care ---- */
+"no formula set for this week":"pro tenhle týden není nastavená receptura",
+"not on a schedule — pick a formula when you mix":"není v plánu — recepturu vyber až při míchání",
+"never done":"nikdy","Nothing in particular":"Nic konkrétního",
+"Tasks overdue":"Úkoly po termínu","already done":"už hotovo",
+"Give it a name first.":"Nejdřív ji pojmenuj.","Edit plant":"Upravit rostlinu","New plant":"Nová rostlina",
+"None":"Žádný",
+"Add a plant first — then you can log a feed against it.":"Nejdřív přidej rostlinu — pak k ní můžeš zapsat hnojení.",
+"Add a plant first — then you can log care against it.":"Nejdřív přidej rostlinu — pak k ní můžeš zapsat péči.",
+"Pick at least one plant first.":"Nejdřív vyber aspoň jednu rostlinu.",
+"Pick at least one of Watered, Fed or Sprayed.":"Vyber aspoň jedno z Zalito, Pohnojeno nebo Postříkáno.",
+"No plants to spread yet.":"Zatím není co rozprostřít.","Spread":"Rozprostřít",
+/* ---- people and data ---- */
+"Copied":"Zkopírováno","Press ⌘C":"Zmáčkni ⌘C",
+"That text isn't readable. Paste the whole block, including the outer braces.":"Ten text se nedá přečíst. Vlož celý blok včetně krajních složených závorek.",
+"That block is missing its product list. Paste the whole thing.":"Tomu bloku chybí seznam produktů. Vlož ho celý.",
+"Replace everything here with the pasted data?":"Nahradit všechno tady vloženými daty?",
+/* ---- odds and ends ---- */
+"Click to copy":"Klikni pro zkopírování","Stop copying":"Přestat kopírovat",
+"Click a day to drop a copy — Esc when done":"Klikni na den a upusť tam kopii — Esc, až budeš hotový",
+"Light mode":"Světlý režim","Dark mode":"Tmavý režim",
+"Sun":"Ne","Sat":"So",
+"Potted on. Add it to your plants so it gets watered and fed like the rest?":"Zasazený. Přidat ho mezi rostliny, ať se zalévá a hnojí jako ostatní?",
+"water":"zálivka","feed":"hnojení","spray":"postřik","care":"péče","log":"záznam",
+"Sign in with the same account on your phone and your laptop and they keep the same data. Photos are not synced.":"Přihlas se stejným účtem na telefonu i na počítači a budou mít stejná data. Fotky se nesynchronizují.",
+"sooner":"dřív",
+/* ---- plant names with a Czech common name ---- */
+"Monstera deliciosa":"Monstera atraktivní","Philodendron (heartleaf)":"Filodendron srdčitý",
+"ZZ plant":"Zamiokulkas","Snake plant":"Tchýnin jazyk","Peace lily":"Toulitka",
+"Peace lily 'Sensation'":"Toulitka 'Sensation'","Alocasia":"Alokázie","Anthurium":"Anturium",
+"Dieffenbachia":"Difenbachie","Calathea / Goeppertia":"Kalatea / Goeppertia","Peperomia":"Peperomie",
+"Hoya":"Hoja (voskovka)","Caladium":"Kaládium","Begonia rex":"Begonie rex",
+"Hypoestes (polka dot)":"Hypoestes (tečkovaná)","Coleus":"Koleus (pochvatec)",
+"Oxalis triangularis":"Šťavel trojúhelníkový","Ctenanthe":"Ktenanta",
+"Dracaena sanderiana (lucky bamboo)":"Dracéna Sanderova (šťastný bambus)",
+"Bamboo (Fargesia)":"Bambus (Fargesia)","Bamboo (Phyllostachys)":"Bambus (Phyllostachys)",
+"Ficus ginseng (microcarpa)":"Fíkus ženšenový (microcarpa)","Norfolk Island pine":"Blahočet ztepilý",
+"Fatsia japonica":"Fatsie japonská","Ming aralia":"Aralie Ming",
+"Dracaena reflexa (Song of India)":"Dracéna ohnutá (Song of India)","Pandanus (screw pine)":"Pandán",
+"Strelitzia nicolai":"Strelície Nicolaiova","Avocado":"Avokádo","Areca palm":"Palma areka",
+"Rhapis (lady palm)":"Rapis (dámská palma)","Majesty palm":"Palma Ravenea",
+"Sago palm (Cycas)":"Cykas (ságová palma)","Ponytail palm":"Nolina (sloní noha)",
+"Staghorn fern":"Parožnatka","Blue star fern":"Kapradina Phlebodium","Rabbit's foot fern":"Davallie (zaječí tlapka)",
+"Button fern":"Kapradinka Pellaea","Crocodile fern":"Krokodýlí kapradina","Kimberly Queen fern":"Ledviník 'Kimberly Queen'",
+"Echeveria":"Echeverie","Haworthia":"Havorcie","Zebra haworthia":"Havorcie zebrovaná","Gasteria":"Gasterie",
+"Lithops":"Lithopsy (živé kameny)","Adenium (desert rose)":"Adénium (pouštní růže)",
+"Sempervivum (houseleek)":"Netřesk","Epiphyllum (orchid cactus)":"Epifylum (orchidejový kaktus)",
+"String of dolphins":"Delfínek (Senecio)","String of turtles":"Peperomie želvovitá",
+"Opuntia (prickly pear)":"Opuncie","Mammillaria":"Mamilárie",
+"Dill":"Kopr","Bay laurel":"Vavřín","Lavender":"Levandule","Lemon balm":"Meduňka","Tarragon":"Estragon",
+"Ginger":"Zázvor","Turmeric":"Kurkuma","Rocket (arugula)":"Rukola","Spring onion":"Jarní cibulka",
+"Pea shoots":"Hrachové výhonky","Clivia":"Klívie","Lipstick plant":"Rtěnkovník (Aeschynanthus)",
+"Goldfish plant":"Zlatá rybka (Nematanthus)","Dendrobium orchid":"Orchidej dendrobium",
+"Oncidium orchid":"Orchidej oncidium","Cattleya orchid":"Orchidej kattleya",
+"Crown of thorns":"Pryšec trnitý (Kristova koruna)","Bougainvillea":"Bugenvilea",
+"Venus flytrap":"Mucholapka podivná","Sundew (Drosera)":"Rosnatka","Pitcher plant (Sarracenia)":"Špirlice",
+"Nepenthes (tropical pitcher)":"Láčkovka","Butterwort (Pinguicula)":"Tučnice",
+/* ---- care tips for the newer philodendrons ---- */
+"The pink only holds in bright light. Cut back to a variegated node if it reverts.":"Růžová se udrží jen na světle. Když přejde do zelena, seřízni ho zpátky k panašovanému nodu.",
+"The white areas scorch in strong sun and revert in shade. Bright, indirect light keeps the pattern stable.":"Bílé plochy se na ostrém slunci spálí a ve stínu zezelenají. Vzor drží při jasném nepřímém světle.",
+"The white sections need bright, indirect light to stay white, and scorch in direct sun.":"Bílé části potřebují jasné nepřímé světlo, aby zůstaly bílé, a na přímém slunci se spálí.",
+"Variegation is unstable. Cut back any stem that reverts to plain green.":"Panašování je nestálé. Každý výhon, který zezelená, seřízni.",
+"A slow trailing form. Let the top third of the soil dry before watering again.":"Pomalá převislá forma. Než zaliješ znovu, nech vyschnout horní třetinu substrátu.",
+"The silver striping holds best in bright, indirect light and fades in shade.":"Stříbrné proužkování drží nejlíp při jasném nepřímém světle, ve stínu bledne.",
+"Leaves stay creamier in bright light; too little and the variegation goes plain green.":"Na světle zůstávají listy krémovější; při nedostatku panašování zezelená.",
+"Colour fades to plain green in dim light. Keep it bright, but out of hot sun.":"V šeru barva přejde do obyčejné zelené. Dej mu světlo, ale ne horké slunce.",
+"The gold speckling needs bright light; in shade it fades back to green.":"Zlaté kropení potřebuje hodně světla; ve stínu vybledne do zelena.",
+"The gold contrast needs bright, indirect light and reverts quickly in shade.":"Zlatý kontrast potřebuje jasné nepřímé světlo a ve stínu rychle mizí.",
+"New leaves open deep red before fading to green. Wipe the big leaves to keep them glossy.":"Nové listy se rozvíjejí sytě červené a pak zezelenají. Velké listy otírej, ať zůstanou lesklé.",
+"The coral on new growth is the show. Bright, indirect light keeps it coming.":"Korálová barva nových listů je to hlavní. Jasné nepřímé světlo ji drží v chodu.",
+"New leaves open bright orange then fade; the strongest colour needs the brightest light.":"Nové listy se rozvíjejí zářivě oranžové a pak blednou; nejsilnější barva chce nejvíc světla.",
+"Colour is richest in bright, indirect light. Water when the top few centimetres are dry.":"Barva je nejsytější při jasném nepřímém světle. Zalévej, když horní pár centimetrů vyschne.",
+"The red is strongest on new growth in bright, indirect light.":"Červená je nejsilnější na nových listech při jasném nepřímém světle.",
+"Slow and sturdy. Brush dust off the big leaves regularly so they can photosynthesise.":"Pomalý a odolný. Z velkých listů pravidelně smetej prach, ať můžou fotosyntetizovat.",
+"The dark pigment fades in dim light. Bright, indirect light keeps the leaves almost black.":"Tmavý pigment v šeru bledne. Jasné nepřímé světlo drží listy skoro černé.",
+"Full, near-black colour needs the brightest spot you have.":"Plná, skoro černá barva chce to nejsvětlejší místo, které máš.",
+"New growth is deep red. Keep it in bright, indirect light to hold the colour.":"Nové listy jsou sytě červené. Aby barva vydržela, drž ho na jasném nepřímém světle.",
+"The blotching needs bright light, and the red stems respond to cooler nights.":"Skvrnitost potřebuje hodně světla a červené řapíky reagují na chladnější noci.",
+"The lime colour is brightest in bright, indirect light; dim rooms turn it dull green.":"Limetková barva je nejzářivější při jasném nepřímém světle; v tmavé místnosti zešedne do zelena.",
+"The dragon-scale speckle needs strong, indirect light to stay bright.":"Kropení jako dračí šupiny potřebuje silné nepřímé světlo, aby zůstalo výrazné.",
+"Each new leaf unfurls a different mix of cream, orange and maroon; keep it in bright light or the colour washes out.":"Každý nový list se rozvine s jinou směsí krémové, oranžové a vínové; drž ho na světle, jinak barva vybledne.",
+"The leaves stay deeply lobed in bright light. Water as the top of the soil dries.":"Na světle zůstávají listy hluboce dělené. Zalévej, jak povrch substrátu vysychá.",
+"Young leaves are very narrow; they widen as the plant matures. Keep it bright.":"Mladé listy jsou hodně úzké; jak rostlina dospívá, rozšiřují se. Drž ho na světle.",
+"New leaves open white and colour up; the brightest white needs strong, indirect light.":"Nové listy se rozvíjejí bílé a pak se vybarvují; nejčistší bílá chce silné nepřímé světlo.",
+"A vigorous climber. Give it a moss pole and it rewards with bigger, more divided leaves.":"Bujný popínavec. Dej mu mechovou tyč a odmění se většími a členitějšími listy.",
+"A velvet hybrid that wants humidity. Keep the leaf surfaces free of standing water.":"Sametový kříženec, který chce vlhko. Na listech nenechávej stát vodu.",
+"A ground crawler — plant it flat in a wide pot, not up a pole. The white veins prefer a humid corner.":"Plazí se po zemi — sázej ho naplocho do širokého květináče, ne na tyč. Bílé žilky chtějí vlhký kout.",
+"A climbing velvet. It wants humidity and a moss pole to reach full, large-leaf form.":"Popínavý samet. Aby dorostl do plné velkolisté podoby, chce vlhko a mechovou tyč.",
+"Fussy about humidity; a misted, humid corner beats a dry living room.":"Na vlhkost je háklivý; rosený vlhký kout je pro něj lepší než suchý obývák.",
+"The silver speckle holds in good, indirect light and humidity.":"Stříbrné kropení drží při dobrém nepřímém světle a ve vlhku.",
+"A self-heading plant with hand-like leaves. Water when the top of the soil dries.":"Nepopínavý keřík s listy jako dlaň. Zalévej, když povrch substrátu vyschne.",
+"A trailing climber. The silver marbling fades without bright, indirect light.":"Převislý popínavec. Bez jasného nepřímého světla stříbrné mramorování vybledne.",
+"A crawler with a frilled leaf base; keep it wide and low in a humid spot.":"Plazivý druh s nabíranou bází listu; nech ho nízko a doširoka na vlhkém místě.",
+"Big leaves mean big thirst — keep the soil lightly moist and the air humid.":"Velké listy znamenají velkou žízeň — drž substrát lehce vlhký a vzduch vlhký.",
+"The silver is etched on the leaf surface; it likes humidity and bright, indirect light.":"Stříbro je vyleptané přímo na povrchu listu; chce vlhko a jasné nepřímé světlo.",
+"Narrow, fanning leaves on short stems. Water as the top of the soil dries.":"Úzké, vějířovitě rozložené listy na krátkých řapících. Zalévej, jak povrch substrátu vysychá.",
+"A climber named for its red stems and petioles; give it something to scale.":"Popínavec pojmenovaný podle červených stonků a řapíků; dej mu po čem šplhat.",
+"One of the largest philodendrons; give it room and let the top of the soil dry before watering.":"Jeden z největších filodendronů; dej mu prostor a před zálivkou nech povrch substrátu vyschnout.",
+/* ---- leaf colour lines ---- */
+"Dark green with pink variegation":"Tmavě zelená s růžovým panašováním",
+"Dark green with cream-white variegation":"Tmavě zelená s krémově bílým panašováním",
+"Green with pure white splashes":"Zelená s čistě bílými skvrnami",
+"Green with white-streaked edges":"Zelená s bíle šrafovanými okraji",
+"Grey-green splashed cream":"Šedozelená s krémovými cákanci",
+"Green with silver-grey striping":"Zelená se stříbrošedým proužkováním",
+"Creamy white mottling over green":"Krémově bílá skvrnitost přes zelenou",
+"Bright yellow-green":"Zářivě žlutozelená","Green and gold speckled":"Zeleno-zlatě kropenatá",
+"Yellow-green splashed dark green":"Žlutozelená s tmavě zelenými cákanci",
+"Deep green flushed ruby":"Sytě zelená s rubínovým nádechem",
+"Coral-orange new leaves maturing to green":"Korálově oranžové mladé listy, které pak zezelenají",
+"Vivid orange young leaves":"Zářivě oranžové mladé listy",
+"Ochre and amber young leaves":"Okrové a jantarové mladé listy",
+"Deep red young leaves over dark green":"Sytě červené mladé listy nad tmavou zelení",
+"Large glossy emerald":"Velké lesklé smaragdové listy",
+"Near-black burgundy foliage":"Skoro černé vínové listy",
+"Almost black leaves with red stems":"Téměř černé listy s červenými stonky",
+"Red-flushed, near-black leaves":"Skoro černé listy s červeným nádechem",
+"Yellow-mottled green with red stems":"Žlutě skvrnitá zeleň s červenými stonky",
+"Lime-yellow new leaves":"Limetkově žluté mladé listy",
+"Dark green freckled chartreuse":"Tmavá zeleň pihovaná do žlutozelena",
+"Lobed leaves in cream, orange and maroon":"Laločnaté listy v krémové, oranžové a vínové",
+"Deeply lobed pale green":"Hluboce dělená světlá zeleň",
+"Very narrow wavy green leaves":"Velmi úzké zvlněné zelené listy",
+"White new leaves maturing green":"Bílé mladé listy, které pak zezelenají",
+"Deeply lobed glossy green":"Hluboce dělená lesklá zeleň",
+"Velvet green with pale veins":"Sametová zeleň se světlými žilkami",
+"Velvet with pronounced white veins":"Samet s výraznými bílými žilkami",
+"Velvet dark green with gold veins":"Sametová tmavá zeleň se zlatými žilkami",
+"Velvet green with red-fringed veins":"Sametová zeleň se žilkami lemovanými červeně",
+"Silver-speckled dark leaves":"Tmavé listy se stříbrným kropením",
+"Finger-divided dark green":"Prstovitě dělená tmavá zeleň",
+"Olive green with silver blotches":"Olivová zeleň se stříbrnými skvrnami",
+"Heart-shaped with ruffled edges":"Srdčité listy s nabíranými okraji",
+"Huge round velvet leaves":"Obrovské kulaté sametové listy",
+"Silvery blotched, puckered":"Stříbřitě skvrnitá, zvrásněná",
+"Narrow, bright green":"Úzká, svěže zelená",
+"Green with burgundy stems":"Zelená s vínovými stonky",
+"Huge corrugated green with red-edged new growth":"Obrovské vrásčité zelené listy s červeně lemovaným novým růstem",
+/* ---- plant lore: aroids and foliage ---- */
+"A climbing aroid from the rainforests of southern Mexico and Central America, where it hauls itself up tree trunks on thick aerial roots.":"Popínavá árónovitá rostlina z deštných lesů jižního Mexika a Střední Ameriky, kde se po kmenech stromů vytahuje na silných vzdušných kořenech.",
+"The holes only appear once it has light and something to climb. A plant kept on a shelf with nothing to grab will make small, solid leaves for years.":"Díry se objeví, až když má světlo a po čem šplhat. Rostlina na poličce, která se nemá čeho chytit, bude roky dělat malé celistvé listy.",
+"The name means delicious monster: the ripe fruit tastes of pineapple and banana, but eaten early it is full of needle-like calcium oxalate crystals that burn the mouth.":"Jméno znamená lahodná obluda: zralý plod chutná po ananasu a banánu, ale nedozrálý je plný jehličkovitých krystalů šťavelanu vápenatého, které pálí v ústech.",
+"A slenderer relative of deliciosa from Central and South America, with leaves perforated by oval holes rather than split to the edge.":"Útlejší příbuzná deliciosy ze Střední a Jižní Ameriky, jejíž listy jsou provrtané oválnými dírami místo zářezů až k okraji.",
+"Thin leaves mean it dries out much faster than its big cousin — check it twice as often, especially on a moss pole.":"Tenké listy znamenají, že vysychá mnohem rychleji než její velká sestřenice — kontroluj ji dvakrát častěji, zvlášť na mechové tyči.",
+"The holes are called fenestrations, and one leading theory is that they let storm winds and light pass through to leaves further down the vine.":"Těm dírám se říká fenestrace a podle jedné z hlavních teorií propouštějí vichřici a světlo k listům níž na liáně.",
+"The classic trailing philodendron from the Caribbean and Central America, grown indoors for well over a century.":"Klasický převislý filodendron z Karibiku a Střední Ameriky, pěstovaný v bytech už dobře přes sto let.",
+"It tells you plainly when it is thirsty — the whole plant droops, and it is back up within hours of a drink.":"Řekne ti jasně, když má žízeň — celá rostlina zvadne a pár hodin po zálivce je zase vzhůru.",
+"Philodendron means tree-loving in Greek. Given a trunk it will climb, and the leaves get several times larger than they ever do trailing.":"Filodendron znamená řecky milující stromy. Když dostane kmen, šplhá — a listy pak narostou několikanásobně větší než při převisu.",
+"Not a wild species at all but a spontaneous mutation of Philodendron 'Rojo Congo', stabilised in cultivation.":"Není to divoký druh, ale spontánní mutace filodendronu 'Rojo Congo', ustálená v kultuře.",
+"The white pinstripes need good light to hold. In a dim corner it reverts to plain green, and reverted growth never comes back.":"Bílé proužky se udrží jen při dobrém světle. V tmavém koutě přejde do čisté zeleně a takový růst se už nevrátí zpátky.",
+"Because it is a chimera, an unstable one, a single plant can throw a pure white leaf, a pure green leaf and a striped leaf on the same stem.":"Protože jde o chiméru, a navíc nestálou, může jedna rostlina na stejném výhonu vyhnat list čistě bílý, čistě zelený i proužkovaný.",
+"A vine from Mo'orea in French Polynesia that has naturalised across the tropics, often smothering whole forest edges.":"Liána z ostrova Mo'orea ve Francouzské Polynésii, která zdomácněla po celých tropech a často zadusí celé okraje lesa.",
+"Genuinely hard to kill, and one of the very few that will root in a glass of water and simply stay there for years.":"Opravdu těžko se zabíjí a je jednou z mála, které zakoření ve sklenici vody a klidně v ní zůstanou roky.",
+"In the wild it climbs to 20 m and produces enormous split leaves, but it almost never flowers — nearly every pothos on earth is a cutting of a cutting.":"V přírodě vyšplhá do 20 m a dělá obrovské dělené listy, ale skoro nikdy nekvete — téměř každý potos na světě je řízek z řízku.",
+"The satin pothos, from Southeast Asia, with matte leaves flecked in silver that are not scales but air pockets under the surface.":"Saténový potos z jihovýchodní Asie s matnými listy postříkanými stříbrem, které není povlak, ale vzduchové kapsy pod povrchem.",
+"The leaf edges curl inward slightly when it wants water — a more reliable signal than the soil surface.":"Když chce vodu, okraje listů se lehce stočí dovnitř — spolehlivější signál než povrch substrátu.",
+"Despite the common name it is not a pothos. The silver comes from a layer of air between the epidermis and the pigment below, the same trick that makes a soap bubble shine.":"Přes svoje jméno to není potos. Stříbro dělá vrstva vzduchu mezi pokožkou a pigmentem pod ní — stejný trik, díky kterému se leskne mýdlová bublina.",
+"The arrowhead vine, from Mexico down to Bolivia, which changes leaf shape completely as it matures.":"Šípovitá liána od Mexika po Bolívii, která během dospívání úplně změní tvar listu.",
+"Fast enough to get leggy in a season. Pinch the growing tips out regularly or it turns into bare stems with a tuft on the end.":"Roste tak rychle, že se za sezónu vytáhne. Pravidelně jí vyštipuj vrcholky, jinak z ní budou holé šňůry s chomáčem na konci.",
+"Juvenile leaves are simple arrowheads; adult leaves on a climbing plant split into five or more separate lobes and look like a different species entirely.":"Mladé listy jsou prosté šípy; dospělé listy šplhající rostliny se dělí na pět i víc laloků a vypadají jako úplně jiný druh.",
+"From southern Thailand and Malaysia, and no relation to Monstera despite being sold as mini monstera everywhere.":"Z jižního Thajska a Malajsie, a přes to, že se všude prodává jako mini monstera, není s monsterou vůbec příbuzná.",
+"Grows very fast with something to climb and stalls without it. Give it a pole from the start.":"S oporou roste hrozně rychle, bez ní se zasekne. Dej jí tyč hned od začátku.",
+"It was known to botanists from a handful of herbarium sheets for nearly a century before it appeared in the houseplant trade and became one of the most-traded plants in the world.":"Botanici ji skoro sto let znali jen z hrstky herbářových položek, než se objevila v obchodu s pokojovkami a stala se jednou z nejprodávanějších rostlin světa.",
+"Tropical Asian aroids grown from corms, with leaves held out stiffly like arrowheads or elephant ears.":"Tropické asijské árónovité rostliny z hlíz, které drží listy strnule jako šípy nebo sloní uši.",
+"Losing a leaf while pushing a new one is normal, not a crisis — it runs a tight budget and pays for new growth with old.":"Ztratit list ve chvíli, kdy žene nový, je normální, ne krize — hospodaří natěsno a nový růst platí tím starým.",
+"Most alocasias go dormant if the room drops below about 15°C, dying back to the corm entirely. People throw away perfectly healthy plants every winter believing they are dead.":"Většina alokázií jde do klidu, jakmile v místnosti klesne teplota pod zhruba 15 °C, a zatáhne se úplně do hlízy. Lidé každou zimu vyhazují naprosto zdravé rostliny v domnění, že jsou po nich.",
+"The taro of the tropics, grown as a staple food crop across Asia, Africa and the Pacific for thousands of years.":"Tropické taro, které se v Asii, Africe a Tichomoří pěstuje jako základní potravina už tisíce let.",
+"It grows in bogs, so it wants far more water than any other houseplant here — standing in a saucer suits it fine.":"Roste v bažinách, takže chce mnohem víc vody než kterákoli jiná pokojovka tady — klidně může stát v misce s vodou.",
+"Taro is one of the oldest cultivated crops on earth, farmed for at least 7,000 years, and the leaves point down while alocasia leaves point up.":"Taro je jedna z nejstarších pěstovaných plodin na světě, obdělávaná nejmíň 7 000 let, a jeho listy míří dolů, zatímco alokázie je drží vzhůru.",
+"The flamingo flower, from the rainforests of Colombia and Ecuador, grown for its lacquered red or pink spathes.":"Plaménka zvaná plameňákový květ, z deštných lesů Kolumbie a Ekvádoru, pěstovaná pro lakově červené nebo růžové toulce.",
+"Wants to stay just damp and never soggy, in a chunky, airy mix rather than dense compost.":"Chce zůstat sotva vlhká a nikdy rozmoklá, v hrubém vzdušném substrátu, ne v husté zemině.",
+"The glossy red heart is not a flower but a modified leaf. The actual flowers are the hundreds of tiny bumps on the spike sticking out of it.":"To lesklé červené srdce není květ, ale přeměněný list. Skutečné květy jsou stovky drobných hrbolků na palici, která z něj trčí.",
+"From the dry grasslands of eastern Africa, where it survives long droughts by storing water in potato-like rhizomes underground.":"Ze suchých travnatých plání východní Afriky, kde dlouhá sucha přežívá díky vodě uložené v podzemních oddencích podobných bramborám.",
+"Far more of these die from kindness than from thirst. When you are not sure, wait another fortnight.":"Mnohem víc jich zajde na dobrotu než na žízeň. Když si nejsi jistý, počkej ještě čtrnáct dní.",
+"It was almost unknown as a houseplant until Dutch nurseries began propagating it commercially in the late 1990s. Today it is everywhere.":"Jako pokojovka byl skoro neznámý, dokud ho koncem devadesátek nezačala komerčně množit nizozemská školkařská výroba. Dnes je všude.",
+"A West African dryland plant, formerly Sansevieria and now folded into Dracaena, grown for stiff upright leaves.":"Rostlina západoafrických suchých oblastí, dřív sansevierie, dnes zařazená pod dracény, pěstovaná pro tuhé vzpřímené listy.",
+"Rot from the base is the only real risk. Water it less than feels reasonable.":"Jediné skutečné riziko je hniloba od báze. Zalévej ho míň, než ti přijde rozumné.",
+"It is one of very few houseplants using CAM photosynthesis — it opens its pores at night rather than in the day to save water, so it releases oxygen while you sleep.":"Je jednou z mála pokojovek s CAM fotosyntézou — aby šetřil vodu, otevírá průduchy v noci místo ve dne, takže kyslík vydává, zatímco spíš.",
+"The Chinese evergreen, from the forest floors of tropical Asia, bred into hundreds of pink, red and silver forms.":"Čínský stálezelen z lesního podrostu tropické Asie, vyšlechtěný do stovek růžových, červených a stříbrných forem.",
+"One of the genuinely few plants that does well several metres from a window rather than merely surviving there.":"Jedna z mála rostlin, které pár metrů od okna opravdu prospívají, a ne že tam jen přežívají.",
+"The red and pink varieties were bred in Thailand from the 1980s onward; before that every aglaonema in the trade was green or silver.":"Červené a růžové odrůdy se od osmdesátých let šlechtí v Thajsku; předtím byla každá aglaonema v obchodech zelená nebo stříbrná.",
+"The dumb cane, from the Caribbean and tropical America, with big cream-splashed leaves.":"Difenbachie z Karibiku a tropické Ameriky, s velkými krémově potřísněnými listy.",
+"The sap irritates badly. Wash your hands after pruning and keep it away from anything that chews.":"Míza pořádně dráždí. Po řezu si umyj ruce a drž ji dál od všeho, co okusuje.",
+"From the rainforest floors of Central America, and one of the very few plants that flowers reliably in low light.":"Z podrostu deštných lesů Střední Ameriky a jedna z mála rostlin, které spolehlivě kvetou i v málo světla.",
+"The dramatic collapse when thirsty is real but costly — every wilt damages roots, so do not use it as a watering reminder.":"To dramatické zhroucení při žízni je skutečné, ale drahé — každé zvadnutí poškodí kořeny, takže z něj nedělej připomínku na zálivku.",
+"It appeared in NASA's 1989 clean-air study, which is why it is sold as an air purifier. In practice you would need several hundred of them to measurably clean one room.":"Objevila se ve studii NASA o čistotě vzduchu z roku 1989, proto se prodává jako čistička vzduchu. V praxi bys jich potřeboval několik set, aby to v jedné místnosti bylo měřitelné.",
+"Prayer plants from the Amazon basin, grown for leaf patterns that look painted on.":"Modlitební rostliny z povodí Amazonky, pěstované pro kresbu listů, která vypadá jako namalovaná.",
+"Fussy about water in a way few plants are — distilled or rainwater only. Hard tap water gives crisp brown edges within weeks.":"Na vodu je vybíravá jako málokterá — jen destilovaná nebo dešťová. Tvrdá voda z kohoutku jí během pár týdnů udělá suché hnědé okraje.",
+"The leaves fold up at night and open in the morning, driven by a hinge of water-filled cells at the base of each leaf called a pulvinus. You can sometimes hear a well-grown plant rustling as it moves.":"Listy se na noc složí a ráno otevřou; pohání je kloub z vodou naplněných buněk na bázi listu, kterému se říká pulvinus. U dobře rostlé rostliny je ten pohyb občas i slyšet.",
+"The true prayer plant, from Brazilian rainforest, with red veins running across a deep green leaf.":"Pravá modlitební rostlina z brazilského deštného lesa, s červenými žilkami přes sytě zelený list.",
+"Same water fussiness as calathea, and just as quick to show it at the leaf edges.":"Na vodu je stejně vybíravá jako kalatea a stejně rychle to dá najevo na okrajích listů.",
+"Its close relative Maranta arundinacea is the source of arrowroot, the thickener — the name comes from its historical use for drawing poison out of arrow wounds.":"Její blízká příbuzná Maranta arundinacea je zdrojem maranty jako zahušťovadla — anglické jméno arrowroot pochází z toho, že se dřív používala na vytahování jedu z ran po šípech.",
+"From Brazilian rainforest, the pink-and-cream variegated member of the prayer plant family.":"Z brazilského deštného lesa; růžovo-krémově panašovaný člen čeledi modlitebních rostlin.",
+"The pink tissue carries no chlorophyll, so a heavily variegated plant grows slowly and needs more light than its cousins.":"Růžové pletivo nemá chlorofyl, takže silně panašovaná rostlina roste pomalu a potřebuje víc světla než její příbuzné.",
+"Turn a leaf over: the underside is a solid magenta far more vivid than the top, and the plant lifts them at night to show it.":"Otoč list: rub je celý purpurový, mnohem sytější než líc, a rostlina ho v noci zvedá, aby ho ukázala.",
+"From Peruvian rainforest floor, a low creeper webbed with white or pink veins.":"Z podrostu peruánského deštného lesa; nízký plazivec propletený bílými nebo růžovými žilkami.",
+"It faints theatrically when dry and comes back within an hour of water — but each faint costs it leaves.":"Když vyschne, divadelně omdlí a do hodiny po zálivce se vzpamatuje — ale každé takové omdlení ho stojí listy.",
+"It is one of the best terrarium plants there is, because the closed, dripping conditions that rot most houseplants are exactly what it grows in naturally.":"Je to jedna z nejlepších rostlin do terária, protože uzavřené, orosené prostředí, ve kterém většina pokojovek shnije, je přesně to, v čem přirozeně roste.",
+"The spiderwort or wandering dude, from the Americas, in green, purple, silver and striped forms.":"Podeňka, z Ameriky, v zelených, fialových, stříbrných i proužkovaných formách.",
+"Grows fast and goes bald at the base. Cut it back hard twice a year and root the pieces to keep it full.":"Roste rychle a u báze holomí. Dvakrát ročně ji tvrdě seřízni a kousky zakořeň, ať zůstane hustá.",
+"Tradescantia stamen hairs are a single file of cells large enough to watch under a school microscope, which made them the standard specimen for teaching cell division for decades.":"Chlupy na tyčinkách podeňky jsou jediná řada buněk, dost velkých na školní mikroskop — proto se z nich na desítky let stal standardní preparát na výuku buněčného dělení.",
+"Common ivy, native across Europe and western Asia, one of the few temperate plants grown widely indoors.":"Břečťan popínavý, doma po celé Evropě a v západní Asii, jedna z mála rostlin mírného pásu běžně pěstovaných uvnitř.",
+"It wants cool and bright. A warm dry room brings spider mites almost every time.":"Chce chladno a světlo. V teplé suché místnosti si skoro pokaždé přivodí svilušky.",
+"Ivy has two entirely different life stages: the familiar climbing juvenile with lobed leaves, and an adult shrub form with plain oval leaves that only appears once it reaches full sun at the top of its support.":"Břečťan má dvě úplně odlišná životní stadia: známé šplhavé mladé s laločnatými listy a dospělou keřovitou formu s celistvými oválnými listy, která se objeví, teprve když nahoře na opoře dosáhne na plné slunce.",
+"From Indonesia and the Pacific islands, with leaves in scarlet, orange, yellow and near-black.":"Z Indonésie a tichomořských ostrovů, s listy šarlatovými, oranžovými, žlutými i téměř černými.",
+"It drops most of its leaves after being moved, then replaces them. Pick a spot and leave it there.":"Po přestěhování shodí většinu listů a pak je nahradí. Vyber mu místo a nech ho tam.",
+"The colour is not autumn pigment but permanent carotenoids, and each named variety has a different leaf shape — some strap-like, some corkscrew-twisted, some almost oak-shaped.":"Ta barva není podzimní pigment, ale trvalé karotenoidy, a každá pojmenovaná odrůda má jiný tvar listu — některé páskovité, jiné stočené do vývrtky, další skoro dubové.",
+"A huge genus of small, thick-leaved plants from tropical America, closely related to black pepper.":"Obrovský rod malých tlustolistých rostlin z tropické Ameriky, blízce příbuzný pepřovníku.",
+"Semi-succulent leaves mean it wants less water than it looks like it should. Rot is the usual cause of death.":"Polosukulentní listy znamenají, že chce míň vody, než by se zdálo. Obvyklá příčina smrti je hniloba.",
+"There are over 1,500 species, ranging from watermelon-striped to trailing strings of beads, and many grow as epiphytes on branches rather than in soil at all.":"Existuje přes 1 500 druhů, od melounově proužkovaných po převisy jako šňůry korálků, a spousta z nich roste jako epifyty na větvích, vůbec ne v zemi.",
+"The Chinese money plant, from Yunnan province, with round leaves on long stalks.":"Čínská peněženka z provincie Jün-nan, s kulatými listy na dlouhých řapících.",
+"It throws pups constantly around the base. Twist them off with a bit of root and you have new plants.":"Kolem báze pořád dělá odnože. Odtrhni je s kouskem kořene a máš nové rostliny.",
+"It was carried out of China by a Norwegian missionary in 1946 and spread across Scandinavia entirely by cuttings passed between friends, remaining almost unknown to Western botany until the 1980s.":"Z Číny ji v roce 1946 vyvezl norský misionář a po Skandinávii se rozšířila výhradně řízky, které si lidé předávali mezi sebou; západní botanice zůstala skoro neznámá až do osmdesátých let.",
+"The wax plant, from Southeast Asia and Australia, an epiphytic climber with thick leaves and clusters of star flowers.":"Voskovka z jihovýchodní Asie a Austrálie, epifytní popínavka s tlustými listy a chomáči hvězdicovitých květů.",
+"Never cut off the bare stalk a flower cluster came from — it blooms from the same spur again year after year.":"Nikdy neustřihuj holý stopek, ze kterého vyrostl chomáč květů — kvete z něj znovu rok co rok.",
+"The flowers are so precisely geometric they look moulded from wax, and many produce genuine nectar that drips, along with scents that only switch on after dark.":"Květy jsou tak přesně geometrické, že vypadají odlité z vosku, a spousta z nich dává opravdový nektar, který kape, plus vůni, která se zapne až po setmění.",
+"Ceropegia woodii, from southern Africa, trailing heart-shaped leaves marbled in silver.":"Ceropegia woodii z jižní Afriky, s převislými srdčitými listy mramorovanými stříbrem.",
+"It stores water in pea-sized tubers along the stems, so it forgives drought and punishes overwatering.":"Vodu si ukládá do hlízek velikosti hrášku podél stonků, takže sucho odpustí a přelití potrestá.",
+"Those tubers will root wherever they touch soil — lay a strand across a fresh pot and you get a whole new plant without cutting anything.":"Ty hlízky zakoření všude, kde se dotknou substrátu — polož šňůru přes nový květináč a máš celou novou rostlinu, aniž bys cokoli řezal.",
+"From southern Africa, and probably the most widely grown houseplant in the world.":"Z jižní Afriky, a nejspíš nejpěstovanější pokojovka na světě.",
+"Brown tips are almost always fluoride in tap water, not dry air. Rainwater fixes it.":"Hnědé špičky dělá skoro vždycky fluor ve vodě z kohoutku, ne suchý vzduch. Dešťová voda to spraví.",
+"It reproduces by throwing out long runners with fully formed baby plants on the ends — the same strategy strawberries use, which is why they look so alike.":"Množí se dlouhými šlahouny s hotovými rostlinkami na koncích — stejná strategie jako u jahod, proto si jsou tak podobné.",
+"A variegated cultivar of the heartleaf philodendron, splashed with lime and gold down the centre of each leaf.":"Panašovaná odrůda filodendronu srdčitého, potřísněná limetkovou a zlatou uprostřed každého listu.",
+"The variegation is unstable. Cut back to a well-marked leaf if it starts producing plain green growth.":"Panašování je nestálé. Když začne hnát čistě zelené listy, seřízni ho zpátky k dobře kreslenému listu.",
+"Every Brasil in the world descends from a single sport found in a Florida nursery — it does not exist in the wild anywhere.":"Každý 'Brasil' na světě pochází z jediné mutace nalezené ve floridské školce — ve volné přírodě nikde neexistuje.",
+"The velvet-leaf philodendron from the Caribbean and Central America, with a surface that shifts bronze to purple as you move.":"Sametolistý filodendron z Karibiku a Střední Ameriky, jehož povrch přechází podle úhlu pohledu z bronzové do fialové.",
+"The velvet holds water against the leaf, so it dislikes being misted or sitting damp far more than glossy philodendrons.":"Samet drží vodu na listu, takže rosení a vlhko snáší mnohem hůř než filodendrony s lesklými listy.",
+"The velvet effect comes from cone-shaped cells on the leaf surface that scatter light — the same structure that makes rose petals look deeper red than they are.":"Sametový efekt dělají kuželovité buňky na povrchu listu, které rozptylují světlo — stejná struktura, díky které vypadají okvětní lístky růže sytěji červené, než jsou.",
+"From southern Brazil, a self-heading aroid that builds a thick trunk marked with old leaf scars.":"Z jižní Brazílie; nepopínavá árónovitá rostlina, která si buduje tlustý kmen posetý jizvami po starých listech.",
+"It grows outward rather than upward, so give it floor space rather than a corner.":"Roste spíš do šířky než do výšky, takže mu dej místo na podlaze, ne kout.",
+"It was called Philodendron selloum for two centuries before DNA work in 2018 moved it and its relatives into a separate genus, Thaumatophyllum — meaning wonder-leaf.":"Dvě století se mu říkalo Philodendron selloum, než ho analýza DNA v roce 2018 spolu s příbuznými přesunula do vlastního rodu Thaumatophyllum — divulist.",
+"The angel wing, from tropical South America, with paper-thin leaves in pink, white and red.":"Andělské křídlo z tropické Jižní Ameriky, s papírově tenkými listy v růžové, bílé a červené.",
+"It dies back to a bare tuber every autumn. Stop watering, keep the tuber dry and warm, and restart in spring.":"Každý podzim zatáhne do holé hlízy. Přestaň zalévat, drž hlízu v suchu a teple a na jaře ji zase rozjeď.",
+"The leaves are so thin they are effectively translucent, and the pale varieties carry so little chlorophyll that the plant lives largely on reserves stored in the tuber.":"Listy jsou tak tenké, že jsou prakticky průsvitné, a světlé odrůdy mají tak málo chlorofylu, že rostlina žije hlavně ze zásob v hlíze.",
+"From the rainforests of Southeast Asia and South America, a quietly tough aroid with heart-shaped leaves.":"Z deštných lesů jihovýchodní Asie a Jižní Ameriky; nenápadně houževnatá árónovitá rostlina se srdčitými listy.",
+"One of a small handful of plants that genuinely thrives well back from a window rather than merely tolerating it.":"Jedna z hrstky rostlin, které daleko od okna opravdu prospívají, a ne že to jen snášejí.",
+"Several species smell strongly of aniseed when the leaves are crushed, and are used in traditional medicine across Borneo and Malaysia.":"Několik druhů silně voní po anýzu, když se listy rozemnou, a na Borneu a v Malajsii se používají v tradiční medicíně.",
+"A heavily variegated pothos, marbled roughly half white and half green.":"Silně panašovaný potos, mramorovaný zhruba půl na půl bíle a zeleně.",
+"The white tissue makes no food, so it grows at perhaps a third the speed of plain pothos and needs brighter light to manage even that.":"Bílé pletivo nic nevyrábí, takže roste tak třetinovou rychlostí obyčejného potosu a i na to potřebuje víc světla.",
+"You can steer it: cuttings taken from a whiter section stay whiter, and cuttings from a greener section revert. Growers select stock this way deliberately.":"Dá se to řídit: řízky z bělejší části zůstanou bělejší, řízky ze zelenější přejdou do zelena. Pěstitelé si takhle matečnice vybírají schválně.",
+"The painted-leaf begonia, bred from a species found in a shipment of orchids from Assam in 1856.":"Begonie s malovanými listy, vyšlechtěná z druhu nalezeného v zásilce orchidejí z Ásámu v roce 1856.",
+"Water the soil and never the leaves — wet foliage brings powdery mildew within days.":"Zalévej substrát, nikdy listy — mokré listy znamenají padlí během pár dní.",
+"A single leaf laid on damp compost and nicked across its veins will produce a dozen separate plantlets, each one growing from a cut.":"Jediný list položený na vlhký substrát a nařezaný přes žilky vydá tucet samostatných rostlinek, každou z jednoho řezu.",
+"From Madagascar, freckled pink, white or red on a green ground.":"Z Madagaskaru, pihovaná růžově, bíle nebo červeně na zeleném podkladu.",
+"Short-lived by nature and it goes leggy fast. Pinch it hard and take cuttings before it flowers.":"Od přírody krátkověká a rychle se vytáhne. Tvrdě ji vyštipuj a než vykvete, odeber řízky.",
+"Flowering effectively ends its life — once it sets seed it declines quickly, so removing the flower spikes buys you many extra months.":"Kvetení jí prakticky ukončí život — jakmile nasadí semena, rychle chřadne, takže odstraňování květenství ti přidá spoustu měsíců navíc.",
+"From Southeast Asia, grown purely for leaf colour, in almost every shade except true blue.":"Z jihovýchodní Asie, pěstovaný čistě pro barvu listů, skoro ve všech odstínech kromě opravdové modré.",
+"The colour is driven by light, and pinching out the flower spikes keeps the leaves coming.":"Barvu žene světlo a vyštipování květenství drží tvorbu listů v chodu.",
+"It was the subject of a genuine Victorian speculative mania in the 1860s, when single new varieties changed hands for the price of a labourer's annual wages.":"V šedesátých letech 19. století kolem něj vznikla opravdová spekulativní mánie, kdy se jediná nová odrůda prodávala za roční mzdu dělníka.",
+"The false shamrock, from Brazil, with deep purple triangular leaflets.":"Falešný trojlístek z Brazílie, se sytě fialovými trojúhelníkovými lístky.",
+"It folds flat every night and reopens each morning. Periodic dormancy is normal — cut it back and wait.":"Každou noc se složí naplocho a ráno se zase otevře. Občasné období klidu je normální — seřízni ho a počkej.",
+"The movement is powered by water pressure, not growth, and a plant will visibly close within minutes if you carry it into a dark room.":"Ten pohyb pohání tlak vody, ne růst, a když rostlinu odneseš do tmavé místnosti, viditelně se zavře během pár minut.",
+"From Brazilian rainforest, in the prayer plant family, with long leaves banded like brushstrokes.":"Z brazilského deštného lesa, z čeledi modlitebních rostlin, s dlouhými listy pruhovanými jako tahy štětcem.",
+"Every bit as fussy about tap water as calathea, and the brown edges arrive just as quickly.":"Na vodu z kohoutku je stejně vybíravá jako kalatea a hnědé okraje přijdou stejně rychle.",
+"The genus name comes from the Greek for comb-flower, and like its relatives it raises its leaves at dusk — a habit called nyctinasty.":"Rodové jméno pochází z řeckého hřebenokvět a jako její příbuzné zvedá za soumraku listy — tomu zvyku se říká nyktinastie.",
+"From the forest floors of Japan, China and Taiwan, and famously the plant that survived the Victorian parlour.":"Z lesního podrostu Japonska, Číny a Tchaj-wanu, a proslulá tím, že přežila viktoriánský salon.",
+"Neglect genuinely suits it better than attention. It resents repotting and grows very slowly.":"Zanedbávání jí sedí líp než péče. Přesazování nesnáší a roste velmi pomalu.",
+"Its flowers appear at soil level, dull purple and easy to miss entirely, and were long thought to be pollinated by slugs — recent work points to fungus gnats and tiny flies instead.":"Květy má u země, kalně fialové a snadno se přehlédnou; dlouho se mělo za to, že je opylují slimáci — novější práce ukazují spíš na smutnice a drobné mušky.",
+"From Central Africa, and not a bamboo at all — a dracaena, sold in water with its stems trained into spirals.":"Ze střední Afriky, a vůbec to není bambus — je to dracéna, prodávaná ve vodě se stonky vytvarovanými do spirál.",
+"Chlorine and especially fluoride in tap water turn the tips brown. Use rainwater, distilled or water left standing overnight.":"Chlor a hlavně fluor ve vodě z kohoutku dělají hnědé špičky. Použij dešťovku, destilovanou nebo vodu odstátou přes noc.",
+"The spirals are made by growing the plant on its side in a box lit from one direction and rotating it slowly, so the stem chases the light in a curve. It takes over a year.":"Spirály vznikají tak, že rostlina leží na boku v bedně osvětlené z jedné strany a pomalu se otáčí, takže stonek honí světlo do oblouku. Trvá to přes rok.",
+"From the lowland rainforests of West Africa, where it starts life in the crown of another tree and strangles its way down.":"Z nížinných deštných lesů západní Afriky, kde začíná život v koruně jiného stromu a proškrtí se dolů.",
+"It hates being moved and shows it by dropping leaves. Choose the spot, then leave it entirely alone.":"Nesnáší stěhování a dá to najevo shazováním listů. Vyber místo a pak už ho nech úplně být.",
+"It is a strangler fig: seeds germinate high in a host tree, send roots down to the ground, and eventually kill the host, leaving a hollow column of fig.":"Je to škrtící fíkovník: semena vyklíčí vysoko v hostitelském stromě, spustí kořeny k zemi a hostitele nakonec zabijí — zůstane dutý sloup fíkovníku.",
+"From northeast India and Southeast Asia, once tapped commercially for latex before Hevea replaced it.":"Ze severovýchodní Indie a jihovýchodní Asie; kdysi se z něj komerčně čepoval latex, než ho nahradil kaučukovník.",
+"Wipe the leaves. They are big and flat and collect enough dust to measurably cut the light reaching them.":"Otírej listy. Jsou velké a ploché a nachytají tolik prachu, že to měřitelně ubere světlo.",
+"In Meghalaya, communities have trained its aerial roots across rivers for centuries to form living root bridges that strengthen with age and last hundreds of years.":"V indické Méghálaji lidé po staletí vedou jeho vzdušné kořeny přes řeky a tvoří z nich živé kořenové mosty, které časem sílí a vydrží staletí.",
+"The weeping fig, from Asia and northern Australia, a full-sized forest tree grown indoors as a small one.":"Fíkus benjamín z Asie a severní Austrálie; v přírodě plnohodnotný lesní strom, doma pěstovaný jako malý.",
+"It will drop most of its leaves after any change — new room, new light, cold draught — and then replace them. Do not panic and overwater.":"Po každé změně — nová místnost, jiné světlo, studený průvan — shodí většinu listů a pak je nahradí. Nepanikař a nezalévej ho víc.",
+"Each Ficus species is pollinated by its own dedicated species of fig wasp, an exclusive partnership around 80 million years old.":"Každý druh fíkovníku opyluje vlastní druh fíkovníkové vosičky — výhradní partnerství staré asi 80 milionů let.",
+"The dragon tree, from Madagascar, with thin arching leaves edged in red on slender canes.":"Dračinec z Madagaskaru, s tenkými obloukovitými listy s červeným lemem na štíhlých kmíncích.",
+"Very sensitive to fluoride in tap water, which shows as brown tips. Otherwise close to indestructible.":"Velmi citlivý na fluor ve vodě z kohoutku, což se projeví hnědými špičkami. Jinak skoro nezničitelný.",
+"Cut a cane at any height and it will branch from just below the cut, which is how the multi-headed shapes in shops are made.":"Zakrať kmínek v jakékoli výšce a hned pod řezem se rozvětví — takhle vznikají ty víceramenné tvary z obchodů.",
+"The corn plant, from tropical Africa, with wide strap leaves and a thick woody cane.":"Dracéna vonná z tropické Afriky, se širokými páskovitými listy a tlustým dřevnatým kmenem.",
+"It tolerates dim rooms well but grows very slowly in them. Brown tips mean tap water.":"Šeré místnosti snáší dobře, ale roste v nich hodně pomalu. Hnědé špičky znamenají vodu z kohoutku.",
+"Despite the name, it flowers only rarely indoors — and when it does the scent is overwhelmingly sweet at night and the flowers drip sticky nectar.":"Přes své jméno kvete uvnitř jen zřídka — a když ano, v noci voní až omamně sladce a z květů kape lepkavý nektar.",
+"From the deserts of the southwestern United States and Mexico, sold as a cane with a tuft of stiff leaves.":"Z pouští jihozápadu USA a Mexika, prodávaná jako kmen s chomáčem tuhých listů.",
+"Rot at the base is the only real risk. It wants far less water than its size suggests.":"Jediné skutečné riziko je hniloba u báze. Chce mnohem míň vody, než by se podle velikosti zdálo.",
+"Every yucca species depends on its own species of yucca moth, which deliberately gathers and packs pollen into the flower — one of the few genuinely mutual pollination partnerships known.":"Každý druh juky závisí na vlastním druhu můry, která pyl cíleně sbírá a napěchuje do květu — jedno z mála skutečně vzájemných opylovacích partnerství, jaká známe.",
+"The umbrella tree, from Taiwan and Hainan, with leaflets radiating from a single point like spokes.":"Deštníkovník z Tchaj-wanu a ostrova Chaj-nan, s lístky vybíhajícími z jednoho bodu jako paprsky.",
+"Gets leggy reaching for light. Cut it back hard in spring and it branches instead.":"Za světlem se vytáhne. Na jaře ho tvrdě seřízni a místo toho se rozvětví.",
+"Its larger relative Schefflera actinophylla is a serious invasive weed in Florida and Hawaii, where discarded houseplants escaped into forest and took over.":"Jeho větší příbuzný Schefflera actinophylla je na Floridě a Havaji vážný invazní plevel — vyhozené pokojovky utekly do lesa a ovládly ho.",
+"From the swamps of Central and South America, usually sold with five trunks plaited together.":"Z bažin Střední a Jižní Ameriky, obvykle se prodává s pěti kmínky spletenými dohromady.",
+"The plait is done at the nursery while the stems are green. Water it as a swamp plant that has learned patience.":"Cop se plete ve školce, dokud jsou stonky zelené. Zalévej ho jako bažinnou rostlinu, která se naučila trpělivosti.",
+"The braided form was invented by a Taiwanese lorry driver in the 1980s and became a feng shui symbol — five trunks for the five elements. Wild Pachira grows as a single 18 m tree.":"Splétanou podobu vymyslel v osmdesátých letech tchajwanský řidič náklaďáku a stala se symbolem feng-šuej — pět kmínků za pět živlů. V přírodě roste pachira jako jediný osmnáctimetrový strom.",
+"Strelitzia reginae, from South Africa, with flowers shaped exactly like a crane's head.":"Strelície královská z Jihoafrické republiky, s květy přesně ve tvaru jeřábí hlavy.",
+"It needs to be pot-bound and several years old before it will flower indoors. Patience is the whole trick.":"Aby uvnitř vykvetla, musí mít prokořeněný květináč a několik let. Celý trik je v trpělivosti.",
+"The flower is a mechanical trap for sunbirds: the bird lands on the blue petal, which snaps open under its weight and dusts its feet with pollen.":"Květ je mechanická past na strdimily: pták přistane na modrém plátku, ten se pod jeho vahou rozevře a poprášní mu nohy pylem.",
+"From Southeast Asia, and not a tree at all — the trunk is a tight roll of leaf bases.":"Z jihovýchodní Asie, a vůbec to není strom — kmen je těsně stočený svitek listových pochev.",
+"Enormously thirsty and hungry in summer. Torn leaves are normal, not damage.":"V létě ohromně žíznivý a hladový. Roztržené listy jsou normální, ne poškození.",
+"Banana is technically a giant herb, and the plant fruits once then dies, leaving pups to carry on. Nearly every banana sold worldwide is the same clone, Cavendish.":"Banánovník je technicky vzato obrovská bylina; jednou plodí a pak uhyne a štafetu přebírají odnože. Skoro každý banán na světě je tentýž klon, Cavendish.",
+"From the Mediterranean basin, cultivated for at least 6,000 years.":"Ze Středomoří, pěstovaná nejméně 6 000 let.",
+"It wants sun, sharp drainage and a genuinely cold winter rest. A warm indoor room all year eventually kills it.":"Chce slunce, ostrou drenáž a opravdu chladný zimní klid. Teplá místnost po celý rok ji nakonec zabije.",
+"Olive trees can live over 2,000 years, and several in the Garden of Gethsemane have been carbon-dated to the twelfth century.":"Olivovníky se dožívají přes 2 000 let a několik jich v Getsemanské zahradě bylo radiokarbonově datováno do dvanáctého století.",
+"From Southeast Asia, and every citrus in the shops descends from crossing just a handful of wild ancestors.":"Z jihovýchodní Asie; každý citrus v obchodě pochází z křížení jen několika málo divokých předků.",
+"Needs acidic feed and iron. Yellowing between green veins means it is short of iron, not nitrogen.":"Potřebuje kyselé hnojivo a železo. Žloutnutí mezi zelenými žilkami znamená nedostatek železa, ne dusíku.",
+"Lemons are a hybrid of bitter orange and citron, and a single tree can carry flowers, green fruit and ripe fruit all at the same time.":"Citron je kříženec pomerančovníku hořkého a citroníku cedrátového a jediný strom může naráz nést květy, zelené i zralé plody.",
+"From the highland forests of Ethiopia, an understorey shrub that grows in shade beneath taller trees.":"Z horských lesů Etiopie; keř podrostu, který roste ve stínu pod vyššími stromy.",
+"It genuinely does not want direct sun, and the leaves scorch quickly if given it.":"Přímé slunce opravdu nechce, listy se na něm rychle spálí.",
+"A healthy indoor plant will flower and set actual coffee cherries after three or four years — each cherry holding the two beans that face each other flat side to flat side.":"Zdravá rostlina v bytě po třech čtyřech letech kvete a nasadí opravdové kávové třešně — v každé jsou dvě zrna přiložená k sobě plochou stranou.",
+"A clumping mountain bamboo from China, and the staple food of the giant panda.":"Trsnatý horský bambus z Číny a základní potrava pandy velké.",
+"It never wants to dry out, not even briefly — a dry weekend browns a Fargesia faster than almost anything else here.":"Nikdy nesmí vyschnout, ani na chvíli — suchý víkend zhnědne fargesii rychleji než skoro cokoli jiného tady.",
+"Bamboos flower on an internal clock rather than with the season: a whole species can bloom simultaneously worldwide after 60 or 100 years, set seed, and die together.":"Bambusy kvetou podle vnitřních hodin, ne podle ročního období: celý druh může po 60 nebo 100 letech vykvést naráz po celém světě, nasadit semena a společně odumřít.",
+"A running bamboo from China, including the giant timber species, with distinctly grooved stems.":"Výběžkatý bambus z Číny, včetně obřích dřevinných druhů, s výrazně rýhovanými stébly.",
+"Superb in a large pot and genuinely destructive in open ground without a root barrier sunk half a metre down.":"Ve velké nádobě skvělý, ve volné půdě bez kořenové zábrany zapuštěné půl metru hluboko vyloženě ničivý.",
+"Some Phyllostachys can grow nearly a metre in a single day, making them among the fastest-growing plants on earth — fast enough to watch over an afternoon.":"Některé druhy vyrostou skoro o metr za jediný den, což z nich dělá jedny z nejrychleji rostoucích rostlin světa — dost rychle na to, aby to bylo za odpoledne vidět.",
+"Sold as bonsai with a bulbous exposed root, though the swollen base is grown underground and then lifted.":"Prodává se jako bonsaj s baňatým odhaleným kořenem, ačkoli ta ztloustlá báze roste pod zemí a teprve pak se vyzvedne.",
+"Expect leaf drop the week it arrives and again if you move it. It nearly always recovers.":"Počítej s tím, že první týden po příchodu shodí listy, a znovu, když ho přestěhuješ. Skoro vždycky se vzpamatuje.",
+"The fat root is not natural form: plants are grown from cutting-raised stock in deep beds, then dug and replanted high to expose the root mass.":"Ten tlustý kořen není přirozený tvar: rostliny se pěstují z řízků v hlubokých záhonech, pak se vyryjí a zasadí výš, aby se kořenový balík odhalil.",
+"From a single small island in the Pacific, where it grows to 60 m — and it is not a true pine.":"Z jediného malého ostrova v Tichomoří, kde dorůstá 60 m — a není to žádná borovice.",
+"Lower branches lost to drought or dark never grow back. Even light, all round, is the whole job.":"Spodní větve ztracené suchem nebo tmou už nikdy nedorostou. Celé umění je rovnoměrné světlo ze všech stran.",
+"Its branches sit in near-perfect whorls of five, and the tree was the reason Norfolk Island was first settled — the Royal Navy wanted the trunks for ship masts.":"Větve má v téměř dokonalých přeslenech po pěti a právě kvůli tomuhle stromu byl Norfolk poprvé osídlen — královské námořnictvo chtělo kmeny na lodní stěžně.",
+"From the coastal forests of southern Japan and Korea, with big glossy palmate leaves.":"Z pobřežních lesů jižního Japonska a Koreje, s velkými lesklými dlanitými listy.",
+"It prefers a cool room, an unheated hallway or a shaded porch to a warm living room.":"Chladná místnost, nevytápěná chodba nebo stinná veranda jí sedí líp než teplý obývák.",
+"It flowers in late autumn when almost nothing else does, and those flowers are a critical last nectar source for wasps and flies before winter.":"Kvete pozdě na podzim, kdy skoro nic jiného nekvete, a její květy jsou pro vosy a mouchy zásadní poslední zdroj nektaru před zimou.",
+"From Polynesia and India, a fine-leaved shrub grown as much for its gnarled stems as its foliage.":"Z Polynésie a Indie; jemnolistý keř pěstovaný stejně tak pro pokroucené kmínky jako pro listy.",
+"It sheds leaves at any sudden change in light, temperature or humidity, then rebuilds slowly. Consistency is everything.":"Při každé náhlé změně světla, teploty nebo vlhkosti shodí listy a pak se pomalu obnovuje. Všechno je o stálosti.",
+"The leaves are edible and aromatic, used as a herb and garnish in Vietnamese cooking, where the plant is also grown as a hedge.":"Listy jsou jedlé a aromatické, ve vietnamské kuchyni se používají jako bylinka a ozdoba a rostlina se tam pěstuje i jako živý plot.",
+"From Madagascar and Mauritius, with short leaves edged in cream, whorled tightly around the stem.":"Z Madagaskaru a Mauricia, s krátkými krémově lemovanými listy hustě přeslenitými kolem stonku.",
+"Slow, forgiving and much happier slightly dry than slightly wet.":"Pomalá, odpouštějící a mnohem radši lehce suchá než lehce mokrá.",
+"Left alone for years it develops a wonderfully irregular, almost sculptural branching habit that no amount of pruning can fake.":"Když ji léta necháš být, vytvoří nádherně nepravidelné, skoro sochařské větvení, které se žádným řezem nedá napodobit.",
+"From the Pacific and Indian Ocean coasts, with leaves spiralling around the stem in a helix.":"Z pobřeží Tichého a Indického oceánu, s listy stočenými kolem kmene do šroubovice.",
+"The leaf margins carry real spines. Site it where nobody brushes past it.":"Okraje listů mají skutečné ostny. Postav ho tam, kde kolem nikdo neprochází.",
+"Its leaves are the pandan of Southeast Asian cooking — vanilla and coconut scented — and mature plants stand on stilt roots that lift them clear of the sand.":"Jeho listy jsou pandán jihovýchodní kuchyně — voní po vanilce a kokosu — a dospělé rostliny stojí na chůdovitých kořenech, které je zvedají nad písek.",
+"The giant white bird of paradise, from South African coastal forest, reaching 10 m in the wild.":"Obří bílá strelície z jihoafrických pobřežních lesů, v přírodě dorůstá 10 m.",
+"Split leaves are normal and deliberate. It grows in wind and its leaves tear along built-in weak lines rather than shredding.":"Roztržené listy jsou normální a záměrné. Roste ve větru a listy se trhají podél vestavěných slabých linií, místo aby se roztřepily.",
+"The seeds carry a tuft of vivid orange fibre — one of very few naturally occurring true oranges in the plant world, and a lure for the birds that disperse them.":"Semena nesou chomáček zářivě oranžových vláken — jednu z mála skutečně oranžových barev, jaké se v rostlinné říši přirozeně vyskytují, a lákadlo pro ptáky, kteří je roznášejí.",
+"From southern Mexico, domesticated at least 5,000 years ago and easy to sprout from a supermarket stone.":"Z jižního Mexika, zdomácnělé nejméně před 5 000 lety a snadno vyklíčí i z pecky ze supermarketu.",
+"It grows as a single bare stick unless you pinch the top out early. Do it at 30 cm.":"Roste jako jediný holý prut, dokud mu včas nevyštípneš vrchol. Udělej to ve 30 cm.",
+"Its enormous fruit evolved to be swallowed whole by giant ground sloths and gomphotheres. Those animals died out 13,000 years ago, and the avocado only survived because humans took over the job.":"Jeho obrovský plod se vyvinul k tomu, aby ho celý polykali obří lenochodi a gomfotéria. Ta zvířata vymřela před 13 000 lety a avokádo přežilo jen proto, že tu práci převzali lidé.",
+"From Madagascar, where it is critically endangered in the wild despite being one of the most sold palms on earth.":"Z Madagaskaru, kde je v přírodě kriticky ohrožená, přestože je to jedna z nejprodávanějších palem světa.",
+"Brown tips are usually fluoride or dry air. Never cut into green tissue when trimming them.":"Hnědé špičky dělá obvykle fluor nebo suchý vzduch. Při zastřihávání nikdy neřež do zeleného pletiva.",
+"There are fewer than 100 mature wild plants left in Madagascar, while millions grow in living rooms — a species effectively saved by the houseplant trade.":"Na Madagaskaru zbývá méně než 100 dospělých rostlin ve volné přírodě, zatímco miliony jich rostou v obývácích — druh fakticky zachráněný obchodem s pokojovkami.",
+"From Lord Howe Island off Australia, and the palm of Victorian hotel lobbies and Titanic photographs.":"Z ostrova Lord Howe u Austrálie; palma viktoriánských hotelových hal a fotografií z Titaniku.",
+"Slow, expensive and genuinely tolerant of low light and neglect. Do not overwater it.":"Pomalá, drahá a opravdu snáší málo světla i zanedbání. Nepřelévej ji.",
+"Every kentia palm in the world comes from seed collected on that one small island, which still runs the trade as a local monopoly.":"Každá kentie na světě pochází ze semen sebraných na tom jediném malém ostrově, který ten obchod dodnes drží jako místní monopol.",
+"From the rainforests of southern Mexico and Guatemala, sold since the Victorian era as the palm for dark rooms.":"Z deštných lesů jižního Mexika a Guatemaly; už od viktoriánské doby se prodává jako palma do tmavých pokojů.",
+"It really does cope with low light, but it will not tolerate wet roots. Let the top few centimetres dry.":"S málem světla si opravdu poradí, ale mokré kořeny nesnese. Nech horních pár centimetrů vyschnout.",
+"It flowers happily indoors — small yellow beads on a thin stalk — which is very unusual for a palm kept in a pot.":"V bytě klidně kvete — drobné žluté kuličky na tenkém stvolu — což je u palmy v květináči hodně neobvyklé.",
+"A sport of the sword fern discovered in a Boston shipment in 1894, and now the classic hanging fern.":"Mutace ledviníku objevená roku 1894 v zásilce do Bostonu, dnes klasická závěsná kapradina.",
+"It wants humidity more than it wants water in the pot. A bathroom suits it; a radiator kills it.":"Chce spíš vlhký vzduch než vodu v květináči. Koupelna jí sedí, radiátor ji zabije.",
+"The original plant was a single mutation spotted among 200 ferns being shipped to Philadelphia, and every Boston fern since has been divided from it.":"Původní rostlina byla jediná mutace zahlédnutá mezi 200 kapradinami posílanými do Filadelfie a každý bostonský ledviník od té doby je jejím dělencem.",
+"Found across the world's temperate and tropical regions, with black wiry stems and fan-shaped leaflets.":"Roste po mírném i tropickém pásu celého světa, s černými drátovitými stopkami a vějířovitými lístky.",
+"It cannot dry out even once. A single missed watering browns the whole plant, though it usually regrows from the base.":"Nesmí vyschnout ani jednou. Jediná vynechaná zálivka zhnědne celou rostlinu, i když obvykle znovu obrazí od báze.",
+"The fronds are genuinely water-repellent — dunk one and it comes out completely dry, which is where the genus name Adiantum, meaning unwetted, comes from.":"Listy skutečně odpuzují vodu — ponoř jeden a vytáhneš ho úplně suchý; odtud rodové jméno Adiantum, tedy nesmáčený.",
+"An epiphytic fern from tropical Asia and Australia, growing in the forks of trees rather than in soil.":"Epifytní kapradina z tropické Asie a Austrálie, která roste ve větvoví stromů, ne v zemi.",
+"Water around the crown, never into it — the central rosette rots easily if water sits in it.":"Zalévej kolem srdíčka, nikdy do něj — středová růžice snadno shnije, když v ní stojí voda.",
+"In the wild the nest shape catches falling leaves and debris, which rot into a private compost heap that feeds the plant high above the ground.":"V přírodě tvar hnízda zachytává padající listí a drť, které se rozloží ve vlastní kompost živící rostlinu vysoko nad zemí.",
+"From southern Africa, and not a fern at all but a relative of edible asparagus.":"Z jižní Afriky, a vůbec to není kapradina, ale příbuzný jedlého chřestu.",
+"It has water-storing tubers, so it survives drought and then drops needles everywhere afterwards.":"Má hlízky na vodu, takže sucho přežije — a pak všude nasype jehličí.",
+"What look like leaves are not leaves but flattened stems called cladodes. The real leaves are the tiny spines along them.":"Co vypadá jako listy, listy nejsou, ale zploštělé stonky zvané fylokladia. Skutečné listy jsou ty drobné ostny na nich.",
+"From southern China and Taiwan, a clumping fan palm known only in cultivation — no confirmed wild population exists.":"Z jižní Číny a Tchaj-wanu; trsnatá vějířová palma známá jen z kultury — žádná potvrzená divoká populace neexistuje.",
+"The toughest indoor palm there is, and the one most tolerant of dim corners and dry air.":"Nejodolnější pokojová palma vůbec a ta nejsnášenlivější k tmavým koutům a suchému vzduchu.",
+"It was cultivated in Japanese shogunate palaces from the seventeenth century, and named variegated forms are still traded there at collector prices.":"V palácích japonského šógunátu se pěstovala už od sedmnáctého století a pojmenované panašované formy se tam dodnes prodávají za sběratelské ceny.",
+"From riverbanks in Madagascar, where it grows with its feet essentially in water.":"Z břehů madagaskarských řek, kde roste prakticky nohama ve vodě.",
+"Far thirstier and hungrier than it is usually sold as. Most die of drought and starvation in dry living rooms.":"Mnohem žíznivější a hladovější, než jak se prodává. Většina jich v suchých obývácích zajde suchem a hladem.",
+"It was almost unknown until the 1990s, when it was pushed hard as a cheap mass-market palm — which is why so many people have killed one.":"Až do devadesátých let byla skoro neznámá, pak se z ní udělala levná masová palma — proto ji tolik lidí zabilo.",
+"From southern Japan, and not a palm but a cycad, a lineage older than flowering plants.":"Z jižního Japonska, a není to palma, ale cykas — vývojová větev starší než krytosemenné rostliny.",
+"It puts out one flush of leaves a year and nothing in between. Do not overwater waiting for growth.":"Vyžene jednu vlnu listů za rok a mezitím nic. Nepřelévej ho čekáním na růst.",
+"Cycads have barely changed in 250 million years and are seriously toxic — a few seeds can kill a dog, and they are among the most common fatal plant poisonings in veterinary practice.":"Cykasy se za 250 milionů let skoro nezměnily a jsou vážně jedovaté — pár semen zabije psa a patří mezi nejčastější smrtelné otravy rostlinami ve veterinární praxi.",
+"From the deserts of eastern Mexico, and neither a palm nor a tree but a member of the asparagus family.":"Z pouští východního Mexika, a není to ani palma, ani strom, ale člen chřestovitých.",
+"The swollen base is a water tank. Treat it exactly like a succulent and water it monthly at most.":"Ztloustlá báze je nádrž na vodu. Ber ji přesně jako sukulent a zalévej nanejvýš jednou měsíčně.",
+"That bulbous base is called a caudex and can hold enough water for a year of drought. Wild specimens reach 350 years old and 9 m tall.":"Té baňaté bázi se říká caudex a udrží vodu na rok sucha. Divoké exempláře se dožívají 350 let a měří 9 m.",
+"An epiphyte from tropical Asia and Australia, growing flat against tree trunks rather than in soil.":"Epifyt z tropické Asie a Austrálie, který roste naplocho na kmenech stromů, ne v zemi.",
+"Mount it on a board. The flat brown shield frond at the back is meant to go brown — never pull it off.":"Připevni ji na desku. Plochý hnědý štítový list vzadu má být hnědý — nikdy ho neodtrhávej.",
+"It grows two completely different kinds of frond: antler-shaped fertile ones that catch light, and flat shield fronds that clasp the tree and collect falling debris to feed on.":"Roste jí dva úplně odlišné druhy listů: plodné parohovité, které chytají světlo, a ploché štítové, které obepínají strom a sbírají padající drť jako potravu.",
+"From South American rainforest, an epiphyte with blue-green leathery fronds and furry creeping rhizomes.":"Z jihoamerického deštného lesa; epifyt s modrozelenými kožovitými listy a chlupatými plazivými oddenky.",
+"Much more tolerant of dry air than most ferns. Leave the rhizomes on the surface — burying them rots the plant.":"Suchý vzduch snáší mnohem líp než většina kapradin. Oddenky nech na povrchu — když je zahrneš, rostlina shnije.",
+"The blue cast comes from a waxy bloom on the frond surface, and rubbing it off leaves a plain green streak that never returns.":"Modrý nádech dělá voskový povlak na povrchu listu; když ho setřeš, zůstane obyčejně zelený šmouhový pruh, který se už nevrátí.",
+"From Fiji and tropical Asia, with silvery furry rhizomes that crawl over the pot rim.":"Z Fidži a tropické Asie, se stříbřitě chlupatými oddenky, které přelézají okraj květináče.",
+"Those furry feet must stay above the soil. They absorb moisture from the air and rot if covered.":"Ty chlupaté tlapky musí zůstat nad substrátem. Berou vlhkost ze vzduchu a pod zeminou shnijí.",
+"The fur is made of modified scales that trap humidity, and a rhizome cut off and pinned to damp moss will root and grow into a whole new plant.":"Ta srst jsou přeměněné šupiny, které zachytávají vlhkost, a odříznutý oddenek přišpendlený na vlhký mech zakoření a vyroste v celou novou rostlinu.",
+"From New Zealand, with round leathery leaflets along dark wiry stems.":"Z Nového Zélandu, s kulatými kožovitými lístky na tmavých drátovitých stopkách.",
+"Tougher than it looks and it forgives a missed watering better than any other fern here.":"Odolnější, než vypadá, a vynechanou zálivku odpustí líp než kterákoli jiná kapradina tady.",
+"It grows naturally in rock crevices rather than deep forest litter, which is exactly why it tolerates the dry air of a heated room.":"Přirozeně roste ve skalních štěrbinách, ne v hlubokém lesním opadu — právě proto snáší suchý vzduch vytápěné místnosti.",
+"From Australia and Southeast Asia, with puckered, quilted fronds like tooled leather.":"Z Austrálie a jihovýchodní Asie, se zvrásněnými, prošívanými listy jako tepaná kůže.",
+"No direct sun at all, and it wants genuine humidity — a terrarium or bathroom rather than a shelf.":"Žádné přímé slunce a chce opravdovou vlhkost — spíš terárium nebo koupelnu než poličku.",
+"The raised pattern is caused by the veins sitting deeper than the tissue between them, which creates far more surface area for absorbing moisture from the air.":"Vystouplý vzor vzniká tím, že žilky leží hlouběji než pletivo mezi nimi, což mnohonásobně zvětšuje plochu pro příjem vlhkosti ze vzduchu.",
+"An Australian sword fern, upright and much tidier than a Boston fern.":"Australský ledviník, vzpřímený a mnohem úpravnější než ten bostonský.",
+"It sheds far less, tolerates more sun, and is generally the better choice for a room you have to keep clean.":"Mnohem míň opadává, snese víc slunce a do místnosti, kterou musíš udržet čistou, je celkově lepší volba.",
+"It was one of the top performers in NASA's clean-air testing for removing formaldehyde, outscoring most of the plants more famously sold for the purpose.":"V testech NASA na čistotu vzduchu patřil ve snižování formaldehydu ke špičce a předčil většinu rostlin, které se k tomu účelu prodávají slavněji.",
+"Originally from the Arabian peninsula, now grown worldwide and unknown in a truly wild state.":"Původem z Arabského poloostrova, dnes pěstovaná po celém světě a v opravdu divokém stavu neznámá.",
+"Grit, sun and long dry spells. It rots from the crown if water sits in the rosette.":"Drť, slunce a dlouhá období sucha. Když v růžici stojí voda, shnije od srdíčka.",
+"The clear gel and the yellow sap just under the skin are different substances — the gel soothes burns, while the yellow latex is a powerful laxative and a skin irritant.":"Čirý gel a žlutá míza těsně pod slupkou jsou dvě různé věci — gel hojí popáleniny, žlutý latex je silné projímadlo a dráždí kůži.",
+"Rosette succulents from the mountains of Mexico, in grey, pink, blue and near-black.":"Růžicovité sukulenty z mexických hor, v šedé, růžové, modré i téměř černé.",
+"Stretching and pale colour mean not enough light. Water into the soil, never into the rosette.":"Vytahování a bledá barva znamenají málo světla. Zalévej do substrátu, nikdy do růžice.",
+"The chalky bloom on the leaves is a living sunscreen the plant manufactures — wipe it off with your thumb and that patch will sunburn.":"Ten křídový povlak na listech je živý opalovací krém, který si rostlina vyrábí — setři ho palcem a to místo se spálí.",
+"Small South African succulents, often with translucent windows in the leaf tips.":"Malé jihoafrické sukulenty, často s průsvitnými okénky ve špičkách listů.",
+"Far more shade-tolerant than most succulents. Strong sun turns them red and stunted.":"Snášejí stín mnohem líp než většina sukulentů. Na silném slunci zčervenají a zakrní.",
+"The clear tips are genuine windows: in the wild the plant grows buried in sand with only those tips exposed, letting light down into leaf tissue safely below the surface.":"Ty průsvitné špičky jsou opravdová okna: v přírodě rostlina roste zahrabaná v písku a ven kouká jen jimi, takže světlo pouští dolů do pletiva bezpečně pod povrchem.",
+"From South Africa, a tree succulent that lives for decades and eventually forms a real trunk.":"Z Jihoafrické republiky; stromovitý sukulent, který žije desítky let a nakonec si vytvoří opravdový kmen.",
+"Wrinkled leaves mean thirst; soft yellow leaves mean too much water. The two look nothing alike once you have seen both.":"Svraštělé listy znamenají žízeň, měkké žluté listy příliš vody. Až obojí jednou uvidíš, nespleteš si to.",
+"It switches to CAM photosynthesis in drought, opening its pores only at night, and mature plants flower in white starry clusters after a cool dry winter.":"V suchu přepne na CAM fotosyntézu a otevírá průduchy jen v noci; dospělé rostliny po chladné suché zimě kvetou bílými hvězdicovitými chomáči.",
+"From the dry scrub of southwest Africa, trailing strands of near-spherical leaves.":"Ze suchých křovin jihozápadní Afriky; převislé šňůry téměř kulovitých listů.",
+"It rots with astonishing speed. Water sparingly and never let the strands sit on damp soil.":"Hnije neuvěřitelně rychle. Zalévej střídmě a nikdy nenech šňůry ležet na vlhkém substrátu.",
+"Each pearl has a thin transparent stripe down one side — a window that lets light into the interior, letting the plant keep a near-spherical shape that minimises water loss.":"Každá kulička má po straně tenký průsvitný proužek — okno, kterým se světlo dostane dovnitř, takže si rostlina může dovolit skoro kulový tvar, který minimalizuje ztrátu vody.",
+"From southern Mexico, with plump blue-green leaves packed tightly along trailing stems.":"Z jižního Mexika, s baculatými modrozelenými listy hustě nahloučenými na převislých stoncích.",
+"Every dropped leaf will root where it lands and grow into a new plant, which is exactly how it spreads down cliff faces in the wild.":"Každý spadlý list zakoření tam, kde dopadne, a vyroste v novou rostlinu — přesně takhle se v přírodě šíří po skalních stěnách.",
+"From the cloud forests of southeastern Brazil, where it grows on tree branches, not in the desert.":"Z mlžných lesů jihovýchodní Brazílie, kde roste na větvích stromů, ne v poušti.",
+"It is a jungle cactus and wants far more water and far less sun than a desert one.":"Je to kaktus z pralesa a chce mnohem víc vody a mnohem míň slunce než ten pouštní.",
+"It sets buds only in response to long nights and cool temperatures — around 13 hours of uninterrupted darkness for six weeks. A hallway light left on will stop it flowering entirely.":"Poupata nasadí jen na dlouhé noci a chlad — zhruba 13 hodin nepřerušené tmy po šest týdnů. Rozsvícené světlo na chodbě mu kvetení úplně překazí.",
+"From the Americas, built around storing water and doing without for months.":"Z Ameriky; celý je postavený na tom, aby vodu ukládal a měsíce se bez ní obešel.",
+"The killer is winter watering. Keep it cold and bone dry from November to March and it will flower.":"Zabijákem je zimní zálivka. Drž ho od listopadu do března v chladu a úplném suchu a vykvete.",
+"Cactus spines are modified leaves, and the areole they grow from is a structure unique to cacti — it is what separates a true cactus from every other spiny succulent.":"Trny kaktusu jsou přeměněné listy a areola, ze které vyrůstají, je struktura vlastní jen kaktusům — právě ta odlišuje pravý kaktus od každého jiného trnitého sukulentu.",
+"The African milk tree, from Central Africa, a columnar euphorbia often mistaken for a cactus.":"Africký mléčný strom ze střední Afriky; sloupovitý pryšec, který se často plete s kaktusem.",
+"The white sap is a serious irritant, especially near the eyes. Wear gloves to prune and rinse cuts before potting.":"Bílá míza vážně dráždí, hlavně u očí. Na řez si vezmi rukavice a řezné plochy před sázením opláchni.",
+"It is not a cactus at all — its resemblance is convergent evolution, two unrelated families arriving at the same shape for the same reason on different continents.":"Není to vůbec kaktus — ta podoba je konvergentní evoluce, dvě nepříbuzné čeledi došly ke stejnému tvaru ze stejného důvodu na různých kontinentech.",
+"From Madagascar, sold in flower in supermarkets and usually discarded afterwards.":"Z Madagaskaru; prodává se rozkvetlá v supermarketech a obvykle se pak vyhodí.",
+"It will flower again, but only after a period of long nights. Treat it like a Christmas cactus.":"Vykvete znovu, ale jen po období dlouhých nocí. Zacházej s ní jako s vánočním kaktusem.",
+"Some relatives, the mother-of-thousands group, grow complete baby plants along their leaf edges that drop off ready-rooted — one of the most efficient reproduction strategies in the plant world.":"Někteří příbuzní ze skupiny matky tisíců dělají po okrajích listů hotové rostlinky, které opadávají už zakořeněné — jedna z nejúčinnějších rozmnožovacích strategií v rostlinné říši.",
+"From the deserts of Mexico and the southwestern United States, with stiff sharp-tipped rosettes.":"Z pouští Mexika a jihozápadu USA, s tuhými růžicemi zakončenými ostrým hrotem.",
+"The terminal spine is genuinely dangerous at eye height. Site it accordingly or clip the tips.":"Koncový trn je ve výšce očí opravdu nebezpečný. Podle toho ji postav, nebo špičky zastřihni.",
+"Most agaves flower once, spectacularly, on a stalk up to 8 m tall, and then die — having spent every reserve they built over decades on a single reproductive effort.":"Většina agáve kvete jednou, velkolepě, na stvolu vysokém až 8 m, a pak uhyne — všechny zásoby nastřádané za desítky let padnou na jediný pokus o rozmnožení.",
+"Living stones from the deserts of southern Africa, disguised as pebbles among pebbles.":"Živé kameny z pouští jižní Afriky, maskované jako oblázky mezi oblázky.",
+"Almost all deaths are overwatering. It gets no water at all while it is splitting to make new leaves.":"Skoro každé úmrtí má na svědomí přelití. Dokud se dělí a tvoří nové listy, nedostane vodu vůbec.",
+"The plant is two leaves and nothing else. Once a year a new pair grows inside and consumes the old pair entirely from within, so it never has more than two at a time.":"Rostlina jsou dva listy a nic víc. Jednou za rok uvnitř vyroste nový pár a ten starý spotřebuje zevnitř úplně, takže nikdy nemá víc než dva naráz.",
+"From South Africa, with thick tongue-shaped leaves usually held in two flat ranks.":"Z Jihoafrické republiky, s tlustými jazykovitými listy obvykle ve dvou plochých řadách.",
+"It takes less light than almost any other succulent, which makes it a genuinely good desk plant.":"Vystačí si s míň světlem než skoro každý jiný sukulent, takže je opravdu dobrá na stůl.",
+"The name comes from its flowers, which are swollen at the base like a small stomach — gaster in Greek — and are pollinated by sunbirds.":"Jméno má podle květů, které jsou u báze nafouklé jako malý žaludek — řecky gaster — a opylují je strdimilové.",
+"From the Sahel and Arabian peninsula, with a swollen water-storing trunk and vivid pink flowers.":"Ze Sahelu a Arabského poloostrova, se ztloustlým kmenem na vodu a zářivě růžovými květy.",
+"It must have a dry winter rest. Watering a dormant adenium is the usual way people kill them.":"Musí mít suchý zimní klid. Zalévání spícího adénia je nejčastější způsob, jak ho lidé zabijí.",
+"The sap is a potent cardiac glycoside used traditionally as arrow poison across East Africa, strong enough to bring down large game.":"Míza obsahuje silný srdeční glykosid, který se ve východní Africe tradičně používal jako šípový jed — dost silný na velkou zvěř.",
+"From the Canary Islands, with flat rosettes held on bare branching stems.":"Z Kanárských ostrovů, s plochými růžicemi na holých větvených stoncích.",
+"It grows in winter and sleeps in summer — the reverse of everything else on your shelf. Do not water a dormant one.":"Roste v zimě a spí v létě — přesně naopak než všechno ostatní na polici. Spící rostlinu nezalévej.",
+"This inverted cycle matches a Mediterranean climate, where summer is the hard season, so an aeonium looking half-dead in August is behaving perfectly normally.":"Ten obrácený cyklus odpovídá středomořskému podnebí, kde je těžkou sezónou léto — takže aeonium, které v srpnu vypadá napůl mrtvé, se chová naprosto normálně.",
+"From the mountains of Europe, hardy through hard frost and snow.":"Z evropských hor, odolný i vůči tuhému mrazu a sněhu.",
+"It genuinely does not want to come indoors. A cold windowsill or an outdoor pot suits it far better.":"Dovnitř opravdu nechce. Studený parapet nebo květináč venku mu sedí mnohem líp.",
+"Each rosette flowers once and then dies, leaving a ring of offsets behind — which is what sempervivum means: always living, as a colony rather than an individual.":"Každá růžice jednou vykvete a pak uhyne, ale nechá po sobě kruh odnoží — a přesně to znamená sempervivum: vždyživý, jako kolonie, ne jako jedinec.",
+"The mistletoe cactus, from South American rainforest, and the only cactus genus found wild outside the Americas.":"Jmelovitý kaktus z jihoamerického deštného lesa a jediný rod kaktusů, který roste divoce i mimo Ameriku.",
+"A jungle epiphyte, so it wants more water, more humidity and much less sun than a desert cactus.":"Pralesní epifyt, takže chce víc vody, víc vlhka a mnohem míň slunce než pouštní kaktus.",
+"It is the only cactus that occurs naturally in Africa and Sri Lanka, most likely carried there by migrating birds that ate the sticky white berries.":"Je to jediný kaktus, který přirozeně roste i v Africe a na Srí Lance — nejspíš ho tam zanesli tažní ptáci, kteří sezobli lepkavé bílé bobule.",
+"From Central and South American rainforest, growing on branches, with enormous flowers on flat stems.":"Ze středoamerických a jihoamerických deštných lesů; roste na větvích a na plochých stoncích má obrovské květy.",
+"It needs a cool, dry winter rest to set buds — warm all year and it simply never flowers.":"Aby nasadil poupata, potřebuje chladný suchý zimní klid — v teple po celý rok prostě nikdy nekvete.",
+"Some species open a single flower for one night only, and it is among the largest and most powerfully scented of any cactus, timed for hawk moths and bats.":"Některé druhy otevřou jediný květ na jedinou noc; patří k největším a nejsilněji vonícím ze všech kaktusů a je načasovaný na lišaje a netopýry.",
+"A hybrid of two Senecio species, with curved leaves that genuinely resemble leaping dolphins.":"Kříženec dvou druhů starčku, s prohnutými listy, které opravdu připomínají skákající delfíny.",
+"It rots faster than it dries. Treat it more carefully than string of pearls.":"Shnije rychleji, než vyschne. Zacházej s ním opatrněji než se šňůrou perel.",
+"It exists only in cultivation — a deliberate cross made in Japan — and the dolphin shape is an accident of two different leaf forms meeting in one hybrid.":"Existuje jen v kultuře — je to záměrný kříženec vyšlechtěný v Japonsku — a delfíní tvar je náhoda ze setkání dvou různých typů listu v jednom křížení.",
+"From Brazilian rainforest, a tiny trailing peperomia patterned like a tortoise shell.":"Z brazilského deštného lesa; drobná převislá peperomie s kresbou jako želví krunýř.",
+"It is a peperomia, not a succulent, so it wants more water and more humidity than the other strings.":"Je to peperomie, ne sukulent, takže chce víc vody a víc vlhka než ostatní šňůry.",
+"It grows extremely slowly — a strand may take a year to add 10 cm — and the shell pattern is sharpest on plants given bright indirect light.":"Roste extrémně pomalu — šňůře může trvat rok, než přidá 10 cm — a kresba krunýře je nejostřejší u rostlin na jasném nepřímém světle.",
+"From the Americas, with flat pads, and now naturalised across the Mediterranean and Australia.":"Z Ameriky, s plochými články, dnes zdomácnělá po celém Středomoří a v Austrálii.",
+"The fine hairs are far worse than the spines and nearly impossible to remove from skin. Handle with folded newspaper.":"Jemné chloupky jsou mnohem horší než trny a z kůže se dostávají skoro nemožně. Ber ji přes složené noviny.",
+"Those hairs are glochids, barbed and detaching at a touch. Opuntia was introduced to Australia in 1788 and had overrun 24 million hectares by 1925.":"Ty chloupky jsou glochidy, zpětně zoubkované a uvolní se při doteku. Opuncie se do Austrálie dostala v roce 1788 a do roku 1925 zaplavila 24 milionů hektarů.",
+"A large genus of small clustering cacti from Mexico, densely covered in spines.":"Velký rod malých trsnatých kaktusů z Mexika, hustě porostlých trny.",
+"It flowers reliably each spring after a cold, completely dry winter. Warmth in January costs you the flowers.":"Po chladné a úplně suché zimě kvete každé jaro spolehlivě. Teplo v lednu tě o květy připraví.",
+"The flowers appear in a near-perfect ring around the crown, because they emerge from growth made the previous year — the ring marks last summer's growing season.":"Květy vyrážejí v téměř dokonalém kruhu kolem temene, protože vycházejí z loňského přírůstku — ten kruh je značka minulé sezóny.",
+"The star cactus, from Mexico, flecked with white woolly scales in geometric patterns.":"Hvězdicovitý kaktus z Mexika, poprášený bílými vlnatými šupinkami v geometrických vzorech.",
+"Extremely rot-prone. A gritty, mostly mineral mix and very little water.":"Extrémně náchylný k hnilobě. Hrubý, převážně minerální substrát a hodně málo vody.",
+"Some forms are entirely spineless, and Japanese growers have bred selections for the pattern of the white flecks alone, trading named clones at high prices.":"Některé formy jsou úplně beztrnné a japonští pěstitelé vyšlechtili výběry čistě podle kresby bílých skvrnek; pojmenované klony se obchodují za vysoké ceny.",
+"The elephant bush from South Africa, where elephants genuinely browse it as a staple food.":"Sloní keř z Jihoafrické republiky, kde ho sloni opravdu spásají jako základní potravu.",
+"Tougher and faster than jade, and the leaves are edible — sharp, lemony and used in salads locally.":"Odolnější a rychlejší než tlustice a listy jsou jedlé — ostré, citronové, místně se dávají do salátů.",
+"It is being planted across South Africa for carbon capture: it fixes carbon at exceptional rates and can be established simply by pushing cuttings into bare ground.":"Po celé Jihoafrické republice se vysazuje kvůli ukládání uhlíku: váže ho mimořádně rychle a založit porost stačí zapíchnutím řízků do holé země.",
+"A jade cultivar with tubular leaves flared and reddened at the tips.":"Odrůda tlustice s trubkovitými listy, na koncích rozšířenými a načervenalými.",
+"Same care as ordinary jade — sun, grit, and long gaps between waterings.":"Péče jako u obyčejné tlustice — slunce, drť a dlouhé pauzy mezi zálivkami.",
+"The tube is a rolled leaf, fused along its edges, and the red suction-cup tip is the only part where the original leaf surface still shows.":"Ta trubka je stočený list srostlý po okrajích a červená přísavková špička je jediné místo, kde je původní povrch listu ještě vidět.",
+"From South Africa, with white raised stripes banding dark green leaves.":"Z Jihoafrické republiky, s bílými vystouplými pruhy přes tmavě zelené listy.",
+"Tolerant of ordinary indoor light and almost impossible to underwater. Overwatering is the only real danger.":"Snáší běžné pokojové světlo a nedolít ji je skoro nemožné. Jediné opravdové nebezpečí je přelití.",
+"The white bands are tubercles — hardened raised bumps of silica-rich tissue — and they help reflect fierce sun away from the leaf surface.":"Ty bílé pruhy jsou tuberkuly — ztvrdlé hrbolky z pletiva bohatého na křemík — a pomáhají odrážet ostré slunce od povrchu listu.",
+"From India and Southeast Asia, and a plant that wants genuinely more heat than most windowsills provide.":"Z Indie a jihovýchodní Asie; rostlina, která chce opravdu víc tepla, než většina parapetů nabídne.",
+"Pinch out the flower buds the moment they appear. Once it flowers, the leaves turn bitter and the plant winds down.":"Poupata vyštipuj hned, jak se objeví. Když vykvete, listy zhořknou a rostlina končí.",
+"Supermarket pots contain twenty or more seedlings crammed together and competing. Splitting them into small clumps roughly triples how long they live.":"V květináči ze supermarketu je nacpáno dvacet i víc semenáčků, které si konkurují. Rozdělením do malých trsů se jejich životnost zhruba ztrojnásobí.",
+"From Europe and Asia, and famously impossible to contain in open ground.":"Z Evropy a Asie a proslulá tím, že se ve volné půdě nedá udržet na uzdě.",
+"Keep it in its own pot, always. Roots run and it will take over anything it shares soil with.":"Vždycky ji drž ve vlastním květináči. Kořeny se rozbíhají a vytlačí všechno, s čím sdílí zeminu.",
+"Mints hybridise so freely that peppermint is itself a natural cross of spearmint and water mint, and it is sterile — every peppermint plant is a cutting.":"Máty se kříží tak snadno, že máta peprná je sama přirozený kříženec máty klasnaté a máty vodní — a je sterilní, takže každá její rostlina je řízek.",
+"From the Mediterranean coast, growing on dry rocky slopes within sight of the sea.":"Ze středomořského pobřeží, roste na suchých skalnatých svazích na dohled od moře.",
+"Indoors it dies from overwatering and poor airflow far more often than from cold.":"Uvnitř umírá mnohem častěji na přelití a špatné proudění vzduchu než na chlad.",
+"Its name means dew of the sea, and it was recently reclassified from Rosmarinus into Salvia — it is botanically a sage.":"Jeho jméno znamená mořská rosa a nedávno byl z rodu Rosmarinus přeřazen do rodu Salvia — botanicky je to šalvěj.",
+"From the Mediterranean, tiny-leaved and genuinely happier poor, dry and neglected.":"Ze Středomoří, s drobnými lístky, a opravdu se mu daří líp v chudém, suchém a zanedbaném.",
+"Rich compost and regular water make it soft, leggy and far less aromatic. Starve it.":"Bohatý substrát a pravidelná zálivka z něj udělají měkkou vytáhlou rostlinu s mnohem slabší vůní. Nech ho hladovět.",
+"Thymol, its main oil, is a powerful antiseptic that was used to sterilise surgical dressings before modern antibiotics existed.":"Thymol, jeho hlavní silice, je silné antiseptikum, kterým se před érou antibiotik sterilizovaly chirurgické obvazy.",
+"From the Mediterranean, and a biennial — it grows leaves the first year and flowers the second, then dies.":"Ze Středomoří, a je dvouletá — první rok dělá listy, druhý kvete a pak uhyne.",
+"Once it sends up a flower stalk, the leaves turn bitter and it is finished. Start a new pot each year.":"Jakmile vyžene květní stvol, listy zhořknou a je po ní. Každý rok si založ nový květináč.",
+"It is one of the richest common sources of vitamin C by weight, well ahead of oranges, and the flat-leaved form has considerably more flavour than the curly.":"Na hmotnost je to jeden z nejbohatších běžných zdrojů vitaminu C, hodně před pomeranči, a hladkolistá forma chutná výrazně víc než kadeřavá.",
+"From southern Europe and western Asia, and one of the fastest herbs to bolt.":"Z jižní Evropy a západní Asie a jedna z bylinek, které vybíhají do květu nejrychleji.",
+"It bolts at the slightest stress — heat, dryness, root disturbance. Sow directly and sow often.":"Vybíhá při sebemenším stresu — teplo, sucho, narušení kořenů. Sej přímo a často.",
+"Whether it tastes of soap is genuinely genetic: a variant in the OR6A2 olfactory receptor gene makes some people detect the aldehydes it shares with soap.":"Jestli chutná po mýdle, je opravdu věc genů: varianta čichového receptoru OR6A2 dělá to, že někteří lidé cítí aldehydy, které má společné s mýdlem.",
+"From Europe and Asia, and the only onion relative native to both.":"Z Evropy a Asie a jediný příbuzný cibule, který je doma v obou.",
+"Cut it right down rather than trimming tips. It regrows from the base within a fortnight.":"Stříhej ho úplně dolů, ne jen špičky. Do čtrnácti dnů obrazí od báze.",
+"The purple flowers are edible and taste strongly of onion, and they are excellent for pollinators — chives are often planted among roses to deter aphids.":"Fialové květy jsou jedlé a silně chutnají po cibuli a jsou výborné pro opylovače — pažitka se často sází mezi růže proti mšicím.",
+"From the Mediterranean and western Asia, and much stronger dried than fresh.":"Ze Středomoří a západní Asie a sušené je mnohem silnější než čerstvé.",
+"Poor soil and full sun concentrate the oils. Rich, damp conditions give you a bland plant.":"Chudá půda a plné slunce silice zkoncentrují. V bohatém a vlhkém vyroste rostlina bez chuti.",
+"Greek oregano and the common garden species are different plants entirely, and much of what is sold as oregano in supermarkets is actually marjoram.":"Řecké oregano a běžný zahradní druh jsou dvě úplně jiné rostliny a hodně z toho, co se prodává jako oregano, je ve skutečnosti majoránka.",
+"From the northern Mediterranean, with soft grey aromatic leaves.":"Ze severního Středomoří, s měkkými šedými aromatickými listy.",
+"It gets woody and sparse after three or four years. Take cuttings and start again rather than fighting it.":"Po třech čtyřech letech zdřevnatí a prořídne. Radši odeber řízky a začni znovu, než abys s ní bojoval.",
+"The genus name Salvia comes from salvere, to save or heal, and the genus contains nearly a thousand species — including the culinary sage and the ornamental blue salvias.":"Rodové jméno Salvia pochází ze salvere, zachránit či léčit, a rod má skoro tisíc druhů — od kuchyňské šalvěje po okrasné modré šalvěje.",
+"From Central and South America, domesticated at least 6,000 years ago.":"Ze Střední a Jižní Ameriky, zdomácnělá nejméně před 6 000 lety.",
+"It is a perennial, not an annual. Cut it back and overwinter it somewhere bright and it fruits harder the second year.":"Je to trvalka, ne letnička. Seřízni ji a přezimuj někde na světle a druhý rok plodí víc.",
+"Capsaicin binds to the same receptor that detects actual heat, which is why the burn feels like temperature — and birds lack that receptor entirely, which is precisely the point.":"Kapsaicin se váže na stejný receptor, který hlídá skutečné teplo, proto to pálení působí jako teplota — a ptáci ten receptor vůbec nemají, což je přesně smysl celé věci.",
+"From the Andes, and treated as poisonous in Europe for two centuries after it arrived.":"Z And, a dvě století po příchodu do Evropy se považovalo za jedovaté.",
+"Feed heavily once fruit sets, and keep water even — irregular watering splits the skins and causes blossom end rot.":"Jakmile nasadí plody, hnoj vydatně a zalévej rovnoměrně — nepravidelná zálivka praská slupky a působí suchou hnilobu květního konce.",
+"The suspicion was not entirely irrational: it is in the nightshade family, and wealthy Europeans ate off pewter plates whose lead leached out under tomato acidity.":"Ta podezřívavost nebyla úplně nesmyslná: patří k lilkovitým a bohatí Evropané jedli z cínových talířů, ze kterých kyselost rajčete vyluhovala olovo.",
+"A hybrid of two wild American species, crossed by accident in a Brittany garden in the 1750s.":"Kříženec dvou divokých amerických druhů, který vznikl náhodou v bretaňské zahradě v padesátých letech 18. století.",
+"Runners cost the parent plant fruit. Cut them off unless you want more plants.":"Šlahouny stojí matečnou rostlinu plody. Odstřihni je, pokud nechceš víc rostlin.",
+"The fleshy part is not the fruit at all — it is a swollen receptacle, and the actual fruits are the pips on the outside, each one a separate tiny nut.":"Ta dužnatá část vůbec není plod — je to ztloustlé květní lůžko a skutečné plody jsou nažky na povrchu, každá zvlášť.",
+"From the eastern Mediterranean, bred from a bitter wild ancestor still found on roadsides.":"Z východního Středomoří, vyšlechtěný z hořkého divokého předka, který dodnes roste u cest.",
+"Pick outer leaves and it keeps producing for months. Cut the whole head and it is over.":"Sbírej vnější listy a bude plodit měsíce. Uřízni celou hlávku a je konec.",
+"Wild lettuce bleeds a milky sap called lactucarium, mildly sedative and once sold as poor man's opium. Modern lettuce was bred to remove it.":"Locika planá roní mléčnou šťávu zvanou lactucarium, mírně uklidňující, kdysi prodávanou jako opium chudých. Moderní salát byl vyšlechtěn tak, aby ji neměl.",
+"From Southeast Asia, a tropical grass grown in clumps for its stems.":"Z jihovýchodní Asie; tropická tráva pěstovaná v trsech pro své stonky.",
+"It needs warmth and does not survive a cold windowsill. Bring it in well before the first frost.":"Potřebuje teplo a na studeném parapetu nepřežije. Dej ji dovnitř dobře před prvním mrazem.",
+"A supermarket stalk with its base intact will root in a glass of water in about two weeks and grow into a full clump.":"Stonek ze supermarketu s neporušenou bází zakoření ve sklenici vody asi za dva týdny a vyroste v celý trs.",
+"From the eastern Mediterranean and western Asia, feathery and quick to run to seed.":"Z východního Středomoří a západní Asie, jemně dělený a rychle vybíhá do semene.",
+"It hates transplanting — the taproot resents it. Sow where it will grow, and sow again every few weeks.":"Nesnáší přesazování — kůlový kořen to nemá rád. Sej rovnou na místo a opakuj to každých pár týdnů.",
+"Both the leaf and the seed are used, and they taste noticeably different: the leaf is grassy and mild, the seed sharp and close to caraway.":"Používá se nať i semeno a chutnají znatelně jinak: nať je travnatá a jemná, semeno ostré a blízké kmínu.",
+"From the Mediterranean, and the tree of the classical victor's wreath.":"Ze Středomoří, strom antického vavřínového věnce.",
+"Slow-growing and very long-lived in a pot. Pick leaves any time — they are stronger dried than fresh.":"Roste pomalu a v květináči se dožívá vysokého věku. Listy sbírej kdykoli — sušené jsou silnější než čerstvé.",
+"The Oracle at Delphi chewed bay leaves before prophesying, and the word baccalaureate comes from the laurel berries awarded to scholars.":"Delfská věštkyně před věštěním žvýkala vavřínové listy a slovo bakalaureát pochází z vavřínových bobulí udělovaných učencům.",
+"From the western Mediterranean, and a plant that positively requires poor, sharply drained soil.":"Ze západního Středomoří; rostlina, která přímo vyžaduje chudou, dokonale propustnou půdu.",
+"Rich compost and regular watering kill it faster than anything else. Grit and neglect are the whole method.":"Bohatý substrát a pravidelná zálivka ji zabijí rychleji než cokoli jiného. Celá metoda je drť a zanedbávání.",
+"The oil is one of the very few essential oils safe to apply neat to skin, and its scent genuinely measurably reduces heart rate in controlled trials.":"Její olej je jedna z mála silic, které se dají bezpečně nanést na kůži neředěné, a její vůně v kontrolovaných studiích měřitelně snižuje tepovou frekvenci.",
+"From southern Europe, a mint relative with a strong lemon scent.":"Z jižní Evropy; příbuzná máty se silnou citronovou vůní.",
+"As invasive as mint and it self-seeds freely on top. Keep it potted and deadhead it.":"Šíří se stejně jako máta a k tomu se ochotně vysemeňuje. Drž ji v květináči a odstraňuj odkvetlé květy.",
+"Its Latin name Melissa means honeybee — beekeepers have rubbed it inside empty hives since Roman times to encourage swarms to settle.":"Latinské jméno Melissa znamená včela — včelaři jí od dob Říma vytírají prázdné úly, aby se v nich roje usadily.",
+"From Eurasia, with a distinctive anise flavour, and available in two very different forms.":"Z Eurasie, s výraznou anýzovou chutí, a k dostání ve dvou hodně odlišných formách.",
+"Get French tarragon, not Russian. Russian is hardier and tastes of almost nothing, and it is what cheap seed packets contain.":"Pořiď si francouzský estragon, ne ruský. Ruský je otužilejší a nechutná skoro po ničem — a právě ten bývá v levných sáčcích semen.",
+"French tarragon is sterile and cannot be grown from seed at all — any tarragon seed on sale is necessarily the inferior Russian type.":"Francouzský estragon je sterilní a ze semene se vypěstovat vůbec nedá — každé prodávané semeno estragonu je nutně ten horší ruský typ.",
+"From maritime Southeast Asia, grown for its rhizome for at least 5,000 years.":"Z přímořské jihovýchodní Asie; pro svůj oddenek se pěstuje nejméně 5 000 let.",
+"Start from a supermarket piece with visible growth buds. It dies back completely in winter, which is normal.":"Začni kouskem ze supermarketu, na kterém jsou vidět pupeny. V zimě úplně zatáhne, což je normální.",
+"Ginger has not been found growing wild anywhere — it is a fully domesticated plant, propagated only by division, and has been for millennia.":"Zázvor nebyl nikde nalezen ve volné přírodě — je to plně zdomácnělá rostlina, která se po tisíciletí množí jen dělením.",
+"From South Asia, a relative of ginger grown for its brilliant orange rhizome.":"Z jižní Asie; příbuzná zázvoru pěstovaná pro zářivě oranžový oddenek.",
+"Same treatment as ginger. Harvest after the foliage dies back in autumn, roughly nine months from planting.":"Zacházej s ní jako se zázvorem. Sklízej, až na podzim zatáhne nať, zhruba devět měsíců od výsadby.",
+"Curcumin, its pigment, is a pH indicator — it turns deep red in alkaline conditions, which is why a turmeric stain changes colour when soap touches it.":"Kurkumin, její barvivo, je pH indikátor — v zásaditém prostředí zčervená, proto skvrna od kurkumy změní barvu, jakmile se dotkne mýdla.",
+"From the Mediterranean, peppery and among the fastest leaves you can grow.":"Ze Středomoří, pepřová a patří k nejrychleji rostoucím listům vůbec.",
+"Ready in about a month. Sow a small amount every fortnight, because it turns harsh and bitter once it bolts.":"Hotová asi za měsíc. Sej ji po troškách každých čtrnáct dní, protože jakmile vyběhne, je ostrá a hořká.",
+"The heat comes from the same glucosinolate compounds as mustard and horseradish, and it gets sharper the hotter and drier the plant is grown.":"Ostrost dělají stejné glukosinoláty jako u hořčice a křenu a sílí tím víc, čím tepleji a sušeji rostlina roste.",
+"Grown worldwide, and one of the very few vegetables that genuinely regrows from kitchen scraps.":"Pěstuje se po celém světě a je jednou z mála zelenin, které opravdu obrazí z kuchyňského odpadu.",
+"Stand the root ends in a shallow glass of water and they regrow two or three times before giving up.":"Postav kořenové konce do mělké sklenice s vodou a obrazí dvakrát třikrát, než to vzdají.",
+"After a couple of cycles the flavour weakens noticeably, because the plant is spending stored reserves it has no leaves to replace.":"Po pár cyklech chuť znatelně zeslábne, protože rostlina utrácí uložené zásoby, které nemá čím listy nahradit.",
+"The young tips of ordinary garden peas, grown densely and cut early.":"Mladé vrcholky obyčejného hrachu, sázené hustě a stříhané brzy.",
+"No feeding at all — the seed carries everything the plant needs for two weeks of growth.":"Žádné hnojení — semeno nese všechno, co rostlina na dva týdny růstu potřebuje.",
+"Cut just above the lowest pair of leaves and most varieties will give you a second harvest about ten days later.":"Stříhej těsně nad nejnižším párem listů a většina odrůd ti asi za deset dní dá druhou sklizeň.",
+"The moth orchid, from Southeast Asia, growing on tree branches rather than in soil.":"Můrovec z jihovýchodní Asie, který roste na větvích stromů, ne v zemi.",
+"Those roots need light and air. Bark, not compost, and never leave it standing in water.":"Ty kořeny potřebují světlo a vzduch. Kůra, ne zemina, a nikdy ho nenech stát ve vodě.",
+"The roots are photosynthetic — they are green and actively feed the plant, which is why clear pots are not a gimmick but genuinely useful.":"Kořeny fotosyntetizují — jsou zelené a rostlinu opravdu živí, proto průhledné květináče nejsou trik, ale skutečně užitečná věc.",
+"From a small area of Tanzanian mountain forest, and endangered in the wild.":"Z malé oblasti tanzanského horského lesa, ve volné přírodě ohrožená.",
+"Cold water on the leaves leaves permanent pale rings. Water from below with room-temperature water.":"Studená voda na listech zanechá trvalé světlé kruhy. Zalévej zespodu vodou pokojové teploty.",
+"A single leaf with its stalk pushed into damp compost will produce a whole cluster of new plants at its base within about two months.":"Jediný list se stopkou zapíchnutou do vlhkého substrátu vydá u báze celý trs nových rostlinek zhruba za dva měsíce.",
+"A vast genus of some 2,000 species from tropics worldwide, in wildly different forms.":"Obrovský rod asi 2 000 druhů z tropů celého světa, v naprosto odlišných podobách.",
+"Water at the base and keep the leaves dry — begonias mildew readily in still, damp air.":"Zalévej u báze a listy drž suché — begónie ve stojatém vlhkém vzduchu snadno chytí padlí.",
+"Every begonia carries separate male and female flowers on the same plant, and you can tell them apart at a glance: the female has a small winged seed pod behind the petals.":"Každá begónie má na jedné rostlině oddělené samčí a samičí květy a poznáš je na první pohled: samičí má za okvětím malý křídlatý semeník.",
+"From the Mediterranean and Middle East, and it grows in winter and sleeps through summer.":"Ze Středomoří a Blízkého východu; roste v zimě a léto prospí.",
+"Water from below and never into the crown. Yellowing leaves in spring mean dormancy, not death.":"Zalévej zespodu a nikdy do srdíčka. Žloutnoucí listy na jaře znamenají klid, ne smrt.",
+"After flowering, the stalk coils itself into a tight spring and pulls the seed pod down to ground level, effectively planting its own seed.":"Po odkvětu se stopka stočí do těsné pružiny a stáhne tobolku k zemi — rostlina si tak vlastně sama zasazuje semena.",
+"From Mexico, where it is a leggy shrub 4 m tall rather than a compact pot plant.":"Z Mexika, kde je to vytáhlý čtyřmetrový keř, ne kompaktní rostlina do květináče.",
+"The colour is bracts, not petals, and they need long uninterrupted nights to develop.":"Barvu nesou listeny, ne okvětní lístky, a k vybarvení potřebují dlouhé nepřerušené noci.",
+"Its reputation as deadly to children is a myth traced to a single unverified 1919 report — it is mildly irritant at worst, though the sap bothers latex allergies.":"Pověst, že je smrtelně jedovatá pro děti, je mýtus vycházející z jediné neověřené zprávy z roku 1919 — nanejvýš mírně dráždí, i když míza vadí lidem s alergií na latex.",
+"From southern China and Japan, with intensely scented white flowers.":"Z jižní Číny a Japonska, s intenzivně vonícími bílými květy.",
+"It demands acidic soil, iron, humidity and consistency, and it drops its buds if any of those slip.":"Vyžaduje kyselý substrát, železo, vlhko a stálost — a jakmile jedno z toho poleví, shodí poupata.",
+"The white flowers yellow as they age, and the scent is strongest at night because they are moth-pollinated in the wild.":"Bílé květy s věkem žloutnou a vůně je nejsilnější v noci, protože je v přírodě opylují noční motýli.",
+"From tropical Asia and the Pacific, with flowers that open for a single day.":"Z tropické Asie a Tichomoří, s květy, které se otevřou na jediný den.",
+"Feed heavily through summer, and expect buds to drop if it is moved or allowed to dry out.":"Přes léto vydatně hnoj a počítej s tím, že po přestěhování nebo vyschnutí shodí poupata.",
+"Each flower lasts only one day, but a well-fed plant produces them continuously — and the flowers of Hibiscus sabdariffa are what makes hibiscus tea.":"Každý květ vydrží jen den, ale dobře živená rostlina je tvoří pořád — a z květů ibišku súdánského se dělá ibiškový čaj.",
+"From the Himalayas and southern Asia, and one of the strongest-scented plants you can keep indoors.":"Z Himálaje a jižní Asie a jedna z nejsilněji vonících rostlin, jaké si můžeš dát domů.",
+"It needs a cool winter rest of around 10°C to set flower buds. A warm room all year gives you leaves only.":"Aby nasadil poupata, potřebuje chladný zimní klid kolem 10 °C. V teple po celý rok dostaneš jen listy.",
+"Its scent compounds are so valuable that jasmine absolute is among the most expensive perfume ingredients, and flowers are still picked by hand before dawn when the scent peaks.":"Jeho vonné látky jsou tak cenné, že jasmínové absolue patří k nejdražším parfumérským surovinám, a květy se dodnes sbírají ručně před svítáním, kdy vůně vrcholí.",
+"Hippeastrum, from South America, grown from a large bulb for enormous winter flowers.":"Hvězdník z Jižní Ameriky, pěstovaný z velké cibule pro obrovské zimní květy.",
+"After flowering, keep the leaves going all summer to rebuild the bulb, then dry it off in autumn to reset it.":"Po odkvětu nech listy růst celé léto, ať se cibule doplní, a na podzim ji vysuš, aby se cyklus resetoval.",
+"The true Amaryllis is a different South African genus entirely — the plant everyone calls amaryllis has been misnamed in the trade for two centuries.":"Skutečná Amaryllis je úplně jiný jihoafrický rod — rostlina, které všichni říkají amarylis, se v obchodě dvě století jmenuje špatně.",
+"From South Africa, and not a geranium at all but a pelargonium.":"Z Jihoafrické republiky, a není to vůbec kakost, ale pelargonie.",
+"Deadhead constantly and keep it slightly hungry. Rich feeding gives leaves at the expense of flowers.":"Neustále odstraňuj odkvetlé květy a nech ji trochu hladovět. Bohaté hnojení dá listy na úkor květů.",
+"The scented-leaf kinds come in rose, lemon, mint and chocolate, and rose pelargonium oil is widely used as a substitute for far more expensive rose otto.":"Vonnolisté typy voní po růži, citronu, mátě i čokoládě a růžový pelargoniový olej se běžně používá jako náhrada mnohem dražšího růžového oleje.",
+"From tropical America, mostly epiphytes that hold water in a central cup formed by their leaves.":"Z tropické Ameriky; většinou epifyty, které zadržují vodu ve středové nádržce z listů.",
+"Water into the cup as well as the soil, and flush it every few weeks so it does not go stagnant.":"Zalévej do nádržky i do substrátu a každých pár týdnů ji propláchni, ať voda nestagnuje.",
+"The plant flowers once and then dies, leaving pups behind — and pineapple is a bromeliad, the only one grown as a major food crop.":"Rostlina jednou vykvete a pak uhyne, ale nechá po sobě odnože — a ananas je bromélie, jediná pěstovaná jako významná potravinářská plodina.",
+"The Cape primrose, from South African forest, related to African violets but far less fussy.":"Kapská prvosenka z jihoafrických lesů, příbuzná africkým fialkám, ale mnohem míň náročná.",
+"Water sparingly at the base and it flowers for most of the year in modest light.":"Zalévej střídmě u báze a při skromném světle kvete většinu roku.",
+"One species grows a single enormous leaf and nothing else for its entire life, flowering once from the base of that leaf and then dying.":"Jeden druh vytvoří za celý život jediný obrovský list a nic víc, jednou z jeho báze vykvete a pak uhyne.",
+"From South African forest floor, with strap leaves and heads of orange trumpets.":"Z podrostu jihoafrických lesů, s páskovitými listy a okolíky oranžových trubek.",
+"It will not flower without a cold, dry, dark autumn rest of six to eight weeks. There is no shortcut.":"Bez chladného, suchého a tmavého podzimního klidu na šest až osm týdnů nevykvete. Zkratka neexistuje.",
+"It is one of very few plants that flowers well in genuine shade, and named yellow forms have sold at auction for four-figure sums in South Africa and China.":"Je jednou z mála rostlin, které dobře kvetou i v opravdovém stínu, a pojmenované žluté formy se v Jihoafrické republice a Číně vydražily za čtyřciferné částky.",
+"Aeschynanthus, from Southeast Asian rainforest, trailing with red tubular flowers.":"Aeschynanthus z deštných lesů jihovýchodní Asie; převislý, s červenými trubkovitými květy.",
+"It flowers best when slightly pot-bound. Repotting a happy plant usually costs you a season of flowers.":"Nejlíp kvete, když má trochu těsný květináč. Přesazení spokojené rostliny tě obvykle stojí jednu sezónu květů.",
+"The flower emerges from a dark maroon calyx exactly like a lipstick from its case, and it is pollinated by sunbirds that perch on the trailing stems.":"Květ vylézá z tmavě vínového kalichu přesně jako rtěnka z pouzdra a opylují ho strdimilové, kteří usedají na převislé stonky.",
+"Nematanthus, from Brazilian rainforest, with pouched orange flowers.":"Nematanthus z brazilského deštného lesa, s baňatými oranžovými květy.",
+"Bright light and a cool winter. It sulks and drops leaves in a hot dry room.":"Hodně světla a chladná zima. V horké suché místnosti trucuje a shazuje listy.",
+"The pouched flower has a narrow opening at the tip, forcing hummingbirds into exactly the position that dusts their heads with pollen.":"Baňatý květ má na konci úzký otvor, který kolibříka donutí přesně do polohy, v níž se mu na hlavu nanese pyl.",
+"From limestone outcrops in Chiapas, Mexico, with velvet leaves veined in white.":"Z vápencových výchozů v mexickém Chiapasu, se sametovými listy a bílými žilkami.",
+"It is a lithophyte — it grows on rock, not in soil. Give it a very chunky, airy mix and never dense compost.":"Je to litofyt — roste na skále, ne v zemi. Dej mu hodně hrubý vzdušný substrát a nikdy hustou zeminu.",
+"The white veins are not pigment but light scattering through tissue over the vascular bundles, which is why they glow rather than simply look pale.":"Bílé žilky nejsou pigment, ale rozptyl světla v pletivu nad cévními svazky — proto září, místo aby jen bledě vypadaly.",
+"A huge genus from Asia and Australia, growing on branches, with flowers along tall canes.":"Obrovský rod z Asie a Austrálie; roste na větvích a květy nese po celé délce vysokých stonků.",
+"It needs a distinctly cooler and drier winter to bud. Never cut the old leafless canes off — they store the plant's reserves.":"Aby nasadil poupata, potřebuje výrazně chladnější a sušší zimu. Staré bezlisté stonky nikdy neodstřihuj — jsou v nich zásoby rostliny.",
+"With over 1,800 species it is one of the largest orchid genera on earth, ranging from Himalayan snowline plants to lowland tropical epiphytes.":"S více než 1 800 druhy patří k největším rodům orchidejí na světě — od rostlin himálajské sněžné čáry po nížinné tropické epifyty.",
+"The dancing lady orchid, from Central and South America, with sprays of small flowers.":"Orchidej tančících dam ze Střední a Jižní Ameriky, s laty drobných květů.",
+"Pleated, concertina-like leaves are a permanent record that the plant went too dry. They never flatten out again.":"Zřasené listy jako harmonika jsou trvalý záznam toho, že rostlina moc vyschla. Už se nikdy nevyrovnají.",
+"Several are strongly scented of chocolate or vanilla, and the flower shape is thought to mimic a rival bee, provoking male bees into attacking and pollinating it.":"Několik druhů silně voní po čokoládě nebo vanilce a má se za to, že tvar květu napodobuje soupeřící včelu, takže ji samečci napadají — a přitom ji opylují.",
+"From Central and South America, the large scented orchid of the traditional corsage.":"Ze Střední a Jižní Ameriky; velká vonná orchidej z tradičních korsáží.",
+"It wants brighter light than a phalaenopsis — enough that the leaves go a light yellowish green rather than deep green.":"Chce víc světla než můrovec — tolik, aby listy byly světle žlutozelené, ne sytě zelené.",
+"The genus was discovered by accident in 1818 when plants used as packing material around other specimens were potted up out of curiosity and flowered.":"Rod byl objeven náhodou v roce 1818, když někdo ze zvědavosti zasadil rostliny použité jako výplň kolem jiných zásilek — a ony vykvetly.",
+"The giant peace lily, with leaves reaching a metre, bred from the same Central American species.":"Obří toulitka s listy až metrovými, vyšlechtěná ze stejného středoamerického druhu.",
+"Same habits as the standard plant at four times the scale — including the dramatic droop and recovery.":"Chová se jako běžná rostlina, jen ve čtyřnásobném měřítku — včetně toho dramatického svěšení a návratu.",
+"It is the largest peace lily cultivar in commerce, and its size means a single plant transpires enough to noticeably raise humidity in a small room.":"Je to největší obchodovaná odrůda toulitky a při té velikosti jediná rostlina odpaří tolik, že v malé místnosti znatelně zvedne vlhkost.",
+"Euphorbia milii, from Madagascar, spiny-stemmed and flowering nearly year-round.":"Pryšec Miliův z Madagaskaru, s trnitými stonky a kvete skoro celý rok.",
+"The milky sap is a serious irritant. Wear gloves, and rinse cuttings before potting them.":"Mléčná míza vážně dráždí. Používej rukavice a řízky před sázením opláchni.",
+"It is one of very few succulents that flowers continuously given enough light, and the red parts are bracts rather than petals — the same trick as poinsettia, a close relative.":"Je jedním z mála sukulentů, které při dostatku světla kvetou nepřetržitě, a ty červené části jsou listeny, ne okvětní lístky — stejný trik jako u vánoční hvězdy, blízké příbuzné.",
+"From Brazil, a thorny climber grown for masses of papery colour.":"Z Brazílie; trnitý popínavec pěstovaný pro záplavu papírové barvy.",
+"Keep it slightly hungry and slightly dry. Rich feeding and steady water give you a vigorous green plant with no colour at all.":"Nech ho trochu hladovět a trochu vysychat. Bohaté hnojení a stálá zálivka dají bujnou zelenou rostlinu úplně bez barvy.",
+"The colour is bracts, and the actual flowers are the tiny white trumpets in the centre of each cluster of three — which is why they always come in threes.":"Barvu nesou listeny a skutečné květy jsou ty drobné bílé trubky uprostřed každé trojice — proto jsou vždycky po třech.",
+"From a single small area of wetland in North and South Carolina, and nowhere else on earth naturally.":"Z jediné malé mokřadní oblasti v Severní a Jižní Karolíně; nikde jinde na světě přirozeně neroste.",
+"Rainwater or distilled only, never tap, and never fertiliser. It sits in a tray of water all summer.":"Jen dešťovka nebo destilovaná, nikdy z kohoutku a nikdy hnojivo. Celé léto stojí v misce s vodou.",
+"Each trap counts: one touch to a trigger hair does nothing, two within about twenty seconds closes it. This avoids wasting a trap on a raindrop, and each trap can only close a handful of times before it dies.":"Každá past počítá: jeden dotek spouštěcího chlupu neudělá nic, dva do zhruba dvaceti sekund ji zavřou. Tím se past neplýtvá na kapku deště — a každá se stihne zavřít jen několikrát, než odumře.",
+"Found on every continent except Antarctica, catching insects on stalked glands that glisten like dew.":"Roste na všech kontinentech kromě Antarktidy a chytá hmyz na stopkatých žlázkách, které se lesknou jako rosa.",
+"It stands permanently in rainwater. The dew regrows within a day if you wipe it off.":"Trvale stojí v dešťové vodě. Když rosu setřeš, do dne se obnoví.",
+"Darwin wrote an entire book on sundews and said he cared more about Drosera than the origin of all the species in the world — the plants bend their tentacles toward captured prey over several hours.":"Darwin o rosnatkách napsal celou knihu a řekl, že mu na rodu Drosera záleží víc než na původu všech druhů na světě — rostliny během několika hodin ohýbají svá tykadélka k ulovené kořisti.",
+"From the bogs of eastern North America, trapping insects in vertical tubes of modified leaf.":"Z rašelinišť východní Severní Ameriky; hmyz chytá do svislých trubic z přeměněných listů.",
+"It genuinely needs a cold winter dormancy outdoors. A warm windowsill year-round kills it within two seasons.":"Opravdu potřebuje chladné zimní období klidu venku. Teplý parapet po celý rok ji do dvou sezón zabije.",
+"The pitchers have downward-pointing hairs and a waxy interior that make climbing out impossible, and by late summer a healthy pitcher can be packed solid with insects.":"Láčky mají dolů mířící chlupy a voskový vnitřek, takže se z nich nedá vylézt, a koncem léta bývá zdravá láčka nacpaná hmyzem.",
+"From Southeast Asia, hanging pitchers from tendrils at the ends of its leaves.":"Z jihovýchodní Asie; láčky visí na úponkách na koncích listů.",
+"The only carnivore here that wants warmth all year rather than a cold rest. Humidity is essential.":"Jediná masožravka tady, která chce teplo po celý rok místo chladného klidu. Vlhkost je nutnost.",
+"Some large species have given up on insects and instead form partnerships with tree shrews, which perch on the pitcher to lick nectar and defecate into it — the plant feeds on the droppings.":"Některé velké druhy hmyz vzdaly a místo toho spolupracují s tanami, které si na láčku sednou, olizují nektar a kálejí do ní — rostlina se pak živí trusem.",
+"From Europe, Asia and the Americas, with sticky greasy leaves that catch small flying insects.":"Z Evropy, Asie a Ameriky, s lepkavými mastnými listy, které chytají drobný létající hmyz.",
+"Genuinely useful next to other houseplants — it catches fungus gnats better than any sticky trap.":"Vedle jiných pokojovek je opravdu užitečná — smutnice chytá líp než jakákoli lepová deska.",
+"The leaves secrete digestive enzymes directly onto their surface, and Scandinavian herders used them for centuries to curdle milk into a soured product called tätmjölk.":"Listy vylučují trávicí enzymy přímo na povrch a skandinávští pastevci je po staletí používali ke srážení mléka na kysaný výrobek zvaný tätmjölk.",
+"The common name comes from the effect of the sap: calcium oxalate needles cause the tongue and throat to swell, which historically left people temporarily unable to speak.":"Anglické jméno má podle účinku mízy: jehličky šťavelanu vápenatého způsobí otok jazyka a hrdla, po kterém lidé dřív dočasně nemohli mluvit.",
+"The leaves fall off if you so much as look at it. Hang it where nothing brushes past.":"Listy opadají, sotva se na něj podíváš. Zavěs ho tam, kde o něj nikdo nezavadí.",
+"Plan":"Plán","no completion":"bez odškrtnutí",
+"No tick, never overdue, never counted":"Bez odškrtnutí, nikdy po termínu, nikdy se nepočítá",
+"No completion needed — just a plan":"Není co odškrtávat — jen plán",
+"Aspidistra (cast iron plant)":"Aspidistra vysoká (železný list)",
+"Reset everything — products, lineups, plants, the whole log, the planner and all tracked hours — back to the starting point?":"Vrátit všechno — produkty, sestavy, rostliny, celý záznamník, plánovač i všechny sledované hodiny — na začátek?",
+"Worth another look":"Ještě jednou mrkni na","tomorrow":"zítra",
+"words":"slov","learned":"naučeno","overdue":"po termínu","review":"opakování","reviews":"opakování",
+"Nothing to undo":"Není co vrátit","Nothing to redo":"Není co zopakovat",
 });
 
 /* ---------------- teachbench student app: mode gate ----------------
@@ -17855,6 +18823,12 @@ async function bootStudentApp(){
   document.querySelector(".navwrap").style.display="none";
   document.querySelectorAll("main > .view").forEach(v=>{ if(v.id!=="view-teachbench-student") v.hidden=true; });
   document.getElementById("view-teachbench-student").hidden=false;
+  /* the student never sees the app chrome, so there is no language picker —
+     take whatever this device already chose, otherwise follow the browser */
+  try{ const raw=localStorage.getItem(LOCAL_KEY); if(raw){ const pref=JSON.parse(raw); if(pref&&pref.lang) L.lang=pref.lang; } }catch(e){}
+  if(L.lang!=="en"&&L.lang!=="cs") L.lang=(navigator.language||"").toLowerCase().startsWith("cs")?"cs":"en";
+  document.documentElement.lang=L.lang;
+  applyLang(); watchLang();
   TBS_UI.start({studentOnly:true});
 }
 /* Student mode has to survive a reload, or the first pull-to-refresh
@@ -18088,8 +19062,12 @@ const RECAP = (() => {
      stops meaning anything, so the encouragement is tied to a real number. */
   function encourage(g, streak){
     if(!g.total) return "A fresh start — your first words are on their way.";
-    if(g.mastered.length >= 10) return `${g.mastered.length} words are properly yours now. That is real progress.`;
-    if(streak >= 7) return `${streak} days in a row of turning up. That habit is the whole trick.`;
+    if(g.mastered.length >= 10) return L.lang==="cs"
+      ? `${g.mastered.length} ${pl3(g.mastered.length,"slovo je","slova jsou","slov je")} teď doopravdy tvých. To je pořádný pokrok.`
+      : `${g.mastered.length} words are properly yours now. That is real progress.`;
+    if(streak >= 7) return L.lang==="cs"
+      ? `${streak} ${pl3(streak,"den","dny","dní")} v řadě, co se ukazuješ. Přesně o ten návyk jde.`
+      : `${streak} days in a row of turning up. That habit is the whole trick.`;
     if(g.accuracy !== null && g.accuracy >= 85) return "You are remembering nearly everything you meet. Keep going.";
     if(g.struggling.length) return "A few words are being stubborn — that is normal, and they are the ones worth the time.";
     return "Small and often beats long and rare. You are doing it right.";
@@ -18118,9 +19096,31 @@ const RECAP = (() => {
   function forTeacher(student, cards, homework, streakView, when){
     const g = gather(cards, homework, when);
     const month = g.ref.toLocaleDateString(undefined,{month:"long", year:"numeric"});
-    const list = arr => arr.length ? arr.map(c => `  - ${c.front} = ${c.back}`).join("\n") : "  (none)";
+    const cs = L.lang==="cs";
+    const list = arr => arr.length ? arr.map(c => `  - ${c.front} = ${c.back}`).join("\n") : (cs?"  (žádné)":"  (none)");
     const v = streakView || { best:0, points:0, onTime:0, late:0 };
-    return [
+    return (cs ? [
+      `POZNÁMKY K PLÁNOVÁNÍ LEKCÍ — ${student.name} — ${month}`,
+      ``,
+      `Slovní zásoba: ${g.byType.vocab} · Gramatika: ${g.byType.grammar} · Výslovnost: ${g.byType.pron}`,
+      `Kartiček celkem: ${g.total} (${g.added.length} přidáno tento měsíc)`,
+      `Opakování: ${g.reviews}${g.accuracy!==null?` · úspěšnost ${g.accuracy} %`:""}`,
+      `Včas ${v.onTime}×, pozdě ${v.late}× · nejlepší série ${v.best} ${pl3(v.best,"den","dny","dní")}`,
+      `Domácí úkoly: ${g.sent} zadáno, ${g.answered} odpovězeno`,
+      ``,
+      `ZVLÁDNUTO (interval ${MASTERED_DAYS}+ dní — dá se přestat drilovat):`,
+      list(g.mastered.slice(0,25)),
+      ``,
+      `POŘÁD UTÍKÁ (zapomenuto dvakrát a víc — stojí za zopakování v lekci):`,
+      list(g.struggling.slice(0,15)),
+      ``,
+      `PŘIDÁNO TENTO MĚSÍC:`,
+      list(g.added.slice(0,40)),
+      ``,
+      `Navrhni prosím zaměření na příští měsíc pro tohoto studenta: která`,
+      `z utíkajících slov znovu vysvětlit a jak, co nového zavést vzhledem`,
+      `k tomu, co už umí, a jeden nápad na aktivitu pro každý týden.`
+    ] : [
       `LESSON PLANNING NOTES — ${student.name} — ${month}`,
       ``,
       `Vocabulary items: ${g.byType.vocab} · Grammar: ${g.byType.grammar} · Pronunciation: ${g.byType.pron}`,
@@ -18141,7 +19141,7 @@ const RECAP = (() => {
       `Please suggest next month's focus for this student: which of the`,
       `slipping items to reteach and how, what to introduce next given`,
       `what they already hold, and one activity idea per week.`
-    ].join("\n");
+    ]).join("\n");
   }
 
   return { forStudent, forTeacher, gather, MASTERED_DAYS };
@@ -18553,7 +19553,7 @@ const TBS_UI = (() => {
     dropListeners();
     show("tbsHome");
     state.unsub.push(TBS.onStudent(studentId, s => {
-      $$("tbsGreeting").textContent = s ? `Hello, ${s.name}` : "Hello";
+      $$("tbsGreeting").textContent = s ? `${t("Hello")}, ${s.name}` : t("Hello");
     }));
     state.unsub.push(TBS.onCards(studentId, (cards, err) => {
       state.cards = cards; state.cardsError = err || null;
@@ -18611,7 +19611,9 @@ const TBS_UI = (() => {
     $$("tbsStreakNote").textContent =
       v.streak && v.studiedToday && !due ? "Today is done. Come back when the next words are ready."
       : v.streak && due ? "Review what's due to keep the streak."
-      : !v.streak && v.best ? `Your best run was ${v.best} days — start another today.`
+      : !v.streak && v.best ? (L.lang==="cs"
+          ? `Tvoje nejlepší série byla ${v.best} ${pl3(v.best,"den","dny","dní")} — začni další ještě dnes.`
+          : `Your best run was ${v.best} days — start another today.`)
       : "Reviewing on time is what builds the streak.";
   }
 
@@ -18628,19 +19630,21 @@ const TBS_UI = (() => {
     const focus = $$("tbsRecapFocus");
     if(r.focus.length){
       focus.hidden = false;
-      focus.textContent = `Worth another look: ${r.focus.join(", ")}`;
+      focus.textContent = `${t("Worth another look")}: ${r.focus.join(", ")}`;
     }else focus.hidden = true;
     $$("tbsRecapMsg").textContent = r.message;
   }
 
   function relativeWhen(ms){
     const mins = Math.round((ms - Date.now()) / 60000);
-    if(mins <= 1) return "in a moment";
-    if(mins < 60) return `in ${mins} minutes`;
+    const cs = L.lang==="cs";
+    if(mins <= 1) return t("in a moment");
+    if(mins < 60) return cs ? `za ${mins} ${pl3(mins,"minutu","minuty","minut")}` : `in ${mins} minutes`;
     const hrs = Math.round(mins/60);
-    if(hrs < 24) return hrs === 1 ? "in about an hour" : `in about ${hrs} hours`;
+    if(hrs < 24) return hrs === 1 ? t("in about an hour")
+      : (cs ? `asi za ${hrs} ${pl3(hrs,"hodinu","hodiny","hodin")}` : `in about ${hrs} hours`);
     const days = Math.round(hrs/24);
-    return days === 1 ? "tomorrow" : `in ${days} days`;
+    return days === 1 ? t("tomorrow") : (cs ? `za ${days} ${pl3(days,"den","dny","dní")}` : `in ${days} days`);
   }
 
   function renderCardList(){
@@ -18775,9 +19779,11 @@ const TBS_UI = (() => {
 
     grid.querySelectorAll("[data-cal]").forEach(cell => cell.onclick = () => {
       const e = due.get(cell.dataset.cal);
-      $$("tbsCalNote").textContent = e.overdue
-        ? `${e.count} ${e.count===1?"word is":"words are"} waiting — review them today.`
-        : `${e.count} ${e.count===1?"word":"words"} on this day.`;
+      $$("tbsCalNote").textContent = L.lang==="cs"
+        ? (e.overdue ? `${e.count} ${pl3(e.count,"slovo čeká","slova čekají","slov čeká")} — zopakuj je dnes.`
+                     : `${e.count} ${pl3(e.count,"slovo","slova","slov")} na tenhle den.`)
+        : (e.overdue ? `${e.count} ${e.count===1?"word is":"words are"} waiting — review them today.`
+                     : `${e.count} ${e.count===1?"word":"words"} on this day.`);
     });
   }
 
@@ -18796,8 +19802,9 @@ const TBS_UI = (() => {
     state.current = state.queue.shift() || null;
     if(!state.current){
       $$("tbsDoneMsg").textContent = state.doneCount
-        ? `${state.doneCount} ${state.doneCount===1?"word":"words"} reviewed. Nice work.`
-        : "All done for now.";
+        ? (L.lang==="cs" ? `${state.doneCount} ${pl3(state.doneCount,"slovo zopakováno","slova zopakována","slov zopakováno")}. Dobrá práce.`
+                         : `${state.doneCount} ${state.doneCount===1?"word":"words"} reviewed. Nice work.`)
+        : t("All done for now.");
       return show("tbsDone");
     }
     const c = state.current;
@@ -18831,7 +19838,8 @@ const TBS_UI = (() => {
       const said = $$("tbsAnswerInput").value.trim().toLowerCase();
       const want = String(c.back||"").trim().toLowerCase();
       if(said && want){
-        $$("tbsCardBack").textContent = said === want ? `✓ ${c.back}` : `${c.back}  (you wrote: ${said})`;
+        $$("tbsCardBack").textContent = said === want ? `✓ ${c.back}`
+          : `${c.back}  (${L.lang==="cs"?"napsal jsi":"you wrote"}: ${said})`;
       }
     }
   }
@@ -18934,10 +19942,12 @@ const TBS_UI = (() => {
   function agoText(ms){
     if(!ms) return "never";
     const days = Math.floor((Date.now() - ms) / DAY_MS);
-    if(days <= 0) return "today";
-    if(days === 1) return "yesterday";
-    if(days < 30) return `${days} days ago`;
-    return `${Math.round(days/30)} months ago`;
+    const cs = L.lang==="cs";
+    if(days <= 0) return t("today");
+    if(days === 1) return t("yesterday");
+    if(days < 30) return cs ? `před ${days} ${pl3(days,"dnem","dny","dny")}` : `${days} days ago`;
+    const mo = Math.round(days/30);
+    return cs ? `před ${mo} ${pl3(mo,"měsícem","měsíci","měsíci")}` : `${mo} months ago`;
   }
 
   function renderRoster(){
@@ -18992,9 +20002,13 @@ const TBS_UI = (() => {
         <div class="tbs-stat"><b>${st.accuracy===null?"—":st.accuracy+"%"}</b><small>recall</small></div>
       </div>
       <p class="tbs-muted" style="font-size:12.5px; margin:10px 0 0">
-        ${st.reviews} ${st.reviews===1?"review":"reviews"} so far · last studied ${esc(agoText(st.lastSeen))}${
-          sv.streak ? ` · ${sv.streak}-day streak` : sv.best ? ` · best streak ${sv.best} days` : ""}${
-          st.waiting ? " · waiting on their homework reply" : ""}
+        ${L.lang==="cs"
+          ? `zatím ${st.reviews} ${pl3(st.reviews,"opakování","opakování","opakování")} · naposled ${esc(agoText(st.lastSeen))}${
+              sv.streak ? ` · série ${sv.streak} ${pl3(sv.streak,"den","dny","dní")}` : sv.best ? ` · nejlepší série ${sv.best} ${pl3(sv.best,"den","dny","dní")}` : ""}${
+              st.waiting ? " · čeká se na jeho odpověď na úkol" : ""}`
+          : `${st.reviews} ${st.reviews===1?"review":"reviews"} so far · last studied ${esc(agoText(st.lastSeen))}${
+              sv.streak ? ` · ${sv.streak}-day streak` : sv.best ? ` · best streak ${sv.best} days` : ""}${
+              st.waiting ? " · waiting on their homework reply" : ""}`}
       </p>`;
   }
 
@@ -19123,7 +20137,7 @@ const TBS_UI = (() => {
 
     /* student: hand the device back */
     $$("tbsNotYou").onclick = async () => {
-      if(!confirm("This will sign this device out of the student app. Continue?")) return;
+      if(!confirm(t("This will sign this device out of the student app. Continue?"))) return;
       clearStudentDevice();
       try{ await TBS.signOut(); }catch(e){}
       location.replace(location.pathname + location.search);
@@ -19224,11 +20238,11 @@ const TBS_UI = (() => {
       state.newType = b.dataset.tbstype;
       $$("tbsNewTypeSeg").querySelectorAll("button").forEach(x =>
         x.setAttribute("aria-pressed", String(x === b)));
-      $$("tbsNewFront").placeholder = state.newType === "grammar"
+      $$("tbsNewFront").placeholder = t(state.newType === "grammar"
         ? "Sentence with ___ for the gap"
-        : state.newType === "pron" ? "Word or phrase to say" : "The word or phrase";
-      $$("tbsNewBack").placeholder = state.newType === "grammar"
-        ? "The missing word" : "Meaning or translation";
+        : state.newType === "pron" ? "Word or phrase to say" : "The word or phrase");
+      $$("tbsNewBack").placeholder = t(state.newType === "grammar"
+        ? "The missing word" : "Meaning or translation");
     };
     $$("tbsAddCard").onclick = async () => {
       const front = $$("tbsNewFront").value.trim();
@@ -20579,8 +21593,15 @@ function pUndoUI(){
   if(!u||!r) return;
   u.disabled=!pUndoStack.length; r.disabled=!pRedoStack.length;
   /* the count is the point of the button: it says how far back you can go */
-  u.title=(pUndoStack.length?`Undo — ${pUndoStack.length} step${pUndoStack.length===1?"":"s"} back`:"Nothing to undo")+" (Ctrl+Z)";
-  r.title=(pRedoStack.length?`Redo — ${pRedoStack.length} step${pRedoStack.length===1?"":"s"} forward`:"Nothing to redo")+" (Ctrl+Shift+Z)";
+  const cs=L.lang==="cs";
+  u.title=(pUndoStack.length
+    ? (cs?`Zpět — o ${pUndoStack.length} ${pl3(pUndoStack.length,"krok","kroky","kroků")} dozadu`
+         :`Undo — ${pUndoStack.length} step${pUndoStack.length===1?"":"s"} back`)
+    : (cs?"Není co vrátit":"Nothing to undo"))+" (Ctrl+Z)";
+  r.title=(pRedoStack.length
+    ? (cs?`Znovu — o ${pRedoStack.length} ${pl3(pRedoStack.length,"krok","kroky","kroků")} dopředu`
+         :`Redo — ${pRedoStack.length} step${pRedoStack.length===1?"":"s"} forward`)
+    : (cs?"Není co zopakovat":"Nothing to redo"))+" (Ctrl+Shift+Z)";
 }
 /* A state arriving from another device is not something this device did, so
    it is not on this device's undo path. Clearing beats offering to "undo"
@@ -20718,8 +21739,9 @@ function renderNotes(){
   const empty=$("#nEmpty");
   if(empty){
     empty.hidden=list.length>0;
-    empty.textContent=q?'Nothing matches "'+(nQuery||"").trim()+'".'
-      :"No notes yet — start one and it saves as you type.";
+    empty.textContent=q
+      ? (L.lang==="cs"?'Nic neodpovídá „'+(nQuery||"").trim()+'“.':'Nothing matches "'+(nQuery||"").trim()+'".')
+      : t("No notes yet — start one and it saves as you type.");
   }
 }
 
@@ -20897,7 +21919,9 @@ function nOpenTypeMenu(bid,anchorEl){
   const del=$("#nDelete");
   if(del) del.addEventListener("click",()=>{
     const n=nOpenNote(); if(!n) return;
-    if(!confirm('Delete "'+(n.title||"Untitled")+'"? This cannot be undone.')) return;
+    if(!confirm(L.lang==="cs"
+      ? 'Smazat „'+(n.title||"Bez názvu")+'“? Tohle se nedá vzít zpět.'
+      : 'Delete "'+(n.title||"Untitled")+'"? This cannot be undone.')) return;
     S.notes=(S.notes||[]).filter(x=>x.id!==n.id);
     L.noteId=null; saveLocal(); touch();
     renderNotes(); show("notes");
@@ -21297,7 +22321,7 @@ var PSYNC = (() => {
         '<button class="btn" id="psyncOut">Sign out of sync</button></div>';
       panel.querySelector("b").textContent = user.email || "your account";
       panel.querySelector("#psyncOut").onclick = async () => {
-        if(!confirm("Sign this device out of sync? Your data stays on this device.")) return;
+        if(!confirm(t("Sign this device out of sync? Your data stays on this device."))) return;
         try{ await signOut(); }catch(e){}
       };
     }else{
