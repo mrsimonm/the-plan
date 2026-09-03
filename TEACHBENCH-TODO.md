@@ -139,18 +139,29 @@ original, long-dormant sync path, unchanged.
    design; passwords are handed out. Each person then signs in at
    Settings -> Potting Bench -> Sync.
 
-**Never verified, because it needs real credentials:**
+**Verified live on 2026-09-03**, with a phone holding the real data and an
+empty laptop:
 
-3. The actual Firestore write / read / live listener round trip. What IS
-   verified: the app boots, the SDK loads and shares one Firebase app with
-   Teachbench, signed out the app is byte-for-byte its old self (`ART`
-   stays null), and a full wire round-trip through `migrate()` preserves
-   products, formulas, schedules with their weeks, subjects, Hours
-   projects and planner tasks with photos excluded.
-4. **The account-switch path specifically.** Sign in as user 1, add a
-   plant, sign out, sign in as user 2 on the same device: user 2 must see
-   an empty app, not user 1's plant. This is what `2894f3d` exists to
-   guarantee and it has never been run against two real accounts.
+- Rules published; sign-in works; the phone uploaded to
+  `users/{uid}/state/main` and the laptop pulled it down and rendered it.
+- Two ordering bugs were found by doing this for real rather than by
+  reading the code, and both are fixed (`2894f3d`, `c0b0489`). The second
+  was live and would have destroyed the phone's data: a device that
+  adopted an empty cloud only set a marker and did not upload until the
+  next edit, so the empty laptop would have claimed the cloud second and
+  published over the full phone -- with every step reporting "synced".
+
+**Still never tested:**
+
+- **The account-switch path.** Sign in as user 1, add a plant, sign out,
+  sign in as user 2 on the same device: user 2 must see an empty app, not
+  user 1's plant. This is what `2894f3d` exists to guarantee and it needs
+  two real accounts to exercise.
+- **The order still matters when adding a device.** Whichever device signs
+  in first while the cloud is empty becomes the master. Bring the device
+  that HOLDS the data up first, and export a backup from it beforehand.
+  The app does not yet refuse to overwrite a device holding real data with
+  an empty cloud copy; that guard is worth adding.
 
 **Known limits, by choice, worth revisiting only if they bite:**
 
