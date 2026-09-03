@@ -7191,48 +7191,63 @@ function pSleepSetFor(iso,from,hours,nap,buffer,locked){
    the PREVIOUS day's night. Each piece is tagged with the iso whose
    schedule it belongs to, so a drag or a tap on either one edits the right
    day's exception rather than always the day it happens to be drawn on. */
+/* Where a night actually LIES on the clock, as hours measured from `iso`'s
+   own midnight. A bedtime in the evening starts on `iso` itself; one in the
+   small hours belongs to the morning AFTER it, so it starts past 24.
+
+   This is the whole fix for "the weekend doesn't work" and "sometimes there
+   is no sleep at all". A night was drawn at `from` o'clock on the day that
+   owns it, which is right for 23:00 and a day early for 01:00: set the
+   weekend to 01:00–10:00 and Friday's night was painted across Friday
+   MORNING, on top of Thursday's night, which spills into those same hours —
+   while the night that actually mattered, Saturday evening into Sunday, was
+   left with nothing on it at all.
+
+   Noon is the split. Later than that reads as "tonight", earlier as "the
+   early hours of tomorrow", which is how anyone naming a bedtime means it. */
+function pSleepAnchor(from){
+  const [h,m]=String(from).split(":").map(Number);
+  const c=(h||0)+(m||0)/60;
+  return c>=12?c:c+24;
+}
+/* Every rest period that shows any part of itself on `iso`, clipped to the
+   day. Each night is placed once, in absolute hours, and then asked whether
+   it overlaps this day — rather than the day asking each neighbour for a
+   piece, which is what made a post-midnight bedtime fall between the cracks.
+   Two days back is enough: the earliest a night can start is 24h after its
+   own day's midnight, so nothing older can still be running. */
 function pSleepBlocksFor(iso){
   const out=[];
   if(S.planner.sleepOff) return out;
-  const {from,hours}=pSleepFor(iso);
-  if(hours>0){
-    const [h,m]=from.split(":").map(Number);
-    const start=h+(m||0)/60;
-    const tonight=Math.min(hours,24-start);
-    if(tonight>0) out.push({time:from,hours:tonight,owner:iso});
-  }
-  const prev=pStepIso(iso,-1);
-  const p=pSleepFor(prev);
-  if(p.hours>0){
-    const [ph,pm]=p.from.split(":").map(Number);
-    const pstart=ph+(pm||0)/60;
-    const spill=Math.max(0,p.hours-(24-pstart));
-    if(spill>0) out.push({time:"00:00",hours:spill,owner:prev});
-  }
-  /* wind-down: a band butted against each end of the night, so the hour
-     before bed and the hour after waking do not read as free time. Clipped to
-     the day like everything else here — a buffer that would run past midnight
-     simply shows the part that fits. */
-  const me=pSleepFor(iso), buf=me.buffer||0;
-  if(buf>0){
-    const [bh,bm]=me.from.split(":").map(Number);
-    const bedtime=bh+(bm||0)/60;
-    const preS=Math.max(0,bedtime-buf);
-    if(bedtime>0) out.push({time:pHHMM(preS),hours:bedtime-preS,owner:iso,buffer:true});
-    const p2=pSleepFor(prev);
-    if(p2.buffer>0){
-      const [ph2,pm2]=p2.from.split(":").map(Number);
-      const wake=Math.max(0,ph2+(pm2||0)/60+p2.hours-24);   // this morning's wake, if it spilled
-      if(wake>0&&wake+p2.buffer<=24) out.push({time:pHHMM(wake),hours:p2.buffer,owner:prev,buffer:true});
+  const clip=(s0,e0,owner,extra)=>{
+    const a=Math.max(0,s0), b=Math.min(24,e0);
+    if(b-a<=1e-9) return;
+    out.push(Object.assign({time:pHHMM(a),hours:b-a,owner,
+      /* the piece that runs on past this midnight, and the piece that arrived
+         from before it — the render squares off the corners where the two
+         would meet if a grid of day columns could join them */
+      spills:e0>24+1e-9, cont:s0<-1e-9},extra||{}));
+  };
+  for(let back=2;back>=0;back--){
+    const owner=back?pStepIso(iso,-back):iso;
+    const f=pSleepFor(owner);
+    const off=pSleepAnchor(f.from)-24*back;   // in THIS day's frame
+    if(f.hours>0) clip(off,off+f.hours,owner);
+    /* wind-down: a band butted against each end of the night, so the hour
+       before bed and the hour after waking do not read as free time. */
+    const buf=f.buffer||0;
+    if(buf>0){
+      clip(off-buf,off,owner,{buffer:true});
+      clip(off+f.hours,off+f.hours+buf,owner,{buffer:true});
     }
-  }
-  /* the optional second period — a daytime rest, drawn like the night one but
-     never split, since a nap that ran past midnight would just be a night */
-  const nap=pSleepFor(iso).nap;
-  if(nap){
-    const [nh,nm]=nap.from.split(":").map(Number);
-    const ns=nh+(nm||0)/60;
-    out.push({time:nap.from,hours:Math.min(nap.hours,24-ns),owner:iso,nap:true});
+    /* the optional second period — a daytime rest. It never crosses midnight
+       (one that did would just be a night), so it only ever shows on its own
+       day and is placed at its plain clock time. */
+    if(!back&&f.nap){
+      const [nh,nm]=String(f.nap.from).split(":").map(Number);
+      const ns=(nh||0)+(nm||0)/60;
+      clip(ns,Math.min(24,ns+f.nap.hours),owner,{nap:true});
+    }
   }
   return out;
 }
@@ -8602,9 +8617,10 @@ function pBoardHtml(days,opts){
           <b>${esc(t("Rest"))}</b><span>${esc(n.from)}–${esc(pSleepUntilStr(n.from,n.hours))} · ${pFmtH(n.hours)}h</span>
         </div>`;
       }
-      const [oh,om]=full.from.split(":").map(Number);
-      const spills=(oh+om/60+full.hours)>24+1e-9;
-      const isContinuation=sp.time==="00:00"&&sp.owner!==d;
+      /* pSleepBlocksFor placed the night in absolute hours and already knows
+         which end of it, if either, crosses a midnight — asking the clock
+         time again here got it wrong for a bedtime in the small hours. */
+      const spills=!!sp.spills, isContinuation=!!sp.cont;
       const contClass=spills?(isContinuation?" wb-sleep-cont-t":" wb-sleep-cont-b"):"";
       const range=`${esc(full.from)}–${esc(pSleepUntilStr(full.from,full.hours))} · ${pFmtH(full.hours)}h`;
       /* A locked night says so on the board, not only inside its dialog —
