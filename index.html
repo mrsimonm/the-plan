@@ -20526,6 +20526,15 @@ var PSYNC = (() => {
   const stateDoc = () =>
     db.collection("users").doc(uid).collection("state").doc("main");
 
+  /* Which account does the state currently on this device belong to?
+     Written the moment an account's state is adopted or applied, so that a
+     device handed to a second person cannot publish the first person's data
+     into their account. Never cleared on sign-out: after signing out the
+     data on the device is still the account's that was signed in. */
+  const OWNER_KEY = "pottingbench.syncOwner";
+  function owner(){ try{ return localStorage.getItem(OWNER_KEY); }catch(e){ return null; } }
+  function claim(){ try{ localStorage.setItem(OWNER_KEY, uid); }catch(e){} }
+
   /* ---- writing ---- */
   /* The shape push() expects: an object of path -> contents. Only
      data/state.json is ours; data/photos.json is dropped on purpose. */
@@ -20573,6 +20582,7 @@ var PSYNC = (() => {
     S = next;
     S.photos = keepPhotos || [];
     lastRev = d.rev || 0;
+    claim();                                  // this device now holds their state
     /* Persist directly instead of via touch(): touch() would mark the state
        dirty and schedule a push, sending the other device's own edit back
        to it in an endless round trip. */
@@ -20625,7 +20635,28 @@ var PSYNC = (() => {
         const d = snap.data() || {};
         if(d.device !== deviceId && !dirty) applyRemote(d);
         else lastRev = Math.max(lastRev, d.rev || 0);
+        claim();
       }else{
+        /* Nothing in the cloud for this account yet — so whatever is on
+           this device is about to become their data. That is right for the
+           first device of a new account, and badly wrong when two people
+           share one: signing in as B on A's phone would publish A's plants
+           into B's account, and B's first edit would make it permanent.
+
+           The owner marker separates the two cases. It is only ever set for
+           an account that has actually synced, so if it names somebody else
+           then their data is safely in their own document and starting this
+           account clean loses nothing. Unclaimed state — nobody has ever
+           synced on this device — is adopted instead, which is the ordinary
+           path for the first device to turn sync on. */
+        const prev = owner();
+        if(prev && prev !== uid){
+          S = seed();
+          try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
+          try{ renderWho(); renderAll(); renderAcademy(); show(curView); }catch(e){}
+          dirty = false;
+        }
+        claim();
         setSync("saved","synced");
       }
     }catch(e){
