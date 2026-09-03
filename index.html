@@ -3138,6 +3138,9 @@ html{overscroll-behavior-y:none}
     <div class="card pad">
       <div class="field">
         <label>Sleep</label>
+        <label class="plink-row" style="margin:2px 0 6px"><input type="checkbox" id="pSleepOff">
+          <span>I don't plan around sleep &mdash; hide it</span></label>
+        <div id="pSleepRows">
         <div class="pslot-row" style="margin-top:4px">
           <span class="field-label" style="min-width:64px">Weekday</span>
           <span class="field-label">from</span>
@@ -3155,8 +3158,9 @@ html{overscroll-behavior-y:none}
           <span class="hint" id="pSleepWeekendHint" style="margin:0"></span>
         </div>
         <p class="hint" style="margin:4px 0 0">Weekend covers Friday and Saturday night — every other night uses Weekday.</p>
+        </div>
       </div>
-      <p class="hint" style="margin:8px 0 0">Subtracted from every day before anything else. Any single night can still be dragged or edited on its own from the calendar.</p>
+      <p class="hint" id="pSleepFoot" style="margin:8px 0 0">Subtracted from every day before anything else. Any single night can still be dragged or edited on its own from the calendar.</p>
       <div class="plink">
         <span class="eyebrow" style="display:block; margin:13px 0 8px">Linked time</span>
         <label class="plink-row"><input type="checkbox" id="pLinkCare">
@@ -5663,7 +5667,7 @@ function seed(){return{
   actionDaysOn:true, actionDays:[3,0],          // Wednesday & Sunday
   cuttings:[], photos:[], products:[], formulas:[], schedules:[], subjects:[], routines:[], events:[], tasks:[],
   notes:[], notebooks:[],
-  planner:{sleepWeekday:{from:"23:00",hours:8}, sleepWeekend:{from:"23:00",hours:8}, sleepEx:{}, tasks:[], blocks:[], linkCare:true, linkHours:true, linkProjects:true, carePace:3},
+  planner:{sleepOff:false, sleepWeekday:{from:"23:00",hours:8}, sleepWeekend:{from:"23:00",hours:8}, sleepEx:{}, tasks:[], blocks:[], linkCare:true, linkHours:true, linkProjects:true, carePace:3},
   hours:{projects:[], sessions:[], running:null,
     settings:{currency:"Kč", pomoWork:25, pomoShort:5, pomoLong:15, pomoCycle:4}},
   projplan:{projects:[], limit:8, weekendsOff:false}
@@ -5864,6 +5868,11 @@ function migrate(d){
   if(!pSleepBucketOk(d.planner.sleepWeekend)) d.planner.sleepWeekend=Object.assign({},d.planner.sleepWeekday);
   delete d.planner.sleep; delete d.planner.sleepFrom;
   if(!d.planner.sleepEx||typeof d.planner.sleepEx!=="object") d.planner.sleepEx={};
+  /* Not everyone plans around their nights. sleepOff hides sleep entirely
+     rather than deleting it: the weekday/weekend times and every per-night
+     exception stay on the record, so turning it back on restores exactly
+     what was there instead of resetting to the 23:00/8h default. */
+  d.planner.sleepOff=!!d.planner.sleepOff;
   if(d.planner.linkCare===undefined) d.planner.linkCare=true;
   if(d.planner.linkHours===undefined) d.planner.linkHours=true;
   if(d.planner.linkProjects===undefined) d.planner.linkProjects=true;
@@ -7080,6 +7089,7 @@ function pNapOf(v){ return pNapOk(v&&v.nap)?{from:v.nap.from,hours:Math.min(24,M
    "24h minus sleep" sum uses this, or a nap would be drawn on the board while
    the free-time arithmetic pretended it wasn't there. */
 function pSleepHoursFor(iso){
+  if(S.planner.sleepOff) return 0;
   const s=pSleepFor(iso);
   return Math.min(24,Math.max(0,s.hours)+(s.nap?Math.max(0,s.nap.hours):0)+2*(s.buffer||0));
 }
@@ -7121,6 +7131,7 @@ function pSleepSetFor(iso,from,hours,nap,buffer){
    day's exception rather than always the day it happens to be drawn on. */
 function pSleepBlocksFor(iso){
   const out=[];
+  if(S.planner.sleepOff) return out;
   const {from,hours}=pSleepFor(iso);
   if(hours>0){
     const [h,m]=from.split(":").map(Number);
@@ -7387,7 +7398,11 @@ function pDayPanel(){
   $("#pDayTitle").textContent=(isToday?t("Today")+" — ":"")+dowFull+" "+dateBit;
   const B=pBudgetOf(pSelISO);
   const sleep=pSleepHoursFor(pSelISO), planned=B.total, awake=Math.max(24-sleep,0), free=awake-planned;
-  $("#pDaySub").textContent="24h − "+pFmtH(sleep)+"h "+t("sleep").toLowerCase()+" − "+pFmtH(planned)+"h "+t("planned").toLowerCase();
+  /* With sleep switched off the "− 0h sleep" term is noise, so drop it
+     rather than print a zero the reader has to decide to ignore. */
+  $("#pDaySub").textContent = S.planner.sleepOff
+    ? "24h − "+pFmtH(planned)+"h "+t("planned").toLowerCase()
+    : "24h − "+pFmtH(sleep)+"h "+t("sleep").toLowerCase()+" − "+pFmtH(planned)+"h "+t("planned").toLowerCase();
 
   /* An overbooked day now takes MORE BAR, not just a different colour — the
      scale stretches past 24h, the overflow renders as its own striped slice,
@@ -9967,6 +9982,12 @@ $("#pCarePace").addEventListener("change",e=>{ const n=+e.target.value;
    exception falls back to — pSleepBucketCommit writes straight into it, the
    same live-binding style pCarePace and the checkboxes below already use. */
 function pSleepSettingsSync(){
+  const off=!!S.planner.sleepOff;
+  $("#pSleepOff").checked=off;
+  $("#pSleepRows").hidden=off;
+  $("#pSleepFoot").textContent=off
+    ? "Sleep is hidden: nothing is subtracted from the day and no sleep block is drawn. Your times are kept."
+    : "Subtracted from every day before anything else. Any single night can still be dragged or edited on its own from the calendar.";
   const wd=S.planner.sleepWeekday, we=S.planner.sleepWeekend;
   $("#pSleepWeekdayFrom").value=wd.from;
   $("#pSleepWeekdayUntil").value=pSleepUntilStr(wd.from,wd.hours);
@@ -9984,6 +10005,10 @@ function pSleepBucketCommit(bucket){
   $(`#pSleep${wk}Hint`).textContent=pFmtH(S.planner[bucket].hours)+"h";
   touch(); pDayPanel(); renderSchedule();
 }
+$("#pSleepOff").addEventListener("change",e=>{
+  S.planner.sleepOff=e.target.checked;
+  touch(); pSleepSettingsSync(); pDayPanel(); renderSchedule(); renderPlanner();
+});
 $("#pSleepWeekdayFrom").addEventListener("input",()=>pSleepBucketCommit("sleepWeekday"));
 $("#pSleepWeekdayUntil").addEventListener("input",()=>pSleepBucketCommit("sleepWeekday"));
 $("#pSleepWeekendFrom").addEventListener("input",()=>pSleepBucketCommit("sleepWeekend"));
