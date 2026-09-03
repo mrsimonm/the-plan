@@ -3389,6 +3389,177 @@ html[data-design="r2"]{
 }
 
 </style>
+
+<style id="redesign-3">
+/* ---- Redesign 3: "MONOLITH" — gunmetal, technical, matte ----
+   A complete departure: near-monochrome gunmetal, matte (NO glass/frost —
+   solid surfaces, no backdrop blur), squared new shapes, thin precise
+   hairlines, rectilinear buttons, thin reshaped sliders with a notch thumb.
+   One muted steel signature accent, used sparingly. Scoped to
+   html[data-design="r3"]; Default / Redesign 1 / Redesign 2 untouched. */
+
+/* ---- gunmetal token override (must beat the palette+theme token blocks) ---- */
+html[data-design="r3"],
+html[data-design="r3"][data-theme="dark"],
+html[data-design="r3"][data-theme="light"]{
+  --bg:#0E1114; --surface:#15191E; --surface-2:#1C2127; --sunk:#090B0D;
+  --line:#2A323A; --line-soft:rgba(150,172,192,.10); --line-strong:#3F4A55;
+  --ink-strong:#EEF2F5; --ink:#C4CCD3; --ink-3:#6B7680;
+  --accent:#8FC3CE; --accent-2:#5E9AA8; --accent-soft:rgba(143,195,206,.14); --on-accent:#0B1113;
+  --amber:#C6B18F; --amber-soft:#241F19; --orange:#C78F85;
+  --track-bg:#1C2127; --track-line:rgba(170,190,210,.14); --track-ink:#C4CCD3;
+  --grid-line:rgba(150,170,190,.10); --grid-sep:rgba(150,170,190,.16);
+  --ok:#86B79C; --crit:#D08783; --crit-soft:#2A1F1F;
+  --glass-fill:rgba(21,25,30,.92); --glass-fill-2:rgba(28,33,39,.97);
+  --glass-border:rgba(178,199,219,.16); --glass-shadow:none;
+  --blob-1:rgba(110,140,170,.10); --blob-2:rgba(90,120,150,.07);
+  --blob-3:rgba(140,155,175,.06); --blob-4:rgba(80,110,140,.05);
+  --hours-hue:#7A9AAB; --sleep-hue:#5E7B8C;
+  /* new shapes — squared, small radii app-wide */
+  --r:12px; --r-sm:8px; --r-xs:6px; --r-pill:12px;
+  --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-lift:0 3px 10px rgba(0,0,0,.5);
+}
+
+html[data-design="r3"]{
+  /* ---- matte body: subtle technical scanlines, no aurora ---- */
+  body{
+    background-image:
+      repeating-linear-gradient(0deg, rgba(255,255,255,.012) 0 1px, transparent 1px 28px),
+      radial-gradient(120% 90% at 50% -20%, rgba(120,150,180,.06), transparent 60%),
+      var(--bg);
+    background-attachment:fixed;
+  }
+  body::before{ content:none; }
+  body::after{ opacity:.08; }
+
+  /* ---- cards: solid matte slabs, squared, hairline bevel ---- */
+  .card{
+    border-radius:var(--r);
+    border:1px solid var(--line);
+    background:var(--surface);
+    background-image:none;
+    backdrop-filter:none; -webkit-backdrop-filter:none;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.05),
+      inset 0 -1px 0 rgba(0,0,0,.25),
+      var(--shadow);
+  }
+  .card.pad{ padding:20px; }
+
+  /* ---- nav: rectilinear matte bar, active = accent underline ---- */
+  .navwrap{ padding:12px 12px 2px; }
+  .nav{
+    border-radius:var(--r); padding:4px; gap:2px;
+    border:1px solid var(--line);
+    background:var(--surface-2);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05), var(--shadow);
+    width:max-content; max-width:100%; margin:0 auto; overflow-x:auto;
+    position:relative;
+  }
+  .nav button{
+    border-radius:8px; min-height:38px; padding:0 16px; font-size:13.5px; font-weight:600;
+    color:var(--ink-3); letter-spacing:.02em;
+  }
+  .nav button[aria-selected="true"]{ color:var(--ink-strong); }
+  .nav button[aria-selected="true"]::after{
+    content:""; position:absolute; left:12px; right:12px; bottom:3px; height:2px;
+    border-radius:2px; background:var(--accent);
+  }
+
+  /* ---- buttons: rectilinear, matte, thin border, tech press ---- */
+  .btn{
+    border-radius:10px; min-height:44px; padding:0 18px; font-size:14px; font-weight:600;
+    letter-spacing:.01em;
+    border:1px solid var(--line-strong);
+    background:var(--surface-2); background-image:none;
+    backdrop-filter:none; -webkit-backdrop-filter:none;
+    color:var(--ink-strong);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.06), inset 0 -1px 0 rgba(0,0,0,.2), var(--shadow);
+    transition:transform .12s ease, background .12s, color .12s, border-color .12s;
+  }
+  .btn:hover{ color:var(--ink-strong); border-color:var(--accent); background:#222a31; }
+  .btn:active:not([disabled]){ transform:translateY(1px); background:var(--sunk); }
+  .btn.primary{
+    background:var(--accent); border-color:var(--accent); color:var(--on-accent);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.25), inset 0 -1px 0 rgba(0,0,0,.2);
+  }
+  .btn.primary:hover{ background:var(--accent-2); border-color:var(--accent-2); color:var(--on-accent); }
+  .btn.mini{ min-height:36px; padding:0 13px; font-size:13px; border-radius:8px; }
+
+  /* ---- segmented: squared, hairline dividers, active = filled rectangle ---- */
+  .seg{
+    border-radius:10px; padding:3px; gap:3px;
+    border:1px solid var(--line);
+    background:var(--surface);
+    padding:3px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05), var(--shadow);
+  }
+  .seg button{ border-radius:7px; min-height:38px; font-size:13.5px; color:var(--ink-3); }
+  .seg button + button{ border-left:1px solid var(--line); }
+  .seg button[aria-pressed="true"]{
+    background:var(--accent); color:var(--on-accent); border-left-color:transparent;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.2);
+  }
+
+  /* ---- chips: squared, matte, hairline; active fills ---- */
+  .chip{
+    border-radius:8px; min-height:38px; padding:0 15px; font-size:13.5px;
+    border:1px solid var(--line); background:var(--surface-2); color:var(--ink);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+  }
+  .chip:hover{ border-color:var(--line-strong); }
+  .chip[aria-pressed="true"]{ background:var(--accent); color:var(--on-accent); border-color:var(--accent); }
+
+  /* ---- fields: squared matte, tabular, crisp focus ---- */
+  input, select, textarea, .mono-input{
+    border-radius:8px; min-height:44px; padding:0 15px; font-size:14px;
+    font-variant-numeric:tabular-nums;
+    border:1px solid var(--line-strong); background:var(--sunk); color:var(--ink);
+    backdrop-filter:none; -webkit-backdrop-filter:none;
+    box-shadow:inset 0 1px 0 rgba(0,0,0,.2);
+  }
+  input:focus, select:focus, textarea:focus{
+    border-color:var(--accent);
+    box-shadow:inset 0 1px 0 rgba(0,0,0,.2), 0 0 0 1px var(--accent);
+    outline:none;
+  }
+
+  /* ---- sliders: thin matte track, notch thumb ---- */
+  .pslider{
+    height:30px; border-radius:3px; margin-top:12px; padding:0 10px;
+    border:1px solid var(--line);
+    background:var(--sunk);
+    box-shadow:inset 0 1px 0 rgba(0,0,0,.25);
+  }
+  .pslider:focus-within{ border-color:var(--accent); outline:none; box-shadow:inset 0 1px 0 rgba(0,0,0,.25), 0 0 0 1px var(--accent); }
+  .ps-fill{ background:var(--accent); opacity:.35; }
+  .ps-track input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none; width:4px; height:115%; border-radius:1px;
+    background:var(--accent); box-shadow:0 0 0 1px rgba(0,0,0,.3); cursor:pointer;
+  }
+  .ps-track input[type=range]::-moz-range-thumb{ width:4px; height:115%; border:0; border-radius:1px; background:var(--accent); }
+
+  /* ---- type: tighter, tabular, letterspaced ---- */
+  .eyebrow{ font-size:11px; letter-spacing:.22em; text-transform:uppercase; font-weight:700; color:var(--accent); }
+  .sec-head h2{ font-size:clamp(22px,3.4vw,30px); font-weight:700; letter-spacing:-.01em; font-variant-numeric:tabular-nums; }
+  .sec-head h2::before{ content:""; display:inline-block; width:5px; height:1em; margin-right:10px;
+    border-radius:1px; background:var(--accent); vertical-align:-.15em; }
+
+  /* ---- stat tiles / rows: matte squared plates ---- */
+  [class*="kpi"],[class*="stat"],[class*="tile"]{
+    border-radius:10px; padding:16px 18px;
+    border:1px solid var(--line); background:var(--surface-2);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05), inset 0 -1px 0 rgba(0,0,0,.2), var(--shadow);
+    font-variant-numeric:tabular-nums;
+  }
+  [class*="row"],[class*="arow"],[class*="prow"]{ border-radius:10px; border-color:var(--line); }
+
+  /* ---- spacing: tighter, more precise ---- */
+  .stack{ gap:12px; }
+  .btn-row{ gap:8px; }
+}
+
+</style>
 <header class="top">
   <button class="gear" id="settingsBtn" aria-label="Settings" title="Settings">⚙</button>
   <div class="brandwrap">
@@ -4075,7 +4246,7 @@ html[data-design="r2"]{
                   <option value="off">Default</option>
                   <option value="r1">Redesign 1 · liquid glass</option>
                   <option value="r2">Frosted Glass</option>
-                  <option value="r3">Redesign 3</option>
+                  <option value="r3">Monolith · gunmetal</option>
                 </select>
                 <p class="hint">A/B test skins. Redesigns are built one at a time; Default is the original look. Per device.</p>
               </div>
