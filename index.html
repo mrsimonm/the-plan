@@ -4313,7 +4313,7 @@ html.pfocus .n-quick{display:none}
       </div>
       <div class="card pad tbs-card" id="tbsReviewCard">
         <span class="eyebrow" id="tbsCardType">Word</span>
-        <div class="tbs-front" id="tbsCardFront"></div>
+        <div class="tbs-front" id="tbsCardFront" data-no-i18n></div>
 
         <!-- grammar: typed answer -->
         <div id="tbsAnswerWrap" hidden>
@@ -4324,8 +4324,8 @@ html.pfocus .n-quick{display:none}
         <!-- pronunciation: hear it -->
         <button class="btn" id="tbsSpeak" hidden>🔊 Hear it</button>
 
-        <div class="tbs-back" id="tbsCardBack" hidden></div>
-        <p class="tbs-expl" id="tbsCardExpl" hidden></p>
+        <div class="tbs-back" id="tbsCardBack" hidden data-no-i18n></div>
+        <p class="tbs-expl" id="tbsCardExpl" hidden data-no-i18n></p>
       </div>
 
       <div class="tbs-acts" id="tbsRevealWrap">
@@ -6289,7 +6289,7 @@ const $=s=>document.querySelector(s);
 /* Build stamp. `n` is incremented by bump.py at publish time so two phones can
    be compared at a glance — an installed PWA serving a stale service-worker
    cache is otherwise indistinguishable from an up-to-date one. */
-const BUILD={ver:"1.0",n:51,at:"2026-09-03"};
+const BUILD={ver:"1.0",n:52,at:"2026-09-04"};
 const uid=()=>Math.random().toString(36).slice(2,9);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
@@ -15038,7 +15038,7 @@ function tbRenderWordPicker(){
       <div class="stack" style="gap:4px">${items.map(w=>`
         <label class="row" style="cursor:pointer">
           <input type="checkbox" data-tb-word-pick="${w.id}" ${tbWordPickerChecked.has(w.id)?"checked":""} style="width:18px;height:18px;flex:0 0 auto">
-          <span class="row-main"><span class="row-title">${esc(w.term)}</span></span>
+          <span class="row-main"><span class="row-title" data-no-i18n>${esc(w.term)}</span></span>
         </label>`).join("")}</div></div>`;
   }).join("");
   const unsorted=bank.filter(w=>!w.listId);
@@ -15046,7 +15046,7 @@ function tbRenderWordPicker(){
     <div class="stack" style="gap:4px">${unsorted.map(w=>`
       <label class="row" style="cursor:pointer">
         <input type="checkbox" data-tb-word-pick="${w.id}" ${tbWordPickerChecked.has(w.id)?"checked":""} style="width:18px;height:18px;flex:0 0 auto">
-        <span class="row-main"><span class="row-title">${esc(w.term)}</span></span>
+        <span class="row-main"><span class="row-title" data-no-i18n>${esc(w.term)}</span></span>
       </label>`).join("")}</div></div>` : "";
   $("#tbWordPickerGroups").innerHTML = (groups+unsortedBlock) || `<p class="pday-sub">No words in the bank yet.</p>`;
 }
@@ -15260,7 +15260,7 @@ function tbRenderSearch(){
   const words=data.words.filter(w=>
     w.term.toLowerCase().includes(q) || (w.definition||"").toLowerCase().includes(q) || (w.example||"").toLowerCase().includes(q)
   ).sort((a,b)=>a.term.localeCompare(b.term)).map(w=>`
-    <div class="row" style="cursor:default"><span class="row-main"><span class="row-title">${esc(w.term)}</span>
+    <div class="row" style="cursor:default"><span class="row-main"><span class="row-title" data-no-i18n>${esc(w.term)}</span>
       <span class="row-sub">${esc(byOwner(w))}</span></span></div>`);
 
   const lessons=data.lessons.filter(l=>
@@ -18346,7 +18346,7 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "This day":"Tenhle den","Whole series…":"Celá série…","Remove this day":"Odebrat tenhle den",
 "Save this day":"Uložit tenhle den","Lock this night":"Zamknout tuhle noc","Reset this night":"Vrátit tuhle noc",
 "Select all":"Vybrat vše","Deselect all":"Zrušit výběr","What did you do":"Co jsi dělal",
-"e.g. Workshop renovation":"např. Rekonstrukce dílny","Big Monstera":"Velká monstera",
+"e.g. Workshop renovation":"např. Rekonstrukce dílny",
 "Not in the list? Add it yourself":"Není v seznamu? Přidej si ji sám",
 "Add a plant that is not in the list":"Přidat rostlinu, která není v seznamu",
 "Remove":"Odebrat","Remove this photo":"Odebrat tuhle fotku",
@@ -19047,6 +19047,7 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "synced":"synchronizováno","shared":"sdíleno","queued":"ve frontě","sync: offline":"synchronizace: offline",
 "Needs at least three waterings on a plant before the gaps mean anything. Keep logging and this fills in.":"Než mezery začnou něco znamenat, potřebuje rostlina aspoň tři zálivky. Zapisuj dál a tohle se zaplní.",
 "No matches.":"Žádná shoda.","No subtasks yet.":"Zatím žádné podúkoly.",
+"Nothing needs you today. Everything's had what it wants.":"Dnes tě nic nepotřebuje. Všechno dostalo, co chtělo.",
 });
 
 /* ---------------- teachbench student app: mode gate ----------------
@@ -19899,7 +19900,7 @@ const TBS_UI = (() => {
     if(!state.cards.length){ box.innerHTML = `<p class="empty">Nothing here yet.</p>`; return; }
     box.innerHTML = state.cards.map(c => `
       <div class="tbs-row">
-        <span class="grow"><b>${esc(c.front)}</b><small>${esc(TYPE_LABEL[c.type]||c.type)}</small></span>
+        <span class="grow"><b data-no-i18n>${esc(c.front)}</b><small>${esc(TYPE_LABEL[c.type]||c.type)}</small></span>
         <span class="tbs-pill${SRS.isDue(c)?" due":""}">${SRS.isDue(c)?"due":relativeWhen(Date.parse(c.nextReviewDate))}</span>
       </div>`).join("");
   }
@@ -19911,7 +19912,7 @@ const TBS_UI = (() => {
     const mine = h.direction === "student-to-teacher";
     return `<div class="tbs-hw${mine?" mine":""}">
       <small class="tbs-muted">${mine?mineLabel:theirLabel} · ${esc(shortDate(h.createdAt))}</small>
-      ${h.text ? `<p>${esc(h.text)}</p>` : ""}
+      ${h.text ? `<p data-no-i18n>${esc(h.text)}</p>` : ""}
       ${h.photoPath ? `<img class="tbs-hwimg" data-photo="${esc(h.photoPath)}" alt="Homework photo">` : ""}
     </div>`;
   }
