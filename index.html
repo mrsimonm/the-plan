@@ -2780,6 +2780,43 @@ html.pfocus .n-quick{display:none}
 @keyframes n-spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){ .n-busy{animation:none} }
 .n-undo[data-busy="1"] #nUndoBtn{display:none}
+
+/* ---- notes, part four: scratchpad, voice, clipper ---- */
+.n-quick-pad{bottom:82px; width:44px; height:44px; font-size:18px; background:var(--surface); color:var(--ink);
+  border:1px solid var(--line)}
+.n-quick-pad[aria-expanded="true"]{background:var(--accent); color:var(--on-accent); border-color:var(--accent)}
+main > #view-teachbench-student:not([hidden]) ~ .n-quick-pad, html.pfocus .n-quick-pad{display:none}
+.n-pad{position:fixed; right:0; top:0; bottom:0; width:min(420px,100vw); z-index:64; display:flex; flex-direction:column;
+  background:var(--surface); border-left:1px solid var(--line); box-shadow:-18px 0 48px -20px rgba(0,0,0,.45);
+  transform:translateX(0); transition:transform .22s cubic-bezier(.2,.8,.2,1)}
+.n-pad[hidden]{display:flex; transform:translateX(105%); pointer-events:none; visibility:hidden}
+@media (prefers-reduced-motion:reduce){ .n-pad{transition:none} }
+.n-pad-head{display:flex; align-items:center; gap:10px; padding:14px 14px 10px; border-bottom:1px solid var(--line-soft)}
+.n-pad-head b{font-size:16px}
+.n-pad-day{color:var(--ink-3); font-size:13px; flex:1 1 auto}
+.n-pad-x{border:0; background:none; font-size:24px; line-height:1; color:var(--ink-3); cursor:pointer; padding:0 4px}
+.n-pad-list{flex:1 1 auto; overflow:auto; padding:8px 14px; display:flex; flex-direction:column; gap:6px}
+.n-pad-row{display:flex; gap:10px; align-items:baseline; font-size:14px; line-height:1.45}
+.n-pad-row time{flex:0 0 auto; color:var(--ink-3); font-size:12px; font-variant-numeric:tabular-nums}
+.n-pad-row span{white-space:pre-wrap; word-break:break-word}
+.n-pad-empty{color:var(--ink-3); font-size:13px; padding:20px 4px; text-align:center}
+.n-pad-in{padding:10px 14px 14px; border-top:1px solid var(--line-soft); display:flex; flex-direction:column; gap:8px}
+.n-pad-in textarea{width:100%; resize:none; font:inherit; font-size:15px; padding:9px 11px; border-radius:11px;
+  border:1px solid var(--line); background:var(--sunk); color:var(--ink)}
+.n-pad-acts{display:flex; gap:8px; justify-content:flex-end}
+.n-voice{position:fixed; left:50%; bottom:88px; transform:translateX(-50%); z-index:66; width:min(520px,calc(100vw - 24px));
+  background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:12px 14px;
+  box-shadow:0 18px 48px -14px rgba(0,0,0,.45); display:flex; flex-direction:column; gap:8px}
+.n-voice[hidden]{display:none}
+.n-voice-head{display:flex; align-items:center; gap:8px; font-size:14px}
+.n-voice-dot{width:10px; height:10px; border-radius:50%; background:var(--crit); animation:n-pulse 1.1s ease-in-out infinite}
+@keyframes n-pulse{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){ .n-voice-dot{animation:none} }
+.n-voice-time{margin-left:auto; color:var(--ink-3); font-variant-numeric:tabular-nums; font-size:13px}
+.n-voice-text{max-height:180px; overflow:auto; font-size:15px; line-height:1.5; white-space:pre-wrap; min-height:40px; color:var(--ink)}
+.n-voice-text i{color:var(--ink-3)}
+.n-voice-acts{display:flex; gap:8px; justify-content:flex-end}
+#nClipText{width:100%; font:inherit; font-size:14px}
 .n-plist{display:flex; flex-direction:column; padding-top:6px}
 .n-prow{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:0 10px; text-align:left; border:0;
   background:none; font:inherit; color:inherit; padding:8px 0; border-top:1px solid var(--line-soft); cursor:pointer}
@@ -3146,6 +3183,177 @@ input:focus, select:focus, textarea:focus{
 </style>
 
 
+
+<style id="redesign-2">
+/* ---- Redesign 2: "Frosted Glass" ----
+   A blocky, solid version — rounded-square masses with real weight, a visibly
+   speckled frost texture, deeper blur and chunkier shadows. Structural: it
+   changes sizes, spacing, control heights and radii, not just colours.
+   Scoped to html[data-design="r2"] via nesting; Default & Redesign 1 are
+   untouched. */
+
+html[data-design="r2"]{
+  /* shared frost specks (custom property, consumed below) — soft light bloom */
+  --spec:
+    radial-gradient(circle at 2px 2px, rgba(255,255,255,.05) 0, rgba(255,255,255,0) 2.6px),
+    radial-gradient(circle at 9px 9px, rgba(255,255,255,.035) 0, rgba(255,255,255,0) 3px);
+
+  /* a heavier frosted field fill */
+  --frost-fill:color-mix(in srgb,var(--glass-fill-2) 60%,var(--surface));
+  --frost-spec:radial-gradient(circle at 2px 2px, rgba(255,255,255,.05) 0, rgba(255,255,255,0) 2.6px),radial-gradient(circle at 9px 9px, rgba(255,255,255,.035) 0, rgba(255,255,255,0) 3px);
+
+  /* ---- a faint app-wide grain; keep the background clean so the frost
+         texture reads as being ON the glass, not as wallpaper ---- */
+  body{
+    background-image:
+      radial-gradient(min(90vw,920px) min(72vh,760px) at 10% -8%, var(--blob-1), transparent 66%),
+      radial-gradient(min(84vw,820px) min(66vh,660px) at 98% 2%, var(--blob-2), transparent 70%),
+      radial-gradient(min(72vw,700px) min(60vh,580px) at 86% 106%, var(--blob-3), transparent 70%),
+      linear-gradient(160deg,var(--blob-4),transparent 70%),
+      var(--bg);
+    background-attachment:fixed;
+  }
+  body::before{
+    content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image:var(--spec); background-size:14px 14px,19px 19px; opacity:.28;
+  }
+  body::after{ opacity:.12; }
+
+  /* ---- cards: blocky frosted slabs with mass ---- */
+  .card{
+    border-radius:26px;
+    border:1.5px solid color-mix(in srgb,var(--glass-border) 70%,#fff);
+    background-color:var(--frost-fill);
+    background-image:var(--spec);
+    background-size:14px 14px,19px 19px;
+    backdrop-filter:blur(30px) saturate(180%);
+    -webkit-backdrop-filter:blur(30px) saturate(180%);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.25),
+      inset 0 -2px 0 rgba(0,0,0,.16),
+      inset 0 0 0 1px rgba(255,255,255,.05),
+      0 4px 6px -2px rgba(0,0,0,.34),
+      0 26px 56px -22px rgba(0,0,0,.6);
+  }
+  .card.pad{ padding:22px; }
+
+  /* ---- nav: a chunkier frosted block, not a slim pill ---- */
+  .navwrap{ padding:14px 12px 4px; }
+  .nav{
+    border-radius:20px; padding:7px;
+    border:1.5px solid color-mix(in srgb,var(--glass-border) 70%,#fff);
+    background-color:var(--frost-fill);
+    background-image:var(--spec); background-size:14px 14px,19px 19px;
+    backdrop-filter:blur(32px) saturate(190%);
+    -webkit-backdrop-filter:blur(32px) saturate(190%);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.28),
+      inset 0 -2px 0 rgba(0,0,0,.16),
+      0 8px 24px -10px rgba(0,0,0,.55);
+    width:max-content; max-width:100%; margin:0 auto; overflow-x:auto;
+  }
+  .nav button{
+    border-radius:14px; min-height:40px; padding:0 16px; font-size:14px;
+  }
+  .nav button[aria-selected="true"]{
+    background:color-mix(in srgb,var(--accent) 88%,var(--surface));
+    color:var(--on-accent);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.4), inset 0 -2px 0 rgba(0,0,0,.14), 0 6px 14px -6px color-mix(in srgb,var(--accent) 70%,transparent);
+  }
+
+  /* ---- buttons: blocky rounded-square masses ---- */
+  .btn{
+    border-radius:16px; min-height:46px; padding:0 18px; font-size:15px; font-weight:700;
+    border:1.5px solid color-mix(in srgb,var(--glass-border) 70%,#fff);
+    background-color:var(--frost-fill);
+    background-image:var(--spec); background-size:14px 14px,19px 19px;
+    backdrop-filter:blur(24px) saturate(170%);
+    -webkit-backdrop-filter:blur(24px) saturate(170%);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.26),
+      inset 0 -2px 0 rgba(0,0,0,.16),
+      0 3px 4px -1px rgba(0,0,0,.3),
+      0 10px 20px -12px rgba(0,0,0,.5);
+  }
+  .btn:hover{ filter:brightness(1.06); }
+  .btn:active:not([disabled]){ transform:translateY(1px) scale(.98); }
+  .btn.primary{
+    background-color:color-mix(in srgb,var(--accent) 80%,var(--surface));
+    background-image:var(--spec); background-size:14px 14px,19px 19px;
+    border-color:transparent;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.34),
+      inset 0 -2px 0 rgba(0,0,0,.18),
+      0 4px 6px -2px rgba(0,0,0,.3),
+      0 16px 30px -14px color-mix(in srgb,var(--accent) 70%,transparent);
+  }
+  .btn.mini{ min-height:38px; padding:0 13px; font-size:13.5px; border-radius:13px; }
+
+  /* ---- chips: frosted rounded squares ---- */
+  .chip{
+    border-radius:14px; min-height:40px; padding:0 15px; font-size:13.5px;
+    border:1.5px solid color-mix(in srgb,var(--glass-border) 70%,#fff);
+    background-color:var(--frost-fill);
+    background-image:var(--spec); background-size:14px 14px,19px 19px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.2), inset 0 -2px 0 rgba(0,0,0,.12), 0 3px 8px -4px rgba(0,0,0,.4);
+  }
+  .chip[aria-pressed="true"]{
+    background-color:color-mix(in srgb,var(--accent) 80%,var(--surface));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.32), inset 0 -2px 0 rgba(0,0,0,.16), 0 6px 14px -6px color-mix(in srgb,var(--accent) 65%,transparent);
+  }
+
+  /* ---- segmented control: chunky rounded block ---- */
+  .seg{
+    border-radius:18px; padding:6px; gap:6px;
+    border:1.5px solid color-mix(in srgb,var(--glass-border) 70%,#fff);
+    background-color:var(--frost-fill);
+    background-image:var(--spec); background-size:14px 14px,19px 19px;
+    backdrop-filter:blur(24px) saturate(170%);
+    -webkit-backdrop-filter:blur(24px) saturate(170%);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.2), inset 0 -2px 0 rgba(0,0,0,.14), 0 3px 8px -4px rgba(0,0,0,.4);
+  }
+  .seg button{ border-radius:13px; min-height:42px; font-size:14px; }
+  .seg button[aria-pressed="true"]{
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.32), inset 0 -2px 0 rgba(0,0,0,.16), 0 4px 10px -4px color-mix(in srgb,var(--accent) 60%,transparent);
+  }
+
+  /* ---- fields: frosted, taller, blocky ---- */
+  input, select, textarea, .mono-input{
+    border-radius:14px; min-height:46px; padding:0 16px; font-size:14.5px;
+    border:1.5px solid color-mix(in srgb,var(--glass-border) 70%,#fff);
+    background-color:var(--frost-fill);
+    background-image:var(--spec); background-size:14px 14px,19px 19px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.2), inset 0 -2px 0 rgba(0,0,0,.12), 0 3px 8px -4px rgba(0,0,0,.35);
+  }
+  input:focus, select:focus, textarea:focus{
+    box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--accent) 60%,transparent), 0 0 0 5px color-mix(in srgb,var(--accent) 22%,transparent);
+  }
+
+  /* ---- headings / eyebrows: blockier, more presence ---- */
+  .eyebrow{ letter-spacing:.16em; font-weight:800; color:var(--accent); }
+  .sec-head h2{ font-size:clamp(24px,4vw,34px); font-weight:800; letter-spacing:-.02em; }
+  .sec-head h2::after{ content:""; display:block; width:44px; height:5px; margin-top:8px;
+    border-radius:3px; background:linear-gradient(90deg,var(--accent),transparent); }
+
+  /* ---- stat tiles & list rows: blocky frosted plates with mass ---- */
+  [class*="kpi"],[class*="stat"],[class*="tile"]{
+    border-radius:20px; padding:18px 20px;
+    border:1.5px solid color-mix(in srgb,var(--glass-border) 70%,#fff);
+    background-color:var(--frost-fill);
+    background-image:var(--spec); background-size:14px 14px,19px 19px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.22), inset 0 -2px 0 rgba(0,0,0,.14), 0 8px 18px -10px rgba(0,0,0,.5);
+  }
+  [class*="row"],[class*="arow"],[class*="prow"]{
+    border-radius:16px;
+    border-color:color-mix(in srgb,var(--glass-border) 70%,#fff);
+  }
+
+  /* ---- a bit more breathing room between stacked cards ---- */
+  .stack{ gap:14px; }
+  .btn-row{ gap:10px; }
+}
+
+</style>
 <header class="top">
   <button class="gear" id="settingsBtn" aria-label="Settings" title="Settings">⚙</button>
   <div class="brandwrap">
@@ -3831,7 +4039,7 @@ input:focus, select:focus, textarea:focus{
                 <select id="designSelect">
                   <option value="off">Default</option>
                   <option value="r1">Redesign 1 · liquid glass</option>
-                  <option value="r2">Redesign 2</option>
+                  <option value="r2">Frosted Glass</option>
                   <option value="r3">Redesign 3</option>
                 </select>
                 <p class="hint">A/B test skins. Redesigns are built one at a time; Default is the original look. Per device.</p>
@@ -4758,6 +4966,7 @@ input:focus, select:focus, textarea:focus{
     <div class="sec-head">
       <h2>Notes</h2>
       <div class="n-head-acts">
+        <button class="btn mini" type="button" id="nClipBtn">Clip</button>
         <button class="btn mini" type="button" id="nTplBtn" aria-haspopup="true">From template ▾</button>
         <button class="btn primary mini" type="button" id="nNewBtn">+ New note</button>
       </div>
@@ -4823,6 +5032,7 @@ input:focus, select:focus, textarea:focus{
       <div class="n-addrow">
         <button class="btn mini" type="button" id="nAddBlock">+ Add block</button>
         <button class="btn mini" type="button" id="nAddPhoto">+ Photo</button>
+        <button class="btn mini" type="button" id="nVoiceBtn">🎤 Voice</button>
         <input type="file" id="nPhotoIn" accept="image/*" hidden>
       </div>
     </div>
@@ -4839,12 +5049,59 @@ input:focus, select:focus, textarea:focus{
 
   <!-- quick capture: one tap to a fresh note from anywhere in the app -->
   <button type="button" class="n-quick" id="nQuick" aria-label="New note" title="New note">✎</button>
+  <button type="button" class="n-quick n-quick-pad" id="nPadBtn" aria-label="Scratchpad" title="Scratchpad" aria-expanded="false">⚡</button>
+  <!-- the scratchpad: a slide-over for thoughts that have no home yet; every
+       entry is stamped and lands in today's daily note -->
+  <aside class="n-pad" id="nPad" hidden aria-label="Scratchpad">
+    <div class="n-pad-head">
+      <b>Scratchpad</b>
+      <span class="n-pad-day" id="nPadDay"></span>
+      <button type="button" class="btn mini" id="nPadOpen">Open today's note</button>
+      <button type="button" class="n-pad-x" id="nPadClose" aria-label="Close">×</button>
+    </div>
+    <div class="n-pad-list" id="nPadList"></div>
+    <div class="n-pad-in">
+      <textarea id="nPadTa" rows="2" placeholder="What's on your mind…"></textarea>
+      <div class="n-pad-acts">
+        <button type="button" class="btn mini" id="nPadVoice">🎤</button>
+        <button type="button" class="btn primary mini" id="nPadLog">Log</button>
+      </div>
+    </div>
+  </aside>
+  <!-- voice capture: transcript grows here while you talk -->
+  <div class="n-voice" id="nVoice" hidden role="dialog" aria-label="Voice capture">
+    <div class="n-voice-head"><span class="n-voice-dot" aria-hidden="true"></span><b id="nVoiceState">Listening…</b><span class="n-voice-time" id="nVoiceTime">0:00</span></div>
+    <div class="n-voice-text" id="nVoiceText"></div>
+    <div class="n-voice-acts">
+      <button type="button" class="btn mini" id="nVoiceCancel">Cancel</button>
+      <button type="button" class="btn primary mini" id="nVoiceDone">Done</button>
+    </div>
+  </div>
   <div class="n-undo" id="nUndo" hidden role="status">
     <span id="nUndoText"></span>
     <button class="btn mini" type="button" id="nUndoBtn">Undo</button>
   </div>
 
 </main>
+
+<!-- web clipper: paste text or a link, or scan an image for its text -->
+<dialog id="nClipDlg"><form id="nClipForm" method="dialog">
+  <h3 class="dlg-head">Clip into a note</h3>
+  <div class="dlg-body">
+    <div class="field"><label for="nClipText">Text or link</label>
+      <textarea id="nClipText" rows="6" placeholder="Paste an article, some text, or a link…"></textarea>
+      <p class="hint">Pasted pages are cleaned down to their text. A link is fetched when the site allows it; most don't, so paste the text itself.</p></div>
+    <div class="field"><label>Image, whiteboard or scan</label>
+      <div class="n-ai-row"><button type="button" class="btn mini" id="nClipImgBtn">Choose image</button><span id="nClipImgName" class="hint"></span></div>
+      <input type="file" id="nClipImg" accept="image/*" hidden>
+      <p class="hint">The text in the picture is read on this device and becomes searchable. The first run downloads the reader (a few MB).</p></div>
+    <p class="hint" id="nClipStatus" hidden></p>
+  </div>
+  <div class="dlg-foot">
+    <button type="button" class="btn" id="nClipCancel">Cancel</button>
+    <button type="submit" class="btn primary" id="nClipGo">Clip</button>
+  </div>
+</form></dialog>
 
 <!-- plant editor -->
 <dialog id="plantDlg"><form id="plantForm">
@@ -22018,6 +22275,14 @@ Object.assign(CS,{
 "Show":"Zobrazit","Hide":"Skrýt","Test":"Vyzkoušet","Model":"Model","Leave empty for the default.":"Prázdné = výchozí.",
 "Stays on this device only — it is never synced. Powers voice extraction, breaking tasks into steps, Cornell questions and auto-clustering. Without a key those fall back to simpler built-in methods.":"Zůstává jen v tomto zařízení — nikdy se nesynchronizuje. Pohání přepis hlasu, rozklad úkolů na kroky, cornellské otázky a automatické shlukování. Bez klíče se použijí jednodušší vestavěné postupy.",
 "Links to":"Odkazuje na","Linked from":"Odkazováno z","Unlinked mentions":"Nepropojené zmínky","Create note":"Vytvořit poznámku","Link":"Propojit",
+"Clip":"Výstřižek","🎤 Voice":"🎤 Hlas","Voice":"Hlas","Read text from photo":"Přečíst text z fotky","Scratchpad":"Zápisník myšlenek",
+"Open today's note":"Otevřít dnešní poznámku","Close":"Zavřít","What's on your mind…":"Co máte na mysli…","Log":"Zapsat",
+"Nothing logged today. Whatever you type here is stamped and kept in today's note.":"Dnes nic zapsáno. Cokoli sem napíšete, dostane čas a uloží se do dnešní poznámky.",
+"Listening…":"Poslouchám…","Say something…":"Řekněte něco…","Cancel":"Zrušit","Done":"Hotovo",
+"Clip into a note":"Uložit do poznámky","Text or link":"Text nebo odkaz","Paste an article, some text, or a link…":"Vložte článek, text nebo odkaz…",
+"Pasted pages are cleaned down to their text. A link is fetched when the site allows it; most don't, so paste the text itself.":"Vložené stránky se očistí na samotný text. Odkaz se stáhne, pokud to web dovolí; většina nedovolí, tak vložte rovnou text.",
+"Image, whiteboard or scan":"Obrázek, tabule nebo sken","Choose image":"Vybrat obrázek",
+"The text in the picture is read on this device and becomes searchable. The first run downloads the reader (a few MB).":"Text z obrázku se přečte v tomto zařízení a dá se pak hledat. První spuštění stáhne čtečku (pár MB).",
 });
 
 
@@ -22219,6 +22484,8 @@ function nNormalise(d){
               tags:Array.isArray(n.tags)?n.tags.filter(x=>typeof x==="string"):[],
               pinned:n.pinned===true, archived:n.archived===true,
               plantId:typeof n.plantId==="string"?n.plantId:null,
+              daily:(typeof n.daily==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(n.daily))?n.daily:null,   /* the day this is the daily note of */
+              source:typeof n.source==="string"?n.source.slice(0,500):null,                        /* where a clipping came from */
               trashedAt:Number(n.trashedAt)||null,
               createdAt:made, updatedAt:Number(n.updatedAt)||made};
     })
@@ -22514,7 +22781,9 @@ function nOpenTypeMenu(bid,anchorEl,slash){
   /* data-en keeps the English name so "/head" finds "Nadpis 1" in Czech too */
   m.innerHTML=(b.type==="img"?"":N_TYPES.map(p=>`<button type="button" role="menuitem" data-settype="${esc(p[0])}" data-en="${esc(p[1])}"${p[0]===b.type?' aria-current="true"':""}>${esc(p[1])}</button>`).join("")
     +'<div class="n-menu-sep"></div>')
+    +(b.type==="img"?`<button type="button" role="menuitem" data-cmd="ocr" data-en="Read text from photo">${esc(t("Read text from photo"))}</button>`:"")
     +`<button type="button" role="menuitem" data-cmd="photo" data-en="Photo">${esc(t("Photo"))}</button>`
+    +`<button type="button" role="menuitem" data-cmd="voice" data-en="Voice">${esc(t("Voice"))}</button>`
     +(b.type==="todo"?`<button type="button" role="menuitem" data-cmd="plan" data-en="Send to Daily Planner">${esc(t("Send to Daily Planner"))}</button>`
       +`<button type="button" role="menuitem" data-cmd="steps" data-en="Break into steps">${esc(t("Break into steps"))}</button>`:"")
     +'<div class="n-menu-sep"></div>'
@@ -23158,6 +23427,8 @@ function nRunCmd(cmd,n,b){
   if(cmd==="photo"){ nRestructure(b.id,null); const i=$("#nPhotoIn"); if(i) i.click(); return; }
   if(cmd==="plan"){ nRestructure(b.id,null); nOpenPlanPop(b); return; }
   if(cmd==="steps"){ nRestructure(b.id,null); nBreakDown(n,b); return; }
+  if(cmd==="voice"){ nRestructure(b.id,null); nVoiceStart({intoNote:n.id,afterBlock:b.id}); return; }
+  if(cmd==="ocr"){ nRestructure(null,null); nOcrBlock(n,b); return; }
   nRestructure(b.id,null);
 }
 /* placeholders until parts four and five land; both exist so the menu never dead-ends */
@@ -23375,6 +23646,314 @@ function nScore(n,q){
   });
   /* leaving a note or the app closes the popups */
   const back=$("#nBack"); if(back) back.addEventListener("click",nCloseLinkPop,true);
+})();
+
+/* ============================================================================
+   Notes, part four — capture. The scratchpad (a slide-over that stamps every
+   entry into today's daily note), voice capture (the browser's own speech
+   recognition, then bullets and action items pulled out of the transcript),
+   and the clipper (paste text or a link, or read the text off an image on the
+   device). Sharing to the app from another app lands in the clipper too.
+   ============================================================================ */
+var nRec=null, nVoiceSegs=[], nVoiceT0=0, nVoiceTimer=null, nVoiceOpts=null, nVoiceFinal="", nVoiceInterim="";
+
+/* ---------------- daily note ---------------- */
+function nDailyNb(){
+  S.notebooks=S.notebooks||[];
+  let nb=S.notebooks.find(x=>x.id==="nb-daily");
+  if(!nb){ nb={id:"nb-daily",name:L.lang==="cs"?"Deník":"Daily"}; S.notebooks.push(nb); touch(); }
+  return nb;
+}
+function nDailyNote(create){
+  const day=ymd(Date.now());
+  let n=(S.notes||[]).find(x=>x.daily===day&&!x.trashedAt);
+  if(!n&&create){
+    const now=Date.now();
+    n={id:uid(),title:new Date().toLocaleDateString(locale(),{weekday:"long",day:"numeric",month:"long"}),
+      blocks:[],notebook:nDailyNb().id,plantId:null,daily:day,source:null,tags:[],pinned:false,archived:false,trashedAt:null,createdAt:now,updatedAt:now};
+    S.notes=S.notes||[]; S.notes.unshift(n); touch();
+  }
+  return n||null;
+}
+function nPadLog(text,type){
+  text=String(text||"").trim(); if(!text) return null;
+  const n=nDailyNote(true);
+  const hm=new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
+  const b=nBlock(type||"p",hm+" — "+text);
+  /* the daily note is born with no blocks; nNormalise would give it one empty
+     paragraph on reload, so drop a lone empty one before appending */
+  if(n.blocks.length===1&&n.blocks[0].type==="p"&&!n.blocks[0].text.trim()) n.blocks.length=0;
+  n.blocks.push(b); nTouchNote(n);
+  if(nOpenNote()===n) nRestructure(null,null);
+  return b;
+}
+function nRenderPad(){
+  const list=$("#nPadList"), day=$("#nPadDay"); if(!list) return;
+  const n=nDailyNote(false);
+  day.textContent=new Date().toLocaleDateString(locale(),{weekday:"short",day:"numeric",month:"short"});
+  const rows=n?n.blocks.filter(b=>(b.text||"").trim()):[];
+  list.innerHTML=rows.length?rows.map(b=>{
+    const m=(b.text||"").match(/^(\d{1,2}:\d{2}(?:\s?[AP]M)?)\s+—\s+([\s\S]*)$/);
+    return `<div class="n-pad-row">${m?`<time>${esc(m[1])}</time><span data-no-i18n>${esc(m[2])}</span>`:`<span data-no-i18n>${esc(b.text)}</span>`}</div>`;
+  }).join("")
+  :`<div class="n-pad-empty">${esc(t("Nothing logged today. Whatever you type here is stamped and kept in today's note."))}</div>`;
+  list.scrollTop=list.scrollHeight;
+}
+function nPadOpen(on){
+  const pad=$("#nPad"), btn=$("#nPadBtn"); if(!pad) return;
+  pad.hidden=!on; btn.setAttribute("aria-expanded",String(on));
+  if(on){ nRenderPad(); setTimeout(()=>{ const ta=$("#nPadTa"); if(ta) ta.focus(); },230); }
+}
+
+/* ---------------- voice ----------------
+   The browser's SpeechRecognition (Chrome, Safari, Edge; not Firefox). Each
+   final result is kept with its offset from the start so the note can carry
+   [m:ss] stamps — search then finds the moment, not just the recording. */
+function nVoiceSupported(){ return !!(window.SpeechRecognition||window.webkitSpeechRecognition); }
+function nVoiceStart(opts){
+  if(!nVoiceSupported()){ nToast(L.lang==="cs"?"Hlasový zápis potřebuje Chrome, Safari nebo Edge.":"Voice capture needs Chrome, Safari or Edge."); return; }
+  if(nRec) return;
+  const R=window.SpeechRecognition||window.webkitSpeechRecognition;
+  nVoiceOpts=opts||{}; nVoiceSegs=[]; nVoiceFinal=""; nVoiceInterim=""; nVoiceT0=Date.now();
+  const r=new R(); nRec=r;
+  r.lang=L.lang==="cs"?"cs-CZ":"en-US"; r.continuous=true; r.interimResults=true; r.maxAlternatives=1;
+  r.onresult=e=>{
+    let interim="";
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const res=e.results[i], txt=res[0].transcript.trim();
+      if(res.isFinal){ if(txt){ nVoiceSegs.push({t:Math.round((Date.now()-nVoiceT0)/1000),text:txt}); nVoiceFinal+=(nVoiceFinal?" ":"")+txt; } }
+      else interim+=txt+" ";
+    }
+    nVoiceInterim=interim.trim(); nVoiceRender();
+  };
+  r.onerror=e=>{
+    const k=e.error;
+    if(k==="not-allowed"||k==="service-not-allowed") nToast(L.lang==="cs"?"Mikrofon je zakázaný — povolte ho v prohlížeči.":"Microphone blocked — allow it in the browser.");
+    else if(k!=="no-speech"&&k!=="aborted") nToast((L.lang==="cs"?"Hlas: ":"Voice: ")+k);
+  };
+  /* Chrome ends a continuous session after a silence; restart while the panel is up */
+  r.onend=()=>{ if(nRec===r&&!$("#nVoice").hidden){ try{ r.start(); }catch(e){} } };
+  $("#nVoice").hidden=false; $("#nVoiceState").textContent=t("Listening…"); nVoiceRender();
+  clearInterval(nVoiceTimer); nVoiceTimer=setInterval(()=>{ const s=Math.round((Date.now()-nVoiceT0)/1000); $("#nVoiceTime").textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); },500);
+  try{ r.start(); }catch(e){ nVoiceStop(false); nToast(String(e.message||e)); }
+}
+function nVoiceRender(){
+  const el=$("#nVoiceText"); if(!el) return;
+  el.innerHTML=esc(nVoiceFinal)+(nVoiceInterim?` <i>${esc(nVoiceInterim)}</i>`:"")||`<i>${esc(t("Say something…"))}</i>`;
+  el.scrollTop=el.scrollHeight;
+}
+function nVoiceStop(keep){
+  const r=nRec; nRec=null; clearInterval(nVoiceTimer);
+  $("#nVoice").hidden=true;
+  if(r){ try{ r.onend=null; r.stop(); }catch(e){} }
+  if(!keep) return;
+  const text=(nVoiceFinal+" "+nVoiceInterim).trim();
+  if(!text){ nToast(L.lang==="cs"?"Nic jsem neslyšel.":"Nothing was heard."); return; }
+  if(nVoiceInterim) nVoiceSegs.push({t:Math.round((Date.now()-nVoiceT0)/1000),text:nVoiceInterim});
+  nVoiceFinish(text,nVoiceSegs.slice(),nVoiceOpts||{});
+}
+const nStamp=s=>"["+Math.floor(s/60)+":"+String(s%60).padStart(2,"0")+"]";
+/* bullets and action items out of a transcript — the model if there is a
+   key, a sentence splitter with a list of "do this" cues if there is not */
+async function nExtract(text){
+  const cs=L.lang==="cs";
+  try{
+    const r=await nAI("You turn a spoken, unpunctuated transcript into notes. Return ONLY JSON: {\"bullets\":[...], \"actions\":[...]} — bullets are the key points as short complete sentences (max 8), actions are concrete to-dos the speaker committed to or asked for (max 8, imperative, empty array if none). Keep the transcript's language. Do not invent content.",text,{maxTokens:1500});
+    const j=nAiJson(r); if(j&&Array.isArray(j.bullets)) return {bullets:j.bullets.map(String),actions:(j.actions||[]).map(String),ai:true};
+  }catch(e){ if(e.message!=="nokey") nAiFail(e); }
+  const sents=text.replace(/\s+/g," ").split(/(?<=[.!?])\s+|\s+(?=(?:a pak|a potom|then|also|next|další věc|and then)\b)/i).map(s=>s.trim()).filter(s=>s.length>2);
+  /* both languages at once — the app's language says nothing about the
+     language someone happened to speak in */
+  const cue=/\b(musím|musíme|mám|máme|nezapomen|nezapomeň|udělat|koupit|zavolat|napsat|poslat|zařídit|zkontrolovat|připomenout|objednat|domluvit|need to|needs to|have to|must|should|remember to|don't forget|todo|to do|buy|call|email|send|order|schedule|book|check|fix|follow up|remind)\b/i;
+  const actions=[], bullets=[];
+  sents.forEach(s=>{ (cue.test(s)?actions:bullets).push(s.charAt(0).toUpperCase()+s.slice(1)); });
+  return {bullets:bullets.slice(0,12),actions:actions.slice(0,12),ai:false};
+}
+async function nVoiceFinish(text,segs,opts){
+  nToast(L.lang==="cs"?"Vytahuji body a úkoly…":"Pulling out points and actions…",true);
+  const ex=await nExtract(text);
+  const cs=L.lang==="cs";
+  const blocks=[];
+  ex.bullets.forEach(s=>blocks.push(nBlock("ul",s)));
+  if(ex.actions.length){ blocks.push(nBlock("h3",cs?"Úkoly":"Action items")); ex.actions.forEach(s=>blocks.push(nBlock("todo",s))); }
+  blocks.push(nBlock("h3",cs?"Přepis":"Transcript"));
+  (segs.length?segs:[{t:0,text}]).forEach(sg=>blocks.push(nBlock("quote",nStamp(sg.t)+" "+sg.text)));
+  nHideUndo();
+  if(opts.pad){ nPadLog(text); nRenderPad(); ex.actions.forEach(a=>nPadLog(a,"todo")); nRenderPad(); return; }
+  const target=opts.intoNote?nNoteById(opts.intoNote):null;
+  if(target){
+    let at=opts.afterBlock?nIdx(target,opts.afterBlock):-1;
+    if(at>=0&&!(target.blocks[at].text||"").trim()&&target.blocks[at].type==="p"){ target.blocks.splice(at,1); at--; }
+    target.blocks.splice(at+1,0,...blocks);
+    nTouchNote(target); if(nOpenNote()===target) nRestructure(blocks[0].id,null);
+    return;
+  }
+  const now=Date.now();
+  const n={id:uid(),title:(cs?"Hlasový zápis — ":"Voice note — ")+new Date().toLocaleString(locale(),{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}),
+    blocks,notebook:nNbById(nV().nb)?nV().nb:null,plantId:null,daily:null,source:null,tags:["voice"],pinned:false,archived:false,trashedAt:null,createdAt:now,updatedAt:now};
+  S.notes.unshift(n); touch();
+  nReturn=null; setApp("notes"); openNote(n.id);
+}
+
+/* ---------------- clipper ---------------- */
+function nLoadScript(url){
+  return new Promise((res,rej)=>{
+    if(document.querySelector('script[src="'+url+'"]')){ res(); return; }
+    const s=document.createElement("script"); s.src=url; s.onload=res; s.onerror=()=>rej(new Error("load failed")); document.head.appendChild(s);
+  });
+}
+/* HTML in, paragraphs out: script/style/nav/aside/header/footer dropped, the
+   rest read as text and split on blank lines. Plain text passes straight through. */
+function nCleanText(raw){
+  raw=String(raw||"");
+  let title="";
+  if(/<\/?(p|div|article|h\d|br|body|html)\b/i.test(raw)){
+    try{
+      const doc=new DOMParser().parseFromString(raw,"text/html");
+      title=(doc.querySelector("title")||{}).textContent||(doc.querySelector("h1")||{}).textContent||"";
+      doc.querySelectorAll("script,style,nav,aside,header,footer,noscript,iframe,form,button").forEach(x=>x.remove());
+      const root=doc.querySelector("article,main")||doc.body||doc;
+      root.querySelectorAll("p,h1,h2,h3,h4,li,blockquote,pre,br,div").forEach(x=>x.append("\n\n"));
+      raw=root.textContent||"";
+    }catch(e){}
+  }
+  const paras=raw.replace(/\r/g,"").split(/\n\s*\n/).map(p=>p.replace(/[ \t]+/g," ").replace(/\n/g," ").trim()).filter(p=>p.length>1);
+  return {title:title.trim(),paras};
+}
+function nClipNote(paras,title,source,extra){
+  const now=Date.now(), cs=L.lang==="cs";
+  const blocks=[];
+  if(source) blocks.push(nBlock("quote",(cs?"Zdroj: ":"Source: ")+source));
+  (extra||[]).forEach(b=>blocks.push(b));
+  paras.forEach(p=>blocks.push(nBlock(/^#{1,3}\s/.test(p)?"h2":"p",p.replace(/^#{1,3}\s/,""))));
+  if(!blocks.length) blocks.push(nBlock("p",""));
+  const n={id:uid(),title:(title||"").slice(0,120)||(cs?"Výstřižek":"Clipping"),blocks,notebook:nNbById(nV().nb)?nV().nb:null,
+    plantId:null,daily:null,source:source||null,tags:["clipped"],pinned:false,archived:false,trashedAt:null,createdAt:now,updatedAt:now};
+  S.notes.unshift(n); touch();
+  return n;
+}
+async function nClipFromText(text){
+  const cs=L.lang==="cs";
+  text=String(text||"").trim(); if(!text) return null;
+  let url=null;
+  if(/^https?:\/\/\S+$/i.test(text)){
+    url=text;
+    nClipStatus(cs?"Stahuji stránku…":"Fetching the page…");
+    try{
+      const res=await fetch(url,{mode:"cors"}); if(!res.ok) throw new Error("HTTP "+res.status);
+      const html=await res.text(); const c=nCleanText(html);
+      if(!c.paras.length) throw new Error("empty");
+      return nClipNote(c.paras,c.title||new URL(url).hostname,url);
+    }catch(e){
+      nClipStatus(cs?"Stránka se nedá stáhnout přímo (web to nedovoluje). Vložte sem její text.":"That page can't be fetched directly (the site doesn't allow it). Paste its text instead.");
+      return null;
+    }
+  }
+  const c=nCleanText(text);
+  const first=c.paras[0]||"";
+  const title=c.title||(first.length<=90?first:first.slice(0,60)+"…");
+  /* the line that became the title is not repeated as the first paragraph */
+  const paras=(first&&nFold(first)===nFold(title))?c.paras.slice(1):c.paras;
+  return nClipNote(paras,title,null);
+}
+function nClipStatus(msg){ const s=$("#nClipStatus"); if(!s) return; s.hidden=!msg; s.textContent=msg||""; }
+async function nOcr(file,onProgress){
+  await nLoadScript("https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/tesseract.min.js");
+  const langs=L.lang==="cs"?"ces+eng":"eng";
+  const r=await Tesseract.recognize(file,langs,{logger:m=>{ if(onProgress&&m.status) onProgress(m); }});
+  return (r&&r.data&&r.data.text||"").trim();
+}
+async function nClipFromImage(file){
+  const cs=L.lang==="cs";
+  let data=null; try{ data=await shrinkImage(file); }catch(e){}
+  nClipStatus(cs?"Čtu text z obrázku…":"Reading the text in the image…");
+  let text="";
+  try{ text=await nOcr(file,m=>{ if(m.status==="recognizing text") nClipStatus((cs?"Čtu… ":"Reading… ")+Math.round((m.progress||0)*100)+"%"); else if(m.status&&/load|download/i.test(m.status)) nClipStatus(cs?"Stahuji čtečku textu…":"Downloading the text reader…"); }); }
+  catch(e){ nClipStatus((cs?"Čtení selhalo: ":"Reading failed: ")+(e.message||e)); return null; }
+  const extra=[];
+  if(data){
+    S.photos=S.photos||[];
+    const ph={id:uid(),subjectId:null,module:"notes",at:new Date().toISOString(),data,h:null,by:L.me};
+    S.photos.push(ph); if(typeof photosTouched==="function") photosTouched();
+    const ib=nBlock("img",""); ib.photoId=ph.id; extra.push(ib);
+  }
+  const c=nCleanText(text);
+  const n=nClipNote(c.paras.length?c.paras:[cs?"(žádný čitelný text)":"(no readable text)"],(cs?"Sken — ":"Scan — ")+new Date().toLocaleDateString(locale(),{day:"numeric",month:"short"}),null,extra);
+  if(extra[0]){ const ph=S.photos.find(p=>p.id===extra[0].photoId); if(ph) ph.subjectId=n.id; }
+  return n;
+}
+async function nOcrBlock(n,b){
+  const ph=(S.photos||[]).find(p=>p.id===b.photoId);
+  if(!ph){ nToast(L.lang==="cs"?"Fotka je na jiném zařízení.":"The photo is on another device."); return; }
+  nToast(L.lang==="cs"?"Čtu text z fotky…":"Reading the text in the photo…",true);
+  let text="";
+  try{ text=await nOcr(ph.data); }catch(e){ nToast((L.lang==="cs"?"Čtení selhalo: ":"Reading failed: ")+(e.message||e)); return; }
+  nHideUndo();
+  const c=nCleanText(text);
+  if(!c.paras.length){ nToast(L.lang==="cs"?"Žádný čitelný text.":"No readable text."); return; }
+  const made=c.paras.map(p=>nBlock("p",p));
+  n.blocks.splice(nIdx(n,b.id)+1,0,...made);
+  nTouchNote(n); if(nOpenNote()===n) nRestructure(made[0].id,null);
+}
+function nOpenClip(prefill){
+  const d=$("#nClipDlg"); if(!d) return;
+  $("#nClipText").value=prefill||""; $("#nClipImgName").textContent=""; $("#nClipImg").value=""; nClipStatus("");
+  d.showModal(); setTimeout(()=>$("#nClipText").focus(),30);
+}
+
+/* ---------------- share target ----------------
+   manifest.webmanifest registers ?title=&text=&url= — Android (and desktop
+   Chrome) hand a shared page to the app that way. */
+(function nShareIn(){
+  try{
+    const q=new URLSearchParams(location.search);
+    const text=q.get("text")||"", url=q.get("url")||"", title=q.get("title")||"";
+    if(!text&&!url) return;
+    history.replaceState(null,"",location.pathname);
+    const body=(url&&!text?url:text+(url&&text.indexOf(url)<0?"\n\n"+url:""));
+    setTimeout(()=>{ setApp("notes"); nOpenClip((title?title+"\n\n":"")+body); },300);
+  }catch(e){}
+})();
+
+/* ---------------- wiring for part four ---------------- */
+(function nWire4(){
+  const list=$("#nList"); if(!list) return;
+  const on=(sel,ev,fn)=>{ const el=$(sel); if(el) el.addEventListener(ev,fn); };
+  on("#nPadBtn","click",()=>nPadOpen($("#nPad").hidden));
+  on("#nPadClose","click",()=>nPadOpen(false));
+  on("#nPadOpen","click",()=>{ const n=nDailyNote(true); nPadOpen(false); nReturn=null; setApp("notes"); openNote(n.id); });
+  const log=()=>{ const ta=$("#nPadTa"); if(!ta||!ta.value.trim()) return; nPadLog(ta.value); ta.value=""; nRenderPad(); ta.focus(); };
+  on("#nPadLog","click",log);
+  on("#nPadTa","keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); log(); } if(e.key==="Escape") nPadOpen(false); });
+  on("#nPadVoice","click",()=>nVoiceStart({pad:true}));
+  on("#nVoiceBtn","click",()=>{ const n=nOpenNote(); if(!n) return; nVoiceStart({intoNote:n.id}); });
+  on("#nVoiceDone","click",()=>nVoiceStop(true));
+  on("#nVoiceCancel","click",()=>nVoiceStop(false));
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&nRec) nVoiceStop(false); });
+
+  on("#nClipBtn","click",()=>nOpenClip(""));
+  on("#nClipCancel","click",()=>$("#nClipDlg").close());
+  on("#nClipImgBtn","click",()=>$("#nClipImg").click());
+  on("#nClipImg","change",()=>{ const f=$("#nClipImg").files[0]; $("#nClipImgName").textContent=f?f.name:""; });
+  on("#nClipForm","submit",async e=>{
+    e.preventDefault();
+    const go=$("#nClipGo"); go.disabled=true;
+    try{
+      const f=$("#nClipImg").files[0];
+      let n=null;
+      if(f) n=await nClipFromImage(f);
+      else n=await nClipFromText($("#nClipText").value);
+      if(n){ $("#nClipDlg").close(); nReturn=null; setApp("notes"); openNote(n.id); }
+    }finally{ go.disabled=false; }
+  });
+  /* a paste straight into the list (not into a field) is a clip */
+  document.addEventListener("paste",e=>{
+    if(curView!=="notes"||$("#nClipDlg").open) return;
+    const tgt=e.target; if(tgt&&(tgt.tagName==="INPUT"||tgt.tagName==="TEXTAREA"||tgt.isContentEditable)) return;
+    const html=e.clipboardData.getData("text/html"), txt=e.clipboardData.getData("text/plain");
+    if(!html&&!txt) return;
+    e.preventDefault(); nOpenClip(html||txt);
+  });
 })();
 
 
