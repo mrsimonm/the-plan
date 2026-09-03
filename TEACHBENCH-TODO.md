@@ -114,3 +114,50 @@ europe-central2). Owner: musel.simon@gmail.com. Teacher: linlab.cz@gmail.com.
   network, so they can be exercised directly in the browser console —
   that is how the spaced-repetition intervals and the streak rules were
   verified.
+
+---
+
+## F. Cross-device sync for the MAIN app (added 2026-09-03)
+
+Built and pushed: commits `07ebb91` (the sync layer) and `2894f3d` (the
+multi-account safety fix). Data and schedules sync between devices via
+Firestore; photos deliberately do not travel.
+
+`PSYNC`, at the very end of the script in `index.html`, supplies an `ART`
+whose `publish()` writes to `users/{uid}/state/main`. Everything else —
+`touch()`, `push()`, the debounce, the `stateLoaded` guard — is the
+original, long-dormant sync path, unchanged.
+
+**Blocked on Simon, and nothing works until it is done:**
+
+1. **Publish `firestore.rules` in the Firebase console.** It now carries
+   the new `users/{userId}/state/{docId}` block AND the `progress` block
+   from item 4 above, which was still unpublished. Until this is done
+   every sync write is refused and the badge reads "sync: not allowed".
+2. **Create the accounts.** Firebase console -> Authentication -> Users ->
+   Add user, one per person. There is no sign-up screen in the app by
+   design; passwords are handed out. Each person then signs in at
+   Settings -> Potting Bench -> Sync.
+
+**Never verified, because it needs real credentials:**
+
+3. The actual Firestore write / read / live listener round trip. What IS
+   verified: the app boots, the SDK loads and shares one Firebase app with
+   Teachbench, signed out the app is byte-for-byte its old self (`ART`
+   stays null), and a full wire round-trip through `migrate()` preserves
+   products, formulas, schedules with their weeks, subjects, Hours
+   projects and planner tasks with photos excluded.
+4. **The account-switch path specifically.** Sign in as user 1, add a
+   plant, sign out, sign in as user 2 on the same device: user 2 must see
+   an empty app, not user 1's plant. This is what `2894f3d` exists to
+   guarantee and it has never been run against two real accounts.
+
+**Known limits, by choice, worth revisiting only if they bite:**
+
+- Conflicts are whole-state newest-wins. Right for one person on two
+  devices; it does not merge simultaneous edits made in two places.
+- Photos stay on the device that took them, so libraries diverge. Firebase
+  Storage would fix it and was explicitly deferred.
+- It is per-person data, not shared data. Three accounts means three
+  separate worlds; there is no way for two people to share one set of
+  plants.
