@@ -8304,9 +8304,10 @@ function pBoardHtml(days,opts){
   const label=d=>{ const x=pParseISO(d);
     return `<b>${esc((L.lang==="cs"?DOW_CS:DOW_LONG)[x.getDay()].slice(0,3))}</b> ${x.getDate()}`; };
 
-  /* Labelled 1–24, not 0–23: the first row of the day reads "1", the last
-     "24", so every hour the board draws has a visible, unambiguous number —
-     no row is left implying a "0" that reads as missing.
+  /* Labelled 0–23, matching the clock: each label sits ON the line that
+     begins that hour, so the row under "0" is midnight–1am and the row under
+     "9" is 9–10. Labelling them 1–24 put every number one row below the
+     hour it named, which read as the whole grid being shifted down an hour.
 
      The gutter used to be one flat block starting at the very top of the
      grid, with its labels absolutely positioned from y=0. Every DAY column,
@@ -8324,7 +8325,7 @@ function pBoardHtml(days,opts){
     <button type="button" class="wb-head" style="visibility:hidden" tabindex="-1" aria-hidden="true">·</button>
     <div class="wb-allday" style="visibility:hidden" aria-hidden="true"></div>
     <div class="wb-gutter-hours" style="height:${H}px">${
-      Array.from({length:endH-startH},(_,i)=>`<span style="top:${i*WB_PXH}px">${startH+i+1}</span>`).join("")}</div>
+      Array.from({length:endH-startH},(_,i)=>`<span style="top:${i*WB_PXH}px">${startH+i}</span>`).join("")}</div>
   </div>`;
 
   const nowH=nowFrac;          // one clock read for the whole board
