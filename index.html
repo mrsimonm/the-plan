@@ -3,7 +3,7 @@
 <meta name="color-scheme" content="light dark">
 <title>Potting Bench V3</title>
 <link rel="manifest" href="./manifest.webmanifest">
-<meta name="theme-color" content="#070B08">
+<meta name="theme-color" content="#1C1522">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -13,23 +13,24 @@
   /* system font only — no decorative or pixel faces anywhere in this app */
   --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Inter,sans-serif;
 
-  /* retro palette, liquid-glass surfaces: cream canvas, grey-green + teal
-     blobs behind the glass, one accent used only for primary/active state */
-  --bg:#EDEAE0; --surface:#F5F3EA; --surface-2:#E7E4D6; --sunk:#E1DECD;
-  --line:#D9D6C6; --line-soft:rgba(46,46,42,.08); --line-strong:#A9AE9C;
-  --ink-strong:#2E2E2A; --ink:#6E7367; --ink-3:#8D9280;
-  --accent:#5E9E85; --accent-2:#4C8570; --accent-soft:rgba(94,158,133,.14); --on-accent:#FAF8EF;
-  --amber:#9C7C3E; --amber-soft:#EFE6D2;
-  --orange:#B4674A;
-  --track-bg:#E3E0D2; --track-line:rgba(51,54,46,.16); --track-ink:#6E7367;
-  --grid-line:rgba(46,46,42,.10); --grid-sep:rgba(46,46,42,.18);
-  --ok:#5E9E85; --crit:#A24B41; --crit-soft:#F0DFD9;
+  /* rose-quartz & amethyst palette, liquid-glass surfaces: blush-ivory
+     canvas with pink + orchid-violet blobs behind the glass, one rich
+     magenta-rose accent used only for primary/active state */
+  --bg:#F6F0F5; --surface:#FDFAFB; --surface-2:#F2E9F1; --sunk:#EBE0EA;
+  --line:#E1D5E3; --line-soft:rgba(84,54,92,.08); --line-strong:#C8B0CC;
+  --ink-strong:#332238; --ink:#6E5772; --ink-3:#9A829E;
+  --accent:#B13A79; --accent-2:#982E64; --accent-soft:rgba(177,58,121,.13); --on-accent:#FFF6FB;
+  --amber:#B58249; --amber-soft:#F5E8D5;
+  --orange:#C26555;
+  --track-bg:#ECE1EB; --track-line:rgba(84,54,92,.16); --track-ink:#6E5772;
+  --grid-line:rgba(84,54,92,.10); --grid-sep:rgba(84,54,92,.18);
+  --ok:#7FA98E; --crit:#BC4F68; --crit-soft:#F7E2E8;
 
-  /* blobs behind the glass — richer and more saturated again: not just
-     more opaque this time but punchier hues (less washed-out), so light
-     mode reads as genuinely colourful rather than a tinted neutral */
-  --blob-1:rgba(72,164,128,.48); --blob-2:rgba(163,170,148,.4);
-  --blob-3:rgba(206,157,68,.4); --blob-4:rgba(192,88,56,.3);
+  /* blobs behind the glass — a soft rose + orchid-violet aurora; punchy
+     enough to feel luxurious through the frosted panels, not so opaque
+     that the glass surfaces stop reading as a distinct material */
+  --blob-1:rgba(240,128,190,.36); --blob-2:rgba(183,124,224,.38);
+  --blob-3:rgba(208,150,226,.32); --blob-4:rgba(246,168,170,.30);
 
   /* the liquid-glass recipe: translucent cream fill (denser than the
      background wash, so panels read as a distinct frosted material sitting
@@ -37,9 +38,9 @@
      bright inner hairline for a refracted edge, a soft ambient shadow that
      casts the panel as elevated, and a specular highlight along the top
      edge (never a hard drop shadow) */
-  --glass-fill:rgba(237,234,224,.68); --glass-fill-2:rgba(237,234,224,.80);
+  --glass-fill:rgba(253,249,252,.66); --glass-fill-2:rgba(253,249,252,.82);
   --glass-border:rgba(255,255,255,.6);
-  --glass-shadow:0 16px 44px -10px rgba(46,46,42,.22), 0 0 0 1px rgba(46,46,42,.05), inset 0 1px 0 rgba(255,255,255,.7), inset 0 -1px 0 rgba(46,46,42,.04);
+  --glass-shadow:0 20px 54px -14px rgba(140,80,150,.30), 0 0 0 1px rgba(120,60,130,.06), inset 0 1px 0 rgba(255,255,255,.78), inset 0 -1px 0 rgba(150,80,150,.05);
   --glass-blur:blur(24px) saturate(170%);
   /* the "sexy edge" — real glass doesn't have a flat one-colour border, it
      has a rim that catches light unevenly: bright where light hits it,
@@ -59,62 +60,341 @@
     radial-gradient(90px 140px at 96% 6%, rgba(255,255,255,.1), transparent 84%),
     var(--glass-fill);
 
-  --shadow:0 1px 2px rgba(46,46,42,.07);
-  --shadow-lift:0 10px 28px -8px rgba(46,46,42,.22);
+  --shadow:0 1px 2px rgba(120,60,130,.08);
+  --shadow-lift:0 12px 34px -10px rgba(130,70,140,.28);
 
   /* shape: large soft radii on containers, tighter on controls, full pill
      on tabs and primary actions — never one radius for everything */
   --r:24px; --r-sm:13px; --r-xs:8px; --r-pill:999px;
-  --hours-hue:#7C8F72;          /* Hours identity, used inside other apps */
+  --hours-hue:#9C6BA8;          /* Hours identity, used inside other apps */
   --ink-2:var(--ink);
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    /* dark mode rebuilt as a deep emerald lounge instead of neutral
-       charcoal — the same teal the light mode uses as its lone accent
-       becomes dark mode's dominant tone, glowing out of a near-black
-       forest-green base rather than sitting on flat grey */
+    /* dark mode rebuilt as a deep plum lounge — a near-black aubergine
+       base with luminous rose + mauve glows, and a brighter magenta-rose
+       accent so the frosted panels read as lit glass against it */
+    --bg:#1C1522; --surface:#271C2C; --surface-2:#302238; --sunk:#140E19;
+    --line:#3B2C44; --line-soft:rgba(240,220,244,.09); --line-strong:#5E4769;
+    --ink-strong:#F6EBF7; --ink:#C5A9CB; --ink-3:#8F7598;
+    --accent:#D982A9; --accent-2:#BE6B97; --accent-soft:rgba(217,130,169,.18); --on-accent:#2A101F;
+    --amber:#D5A86E; --amber-soft:#4A3317;
+    --orange:#D08872;
+    --track-bg:#302238; --track-line:rgba(230,210,240,.15); --track-ink:#C5A9CB;
+    --grid-line:rgba(240,220,244,.10); --grid-sep:rgba(240,220,244,.18);
+    --ok:#83BA9B; --crit:#E09A8C; --crit-soft:#4C231E;
+    --blob-1:rgba(198,110,172,.30); --blob-2:rgba(152,112,206,.34);
+    --blob-3:rgba(134,94,176,.22); --blob-4:rgba(224,122,152,.18);
+    --glass-fill:rgba(46,32,54,.68); --glass-fill-2:rgba(46,32,54,.82);
+    --glass-border:rgba(255,255,255,.14);
+    --glass-shadow:0 18px 50px -12px rgba(90,40,110,.55), 0 0 0 1px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(0,0,0,.22);
+    --glass-edge:linear-gradient(155deg, rgba(255,255,255,.35) 0%, rgba(255,255,255,.04) 30%, rgba(255,255,255,.02) 55%, rgba(255,255,255,.18) 100%);
+    --shadow:0 1px 2px rgba(0,0,0,.45);
+    --shadow-lift:0 14px 36px -10px rgba(0,0,0,.62);
+    --hours-hue:#C895D4;
+    --ink-2:var(--ink);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1C1522; --surface:#271C2C; --surface-2:#302238; --sunk:#140E19;
+  --line:#3B2C44; --line-soft:rgba(240,220,244,.09); --line-strong:#5E4769;
+  --ink-strong:#F6EBF7; --ink:#C5A9CB; --ink-3:#8F7598;
+  --accent:#D982A9; --accent-2:#BE6B97; --accent-soft:rgba(217,130,169,.18); --on-accent:#2A101F;
+  --amber:#D5A86E; --amber-soft:#4A3317;
+  --orange:#D08872;
+  --track-bg:#302238; --track-line:rgba(230,210,240,.15); --track-ink:#C5A9CB;
+  --grid-line:rgba(240,220,244,.10); --grid-sep:rgba(240,220,244,.18);
+  --ok:#83BA9B; --crit:#E09A8C; --crit-soft:#4C231E;
+  --blob-1:rgba(198,110,172,.30); --blob-2:rgba(152,112,206,.34);
+  --blob-3:rgba(134,94,176,.22); --blob-4:rgba(224,122,152,.18);
+  --glass-fill:rgba(46,32,54,.68); --glass-fill-2:rgba(46,32,54,.82);
+  --glass-border:rgba(255,255,255,.14);
+  --glass-shadow:0 18px 50px -12px rgba(90,40,110,.55), 0 0 0 1px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(0,0,0,.22);
+  --glass-edge:linear-gradient(155deg, rgba(255,255,255,.35) 0%, rgba(255,255,255,.04) 30%, rgba(255,255,255,.02) 55%, rgba(255,255,255,.18) 100%);
+  --shadow:0 1px 2px rgba(0,0,0,.45);
+  --shadow-lift:0 14px 36px -10px rgba(0,0,0,.62);
+  --hours-hue:#C895D4;
+  --ink-2:var(--ink);
+}
+
+/* ---------------- gem theme palettes ----------------
+   The tokens above (:root / [data-theme=dark]) are the ROSE QUARTZ palette,
+   the base every theme overrides. Setting html[data-palette="X"] swaps the
+   whole color system; light/dark still compose on top via data-theme. */
+
+/* EMERALD — the original cream + forest-green look, kept as a gem */
+html[data-palette="emerald"]{
+  --bg:#EDEAE0; --surface:#F5F3EA; --surface-2:#E7E4D6; --sunk:#E1DECD;
+  --line:#D9D6C6; --line-soft:rgba(46,46,42,.08); --line-strong:#A9AE9C;
+  --ink-strong:#2E2E2A; --ink:#6E7367; --ink-3:#8D9280;
+  --accent:#5E9E85; --accent-2:#4C8570; --accent-soft:rgba(94,158,133,.14); --on-accent:#FAF8EF;
+  --amber:#9C7C3E; --amber-soft:#EFE6D2; --orange:#B4674A;
+  --track-bg:#E3E0D2; --track-line:rgba(51,54,46,.16); --track-ink:#6E7367;
+  --grid-line:rgba(46,46,42,.10); --grid-sep:rgba(46,46,42,.18);
+  --ok:#5E9E85; --crit:#A24B41; --crit-soft:#F0DFD9;
+  --blob-1:rgba(72,164,128,.48); --blob-2:rgba(163,170,148,.4);
+  --blob-3:rgba(206,157,68,.4); --blob-4:rgba(192,88,56,.3);
+  --glass-fill:rgba(237,234,224,.68); --glass-fill-2:rgba(237,234,224,.80);
+  --glass-shadow:0 16px 44px -10px rgba(46,46,42,.22), 0 0 0 1px rgba(46,46,42,.05), inset 0 1px 0 rgba(255,255,255,.7), inset 0 -1px 0 rgba(46,46,42,.04);
+  --shadow:0 1px 2px rgba(46,46,42,.07);
+  --shadow-lift:0 10px 28px -8px rgba(46,46,42,.22);
+  --hours-hue:#7C8F72;
+}
+@media (prefers-color-scheme: dark){
+  html[data-palette="emerald"]:not([data-theme="light"]){
     --bg:#122019; --surface:#1A2A21; --surface-2:#213328; --sunk:#0E1913;
     --line:#2D4436; --line-soft:rgba(233,240,235,.08); --line-strong:#3F5E4C;
     --ink-strong:#EAF2EC; --ink:#A8C4B3; --ink-3:#7B9686;
     --accent:#6FBB99; --accent-2:#8ACBAE; --accent-soft:rgba(111,187,153,.18); --on-accent:#0D1712;
-    --amber:#D2AE72; --amber-soft:#3A2E17;
-    --orange:#CC8F6C;
+    --amber:#D2AE72; --amber-soft:#3A2E17; --orange:#CC8F6C;
     --track-bg:#213328; --track-line:rgba(234,242,236,.14); --track-ink:#A8C4B3;
     --grid-line:rgba(234,242,236,.10); --grid-sep:rgba(234,242,236,.18);
     --ok:#6FBB99; --crit:#D28D80; --crit-soft:#3D241D;
     --blob-1:rgba(111,187,153,.28); --blob-2:rgba(58,107,84,.32);
     --blob-3:rgba(196,163,95,.16); --blob-4:rgba(180,103,74,.12);
     --glass-fill:rgba(33,58,45,.68); --glass-fill-2:rgba(33,58,45,.80);
-    --glass-border:rgba(255,255,255,.14);
     --glass-shadow:0 14px 44px -8px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.1), inset 0 -1px 0 rgba(0,0,0,.2);
-    --glass-edge:linear-gradient(155deg, rgba(255,255,255,.35) 0%, rgba(255,255,255,.04) 30%, rgba(255,255,255,.02) 55%, rgba(255,255,255,.18) 100%);
     --shadow:0 1px 2px rgba(0,0,0,.4);
     --shadow-lift:0 10px 28px -8px rgba(0,0,0,.6);
     --hours-hue:#8FBFA0;
-    --ink-2:var(--ink);
   }
 }
-:root[data-theme="dark"]{
+html[data-palette="emerald"][data-theme="dark"]{
   --bg:#122019; --surface:#1A2A21; --surface-2:#213328; --sunk:#0E1913;
   --line:#2D4436; --line-soft:rgba(233,240,235,.08); --line-strong:#3F5E4C;
   --ink-strong:#EAF2EC; --ink:#A8C4B3; --ink-3:#7B9686;
   --accent:#6FBB99; --accent-2:#8ACBAE; --accent-soft:rgba(111,187,153,.18); --on-accent:#0D1712;
-  --amber:#D2AE72; --amber-soft:#3A2E17;
-  --orange:#CC8F6C;
+  --amber:#D2AE72; --amber-soft:#3A2E17; --orange:#CC8F6C;
   --track-bg:#213328; --track-line:rgba(234,242,236,.14); --track-ink:#A8C4B3;
   --grid-line:rgba(234,242,236,.10); --grid-sep:rgba(234,242,236,.18);
   --ok:#6FBB99; --crit:#D28D80; --crit-soft:#3D241D;
   --blob-1:rgba(111,187,153,.28); --blob-2:rgba(58,107,84,.32);
   --blob-3:rgba(196,163,95,.16); --blob-4:rgba(180,103,74,.12);
   --glass-fill:rgba(33,58,45,.68); --glass-fill-2:rgba(33,58,45,.80);
-  --glass-border:rgba(255,255,255,.14);
   --glass-shadow:0 14px 44px -8px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.1), inset 0 -1px 0 rgba(0,0,0,.2);
-  --glass-edge:linear-gradient(155deg, rgba(255,255,255,.35) 0%, rgba(255,255,255,.04) 30%, rgba(255,255,255,.02) 55%, rgba(255,255,255,.18) 100%);
   --shadow:0 1px 2px rgba(0,0,0,.4);
   --shadow-lift:0 10px 28px -8px rgba(0,0,0,.6);
   --hours-hue:#8FBFA0;
-  --ink-2:var(--ink);
+}
+
+/* OBSIDIAN — true monochrome black/white/grey (the default theme) */
+html[data-palette="obsidian"]{
+  --bg:#F5F5F4; --surface:#FCFCFB; --surface-2:#ECECEA; --sunk:#E5E4E2;
+  --line:#E0DFDC; --line-soft:rgba(20,20,20,.06); --line-strong:#C5C4C1;
+  --ink-strong:#18191B; --ink:#56575B; --ink-3:#8B8C90;
+  --accent:#19191B; --accent-2:#000000; --accent-soft:rgba(25,25,27,.06); --on-accent:#FFFFFF;
+  --amber:#8a7a5a; --amber-soft:#F0EEE9; --orange:#8a8b8f;
+  --track-bg:#EDECEA; --track-line:rgba(20,20,20,.10); --track-ink:#56575B;
+  --grid-line:rgba(24,25,27,.08); --grid-sep:rgba(24,25,27,.16);
+  --ok:#7E8B7E; --crit:#A3544E; --crit-soft:#F1E7E5;
+  --blob-1:rgba(150,150,160,.16); --blob-2:rgba(120,120,132,.14);
+  --blob-3:rgba(172,172,180,.12); --blob-4:rgba(130,130,140,.10);
+  --glass-fill:rgba(252,252,252,.72); --glass-fill-2:rgba(252,252,252,.86);
+  --glass-shadow:0 20px 54px -14px rgba(0,0,0,.26), 0 0 0 1px rgba(0,0,0,.05), inset 0 1px 0 rgba(255,255,255,.8), inset 0 -1px 0 rgba(0,0,0,.05);
+  --shadow:0 1px 2px rgba(0,0,0,.08);
+  --shadow-lift:0 12px 34px -10px rgba(0,0,0,.28);
+  --hours-hue:#5A5B60;
+}
+@media (prefers-color-scheme: dark){
+  html[data-palette="obsidian"]:not([data-theme="light"]){
+    --bg:#101012; --surface:#1A1A1D; --surface-2:#232327; --sunk:#0B0B0C;
+    --line:#2E2E32; --line-soft:rgba(255,255,255,.07); --line-strong:#4A4A50;
+    --ink-strong:#F2F2F3; --ink:#B0B0B4; --ink-3:#77777C;
+    --accent:#F2F2F3; --accent-2:#E0E0E2; --accent-soft:rgba(255,255,255,.12); --on-accent:#101012;
+    --amber:#B8B8BB; --amber-soft:#2A2A2D; --orange:#99999E;
+    --track-bg:#232327; --track-line:rgba(255,255,255,.12); --track-ink:#B0B0B4;
+    --grid-line:rgba(255,255,255,.08); --grid-sep:rgba(255,255,255,.15);
+    --ok:#8FA08F; --crit:#D0857B; --crit-soft:#3B221F;
+    --blob-1:rgba(160,160,170,.14); --blob-2:rgba(140,140,150,.12);
+    --blob-3:rgba(170,170,180,.10); --blob-4:rgba(150,150,160,.09);
+    --glass-fill:rgba(30,30,33,.70); --glass-fill-2:rgba(30,30,33,.84);
+    --glass-shadow:0 18px 50px -12px rgba(0,0,0,.6), 0 0 0 1px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.1), inset 0 -1px 0 rgba(0,0,0,.22);
+    --shadow:0 1px 2px rgba(0,0,0,.45);
+    --shadow-lift:0 14px 36px -10px rgba(0,0,0,.62);
+    --hours-hue:#B8B8BB;
+  }
+}
+html[data-palette="obsidian"][data-theme="dark"]{
+  --bg:#101012; --surface:#1A1A1D; --surface-2:#232327; --sunk:#0B0B0C;
+  --line:#2E2E32; --line-soft:rgba(255,255,255,.07); --line-strong:#4A4A50;
+  --ink-strong:#F2F2F3; --ink:#B0B0B4; --ink-3:#77777C;
+  --accent:#F2F2F3; --accent-2:#E0E0E2; --accent-soft:rgba(255,255,255,.12); --on-accent:#101012;
+  --amber:#B8B8BB; --amber-soft:#2A2A2D; --orange:#99999E;
+  --track-bg:#232327; --track-line:rgba(255,255,255,.12); --track-ink:#B0B0B4;
+  --grid-line:rgba(255,255,255,.08); --grid-sep:rgba(255,255,255,.15);
+  --ok:#8FA08F; --crit:#D0857B; --crit-soft:#3B221F;
+  --blob-1:rgba(160,160,170,.14); --blob-2:rgba(140,140,150,.12);
+  --blob-3:rgba(170,170,180,.10); --blob-4:rgba(150,150,160,.09);
+  --glass-fill:rgba(30,30,33,.70); --glass-fill-2:rgba(30,30,33,.84);
+  --glass-shadow:0 18px 50px -12px rgba(0,0,0,.6), 0 0 0 1px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.1), inset 0 -1px 0 rgba(0,0,0,.22);
+  --shadow:0 1px 2px rgba(0,0,0,.45);
+  --shadow-lift:0 14px 36px -10px rgba(0,0,0,.62);
+  --hours-hue:#B8B8BB;
+}
+
+/* AMETHYST — deep violet/plum with an orchid glow */
+html[data-palette="amethyst"]{
+  --bg:#F4F1F8; --surface:#FBFAFD; --surface-2:#EFEAF6; --sunk:#E7E0F1;
+  --line:#DED6EA; --line-soft:rgba(74,50,120,.08); --line-strong:#C2B4DC;
+  --ink-strong:#2B2140; --ink:#6A5C8E; --ink-3:#978AAE;
+  --accent:#6D4FAF; --accent-2:#5A3E96; --accent-soft:rgba(109,79,175,.13); --on-accent:#FBF8FF;
+  --amber:#A98B3F; --amber-soft:#F5EBD6; --orange:#C06552;
+  --track-bg:#EBE4F4; --track-line:rgba(90,60,140,.16); --track-ink:#6A5C8E;
+  --grid-line:rgba(60,40,110,.10); --grid-sep:rgba(60,40,110,.18);
+  --ok:#7AA68A; --crit:#B35066; --crit-soft:#F6E1E7;
+  --blob-1:rgba(178,150,240,.36); --blob-2:rgba(150,130,220,.30);
+  --blob-3:rgba(205,180,250,.28); --blob-4:rgba(150,110,230,.22);
+  --glass-fill:rgba(250,247,253,.70); --glass-fill-2:rgba(250,247,253,.84);
+  --glass-shadow:0 20px 54px -14px rgba(110,80,180,.28), 0 0 0 1px rgba(100,70,170,.06), inset 0 1px 0 rgba(255,255,255,.8), inset 0 -1px 0 rgba(110,80,180,.05);
+  --shadow:0 1px 2px rgba(90,60,150,.08);
+  --shadow-lift:0 12px 34px -10px rgba(110,80,180,.26);
+  --hours-hue:#8B74C6;
+}
+@media (prefers-color-scheme: dark){
+  html[data-palette="amethyst"]:not([data-theme="light"]){
+    --bg:#191226; --surface:#241B37; --surface-2:#2D2244; --sunk:#120D1C;
+    --line:#3B2F57; --line-soft:rgba(235,220,255,.09); --line-strong:#5B4A82;
+    --ink-strong:#F2EDFB; --ink:#C3B6E0; --ink-3:#8C7FAE;
+    --accent:#B49BE8; --accent-2:#987FD4; --accent-soft:rgba(180,155,232,.18); --on-accent:#241A33;
+    --amber:#D6AC72; --amber-soft:#4A3518; --orange:#D28972;
+    --track-bg:#2D2244; --track-line:rgba(230,215,250,.15); --track-ink:#C3B6E0;
+    --grid-line:rgba(235,220,255,.10); --grid-sep:rgba(235,220,255,.18);
+    --ok:#8BB596; --crit:#DF9289; --crit-soft:#49231F;
+    --blob-1:rgba(160,120,220,.28); --blob-2:rgba(130,100,200,.26);
+    --blob-3:rgba(120,90,190,.20); --blob-4:rgba(180,140,235,.18);
+    --glass-fill:rgba(38,27,58,.70); --glass-fill-2:rgba(38,27,58,.84);
+    --glass-shadow:0 18px 50px -12px rgba(70,40,120,.55), 0 0 0 1px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(0,0,0,.22);
+    --shadow:0 1px 2px rgba(0,0,0,.45);
+    --shadow-lift:0 14px 36px -10px rgba(0,0,0,.6);
+    --hours-hue:#C4AFE6;
+  }
+}
+html[data-palette="amethyst"][data-theme="dark"]{
+  --bg:#191226; --surface:#241B37; --surface-2:#2D2244; --sunk:#120D1C;
+  --line:#3B2F57; --line-soft:rgba(235,220,255,.09); --line-strong:#5B4A82;
+  --ink-strong:#F2EDFB; --ink:#C3B6E0; --ink-3:#8C7FAE;
+  --accent:#B49BE8; --accent-2:#987FD4; --accent-soft:rgba(180,155,232,.18); --on-accent:#241A33;
+  --amber:#D6AC72; --amber-soft:#4A3518; --orange:#D28972;
+  --track-bg:#2D2244; --track-line:rgba(230,215,250,.15); --track-ink:#C3B6E0;
+  --grid-line:rgba(235,220,255,.10); --grid-sep:rgba(235,220,255,.18);
+  --ok:#8BB596; --crit:#DF9289; --crit-soft:#49231F;
+  --blob-1:rgba(160,120,220,.28); --blob-2:rgba(130,100,200,.26);
+  --blob-3:rgba(120,90,190,.20); --blob-4:rgba(180,140,235,.18);
+  --glass-fill:rgba(38,27,58,.70); --glass-fill-2:rgba(38,27,58,.84);
+  --glass-shadow:0 18px 50px -12px rgba(70,40,120,.55), 0 0 0 1px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(0,0,0,.22);
+  --shadow:0 1px 2px rgba(0,0,0,.45);
+  --shadow-lift:0 14px 36px -10px rgba(0,0,0,.6);
+  --hours-hue:#C4AFE6;
+}
+
+/* SAPPHIRE — cool, confident navy over cobalt */
+html[data-palette="sapphire"]{
+  --bg:#EFF3FA; --surface:#FBFCFE; --surface-2:#E9EFF8; --sunk:#DFE7F2;
+  --line:#D6E0EE; --line-soft:rgba(40,80,140,.08); --line-strong:#B4C4DC;
+  --ink-strong:#1E2A45; --ink:#44557B; --ink-3:#7B8CA8;
+  --accent:#2456A8; --accent-2:#1A458D; --accent-soft:rgba(36,86,168,.13); --on-accent:#F3F7FF;
+  --amber:#B08030; --amber-soft:#F5EAD3; --orange:#C2674F;
+  --track-bg:#E6EDF6; --track-line:rgba(60,90,150,.15); --track-ink:#44557B;
+  --grid-line:rgba(40,70,120,.09); --grid-sep:rgba(40,70,120,.17);
+  --ok:#5E9A7E; --crit:#B14F5E; --crit-soft:#F6E1E5;
+  --blob-1:rgba(110,180,240,.32); --blob-2:rgba(130,150,230,.30);
+  --blob-3:rgba(150,200,250,.28); --blob-4:rgba(90,140,220,.22);
+  --glass-fill:rgba(250,252,255,.72); --glass-fill-2:rgba(250,252,255,.86);
+  --glass-shadow:0 20px 54px -14px rgba(40,90,170,.28), 0 0 0 1px rgba(40,80,160,.06), inset 0 1px 0 rgba(255,255,255,.85), inset 0 -1px 0 rgba(40,80,160,.05);
+  --shadow:0 1px 2px rgba(40,80,160,.08);
+  --shadow-lift:0 12px 34px -10px rgba(40,80,160,.24);
+  --hours-hue:#5E86C8;
+}
+@media (prefers-color-scheme: dark){
+  html[data-palette="sapphire"]:not([data-theme="light"]){
+    --bg:#0F1626; --surface:#182238; --surface-2:#202C46; --sunk:#0B101C;
+    --line:#2E3D5C; --line-soft:rgba(220,235,255,.09); --line-strong:#4A5E86;
+    --ink-strong:#EAF0FB; --ink:#AFC0DE; --ink-3:#7D8FB2;
+    --accent:#7FB0EE; --accent-2:#5E90D8; --accent-soft:rgba(127,176,238,.18); --on-accent:#0E1A30;
+    --amber:#D6B072; --amber-soft:#48361A; --orange:#D1896E;
+    --track-bg:#202C46; --track-line:rgba(220,235,255,.15); --track-ink:#AFC0DE;
+    --grid-line:rgba(220,235,255,.10); --grid-sep:rgba(220,235,255,.18);
+    --ok:#85B79B; --crit:#DE8F85; --crit-soft:#48211D;
+    --blob-1:rgba(110,160,235,.26); --blob-2:rgba(90,130,220,.24);
+    --blob-3:rgba(80,120,210,.18); --blob-4:rgba(130,180,245,.16);
+    --glass-fill:rgba(24,34,56,.72); --glass-fill-2:rgba(24,34,56,.86);
+    --glass-shadow:0 18px 50px -12px rgba(20,50,110,.55), 0 0 0 1px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(0,0,0,.22);
+    --shadow:0 1px 2px rgba(0,0,0,.45);
+    --shadow-lift:0 14px 36px -10px rgba(0,0,0,.6);
+    --hours-hue:#8FB6E8;
+  }
+}
+html[data-palette="sapphire"][data-theme="dark"]{
+  --bg:#0F1626; --surface:#182238; --surface-2:#202C46; --sunk:#0B101C;
+  --line:#2E3D5C; --line-soft:rgba(220,235,255,.09); --line-strong:#4A5E86;
+  --ink-strong:#EAF0FB; --ink:#AFC0DE; --ink-3:#7D8FB2;
+  --accent:#7FB0EE; --accent-2:#5E90D8; --accent-soft:rgba(127,176,238,.18); --on-accent:#0E1A30;
+  --amber:#D6B072; --amber-soft:#48361A; --orange:#D1896E;
+  --track-bg:#202C46; --track-line:rgba(220,235,255,.15); --track-ink:#AFC0DE;
+  --grid-line:rgba(220,235,255,.10); --grid-sep:rgba(220,235,255,.18);
+  --ok:#85B79B; --crit:#DE8F85; --crit-soft:#48211D;
+  --blob-1:rgba(110,160,235,.26); --blob-2:rgba(90,130,220,.24);
+  --blob-3:rgba(80,120,210,.18); --blob-4:rgba(130,180,245,.16);
+  --glass-fill:rgba(24,34,56,.72); --glass-fill-2:rgba(24,34,56,.86);
+  --glass-shadow:0 18px 50px -12px rgba(20,50,110,.55), 0 0 0 1px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(0,0,0,.22);
+  --shadow:0 1px 2px rgba(0,0,0,.45);
+  --shadow-lift:0 14px 36px -10px rgba(0,0,0,.6);
+  --hours-hue:#8FB6E8;
+}
+
+/* CITRINE — warm amber/champagne, golden-hour glow */
+html[data-palette="citrine"]{
+  --bg:#FBF4E9; --surface:#FEFBF6; --surface-2:#F6EBD9; --sunk:#EFE1CA;
+  --line:#E9D9BE; --line-soft:rgba(120,80,20,.07); --line-strong:#D2BB95;
+  --ink-strong:#3A2E18; --ink:#7A6237; --ink-3:#A8916B;
+  --accent:#B0750F; --accent-2:#96600A; --accent-soft:rgba(176,117,15,.13); --on-accent:#FFF9EE;
+  --amber:#B08A3A; --amber-soft:#F6ECD8; --orange:#C76B44;
+  --track-bg:#F2E7D3; --track-line:rgba(130,90,30,.15); --track-ink:#7A6237;
+  --grid-line:rgba(120,80,20,.09); --grid-sep:rgba(120,80,20,.16);
+  --ok:#7EA877; --crit:#B45854; --crit-soft:#F7E4E1;
+  --blob-1:rgba(255,200,120,.42); --blob-2:rgba(240,180,110,.34);
+  --blob-3:rgba(255,220,160,.40); --blob-4:rgba(235,170,130,.30);
+  --glass-fill:rgba(253,249,240,.72); --glass-fill-2:rgba(253,249,240,.86);
+  --glass-shadow:0 20px 54px -14px rgba(150,100,40,.30), 0 0 0 1px rgba(150,100,40,.06), inset 0 1px 0 rgba(255,255,255,.85), inset 0 -1px 0 rgba(150,100,40,.06);
+  --shadow:0 1px 2px rgba(150,100,40,.08);
+  --shadow-lift:0 12px 34px -10px rgba(150,100,40,.26);
+  --hours-hue:#B0895A;
+}
+@media (prefers-color-scheme: dark){
+  html[data-palette="citrine"]:not([data-theme="light"]){
+    --bg:#1D160B; --surface:#2A2010; --surface-2:#352A14; --sunk:#150F06;
+    --line:#453722; --line-soft:rgba(255,240,210,.08); --line-strong:#6B5736;
+    --ink-strong:#F6EEDA; --ink:#D0BE99; --ink-3:#9A8B6A;
+    --accent:#E0B45C; --accent-2:#C79A43; --accent-soft:rgba(224,180,92,.18); --on-accent:#241A08;
+    --amber:#E0B45C; --amber-soft:#3D2F15; --orange:#DF9A6B;
+    --track-bg:#352A14; --track-line:rgba(240,225,200,.14); --track-ink:#D0BE99;
+    --grid-line:rgba(250,235,205,.10); --grid-sep:rgba(250,235,205,.17);
+    --ok:#96B084; --crit:#E0937C; --crit-soft:#4A241D;
+    --blob-1:rgba(230,180,90,.22); --blob-2:rgba(210,150,90,.20);
+    --blob-3:rgba(230,170,70,.16); --blob-4:rgba(200,140,110,.14);
+    --glass-fill:rgba(42,32,18,.72); --glass-fill-2:rgba(42,32,18,.86);
+    --glass-shadow:0 18px 50px -12px rgba(0,0,0,.6), 0 0 0 1px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(0,0,0,.22);
+    --shadow:0 1px 2px rgba(0,0,0,.45);
+    --shadow-lift:0 14px 36px -10px rgba(0,0,0,.6);
+    --hours-hue:#D8B377;
+  }
+}
+html[data-palette="citrine"][data-theme="dark"]{
+  --bg:#1D160B; --surface:#2A2010; --surface-2:#352A14; --sunk:#150F06;
+  --line:#453722; --line-soft:rgba(255,240,210,.08); --line-strong:#6B5736;
+  --ink-strong:#F6EEDA; --ink:#D0BE99; --ink-3:#9A8B6A;
+  --accent:#E0B45C; --accent-2:#C79A43; --accent-soft:rgba(224,180,92,.18); --on-accent:#241A08;
+  --amber:#E0B45C; --amber-soft:#3D2F15; --orange:#DF9A6B;
+  --track-bg:#352A14; --track-line:rgba(240,225,200,.14); --track-ink:#D0BE99;
+  --grid-line:rgba(250,235,205,.10); --grid-sep:rgba(250,235,205,.17);
+  --ok:#96B084; --crit:#E0937C; --crit-soft:#4A241D;
+  --blob-1:rgba(230,180,90,.22); --blob-2:rgba(210,150,90,.20);
+  --blob-3:rgba(230,170,70,.16); --blob-4:rgba(200,140,110,.14);
+  --glass-fill:rgba(42,32,18,.72); --glass-fill-2:rgba(42,32,18,.86);
+  --glass-shadow:0 18px 50px -12px rgba(0,0,0,.6), 0 0 0 1px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(0,0,0,.22);
+  --shadow:0 1px 2px rgba(0,0,0,.45);
+  --shadow-lift:0 14px 36px -10px rgba(0,0,0,.6);
+  --hours-hue:#D8B377;
 }
 
 *{box-sizing:border-box}
@@ -3007,13 +3287,25 @@ html{overscroll-behavior-y:none}
           <div class="card pad">
             <div class="stack">
               <div class="field">
-                <label for="themeToggle">Color scheme</label>
+                <label for="paletteSelect">Theme</label>
+                <select id="paletteSelect">
+                  <option value="obsidian">Obsidian · black &amp; white</option>
+                  <option value="rose">Rose Quartz · pink &amp; violet</option>
+                  <option value="emerald">Emerald · cream &amp; forest</option>
+                  <option value="amethyst">Amethyst · violet</option>
+                  <option value="sapphire">Sapphire · deep blue</option>
+                  <option value="citrine">Citrine · champagne gold</option>
+                </select>
+                <p class="hint">Pick a gem palette. The colour scheme below (light / dark) applies on top of any theme.</p>
+              </div>
+              <div class="field">
+                <label for="themeToggle">Colour scheme</label>
                 <select id="themeToggle">
                   <option value="null">System (follow device setting)</option>
                   <option value="light">Light</option>
                   <option value="dark">Dark</option>
                 </select>
-                <p class="hint">Choose your preferred look, or follow your device's system setting.</p>
+                <p class="hint">Choose light or dark, or follow your device's system setting.</p>
               </div>
             </div>
           </div>
@@ -5631,15 +5923,17 @@ const STR_STOPS=[25,50,75,100];
 
 let S=seed();                     // shared, synced
 let L={me:"u1",vol:5,scope:"day",app:"bench",benchView:"garden",mode:"formula",formulaId:null,productId:null,
-       strength:100,done:{},adv:false,expert:false,chart:"col",ppmScale:700,lang:null,dayStartHour:4,theme:null};  // per-device
+       strength:100,done:{},adv:false,expert:false,chart:"col",ppmScale:700,lang:null,dayStartHour:4,theme:null,palette:"obsidian"};  // per-device
 const adv=()=>L.adv===true;
 const expert=()=>L.expert===true;
 
+const PALETTES=["obsidian","rose","emerald","amethyst","sapphire","citrine"];
 function applyTheme(){
   const root=document.documentElement;
   if(L.theme==="light") root.setAttribute("data-theme","light");
   else if(L.theme==="dark") root.setAttribute("data-theme","dark");
   else root.removeAttribute("data-theme");
+  root.setAttribute("data-palette",PALETTES.includes(L.palette)?L.palette:"obsidian");
 }
 const $=s=>document.querySelector(s);
 /* Build stamp. `n` is incremented by bump.py at publish time so two phones can
@@ -9843,7 +10137,7 @@ document.querySelector("#view-planner").addEventListener("input",e=>{
    pomodoro breaks free. Nothing but timestamps is persisted while running, so
    a reload mid-session picks the clock back up exactly where it was rather
    than losing or double-counting time. */
-const HCOLORS=["#5E9E85","#A9AE9C","#6E7367","#9C7C3E","#B4674A","#8B6E8F"];
+const HCOLORS=["#D06396","#8B5FAC","#C28FDB","#E5A0B8","#A9739E","#C98B64"];
 const HMODES=["stopwatch","pomodoro","timer"];
 let hProjId=null, hShowArch=false, hTick=null;
 
@@ -15814,6 +16108,7 @@ function applyAdvanced(){
      a finite-number test, not a truthiness test */
   $("#dayStartHour").value=String(Number.isFinite(L.dayStartHour)?L.dayStartHour:4);
   $("#themeToggle").value=String(L.theme||"null");
+  const ps=$("#paletteSelect"); if(ps) ps.value=PALETTES.includes(L.palette)?L.palette:"obsidian";
   const ac=$("#analysisCard"); if(ac) ac.style.display=on?"":"none";
   $("#pdForm").dispatchEvent(new Event("change"));
 }
@@ -15826,6 +16121,7 @@ $("#advToggle").addEventListener("change",async e=>{
 $("#ppmScale").addEventListener("change",async e=>{ L.ppmScale=+e.target.value||700; saveLocal(); renderMix(); });
 $("#dayStartHour").addEventListener("change",e=>{ const h=+e.target.value; L.dayStartHour=Number.isFinite(h)?h:4; saveLocal(); renderTaskBar(); renderTaskBarFull("#gardenTaskBar"); renderTaskBarFull("#planTaskBar"); });
 $("#themeToggle").addEventListener("change",e=>{ L.theme=e.target.value==="null"?null:e.target.value; saveLocal(); applyTheme(); });
+$("#paletteSelect").addEventListener("change",e=>{ L.palette=PALETTES.includes(e.target.value)?e.target.value:"obsidian"; saveLocal(); applyTheme(); });
 
 /* ---------------- action days ---------------- */
 function renderActionDays(){
