@@ -18,7 +18,9 @@ europe-central2). Owner: musel.simon@gmail.com. Teacher: linlab.cz@gmail.com.
 
 ---
 
-## A. Loose ends in the student module (~15 minutes total)
+## A. Loose ends in the student module — DONE (commit b548844)
+
+All three are fixed. Kept below for the record.
 
 1. **Dead "Level" line in the teacher's planning notes.**
    `RECAP.forTeacher` prints `Level: ${student.level || "not set"}`, but
@@ -80,7 +82,12 @@ europe-central2). Owner: musel.simon@gmail.com. Teacher: linlab.cz@gmail.com.
 
 ## D. Known weakness elsewhere in the app — Simon's call
 
-14. **The bare `catch(e){}` around the load path in `loadShared()`.**
+14. **DONE — no longer the shape described below.** `loadShared()` now
+    tracks `readFailed` and gates `stateLoaded` on it, so a failed read or a
+    throwing `migrate()` can no longer publish a blank seed over real data.
+    Original report:
+
+    **The bare `catch(e){}` around the load path in `loadShared()`.**
     `try{ ... return migrate(d); }catch(e){}` swallows any throw and falls
     through to `seed()`, so a failure to READ stored data is
     indistinguishable from having none — the app silently presents itself
