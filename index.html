@@ -2775,7 +2775,8 @@ html.pfocus .n-quick{display:none}
 :root[data-theme="dark"]{ --sleep-hue:#7FA6C9; }
 :root[data-theme="light"]{ --sleep-hue:#A9CBE6; }
 </style>
-<style id="calendar-glass">
+<style id="redesign-1">
+html[data-design="r1"]{
 /* ---- Liquid-glass treatment for the planner calendar board ----
    Full-glamour edition. Sits after the app's own sheet so equal-specificity
    rules win by source order. Token-driven (color-mix on --glass-* / --accent /
@@ -2903,9 +2904,6 @@ html.pfocus .n-quick{display:none}
 .wb-grid::before{content:""; position:absolute; inset:0; pointer-events:none; z-index:0;
   background:linear-gradient(90deg, rgba(255,255,255,.035), transparent 16%, transparent 84%, rgba(255,255,255,.035));}
 
-</style>
-
-<style id="control-glass">
 /* ---- machined glass: one material across every control ---- */
 /* Additive specular/lift rims only (box-shadow), so layouts, radii and the
    app's own glass fills are untouched. Token-free whites stay faint so they
@@ -2972,7 +2970,151 @@ input, select, textarea{
     inset 0 -1px 0 rgba(0,0,0,.05),
     0 1px 2px rgba(0,0,0,.10);
 }
+/* The whole-app Redesign 1: a "jewel glass" world. Wrapped by CSS nesting so
+   everything below is scoped to html[data-design="r1"] and Default stays the
+   original look. Token-driven; mostly additive surfaces, shadows and light —
+   little to no layout change. */
+
+/* ---- richer, drifting aurora behind everything ---- */
+body{
+  background-image:
+    radial-gradient(min(90vw,900px) min(70vh,760px) at 12% -6%, var(--blob-1), transparent 68%),
+    radial-gradient(min(80vw,760px) min(64vh,640px) at 96% 4%, var(--blob-2), transparent 70%),
+    radial-gradient(min(70vw,680px) min(60vh,560px) at 84% 104%, var(--blob-3), transparent 70%),
+    radial-gradient(min(60vw,560px) min(52vh,500px) at 4% 96%, var(--blob-4), transparent 72%),
+    var(--bg);
+  background-attachment:fixed;
+}
+/* a faint glass vignette + specular drift so edges haze like lit frosted glass */
+body::before{
+  content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(120% 90% at 50% -10%, rgba(255,255,255,.05), transparent 60%),
+    radial-gradient(120% 120% at 50% 120%, rgba(0,0,0,.28), transparent 62%);
+}
+body::after{ opacity:.10; }
+
+/* ---- floating, detached glass nav island ---- */
+.navwrap{ padding:10px 12px 2px; }
+.nav{
+  border-radius:999px;
+  padding:6px;
+  border:1px solid var(--glass-border);
+  background:color-mix(in srgb,var(--glass-fill-2) 78%,var(--surface));
+  backdrop-filter:blur(30px) saturate(180%);
+  -webkit-backdrop-filter:blur(30px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.24),
+    inset 0 -1px 0 rgba(0,0,0,.14),
+    0 10px 30px -12px rgba(0,0,0,.5),
+    0 0 0 1px rgba(0,0,0,.05);
+  width:max-content; max-width:100%; margin:0 auto;
+  overflow-x:auto;
+}
+.nav button[aria-selected="true"]{
+  background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 92%,#fff),var(--accent));
+  color:var(--on-accent);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4), 0 6px 16px -6px color-mix(in srgb,var(--accent) 70%,transparent);
+}
+.nav button:hover{ color:var(--accent); }
+
+/* ---- cards: chunkier jewel glass ---- */
+.card{
+  border-radius:22px;
+  border:1px solid var(--glass-border);
+  background-image:var(--glass-sheen);
+  background-color:color-mix(in srgb,var(--glass-fill-2) 78%,var(--surface));
+  backdrop-filter:blur(26px) saturate(170%);
+  -webkit-backdrop-filter:blur(26px) saturate(170%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.28),
+    inset 0 -1px 0 rgba(0,0,0,.14),
+    inset 0 0 0 1px rgba(255,255,255,.04),
+    0 26px 60px -24px rgba(0,0,0,.55),
+    0 6px 18px -10px color-mix(in srgb,var(--accent) 26%,transparent);
+}
+
+/* ---- headings / eyebrows: an accent glint ---- */
+.eyebrow{
+  letter-spacing:.16em;
+  background:linear-gradient(90deg,var(--accent), var(--accent-2));
+  -webkit-background-clip:text; background-clip:text;
+  -webkit-text-fill-color:transparent; color:var(--accent);
+  text-shadow:none;
+}
+.sec-head h2{
+  letter-spacing:-.01em;
+  font-weight:750;
+  text-shadow:0 2px 18px color-mix(in srgb,var(--accent) 30%,transparent);
+}
+
+/* ---- stat tiles: luminous glass lenses ---- */
+[class*="kpi"],[class*="stat"],[class*="tile"]{
+  border-radius:16px;
+  border:1px solid var(--glass-border);
+  background-color:color-mix(in srgb,var(--glass-fill-2) 74%,var(--surface-2));
+  background-image:var(--glass-sheen);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.24),
+    inset 0 -1px 0 rgba(0,0,0,.12),
+    0 14px 30px -16px rgba(0,0,0,.5);
+}
+
+/* ---- buttons/chips/segments/inputs: machined glass (shared material) ---- */
+.btn, .chip{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.26),
+    inset 0 -1px 0 rgba(0,0,0,.14),
+    0 1px 2px rgba(0,0,0,.16),
+    0 6px 16px -8px rgba(0,0,0,.36);
+}
+.btn:hover, .chip:hover{ filter:brightness(1.06); }
+.btn:active:not([disabled]), .chip:active{ transform:translateY(1px) scale(.97); }
+.btn.primary{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.34),
+    inset 0 -1px 0 rgba(0,0,0,.18),
+    0 2px 4px rgba(0,0,0,.24),
+    0 14px 30px -12px color-mix(in srgb,var(--accent) 65%,transparent);
+}
+.chip{
+  background-color:color-mix(in srgb,var(--surface-2) 70%,transparent);
+  background-image:var(--glass-sheen);
+}
+.seg{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.20),
+    inset 0 -1px 0 rgba(0,0,0,.14),
+    0 1px 2px rgba(0,0,0,.16);
+}
+.seg button[aria-pressed="true"]{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.30),
+    inset 0 -1px 0 rgba(0,0,0,.16),
+    0 4px 12px -4px color-mix(in srgb,var(--accent) 55%,transparent);
+}
+input, select, textarea{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.16),
+    inset 0 -1px 0 rgba(0,0,0,.05),
+    0 1px 2px rgba(0,0,0,.10);
+}
+input:focus, select:focus, textarea:focus{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.20),
+    inset 0 0 0 1.5px color-mix(in srgb,var(--accent) 55%,transparent),
+    0 0 0 4px color-mix(in srgb,var(--accent) 22%,transparent);
+}
+
+/* ---- list rows / library / academy rows: glass plates ---- */
+[class*="row"],[class*="arow"],[class*="prow"]{
+  border-color:var(--glass-border);
+}
+
+}
 </style>
+
+
 <header class="top">
   <button class="gear" id="settingsBtn" aria-label="Settings" title="Settings">⚙</button>
   <div class="brandwrap">
@@ -3652,6 +3794,16 @@ input, select, textarea{
                   <option value="dark">Dark mode</option>
                 </select>
                 <p class="hint">Choose light or dark, or follow your device's system setting.</p>
+              </div>
+              <div class="field">
+                <label for="designSelect">Design</label>
+                <select id="designSelect">
+                  <option value="off">Default</option>
+                  <option value="r1">Redesign 1 · liquid glass</option>
+                  <option value="r2">Redesign 2</option>
+                  <option value="r3">Redesign 3</option>
+                </select>
+                <p class="hint">A/B test skins. Redesigns are built one at a time; Default is the original look. Per device.</p>
               </div>
             </div>
           </div>
@@ -6341,17 +6493,24 @@ const STR_STOPS=[25,50,75,100];
 
 let S=seed();                     // shared, synced
 let L={me:"u1",vol:5,scope:"day",app:"bench",benchView:"garden",mode:"formula",formulaId:null,productId:null,
-       strength:100,done:{},adv:false,expert:false,chart:"col",ppmScale:700,lang:null,dayStartHour:4,theme:null,palette:"amethyst"};  // per-device
+       strength:100,done:{},adv:false,expert:false,chart:"col",ppmScale:700,lang:null,dayStartHour:4,theme:null,palette:"amethyst",design:"off"};  // per-device
 const adv=()=>L.adv===true;
 const expert=()=>L.expert===true;
 
 const PALETTES=["obsidian","rose","emerald","amethyst","sapphire","citrine"];
+/* A/B design scenarios. "off" is the original look; each redesign is a
+   separate, switchable skin so beta testers can be split across them. */
+const DESIGNS=["off","r1","r2","r3"];
+function applyDesign(){
+  document.documentElement.setAttribute("data-design",DESIGNS.includes(L.design)?L.design:"off");
+}
 function applyTheme(){
   const root=document.documentElement;
   if(L.theme==="light") root.setAttribute("data-theme","light");
   else if(L.theme==="dark") root.setAttribute("data-theme","dark");
   else root.removeAttribute("data-theme");
   root.setAttribute("data-palette",PALETTES.includes(L.palette)?L.palette:"obsidian");
+  applyDesign();
 }
 const $=s=>document.querySelector(s);
 /* Build stamp. `n` is incremented by bump.py at publish time so two phones can
@@ -16939,6 +17098,7 @@ function applyAdvanced(){
   $("#dayStartHour").value=String(Number.isFinite(L.dayStartHour)?L.dayStartHour:4);
   $("#themeToggle").value=String(L.theme||"null");
   const ps=$("#paletteSelect"); if(ps) ps.value=PALETTES.includes(L.palette)?L.palette:"obsidian";
+  const ds=$("#designSelect"); if(ds) ds.value=DESIGNS.includes(L.design)?L.design:"off";
   const ac=$("#analysisCard"); if(ac) ac.style.display=on?"":"none";
   $("#pdForm").dispatchEvent(new Event("change"));
 }
@@ -16952,6 +17112,7 @@ $("#ppmScale").addEventListener("change",async e=>{ L.ppmScale=+e.target.value||
 $("#dayStartHour").addEventListener("change",e=>{ const h=+e.target.value; L.dayStartHour=Number.isFinite(h)?h:4; saveLocal(); renderTaskBar(); renderTaskBarFull("#gardenTaskBar"); renderTaskBarFull("#planTaskBar"); });
 $("#themeToggle").addEventListener("change",e=>{ L.theme=e.target.value==="null"?null:e.target.value; saveLocal(); applyTheme(); });
 $("#paletteSelect").addEventListener("change",e=>{ L.palette=PALETTES.includes(e.target.value)?e.target.value:"obsidian"; saveLocal(); applyTheme(); });
+$("#designSelect").addEventListener("change",e=>{ L.design=DESIGNS.includes(e.target.value)?e.target.value:"off"; saveLocal(); applyDesign(); });
 
 /* ---------------- action days ---------------- */
 function renderActionDays(){
