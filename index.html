@@ -2698,6 +2698,69 @@ html{overscroll-behavior-y:none}
 .n-sr{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
   clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; border:0}
 
+/* ---- notes, part two: filing row, notebook/tag chips, trash, photos ---- */
+.n-head-acts{display:flex; gap:8px; align-items:center; margin-left:auto}
+.n-filters{display:flex; flex-direction:column; gap:10px}
+.n-nbrow, .n-tagrow{display:flex; flex-wrap:wrap; gap:6px; align-items:center}
+.n-nb small{opacity:.7; font-weight:400; margin-left:3px}
+.n-nb-add{min-width:36px; padding-left:10px; padding-right:10px}
+.n-nb-gap{flex:1 1 8px}
+.n-nb-tools{display:flex; gap:6px; flex:0 0 100%; margin-top:2px}
+.n-sort{flex:0 0 auto; max-width:46%; font:inherit; font-size:13px}
+.n-row-chips{display:flex; flex-wrap:wrap; gap:4px; margin-top:3px}
+.n-mini{font-size:11px; line-height:1.5; padding:0 7px; border-radius:999px; background:var(--surface-2);
+  color:var(--ink-2); white-space:nowrap; max-width:160px; overflow:hidden; text-overflow:ellipsis}
+.n-mini.plant{background:var(--accent-soft); color:var(--accent)}
+.n-row.trashed .n-row-title{color:var(--ink-3)}
+.n-file{display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; padding:8px 0 10px;
+  border-bottom:1px solid var(--line-soft); margin-bottom:8px}
+.n-file-item{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-3); min-width:0}
+.n-file-item select{font:inherit; font-size:13px; max-width:190px; min-width:0}
+.n-file-k{font-weight:600; text-transform:uppercase; font-size:11px; letter-spacing:.04em; flex:0 0 auto}
+.n-file-tags{flex:1 1 100%; flex-wrap:wrap}
+.n-tags{display:flex; flex-wrap:wrap; gap:4px}
+.n-tag{display:inline-flex; align-items:center; gap:2px; font-size:12px; padding:2px 3px 2px 8px;
+  border-radius:999px; background:var(--accent-soft); color:var(--accent)}
+.n-tag button{border:0; background:none; color:inherit; cursor:pointer; font-size:15px; line-height:1; padding:0 5px}
+.n-tag-in{flex:1 1 120px; min-width:100px; border:0; background:none; font:inherit; font-size:13px;
+  padding:4px 2px; color:var(--ink)}
+.n-tag-in:focus{outline:none}
+.n-addrow{display:flex; gap:8px; margin-top:10px}
+.n-img{max-width:100%; max-height:420px; border-radius:10px; display:block; margin:4px 0}
+.n-img-missing{flex:1 1 auto; font-size:13px; color:var(--ink-3); padding:14px;
+  border:1px dashed var(--line); border-radius:10px}
+.n-block[data-type="img"]{padding-left:30px; padding-top:4px; padding-bottom:4px}
+.n-toplan{flex:0 0 auto; align-self:center; border:0; background:none; color:var(--ink-3); font:inherit;
+  font-size:12px; cursor:pointer; padding:4px 7px; border-radius:8px; opacity:0; white-space:nowrap}
+.n-block:hover .n-toplan, .n-block:focus-within .n-toplan, .n-toplan.on, .n-toplan:focus-visible{opacity:1}
+.n-toplan.on{color:var(--accent)}
+.n-toplan:hover{background:var(--surface-2)}
+.n-trashbar{display:flex; gap:8px; align-items:center; flex-wrap:wrap; color:var(--ink-2); font-size:14px}
+.n-trashbar span{flex:1 1 auto}
+.n-undo{position:fixed; left:50%; bottom:20px; transform:translateX(-50%); z-index:70; display:flex; gap:12px;
+  align-items:center; padding:9px 10px 9px 16px; background:var(--surface); color:var(--ink);
+  border:1px solid var(--line); border-radius:14px; box-shadow:0 14px 38px -10px rgba(0,0,0,.28);
+  font-size:14px; max-width:calc(100vw - 32px)}
+.n-quick{position:fixed; right:18px; bottom:20px; z-index:65; width:52px; height:52px; border-radius:50%;
+  border:0; background:var(--accent); color:var(--on-accent); font-size:22px; line-height:1; cursor:pointer;
+  box-shadow:0 10px 26px -8px rgba(0,0,0,.4)}
+.n-quick:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
+main > #view-note:not([hidden]) ~ .n-quick, main > #view-teachbench-student:not([hidden]) ~ .n-quick,
+html.pfocus .n-quick{display:none}
+/* display:flex above would otherwise beat the hidden attribute */
+.n-undo[hidden], .n-tagrow[hidden], .n-trashbar[hidden], .n-nb-tools[hidden]{display:none}
+.n-plist{display:flex; flex-direction:column; padding-top:6px}
+.n-prow{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:0 10px; text-align:left; border:0;
+  background:none; font:inherit; color:inherit; padding:8px 0; border-top:1px solid var(--line-soft); cursor:pointer}
+.n-prow:first-child{border-top:0}
+.n-prow .n-row-title, .n-prow .n-row-sub{grid-column:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.n-prow .n-row-date{grid-column:2; grid-row:1 / 3; align-self:center}
+.n-prow:hover{background:var(--surface-2)}
+@media (max-width:420px){
+  .n-file-item select{max-width:150px}
+  .n-quick{right:14px; bottom:16px}
+}
+
 
 /* ---- sleep: cloud-sky blue ----
    Sleep used to borrow --ink-3, the same neutral grey the UI uses for muted
@@ -2808,6 +2871,38 @@ html{overscroll-behavior-y:none}
   background:linear-gradient(180deg, rgba(255,255,255,.06), transparent);
   mix-blend-mode:screen;
 }
+
+/* ---- Today panel: glass the day bar and verdict chip ---- */
+.budget-bar{align-self:stretch; height:30px; border-radius:11px; padding:2px; position:relative;
+  background:color-mix(in srgb,var(--sunk) 62%,transparent);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07), inset 0 0 0 1px rgba(255,255,255,.05);}
+.budget-bar i{display:block; height:100%; border-radius:9px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.22), inset 0 -1px 0 rgba(0,0,0,.12), 0 6px 16px -7px rgba(0,0,0,.5);}
+.budget-bar[data-free] i{background:linear-gradient(180deg,
+  color-mix(in srgb,var(--glass-fill-2) 88%,var(--accent-soft)), var(--glass-fill));}
+
+/* ---- quarter / year mini-grid & month cells: frosted chips ---- */
+.pcal-mini-cell{border-radius:5px; background:color-mix(in srgb,var(--glass-fill-2) 70%,var(--surface-2));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08);}
+.pcal-mini-cell.today{box-shadow:inset 0 0 0 1.5px var(--accent), inset 0 1px 0 rgba(255,255,255,.12);}
+.pcal-cell{border-radius:8px; background:color-mix(in srgb,var(--glass-fill-2) 58%,var(--surface-2));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07);}
+.pcal-cell:hover{background:color-mix(in srgb,var(--glass-fill-2) 82%,var(--surface-2));}
+.pcal-cell[data-today="1"] .pcal-day{background:var(--accent); color:var(--on-accent);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.2), 0 3px 10px -3px color-mix(in srgb,var(--accent) 60%,transparent);}
+
+/* ---- week-load list rows ---- */
+.pweek-row{border-radius:9px; background:color-mix(in srgb,var(--glass-fill-2) 64%,var(--surface-2));
+  border-color:var(--glass-border); box-shadow:inset 0 1px 0 rgba(255,255,255,.09);}
+.pweek-row:hover{border-color:var(--line-strong);}
+.pweek-load{background:color-mix(in srgb,var(--sunk) 82%,transparent);
+  box-shadow:inset 0 1px 0 rgba(0,0,0,.18);}
+
+/* ---- a faint vertical sheen so empty hours read as glass, not void ---- */
+.wb-grid{position:relative}
+.wb-grid::before{content:""; position:absolute; inset:0; pointer-events:none; z-index:0;
+  background:linear-gradient(90deg, rgba(255,255,255,.035), transparent 16%, transparent 84%, rgba(255,255,255,.035));}
+
 </style>
 
 <header class="top">
@@ -4411,15 +4506,26 @@ html{overscroll-behavior-y:none}
   <section class="view" id="view-notes" hidden>
     <div class="sec-head">
       <h2>Notes</h2>
-      <button class="btn primary mini" type="button" id="nNewBtn">+ New note</button>
+      <div class="n-head-acts">
+        <button class="btn mini" type="button" id="nTplBtn" aria-haspopup="true">From template ▾</button>
+        <button class="btn primary mini" type="button" id="nNewBtn">+ New note</button>
+      </div>
     </div>
 
-    <div class="card pad">
+    <div class="card pad n-filters">
+      <div class="n-nbrow" id="nNbRow"></div>
       <div class="n-list-head">
         <label class="n-sr" for="nSearch">Search notes</label>
         <input type="search" id="nSearch" class="n-search" placeholder="Search notes…"
                autocomplete="off" aria-label="Search notes">
+        <label class="n-sr" for="nSort">Sort</label>
+        <select id="nSort" class="n-sort" aria-label="Sort">
+          <option value="edited">Last edited</option>
+          <option value="created">Created</option>
+          <option value="title">Title</option>
+        </select>
       </div>
+      <div class="n-tagrow" id="nTagRow" hidden></div>
     </div>
 
     <div class="card">
@@ -4433,6 +4539,16 @@ html{overscroll-behavior-y:none}
     <div class="sec-head">
       <h2 class="n-sr">Note</h2>
       <button class="btn" type="button" id="nBack">← Notes</button>
+      <div class="n-head-acts">
+        <button class="btn mini" type="button" id="nPinBtn" aria-pressed="false">Pin</button>
+        <button class="btn mini" type="button" id="nArchBtn">Archive</button>
+      </div>
+    </div>
+
+    <div class="card pad n-trashbar" id="nTrashBar" hidden>
+      <span>This note is in the trash.</span>
+      <button class="btn mini" type="button" id="nRestore">Restore</button>
+      <button class="btn mini danger" type="button" id="nPurge">Delete forever</button>
     </div>
 
     <div class="card pad">
@@ -4442,15 +4558,36 @@ html{overscroll-behavior-y:none}
                autocomplete="off" aria-label="Note title">
         <span class="n-meta" id="nMeta"></span>
       </div>
+      <div class="n-file" id="nFile">
+        <label class="n-file-item"><span class="n-file-k">Notebook</span>
+          <select id="nNbSel" aria-label="Notebook" data-no-i18n></select></label>
+        <label class="n-file-item"><span class="n-file-k">Plant</span>
+          <select id="nPlantSel" aria-label="Plant" data-no-i18n></select></label>
+        <div class="n-file-item n-file-tags"><span class="n-file-k">Tags</span>
+          <div class="n-tags" id="nTags"></div>
+          <input type="text" id="nTagIn" class="n-tag-in" placeholder="Add a tag…"
+                 autocomplete="off" autocapitalize="off" aria-label="Add a tag"></div>
+      </div>
       <div class="n-blocks" id="nBlocks"></div>
-      <button class="btn mini" type="button" id="nAddBlock" style="margin-top:10px">+ Add block</button>
+      <div class="n-addrow">
+        <button class="btn mini" type="button" id="nAddBlock">+ Add block</button>
+        <button class="btn mini" type="button" id="nAddPhoto">+ Photo</button>
+        <input type="file" id="nPhotoIn" accept="image/*" hidden>
+      </div>
     </div>
 
-    <div class="card pad">
+    <div class="card pad" id="nFootCard">
       <button class="btn mini" type="button" id="nDelete">Delete note</button>
       <p class="hint" style="margin:8px 0 0">Notes save as you type. "# " makes a heading, "- " a bullet, "[] " a to-do.</p>
     </div>
   </section>
+
+  <!-- quick capture: one tap to a fresh note from anywhere in the app -->
+  <button type="button" class="n-quick" id="nQuick" aria-label="New note" title="New note">✎</button>
+  <div class="n-undo" id="nUndo" hidden role="status">
+    <span id="nUndoText"></span>
+    <button class="btn mini" type="button" id="nUndoBtn">Undo</button>
+  </div>
 
 </main>
 
@@ -11822,6 +11959,8 @@ function renderPlant(){
         </div>`;}).join("")+`</div>`;})()}
     </div>
 
+    ${nPlantCardHtml(p)}
+
     ${sp?`<div class="card">
       <div class="pad" style="padding-bottom:8px"><span class="eyebrow">${esc(sp.n)} · care sheet</span></div>
       <div class="pad" style="padding-top:0">
@@ -15237,7 +15376,8 @@ function showNow(v){
   if(v==="teachbench") renderTeachbench();
   if(v==="teachbench-student") renderTeachbenchStudent();
   if(v==="notes") renderNotes();
-  if(v==="note") nGrowAll();
+  /* a remote state can land while a note is open — repaint, don't just regrow */
+  if(v==="note"){ nRenderEditor(); nGrowAll(); }
   if(v==="mix"){ renderVol(); renderStr(); renderDue(); renderHow(); renderMix(); }
   if(v==="plan"){ anchor=sod(Date.now()); }
   if(v==="shelf") renderShelf(); if(v==="plants") renderSubjects(); if(v==="academy") renderAcademy();
@@ -21590,6 +21730,27 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
   };
 })();
 
+/* Notes, part two. Kept apart from the main dictionary on purpose: three
+   sessions were appending to its tail at once. */
+Object.assign(CS,{
+"From template ▾":"Ze šablony ▾","Sort":"Řazení","Last edited":"Naposledy upraveno","Created":"Vytvořeno",
+"Pin":"Připnout","Pinned":"Připnuto","Archive":"Archiv","Unarchive":"Vrátit z archivu","archived":"v archivu",
+"This note is in the trash.":"Tato poznámka je v koši.","Restore":"Obnovit","Delete forever":"Smazat navždy",
+"Plant":"Rostlina","Tags":"Štítky","Add a tag…":"Přidat štítek…","Add a tag":"Přidat štítek","Remove tag":"Odebrat štítek",
+"+ Photo":"+ Fotka","New note":"Nová poznámka","+ Note":"+ Poznámka","All":"Vše","Trash":"Koš",
+"New notebook":"Nový sešit","Notebook name":"Název sešitu","Rename":"Přejmenovat","Delete notebook":"Smazat sešit",
+"No notebook":"Bez sešitu","+ New notebook…":"+ Nový sešit…","Not about a plant":"Bez rostliny",
+"Empty note":"Prázdná poznámka","Trash is empty.":"Koš je prázdný.","Nothing archived.":"Nic není v archivu.",
+"No notes in this notebook yet.":"V tomto sešitu zatím nic není.","No notes with this tag.":"Žádné poznámky s tímto štítkem.",
+"No notes about this plant yet.":"O této rostlině zatím žádná poznámka.",
+"Send to Daily Planner":"Poslat do plánovače","→ planner":"→ plánovač","in planner":"v plánovači",
+"This photo is on another device.":"Tato fotka je na jiném zařízení.",
+"Undo":"Zpět","Block deleted.":"Blok smazán.","Note moved to trash.":"Poznámka je v koši.",
+"Delete this notebook? Its notes stay, they just lose the notebook.":"Smazat tento sešit? Poznámky zůstanou, jen přijdou o sešit.",
+"Delete this note forever? This cannot be undone.":"Smazat tuto poznámku navždy? Tohle se nedá vzít zpět.",
+"Photo storage is getting full — delete a few older shots to make room.":"Úložiště fotek se plní — smažte pár starších snímků.",
+});
+
 
 boot();
 
@@ -21761,8 +21922,9 @@ const nBlock=(type,text)=>({id:uid(),type:type||"p",text:text||"",checked:false}
    during boot and white-screen the whole app. It also has to be idempotent, and
    survive whatever is already in the store, including nothing at all. */
 function nNormalise(d){
-  const TYPES={p:1,h1:1,h2:1,h3:1,ul:1,ol:1,todo:1,quote:1,code:1,hr:1};
+  const TYPES={p:1,h1:1,h2:1,h3:1,ul:1,ol:1,todo:1,quote:1,code:1,hr:1,img:1};
   const rid=()=>Math.random().toString(36).slice(2,9);
+  const TRASH_MS=30*86400000;
   d.notebooks=(Array.isArray(d.notebooks)?d.notebooks:[])
     .filter(nb=>nb&&typeof nb==="object")
     .map(nb=>({id:nb.id||rid(), name:typeof nb.name==="string"?nb.name:"Notebook"}));
@@ -21774,7 +21936,9 @@ function nNormalise(d){
         .map(b=>({id:b.id||rid(),
                   type:TYPES[b.type]?b.type:"p",
                   text:typeof b.text==="string"?b.text:String(b.text==null?"":b.text),
-                  checked:b.checked===true}));
+                  checked:b.checked===true,
+                  photoId:typeof b.photoId==="string"?b.photoId:null,   /* "img" blocks: which S.photos entry */
+                  taskId:typeof b.taskId==="string"?b.taskId:null}));   /* "todo" blocks sent to the planner */
       /* A note with no blocks renders nothing to put a caret in, so it would be
          permanently untypable. Every note keeps at least one empty paragraph. */
       if(!blocks.length) blocks=[{id:rid(),type:"p",text:"",checked:false}];
@@ -21785,8 +21949,22 @@ function nNormalise(d){
               notebook:n.notebook||null,
               tags:Array.isArray(n.tags)?n.tags.filter(x=>typeof x==="string"):[],
               pinned:n.pinned===true, archived:n.archived===true,
+              plantId:typeof n.plantId==="string"?n.plantId:null,
+              trashedAt:Number(n.trashedAt)||null,
               createdAt:made, updatedAt:Number(n.updatedAt)||made};
-    });
+    })
+    /* The trash empties itself: thirty days after a note went in, it is gone
+       for good. Same window Apple Notes and Notion give you. */
+    .filter(n=>!(n.trashedAt&&Date.now()-n.trashedAt>TRASH_MS));
+  /* A note's photos live in S.photos tagged module:"notes". Once no block
+     points at one any more — the block was deleted, or the note was purged —
+     the photo is dead weight in a store that is already the biggest thing
+     in localStorage, so it goes too. Only note photos are touched here. */
+  if(Array.isArray(d.photos)){
+    const used={};
+    d.notes.forEach(n=>n.blocks.forEach(b=>{ if(b.photoId) used[b.photoId]=1; }));
+    d.photos=d.photos.filter(p=>!(p&&p.module==="notes"&&!used[p.id]));
+  }
   return d;
 }
 
@@ -21798,7 +21976,7 @@ function nTouchNote(n){ if(n) n.updatedAt=Date.now(); touch(); }
 /* A divider has no textarea, so arrow keys and post-delete focus have to step
    over it rather than land on it and silently do nothing. */
 function nTypableNear(n,idx,dir){
-  for(let i=idx;i>=0&&i<n.blocks.length;i+=dir) if(n.blocks[i].type!=="hr") return n.blocks[i];
+  for(let i=idx;i>=0&&i<n.blocks.length;i+=dir) if(!nNoTa(n.blocks[i].type)) return n.blocks[i];
   return null;
 }
 
@@ -21816,33 +21994,70 @@ function nWhen(ts){
 
 /* ---------------- the list ---------------- */
 var nQuery="";   /* var, not let: renderNotes() can run from boot() before this line */
+/* q arrives already folded (lower-case, accents stripped) so "rezy" finds
+   "Řezy". Tags, the notebook name and the plant name count as text too. */
 function nMatches(n,q){
   if(!q) return true;
-  if((n.title||"").toLowerCase().indexOf(q)>=0) return true;
-  return (n.blocks||[]).some(b=>(b.text||"").toLowerCase().indexOf(q)>=0);
+  if(nFold(n.title).indexOf(q)>=0) return true;
+  if((n.tags||[]).some(tg=>nFold(tg).indexOf(q)>=0)) return true;
+  const nb=nNbById(n.notebook); if(nb&&nFold(nb.name).indexOf(q)>=0) return true;
+  if(n.plantId&&nFold(nPlantName(n.plantId)).indexOf(q)>=0) return true;
+  return (n.blocks||[]).some(b=>nFold(b.text).indexOf(q)>=0);
 }
 function renderNotes(){
   const host=$("#nList"); if(!host) return;
-  const q=(nQuery||"").trim().toLowerCase();
-  const list=(S.notes||[]).filter(n=>!n.archived&&nMatches(n,q))
-    .sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||(b.updatedAt||0)-(a.updatedAt||0));
+  const V=nV();
+  nRenderNbRow(); nRenderTagRow();
+  const raw=(nQuery||"").trim();
+  let q=nFold(raw), tagQ=null;
+  /* "#mon" in the search box filters by tag, the way Bear and Apple Notes do */
+  if(q.charAt(0)==="#"){ tagQ=q.slice(1); q=""; }
+  const list=(S.notes||[]).filter(n=>{
+    if(V.nb==="trash") return !!n.trashedAt;
+    if(n.trashedAt) return false;
+    if(V.nb==="archive") return n.archived;
+    /* archived notes stay out of the way, but a search still reaches them */
+    if(n.archived&&!(raw&&V.nb==="all")) return false;
+    if(V.nb!=="all"&&V.nb!=="archive"&&n.notebook!==V.nb) return false;
+    if(V.tag&&!(n.tags||[]).includes(V.tag)) return false;
+    if(tagQ!==null&&!(n.tags||[]).some(x=>nFold(x).indexOf(tagQ)===0)) return false;
+    return nMatches(n,q);
+  });
+  list.sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)
+    ||(V.sort==="title" ? nFold(a.title).localeCompare(nFold(b.title))
+      :V.sort==="created" ? (b.createdAt||0)-(a.createdAt||0)
+      :(b.updatedAt||0)-(a.updatedAt||0)));
   host.innerHTML=list.map(n=>{
-    const snip=nSnippet(n);
-    return `<div class="n-row">
-      <button type="button" class="n-row-main" data-open="${esc(n.id)}">
-        <span class="n-row-title">${esc(n.title||"Untitled")}</span>
-        <span class="n-row-sub">${snip?esc(snip):"<i>Empty note</i>"}</span>
+    const snip=nSnippet(n), id=esc(n.id), chips=[];
+    if(n.archived&&V.nb!=="archive") chips.push(`<span class="n-mini">${esc(t("archived"))}</span>`);
+    const nb=nNbById(n.notebook);
+    if(nb&&V.nb!==nb.id) chips.push(`<span class="n-mini" data-no-i18n>${esc(nb.name)}</span>`);
+    const pn=nPlantName(n.plantId);
+    if(pn) chips.push(`<span class="n-mini plant" data-no-i18n>${esc(pn)}</span>`);
+    (n.tags||[]).slice(0,4).forEach(tg=>chips.push(`<span class="n-mini" data-no-i18n>#${esc(tg)}</span>`));
+    if(n.blocks.some(b=>b.type==="img")) chips.push(`<span class="n-mini">📷</span>`);
+    return `<div class="n-row${n.trashedAt?" trashed":""}">
+      <button type="button" class="n-row-main" data-open="${id}">
+        <span class="n-row-title"${n.title?" data-no-i18n":""}>${esc(n.title||"Untitled")}</span>
+        <span class="n-row-sub"${snip?" data-no-i18n":""}>${snip?esc(snip):"<i>Empty note</i>"}</span>
+        ${chips.length?`<span class="n-row-chips">${chips.join("")}</span>`:""}
       </button>
       <span class="n-row-date">${esc(nWhen(n.updatedAt||n.createdAt))}</span>
-      <button type="button" class="n-pin${n.pinned?" on":""}" data-pin="${esc(n.id)}"
-        aria-pressed="${n.pinned?"true":"false"}" aria-label="Pin this note">&#9733;</button>
+      ${n.trashedAt
+        ? `<button type="button" class="btn mini" data-restore="${id}">${esc(t("Restore"))}</button>`
+        : `<button type="button" class="n-pin${n.pinned?" on":""}" data-pin="${id}"
+        aria-pressed="${n.pinned?"true":"false"}" aria-label="Pin this note">&#9733;</button>`}
     </div>`;
   }).join("");
   const empty=$("#nEmpty");
   if(empty){
     empty.hidden=list.length>0;
-    empty.textContent=q
-      ? (L.lang==="cs"?'Nic neodpovídá „'+(nQuery||"").trim()+'“.':'Nothing matches "'+(nQuery||"").trim()+'".')
+    empty.textContent=raw
+      ? (L.lang==="cs"?'Nic neodpovídá „'+raw+'“.':'Nothing matches "'+raw+'".')
+      : V.nb==="trash" ? t("Trash is empty.")
+      : V.nb==="archive" ? t("Nothing archived.")
+      : V.tag ? t("No notes with this tag.")
+      : V.nb!=="all" ? t("No notes in this notebook yet.")
       : t("No notes yet — start one and it saves as you type.");
   }
 }
@@ -21880,6 +22095,19 @@ function nBlockHtml(b,ord){
   if(b.type==="hr") return `<div class="n-block" data-b="${id}" data-type="hr">
       <button type="button" class="n-btype" data-menu="${id}" aria-label="Change block type">⋯</button>
       <hr class="n-hr"></div>`;
+  if(b.type==="img"){
+    const ph=(S.photos||[]).find(p=>p.id===b.photoId);
+    return `<div class="n-block" data-b="${id}" data-type="img">
+      <button type="button" class="n-btype" data-menu="${id}" aria-label="Change block type">⋯</button>
+      ${ph?`<img class="n-img" src="${ph.data}" alt="">`
+          :`<div class="n-img-missing">${esc(t("This photo is on another device."))}</div>`}</div>`;
+  }
+  /* photos never sync between devices (see PSYNC), so a note opened on the
+     other phone shows a placeholder where the picture is */
+  const plan = b.type==="todo"
+    ? `<button type="button" class="n-toplan${b.taskId?" on":""}" data-toplanner="${id}"
+         title="${esc(t("Send to Daily Planner"))}">${esc(b.taskId?t("in planner"):t("→ planner"))}</button>`
+    : "";
   const lead = b.type==="ul" ? '<span class="n-bullet" aria-hidden="true">•</span>'
     : b.type==="ol" ? '<span class="n-num" aria-hidden="true">'+ord+'.</span>'
     : b.type==="todo" ? `<label class="n-todo-box"><input type="checkbox" data-check="${id}"${b.checked?" checked":""} aria-label="Done"><i></i></label>`
@@ -21889,7 +22117,7 @@ function nBlockHtml(b,ord){
     : 'Type here, or "- " for a list';
   return `<div class="n-block" data-b="${id}" data-type="${esc(b.type)}"${(b.type==="todo"&&b.checked)?' data-done="1"':""}>
       <button type="button" class="n-btype" data-menu="${id}" aria-label="Change block type">⋯</button>
-      ${lead}<textarea class="n-block-ta" data-ta="${id}" rows="1" placeholder="${esc(ph)}">${esc(b.text)}</textarea>
+      ${lead}<textarea class="n-block-ta" data-ta="${id}" rows="1" placeholder="${esc(ph)}">${esc(b.text)}</textarea>${plan}
     </div>`;
 }
 
@@ -21906,6 +22134,7 @@ function nRenderEditor(){
   const host=$("#nBlocks"); if(!host) return;
   const n=nOpenNote(), title=$("#nTitle");
   if(!n){ host.innerHTML=""; if(title) title.value=""; nRenderMeta(); return; }
+  nPullPlanner(n); nRenderFiling(n);
   /* Don't stamp over the title while it is being typed into — the caret would
      jump to the end on every keystroke. */
   if(title&&document.activeElement!==title) title.value=n.title||"";
@@ -21925,14 +22154,23 @@ function openNote(id){
   nRenderEditor();
   show("note");
 }
-function nNewNote(){
-  const now=Date.now(), n={id:uid(),title:"",blocks:[nBlock("p","")],notebook:null,
-    tags:[],pinned:false,archived:false,createdAt:now,updatedAt:now};
+/* tpl, when given, is {title, blocks:[[type,text],…], plantId} — a template
+   from nTemplates() or a stub from the plant page. Anything else (the click
+   event the button hands over) means a blank note. A blank note made while a
+   notebook is open goes into that notebook. */
+function nNewNote(tpl){
+  tpl=(tpl&&Array.isArray(tpl.blocks))?tpl:null;
+  const V=nV(), inNb=nNbById(V.nb)?V.nb:null;
+  const now=Date.now(), n={id:uid(),title:tpl?(tpl.title||""):"",
+    blocks:tpl?tpl.blocks.map(x=>nBlock(x[0],x[1])):[nBlock("p","")],
+    notebook:inNb, plantId:(tpl&&tpl.plantId)||null,
+    tags:[],pinned:false,archived:false,trashedAt:null,createdAt:now,updatedAt:now};
   S.notes=S.notes||[]; S.notes.unshift(n); touch();
   openNote(n.id);
   /* show() may run inside a view transition, so the textarea is not focusable
      until the swap has happened — hence the next tick rather than right now. */
-  setTimeout(()=>nFocusBlock(n.blocks[0].id,0),0);
+  const first=tpl?(n.blocks.find(b=>b.type==="p")||n.blocks[0]):n.blocks[0];
+  setTimeout(()=>nFocusBlock(first.id,tpl?null:0),0);
 }
 
 /* ---------------- markdown shortcuts ----------------
@@ -21953,7 +22191,7 @@ function nTryMarkdown(n,b,ta){
      paragraph-only guard silently traps you there: no heading, no divider, no
      to-do until you reach for the menu. "code" is excluded because inside a
      code block the trigger characters are content, and "hr" has no textarea. */
-  if(b.type==="code"||b.type==="hr") return false;
+  if(b.type==="code"||nNoTa(b.type)) return false;
   const v=ta.value;
   for(let i=0;i<N_MD.length;i++){
     const trig=N_MD[i][0], type=N_MD[i][1];
@@ -21985,8 +22223,10 @@ function nOpenTypeMenu(bid,anchorEl){
   const b=n.blocks.find(x=>x.id===bid); if(!b) return;
   const m=document.createElement("div");
   m.id="nTypeMenu"; m.className="n-btype-menu"; m.setAttribute("role","menu"); m.dataset.b=bid;
-  m.innerHTML=N_TYPES.map(p=>`<button type="button" role="menuitem" data-settype="${esc(p[0])}"${p[0]===b.type?' aria-current="true"':""}>${esc(p[1])}</button>`).join("")
-    +'<div class="n-menu-sep"></div><button type="button" role="menuitem" class="n-danger" data-delblock="1">Delete block</button>';
+  /* a photo block is a photo or nothing — retyping it as text makes no sense */
+  m.innerHTML=(b.type==="img"?"":N_TYPES.map(p=>`<button type="button" role="menuitem" data-settype="${esc(p[0])}"${p[0]===b.type?' aria-current="true"':""}>${esc(p[1])}</button>`).join("")
+    +'<div class="n-menu-sep"></div>')
+    +'<button type="button" role="menuitem" class="n-danger" data-delblock="1">Delete block</button>';
   document.body.appendChild(m);
   const r=anchorEl.getBoundingClientRect();
   m.style.top=(window.scrollY+r.bottom+6)+"px";
@@ -22003,7 +22243,7 @@ function nOpenTypeMenu(bid,anchorEl){
   const search=$("#nSearch");
   if(search) search.addEventListener("input",()=>{ nQuery=search.value; renderNotes(); });
   const newBtn=$("#nNewBtn"); if(newBtn) newBtn.addEventListener("click",nNewNote);
-  const back=$("#nBack"); if(back) back.addEventListener("click",()=>{ renderNotes(); show("notes"); });
+  const back=$("#nBack"); if(back) back.addEventListener("click",nGoBack);
 
   const title=$("#nTitle");
   if(title) title.addEventListener("input",()=>{
@@ -22018,15 +22258,15 @@ function nOpenTypeMenu(bid,anchorEl){
     nTouchNote(n); nRestructure(nb.id,0);
   });
 
+  /* Delete is a move to the trash with an Undo, not a confirm box: the note
+     is recoverable for thirty days, so there is nothing to warn about. */
   const del=$("#nDelete");
   if(del) del.addEventListener("click",()=>{
     const n=nOpenNote(); if(!n) return;
-    if(!confirm(L.lang==="cs"
-      ? 'Smazat „'+(n.title||"Bez názvu")+'“? Tohle se nedá vzít zpět.'
-      : 'Delete "'+(n.title||"Untitled")+'"? This cannot be undone.')) return;
-    S.notes=(S.notes||[]).filter(x=>x.id!==n.id);
-    L.noteId=null; saveLocal(); touch();
-    renderNotes(); show("notes");
+    n.trashedAt=Date.now(); nTouchNote(n);
+    L.noteId=null; saveLocal();
+    nGoBack();
+    nShowUndo(t("Note moved to trash."),()=>{ n.trashedAt=null; nTouchNote(n); renderNotes(); });
   });
 
   list.addEventListener("click",e=>{
@@ -22051,6 +22291,15 @@ function nOpenTypeMenu(bid,anchorEl){
     const n=nOpenNote(); if(!n) return;
     const b=n.blocks.find(x=>x.id===cb.dataset.check); if(!b) return;
     b.checked=cb.checked;
+    const tk=b.taskId?pFindTask(b.taskId):null;
+    if(tk&&!tk.untracked) tk.done=b.checked;      // the planner copy ticks with it
+    /* A ticked item sinks to the bottom of its run of to-dos, the way Apple
+       Notes and Keep do it, so what is still open stays together at the top. */
+    if(b.checked){
+      const at=nIdx(n,b.id); let end=at;
+      while(end+1<n.blocks.length&&n.blocks[end+1].type==="todo") end++;
+      if(end>at){ n.blocks.splice(at,1); n.blocks.splice(end,0,b); nTouchNote(n); nRestructure(null,null); return; }
+    }
     const wrap=cb.closest(".n-block");
     if(wrap){ if(b.checked) wrap.dataset.done="1"; else delete wrap.dataset.done; }
     nTouchNote(n); nRenderMeta();
@@ -22088,7 +22337,7 @@ function nOpenTypeMenu(bid,anchorEl){
       if(at===0) return;
       e.preventDefault();
       const prev=n.blocks[at-1];
-      if(prev.type==="hr"){ n.blocks.splice(at-1,1); nTouchNote(n); nRestructure(b.id,0); return; }
+      if(nNoTa(prev.type)){ n.blocks.splice(at-1,1); nTouchNote(n); nRestructure(b.id,0); return; }
       const join=prev.text.length;
       prev.text=prev.text+ta.value;
       n.blocks.splice(at,1);
@@ -22132,6 +22381,12 @@ function nOpenTypeMenu(bid,anchorEl){
       if(!n.blocks.length) n.blocks.push(nBlock("p",""));
       const f=nTypableNear(n,Math.min(at,n.blocks.length-1),-1)||nTypableNear(n,0,1);
       nCloseMenu(); nTouchNote(n); nRestructure(f?f.id:null,null);
+      nShowUndo(t("Block deleted."),()=>{
+        if(!nNoteById(n.id)) return;
+        n.blocks.splice(Math.min(at,n.blocks.length),0,b);
+        nTouchNote(n);
+        if(nOpenNote()===n) nRestructure(nNoTa(b.type)?null:b.id,null);
+      });
     }
   });
   document.addEventListener("keydown",e=>{ if(e.key==="Escape") nCloseMenu(); });
@@ -22147,11 +22402,327 @@ var nMetaTimer=null;
    thing debounced now is the meta line, because that is DOM work and nobody
    needs a word count recomputed on every keypress. */
 function nQueueSave(){
-  const n=nOpenNote(); if(n) n.updatedAt=Date.now();
+  const n=nOpenNote(); if(n){ n.updatedAt=Date.now(); nSyncTaskTitles(n); }
   touch();
   clearTimeout(nMetaTimer);
   nMetaTimer=setTimeout(nRenderMeta,250);
 }
+
+/* ============================================================================
+   Notes, part two — filing (notebooks, tags, pin, archive), finding (sort,
+   tag search), the trash, photos, templates, and the two bridges into the
+   rest of the bench: a note about a plant, and a to-do that also lives in
+   the Daily Planner.
+
+   Everything here obeys the rule at the top of the module: typing never
+   re-renders. The list, the chip rows and the filing row are rebuilt freely
+   because nothing is ever being typed into them mid-render; the block list
+   only ever changes through nRestructure().
+
+   Helpers that renderNotes() or renderPlant() can reach from boot() are
+   function declarations, not consts — boot() runs before this part of the
+   script has executed, and a const would still be in its temporal dead zone.
+   ============================================================================ */
+var nView=nView||{nb:"all", tag:null, sort:"edited"};   /* nb: "all" | notebook id | "archive" | "trash" */
+var nReturn=null;                                       /* set when a note was opened from a plant page */
+var nUndoFn=null, nUndoTimer=null;
+function nV(){ return nView||(nView={nb:"all",tag:null,sort:"edited"}); }
+function nNoTa(type){ return type==="hr"||type==="img"; }   /* blocks with no textarea */
+function nFold(s){ return String(s??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase(); }
+function nNbById(id){ return (S.notebooks||[]).find(x=>x.id===id)||null; }
+function nPlants(){
+  return (S.subjects||[]).filter(x=>x.module==="plants").slice()
+    .sort((a,b)=>nFold(a.name||a.species).localeCompare(nFold(b.name||b.species)));
+}
+function nPlantName(id){ const p=id&&(S.subjects||[]).find(x=>x.id===id); return p?(p.name||p.species||""):""; }
+/* tags are stored bare and lower-case: "#Monstera Deliciosa" -> "monstera-deliciosa" */
+function nCleanTag(s){
+  return String(s??"").trim().replace(/^#+/,"").replace(/[,\s]+/g,"-").replace(/^-+|-+$/g,"").toLowerCase().slice(0,40);
+}
+
+/* ---------------- the rows above the list ---------------- */
+function nRenderNbRow(){
+  const host=$("#nNbRow"); if(!host) return;
+  const V=nV(), live=(S.notes||[]).filter(n=>!n.trashedAt);
+  const chip=(id,label,count,user)=>`<button type="button" class="chip n-nb" data-nb="${esc(id)}"${user?" data-no-i18n":""}
+      aria-pressed="${V.nb===id?"true":"false"}">${esc(label)}${count?` <small>${count}</small>`:""}</button>`;
+  const cur=nNbById(V.nb);
+  host.innerHTML=chip("all",t("All"),live.filter(n=>!n.archived).length)
+    +(S.notebooks||[]).map(nb=>chip(nb.id,nb.name,live.filter(n=>!n.archived&&n.notebook===nb.id).length,true)).join("")
+    +`<button type="button" class="chip n-nb n-nb-add" data-nbadd="1" aria-label="${esc(t("New notebook"))}" title="${esc(t("New notebook"))}">+</button>`
+    +`<span class="n-nb-gap"></span>`
+    +chip("archive",t("Archive"),live.filter(n=>n.archived).length)
+    +chip("trash",t("Trash"),(S.notes||[]).filter(n=>n.trashedAt).length)
+    +(cur?`<span class="n-nb-tools">
+        <button type="button" class="btn mini" data-nbren="1">${esc(t("Rename"))}</button>
+        <button type="button" class="btn mini" data-nbdel="1">${esc(t("Delete notebook"))}</button></span>`:"");
+}
+function nRenderTagRow(){
+  const host=$("#nTagRow"); if(!host) return;
+  const V=nV();
+  if(V.nb==="trash"){ host.hidden=true; host.innerHTML=""; return; }
+  const pool=(S.notes||[]).filter(n=>!n.trashedAt
+    &&(V.nb==="archive"?n.archived:!n.archived)
+    &&(V.nb==="all"||V.nb==="archive"||n.notebook===V.nb));
+  const freq={};
+  pool.forEach(n=>(n.tags||[]).forEach(tg=>{ freq[tg]=(freq[tg]||0)+1; }));
+  const tags=Object.keys(freq).sort((a,b)=>freq[b]-freq[a]||a.localeCompare(b));
+  if(V.tag&&!tags.includes(V.tag)) tags.unshift(V.tag);
+  host.hidden=!tags.length;
+  host.innerHTML=tags.map(tg=>`<button type="button" class="chip n-tg" data-tag="${esc(tg)}" data-no-i18n
+      aria-pressed="${V.tag===tg?"true":"false"}">#${esc(tg)}${V.tag===tg?" ×":""}</button>`).join("");
+}
+
+/* ---------------- the filing row in the editor ---------------- */
+function nRenderFiling(n){
+  const nbSel=$("#nNbSel"), pSel=$("#nPlantSel"), tags=$("#nTags"), tagIn=$("#nTagIn"),
+        pin=$("#nPinBtn"), arch=$("#nArchBtn"), bar=$("#nTrashBar"), foot=$("#nFootCard");
+  if(!nbSel||!pSel||!tags) return;
+  nbSel.innerHTML=`<option value="">${esc(t("No notebook"))}</option>`
+    +(S.notebooks||[]).map(nb=>`<option value="${esc(nb.id)}">${esc(nb.name)}</option>`).join("")
+    +`<option value="__new">${esc(t("+ New notebook…"))}</option>`;
+  nbSel.value=nNbById(n.notebook)?n.notebook:"";
+  pSel.innerHTML=`<option value="">${esc(t("Not about a plant"))}</option>`
+    +nPlants().map(p=>`<option value="${esc(p.id)}">${esc(p.name||p.species||"?")}</option>`).join("");
+  pSel.value=nPlantName(n.plantId)?n.plantId:"";
+  tags.innerHTML=(n.tags||[]).map(tg=>`<span class="n-tag" data-no-i18n>#${esc(tg)}<button type="button"
+      data-untag="${esc(tg)}" aria-label="${esc(t("Remove tag"))}">×</button></span>`).join("");
+  if(tagIn) tagIn.placeholder=t("Add a tag…");
+  if(pin){ pin.textContent=n.pinned?t("Pinned"):t("Pin"); pin.setAttribute("aria-pressed",String(!!n.pinned)); }
+  if(arch) arch.textContent=n.archived?t("Unarchive"):t("Archive");
+  if(bar) bar.hidden=!n.trashedAt;
+  if(foot) foot.hidden=!!n.trashedAt;
+}
+
+/* ---------------- planner bridge ----------------
+   A to-do block can be sent to the Daily Planner. The block keeps the task's
+   id; ticking either side ticks the other. The planner is read on every
+   editor render (nPullPlanner) rather than on a planner event, so nothing in
+   the planner's own code has to know notes exist. A task that was deleted
+   over there simply unlinks here. */
+function nPullPlanner(n){
+  (n.blocks||[]).forEach(b=>{
+    if(!b.taskId) return;
+    const tk=pFindTask(b.taskId);
+    if(!tk){ b.taskId=null; return; }
+    if(b.type==="todo"&&!tk.untracked) b.checked=!!tk.done;
+  });
+}
+function nPushTodo(n,b){
+  if(b.taskId&&pFindTask(b.taskId)) return;
+  S.planner.tasks=S.planner.tasks||[];
+  const tk={id:uid(), title:(b.text||"").trim()||(n.title||"").trim()||t("Untitled task"),
+    due:pToday(), time:"", hours:0, done:!!b.checked, kind:"task", steps:[], projectId:null,
+    untracked:false, noteId:n.id, blockId:b.id};
+  S.planner.tasks.push(tk); b.taskId=tk.id;
+  nTouchNote(n);
+}
+function nSyncTaskTitles(n){
+  (n.blocks||[]).forEach(b=>{
+    if(!b.taskId) return;
+    const tk=pFindTask(b.taskId); if(!tk) return;
+    const title=(b.text||"").trim();
+    if(title&&tk.title!==title) tk.title=title;
+  });
+}
+
+/* ---------------- undo bar ---------------- */
+function nShowUndo(text,fn){
+  const bar=$("#nUndo"), tx=$("#nUndoText"); if(!bar||!tx) return;
+  tx.textContent=text; nUndoFn=fn; bar.hidden=false;
+  clearTimeout(nUndoTimer); nUndoTimer=setTimeout(nHideUndo,7000);
+}
+function nHideUndo(){ const bar=$("#nUndo"); if(bar) bar.hidden=true; nUndoFn=null; clearTimeout(nUndoTimer); }
+
+/* ---------------- leaving a note ---------------- */
+function nGoBack(){
+  nCloseMenu();
+  if(nReturn&&nReturn.view==="plant"&&typeof subject==="function"&&pvId&&subject(pvId)){
+    nReturn=null; setApp("bench"); show("plant"); return;
+  }
+  nReturn=null; renderNotes(); show("notes");
+}
+function nPurgeNote(n){
+  S.notes=(S.notes||[]).filter(x=>x.id!==n.id);
+  const before=(S.photos||[]).length;
+  S.photos=(S.photos||[]).filter(p=>p.subjectId!==n.id);
+  if(S.photos.length!==before&&typeof photosTouched==="function") photosTouched();
+  touch();
+}
+
+/* ---------------- photos ----------------
+   Same path as a plant photo: shrunk on the device, kept in S.photos, never
+   synced. Tagged module:"notes" so migrate() can sweep the orphans. */
+async function nAddPhoto(file){
+  const n=nOpenNote(); if(!n||!file) return;
+  let data;
+  try{ data=await shrinkImage(file); }
+  catch(err){ say(String(err&&err.message||err)); return; }
+  S.photos=S.photos||[];
+  const ph={id:uid(),subjectId:n.id,module:"notes",at:new Date().toISOString(),data,h:null,by:L.me};
+  S.photos.push(ph); if(typeof photosTouched==="function") photosTouched();
+  const nb=nBlock("img",""); nb.photoId=ph.id;
+  n.blocks.push(nb);
+  nTouchNote(n); nRestructure(null,null);
+  if(photoBytes()>3.2e6) say(t("Photo storage is getting full — delete a few older shots to make room."));
+}
+
+/* ---------------- templates ----------------
+   Three fixed starting shapes, not a template system. Written in whichever
+   language the app is in at the moment, since the text becomes the note. */
+function nTemplates(){
+  const cs=L.lang==="cs";
+  const d=new Date().toLocaleDateString(locale(),{day:"numeric",month:"long",year:"numeric"});
+  return [
+    {id:"cut", name:cs?"Řízkování":"Cutting log", title:(cs?"Řízky — ":"Cuttings — ")+d,
+     blocks:[["h2",cs?"Řízkování":"Cutting log"],["p",cs?"Druh: ":"Species: "],["p",(cs?"Datum: ":"Date: ")+d],
+       ["p",cs?"Médium: ":"Medium: "],["p",cs?"Počet řízků: ":"Number of cuttings: "],["p",cs?"Výsledek: ":"Result: "],
+       ["todo",cs?"Zkontrolovat kořeny za 2 týdny":"Check for roots in 2 weeks"]]},
+    {id:"repot", name:cs?"Přesazení":"Repotting record", title:(cs?"Přesazení — ":"Repotting — ")+d,
+     blocks:[["h2",cs?"Přesazení":"Repotting"],["p",cs?"Rostlina: ":"Plant: "],["p",(cs?"Datum: ":"Date: ")+d],
+       ["p",cs?"Starý → nový květináč: ":"Old pot → new pot: "],["p",cs?"Substrát: ":"Substrate: "],
+       ["p",cs?"Stav kořenů: ":"Root condition: "],["todo",cs?"Týden zalévat jen lehce":"Water lightly for a week"]]},
+    {id:"obs", name:cs?"Pozorování":"Observation", title:(cs?"Pozorování — ":"Observation — ")+d,
+     blocks:[["h2",cs?"Pozorování":"Observation"],["p",cs?"Co jsem viděl: ":"What I saw: "],["p",cs?"Kde: ":"Where: "],
+       ["p",cs?"Podmínky: ":"Conditions: "],["p",cs?"Další krok: ":"Follow up: "]]}
+  ];
+}
+function nOpenTplMenu(anchorEl){
+  nCloseMenu();
+  const m=document.createElement("div");
+  m.id="nTypeMenu"; m.className="n-btype-menu"; m.setAttribute("role","menu");
+  m.innerHTML=nTemplates().map(tp=>`<button type="button" role="menuitem" data-tpl="${esc(tp.id)}">${esc(tp.name)}</button>`).join("");
+  document.body.appendChild(m);
+  const r=anchorEl.getBoundingClientRect();
+  m.style.top=(window.scrollY+r.bottom+6)+"px";
+  m.style.left=Math.max(8,Math.min(window.scrollX+r.left,
+    window.scrollX+window.innerWidth-m.offsetWidth-8))+"px";
+  const first=m.querySelector("button"); if(first) first.focus();
+}
+
+/* ---------------- the Notes card on a plant page ---------------- */
+function nPlantCardHtml(p){
+  const notes=(S.notes||[]).filter(n=>n.plantId===p.id&&!n.trashedAt)
+    .sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||(b.updatedAt||0)-(a.updatedAt||0));
+  return `<div class="card">
+      <div class="pad" style="padding-bottom:0">
+        <div class="lbl-row"><span class="eyebrow">Notes</span>
+          <span class="lbl-acts"><button type="button" class="btn mini" data-nnew="${esc(p.id)}">+ Note</button></span></div>
+      </div>
+      ${notes.length?`<div class="pad n-plist">`+notes.map(n=>{ const snip=nSnippet(n);
+        return `<button type="button" class="n-prow" data-nopen="${esc(n.id)}">
+          <span class="n-row-title"${n.title?" data-no-i18n":""}>${esc(n.title||"Untitled")}</span>
+          <span class="n-row-sub"${snip?" data-no-i18n":""}>${snip?esc(snip):"<i>Empty note</i>"}</span>
+          <span class="n-row-date">${esc(nWhen(n.updatedAt||n.createdAt))}</span></button>`; }).join("")+`</div>`
+      :`<p class="empty">No notes about this plant yet.</p>`}
+    </div>`;
+}
+
+/* ---------------- wiring: attached once, never inside a render ---------------- */
+(function nWire2(){
+  const list=$("#nList"); if(!list) return;   /* markup absent (student boot) — stay quiet */
+  const on=(sel,ev,fn)=>{ const el=$(sel); if(el) el.addEventListener(ev,fn); };
+
+  on("#nNbRow","click",async e=>{
+    const V=nV();
+    const nb=e.target.closest("[data-nb]");
+    if(nb){ V.nb=nb.dataset.nb; V.tag=null; renderNotes(); return; }
+    if(e.target.closest("[data-nbadd]")){
+      const name=(prompt(t("Notebook name"))||"").trim(); if(!name) return;
+      const id=uid(); S.notebooks=S.notebooks||[]; S.notebooks.push({id,name}); touch();
+      V.nb=id; V.tag=null; renderNotes(); return;
+    }
+    if(e.target.closest("[data-nbren]")){
+      const cur=nNbById(V.nb); if(!cur) return;
+      const name=(prompt(t("Notebook name"),cur.name)||"").trim(); if(!name||name===cur.name) return;
+      cur.name=name; touch(); renderNotes(); return;
+    }
+    if(e.target.closest("[data-nbdel]")){
+      const cur=nNbById(V.nb); if(!cur) return;
+      if(!await ask(t("Delete this notebook? Its notes stay, they just lose the notebook."),t("Delete"))) return;
+      (S.notes||[]).forEach(n=>{ if(n.notebook===cur.id) n.notebook=null; });
+      S.notebooks=(S.notebooks||[]).filter(x=>x.id!==cur.id); touch();
+      V.nb="all"; renderNotes();
+    }
+  });
+  on("#nTagRow","click",e=>{
+    const tg=e.target.closest("[data-tag]"); if(!tg) return;
+    const V=nV(); V.tag=V.tag===tg.dataset.tag?null:tg.dataset.tag; renderNotes();
+  });
+  on("#nSort","change",()=>{ nV().sort=$("#nSort").value; renderNotes(); });
+  list.addEventListener("click",e=>{
+    const r=e.target.closest("[data-restore]"); if(!r) return;
+    const n=nNoteById(r.dataset.restore); if(!n) return;
+    n.trashedAt=null; nTouchNote(n); renderNotes();
+  });
+
+  on("#nTplBtn","click",e=>{ e.stopPropagation(); nOpenTplMenu(e.currentTarget); });
+  document.addEventListener("click",e=>{
+    const tp=e.target.closest("#nTypeMenu [data-tpl]"); if(!tp) return;
+    const tpl=nTemplates().find(x=>x.id===tp.dataset.tpl);
+    nCloseMenu(); nReturn=null;
+    if(tpl) nNewNote(tpl);
+  });
+
+  on("#nNbSel","change",()=>{
+    const n=nOpenNote(), sel=$("#nNbSel"); if(!n) return;
+    if(sel.value==="__new"){
+      const name=(prompt(t("Notebook name"))||"").trim();
+      if(name){ const id=uid(); S.notebooks=S.notebooks||[]; S.notebooks.push({id,name}); n.notebook=id; }
+    } else n.notebook=sel.value||null;
+    nTouchNote(n); nRenderFiling(n);
+  });
+  on("#nPlantSel","change",()=>{
+    const n=nOpenNote(); if(!n) return;
+    n.plantId=$("#nPlantSel").value||null; nTouchNote(n); nRenderFiling(n);
+  });
+  const addTag=()=>{
+    const n=nOpenNote(), inp=$("#nTagIn"); if(!n||!inp) return;
+    const tg=nCleanTag(inp.value); inp.value=""; if(!tg) return;
+    n.tags=n.tags||[];
+    if(!n.tags.includes(tg)){ n.tags.push(tg); nTouchNote(n); nRenderFiling(n); }
+  };
+  on("#nTagIn","keydown",e=>{
+    if(e.key==="Enter"||e.key===","){ e.preventDefault(); addTag(); return; }
+    if(e.key==="Backspace"&&!e.currentTarget.value){
+      const n=nOpenNote(); if(n&&n.tags&&n.tags.length){ n.tags.pop(); nTouchNote(n); nRenderFiling(n); }
+    }
+  });
+  on("#nTagIn","blur",addTag);
+  on("#nTags","click",e=>{
+    const x=e.target.closest("[data-untag]"); if(!x) return;
+    const n=nOpenNote(); if(!n) return;
+    n.tags=(n.tags||[]).filter(tg=>tg!==x.dataset.untag); nTouchNote(n); nRenderFiling(n);
+  });
+  on("#nPinBtn","click",()=>{ const n=nOpenNote(); if(!n) return; n.pinned=!n.pinned; nTouchNote(n); nRenderFiling(n); });
+  on("#nArchBtn","click",()=>{ const n=nOpenNote(); if(!n) return; n.archived=!n.archived; nTouchNote(n); nRenderFiling(n); });
+  on("#nRestore","click",()=>{ const n=nOpenNote(); if(!n) return; n.trashedAt=null; nTouchNote(n); nRenderFiling(n); });
+  on("#nPurge","click",async()=>{
+    const n=nOpenNote(); if(!n) return;
+    if(!await ask(t("Delete this note forever? This cannot be undone."),t("Delete"))) return;
+    nPurgeNote(n); L.noteId=null; saveLocal(); nGoBack();
+  });
+
+  on("#nAddPhoto","click",()=>{ const i=$("#nPhotoIn"); if(i) i.click(); });
+  on("#nPhotoIn","change",e=>{ const f=e.target.files&&e.target.files[0]; e.target.value=""; if(f) nAddPhoto(f); });
+
+  on("#nBlocks","click",e=>{
+    const tp=e.target.closest("[data-toplanner]"); if(!tp) return;
+    const n=nOpenNote(); if(!n) return;
+    const b=n.blocks.find(x=>x.id===tp.dataset.toplanner); if(!b) return;
+    if(b.taskId&&pFindTask(b.taskId)){ setApp("planner"); return; }   /* already there — go and look */
+    nPushTodo(n,b); nRestructure(b.id,null);
+  });
+
+  on("#nUndoBtn","click",()=>{ const fn=nUndoFn; nHideUndo(); if(fn) fn(); });
+  on("#nQuick","click",()=>{ nReturn=null; setApp("notes"); nNewNote(); });
+
+  on("#pvBody","click",e=>{
+    const o=e.target.closest("[data-nopen]"), nw=e.target.closest("[data-nnew]");
+    if(o){ nReturn={view:"plant"}; setApp("notes"); openNote(o.dataset.nopen); return; }
+    if(nw){ nReturn={view:"plant"}; setApp("notes"); nNewNote({title:"",blocks:[["p",""]],plantId:nw.dataset.nnew}); }
+  });
+})();
 
 
 /* ---------------------------------------------------------- PSYNC ----
