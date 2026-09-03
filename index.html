@@ -830,6 +830,17 @@ input[type="time"].mono-input{width:88px}
   padding:6px 4px 10px; margin-bottom:8px; border-bottom:1px solid var(--line);
   border-radius:var(--r-xs); transition:background .12s}
 .wb-parking .eyebrow{flex:0 0 auto; margin-right:2px}
+/* A plan is drawn open: dashed, unfilled, quieter than a block of work. It is
+   on the day because you want to see it there, not because it is owed. */
+.wb-blk.untracked{border-style:dashed; border-left-style:dashed;
+  background:color-mix(in srgb,var(--surface-2) 70%,transparent)}
+.wb-traychip.untracked{border-style:dashed}
+/* the list's stand-in for a checkbox: same footprint, plainly not pressable */
+.tbox.plan{border-style:dashed; background:none; cursor:default; opacity:.55}
+/* the add row's flag, kept small so it does not crowd the line */
+.pk-untrack{display:inline-flex; align-items:center; gap:5px; font-size:11.5px;
+  color:var(--ink-2); white-space:nowrap}
+.pk-untrack input{margin:0}
 /* armed for "click to copy": the whole board is a target, so it says so —
    and nothing on it should look draggable while a click means "drop here" */
 .wb.stamping, .wb.stamping *{cursor:copy !important}
@@ -2991,6 +3002,7 @@ html{overscroll-behavior-y:none}
         <button type="button" data-pkind="quick" aria-pressed="false">Quick</button>
         <button type="button" data-pkind="task" aria-pressed="true">Task</button>
         <button type="button" data-pkind="event" aria-pressed="false">Event</button>
+        <button type="button" data-pkind="plan" aria-pressed="false">Plan</button>
         <button type="button" data-pnew="project">Project</button>
       </div>
       <input type="text" id="pAddTitle" placeholder="What needs doing?" autocomplete="off">
@@ -3004,6 +3016,7 @@ html{overscroll-behavior-y:none}
         <span class="field-label pk-detail">h</span>
         <span class="field-label pk-detail">for</span>
         <select id="pAddProject" class="mono-input pk-detail" aria-label="Link to a project"></select>
+        <label class="pk-untrack pk-detail" title="No tick, never overdue, never counted"><input type="checkbox" id="pAddUntracked"><span>no completion</span></label>
         <button class="btn primary mini" type="submit">Add</button>
       </div>
       <p class="pwarn" id="pAddWarn" hidden></p>
@@ -4505,6 +4518,9 @@ html{overscroll-behavior-y:none}
       <span class="field-label">for</span>
       <select id="pSlotProject" class="mono-input"></select>
     </div>
+    <label class="pslot-done" id="pSlotUntrackedWrap">
+      <input type="checkbox" id="pSlotUntracked"> <span>No completion needed &mdash; just a plan</span>
+    </label>
     <label class="pslot-done pslot-edit-only" id="pSlotDoneWrap">
       <input type="checkbox" id="pSlotDone"> <span>Done</span>
     </label>
@@ -5895,6 +5911,15 @@ function migrate(d){
     /* a Quick Task is a whole day with no clock slot and no duration; carrying
        either would let it draw as a block */
     if(tk.kind==="quick"){ tk.time=""; tk.hours=0; }
+    /* Not everything on a calendar is a job to be signed off. "Sea with the
+       family at the weekend" is a plan: it wants to be on the day, and it
+       wants to be left alone. An untracked record shows no tick anywhere, is
+       never overdue, never "still not done", and never counts towards the
+       day's tally -- so the calendar stops asking about the half of life that
+       is not a task. A Quick Task is nothing BUT its tick, so it cannot be
+       untracked. */
+    tk.untracked=tk.kind!=="quick"&&!!tk.untracked;
+    if(tk.untracked){ tk.done=false; delete tk.doneAt; }
   });
   /* drop groupIds that ended up with a single member (a delete, or a hand
      edited import) — otherwise a lone record keeps claiming to be a span */
@@ -7300,7 +7325,7 @@ function pItemsFor(iso){
     const isEvent=tk.kind==="event";
     /* a Quick Task belongs to its day the way an Event does — it is never
        dragged forward onto today */
-    const overdue=!isEvent&&!isQuick&&!tk.done&&tk.due<pToday();
+    const overdue=!isEvent&&!isQuick&&!tk.untracked&&!tk.done&&tk.due<pToday();
     if(!(tk.due===iso||(isToday&&overdue))) return;
     /* carry the project's colour through, so a Task or Event filed under a
        project draws in that project's colour on the board — asked for on the
@@ -7737,6 +7762,7 @@ function pOpenEditDialog(id){
   pOpenSlotDialog(tk.due,0,tk.hours||1);
   pSlotEditId=id;
   pSlotKindVal=tk.kind==="event"?"event":"task";
+  $("#pSlotUntracked").checked=!!tk.untracked;
   $("#pSlotKind").hidden=false;
   $("#pSlotText").value=tk.title||"";
   $("#pSlotDate").value=tk.due||"";
@@ -7824,7 +7850,10 @@ $("#pSlotSave").addEventListener("click",()=>{
   const hours=isEvent?Math.max(0.25,+$("#pSlotHours").value||1)
                      :Math.max(0,+$("#pSlotHours").value||0);
   const pid=$("#pSlotProject").value||null;
-  const done=$("#pSlotDone").checked;
+  const untracked=$("#pSlotUntracked").checked;
+  /* ticking "no completion needed" on something already done drops the tick
+     with it — a plan that still claims to be finished is a contradiction */
+  const done=untracked?false:$("#pSlotDone").checked;
   const newDue=$("#pSlotDate").value||tk.due;
   /* A run is a multi-day EVENT. Moving this day out of it, or making it stop
      being an Event at all, both take it out of the run — otherwise a Task was
@@ -7839,9 +7868,11 @@ $("#pSlotSave").addEventListener("click",()=>{
   if(leavesRun) pDetachFromRun(tk);
   /* title, time, duration and project describe the whole run — but once this
      record has left, the "group" is just itself, which is what we want */
-  pApplyToGroup(tk,m=>{ m.title=title; m.time=time; m.hours=hours; m.projectId=pid; });
+  pApplyToGroup(tk,m=>{ m.title=title; m.time=time; m.hours=hours; m.projectId=pid;
+    m.untracked=untracked; if(untracked){ m.done=false; delete m.doneAt; } });
   tk.due=newDue;
   tk.kind=isEvent?"event":"task";
+  tk.untracked=untracked;
   tk.done=done;
   if(done&&!tk.doneAt) tk.doneAt=new Date().toISOString();
   if(!done) delete tk.doneAt;
@@ -7953,6 +7984,7 @@ $("#pSelBtn").addEventListener("click",()=>{
   pSelSync();
 });
 $("#pSelAllDone").addEventListener("click",()=>pSelApply(tk=>{
+  if(tk.untracked) return;          // nothing to sign off on a plan
   tk.done=true; if(!tk.doneAt) tk.doneAt=new Date().toISOString();
 }));
 $("#pSelAllUndone").addEventListener("click",()=>pSelApply(tk=>{
@@ -8586,7 +8618,7 @@ function pBoardHtml(days,opts){
         ?(it.ref.kind==="event"?" wb-ev":it.ref.kind==="quick"?"":" wb-tk"):"";
       /* time has passed and it was never ticked — say so quietly rather than
          letting it sit looking identical to something still ahead of you */
-      const missed=!done&&it.ref&&it.ref.kind!=="quick"&&it.kind==="task"
+      const missed=!done&&it.ref&&it.ref.kind!=="quick"&&!it.ref.untracked&&it.kind==="task"
         &&d<=pToday()&&(d<pToday()||nowH>=x.e);
       const meta=done?t("Done")
         :`${esc(it.time)} · ${pFmtH(it.hours)}h${it.kind==="hours"&&it.live?` · <em>${esc(t("running"))}</em>`
@@ -8602,7 +8634,8 @@ function pBoardHtml(days,opts){
          height, the middle is always at least ~60% of the block. */
       const grip=Math.max(3,Math.min(8,Math.round(hpx*0.2)));
       const miss=missed?'<i class="miss" title="'+esc(t("Still not done"))+'">!</i> ':"";
-      return `<div class="wb-blk wb-${kind}${evkind}${filed?" filed":""}${live?" live":""}${compact?" compact":""}${done?" done":""}${missed?" missed":""}"${drag} style="top:${top}px; height:${hpx}px; --grip:${grip}px;${tint} ${lane}">
+      const untr=(it.ref&&it.ref.untracked)?" untracked":"";
+      return `<div class="wb-blk wb-${kind}${evkind}${untr}${filed?" filed":""}${live?" live":""}${compact?" compact":""}${done?" done":""}${missed?" missed":""}"${drag} style="top:${top}px; height:${hpx}px; --grip:${grip}px;${tint} ${lane}">
         ${compact
           ? `<b>${warn}${miss}${it.kind==="block"?"↻ ":""}${esc(it.name)}${done?" — "+esc(t("Done")):" "+esc(it.time)}</b>`
           : `<b>${warn}${miss}${it.kind==="block"?"↻ ":""}${esc(it.name)}</b><span>${meta}</span>`}
@@ -8734,7 +8767,10 @@ function pBoardHtml(days,opts){
   const dayTag=d=>{ if(d===today) return t("today"); const x=pParseISO(d);
     return dowName(x.getDay()).slice(0,3)+" "+x.getDate(); };
   const lot=[], seen=new Set();
-  const tick=(id,on)=>`<i class="wb-adtick${on?" on":""}" data-adtick="${id}" role="button" tabindex="0" aria-label="${esc(on?t("Mark not done"):t("Mark done"))}"></i>`;
+  /* an untracked record has nothing to tick, so it is given no tick rather
+     than one that does nothing */
+  const tick=(id,on)=>{ const r=pFindTask(id); if(r&&r.untracked) return "";
+    return `<i class="wb-adtick${on?" on":""}" data-adtick="${id}" role="button" tabindex="0" aria-label="${esc(on?t("Mark not done"):t("Mark done"))}"></i>`; };
   const untimedChip=(tk,tag)=>{
     if(seen.has("t"+tk.id)) return; seen.add("t"+tk.id);
     const dn=!!tk.done;
@@ -9477,7 +9513,7 @@ function pWireBoard(){
   pSelSync();
   board.addEventListener("click",e=>{
     const tick=e.target.closest("[data-adtick]"); if(!tick) return;
-    const tk=pFindTask(tick.dataset.adtick); if(!tk) return;
+    const tk=pFindTask(tick.dataset.adtick); if(!tk||tk.untracked) return;
     e.stopPropagation();
     /* A Quick Task stays on its day after it is ticked, so the tick has to
        work both ways — otherwise one mis-tap greys it for good with nothing
@@ -9815,7 +9851,9 @@ function pTaskRow(tk,{inDone}={}){
   </ul>`:"";
   return `<div class="ptask${open?" open":""}" data-ptask-id="${tk.id}">
     <div class="ptask-compact">
-      <button type="button" class="tbox" data-ptog="${tk.id}" aria-label="${esc(t("Mark done"))}"></button>
+      ${tk.untracked
+        ? `<span class="tbox plan" title="${esc(t("A plan — no completion needed"))}" aria-hidden="true"></span>`
+        : `<button type="button" class="tbox" data-ptog="${tk.id}" aria-label="${esc(t("Mark done"))}"></button>`}
       <input type="text" class="ptask-title" data-ptitle="${tk.id}" value="${esc(tk.title)}" placeholder="${esc(t("Untitled task"))}">
       ${badge}
       ${!isEvent&&st.length?`<span class="pproj-count">${stDone}/${st.length}</span>`:""}
@@ -9972,8 +10010,17 @@ function renderPlanner(){
 $("#pAddForm").addEventListener("submit",e=>{
   e.preventDefault();
   const title=$("#pAddTitle").value.trim(); if(!title) return;
-  const kind=pAddKindVal;
+  /* "Plan" is not a fourth kind in the record -- it is an Event that is not
+     tracked, which is exactly what was asked for ("just like an open block,
+     which will not be tracked"). Keeping it a preset rather than a new kind
+     means every rule about where an Event sits, how it drags and how it
+     stretches already applies to it, instead of each having to learn a fourth
+     case. The checkbox does the same thing to a Task or an Event you have
+     already made. */
+  const isPlan=pAddKindVal==="plan";
+  const kind=isPlan?"event":pAddKindVal;
   const isEvent=kind==="event", isQuick=kind==="quick";
+  const untracked=!isQuick&&(isPlan||$("#pAddUntracked").checked);
   /* A Task's day is optional — leaving the date empty files it in the dateless
      strip rather than silently landing it on today. An Event has to sit
      somewhere, so it falls back to the selected day and needs a time. A Quick
@@ -9986,7 +10033,7 @@ $("#pAddForm").addEventListener("submit",e=>{
             :($("#pAddTime").value||"");
   S.planner.tasks.push({id:uid(),title,due,time,
     hours:isQuick?0:isEvent?(+$("#pAddHours").value||1):(+$("#pAddHours").value||0),
-    done:false,kind,steps:[],
+    done:false,kind,steps:[],untracked,
     projectId:isQuick?null:($("#pAddProject").value||null)});
   $("#pAddTitle").value=""; $("#pAddTitle").focus();
   if(due){ pSelISO=due; pWinShift=0; }
@@ -10003,13 +10050,18 @@ function pSyncAddKind(){
   /* A Quick Task is the whole day and nothing else: no clock, no duration, no
      project. A Task MAY carry a time but does not have to, so it keeps the
      field and leaves it blank. An Event has to have one. */
-  const quick=pAddKindVal==="quick";
+  const quick=pAddKindVal==="quick", plan=pAddKindVal==="plan";
   document.querySelectorAll("#pAddForm .pk-time").forEach(el=>{
     el.style.display=quick?"none":""; });
   document.querySelectorAll("#pAddForm .pk-detail").forEach(el=>{
     el.style.display=quick?"none":""; });
+  /* a Plan is untracked by definition, so the box says so and is not offered
+     as a choice — unticking it would just be making an Event */
+  const ub=$("#pAddUntracked");
+  if(ub){ ub.checked=ub.checked||plan; ub.disabled=plan;
+    ub.closest(".pk-untrack").style.display=quick?"none":""; }
   const ti=$("#pAddTime");
-  if(ti) ti.placeholder=pAddKindVal==="task"?"optional":"";
+  if(ti) ti.placeholder=pAddKindVal==="task"?t("optional"):"";
   const title=$("#pAddTitle");
   if(title) title.placeholder=quick?t("Something to do that day"):t("What needs doing?");
 }
@@ -10322,7 +10374,7 @@ document.querySelector("#view-planner").addEventListener("click",async e=>{
     delBlock=e.target.closest("[data-pdel-block]"), togStep=e.target.closest("[data-ptog-step]"),
     delStep=e.target.closest("[data-pdel-step]"), blockDow=e.target.closest("[data-pblock-dow]");
 
-  if(tog){ const tk=pFindTask(tog.dataset.ptog); if(!tk) return;
+  if(tog){ const tk=pFindTask(tog.dataset.ptog); if(!tk||tk.untracked) return;
     tk.done=!tk.done; touch(); renderPlanner(); return; }
 
   const conv=e.target.closest("[data-pconvert]");
