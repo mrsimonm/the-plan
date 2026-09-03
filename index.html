@@ -830,6 +830,9 @@ input[type="time"].mono-input{width:88px}
   padding:6px 4px 10px; margin-bottom:8px; border-bottom:1px solid var(--line);
   border-radius:var(--r-xs); transition:background .12s}
 .wb-parking .eyebrow{flex:0 0 auto; margin-right:2px}
+/* armed for "click to copy": the whole board is a target, so it says so —
+   and nothing on it should look draggable while a click means "drop here" */
+.wb.stamping, .wb.stamping *{cursor:copy !important}
 /* The quick strip: the parking lot's twin, sitting directly above it. Quick
    Tasks used to live in each day column's own all-day lane, which meant a
    Week showed seven little lanes and a Month thirty — and every one of them
@@ -3078,6 +3081,7 @@ html{overscroll-behavior-y:none}
         <button type="button" class="btn mini" id="pSelAllDone">Mark done</button>
         <button type="button" class="btn mini" id="pSelAllUndone">Not done</button>
         <button type="button" class="btn mini" id="pSelAllDup">Duplicate</button>
+        <button type="button" class="btn mini" id="pSelStamp">Click to copy</button>
         <button type="button" class="btn mini" id="pSelAllPark">To parking lot</button>
         <span class="grow"></span>
         <button type="button" class="btn mini" id="pSelClear">Clear</button>
@@ -7864,7 +7868,33 @@ function pDetachFromRun(tk){
    and dangerous for each — they stay single-tap. */
 let pSelMode=false;
 const pSel=new Set();
-function pSelClear(){ pSel.clear(); pSelSync(); }
+/* ---- Click to copy ----
+   Duplicate already existed, but it decides for you where the copy lands —
+   the same day, the next free slot. This is the other half of the ask: pick
+   a block, then point at where you want it. It stays armed after each drop,
+   so one block can be stamped across a week without going back to the bar
+   for every copy, and it takes the day AND the hour from where you click.
+
+   A click above the hour grid (the day's header or its all-day lane) has no
+   hour in it, so the copy parks on that day with no time rather than
+   guessing one — which is what the parking lot is for. */
+let pStampSrc=null;
+function pStampArm(id){ pStampSrc=id||null; pSelSync(); pWireBoard(); }
+function pStampOff(){ if(!pStampSrc) return; pStampSrc=null; pSelSync(); renderPlanner(); }
+function pStampPlace(day,hour){
+  const src=pFindTask(pStampSrc); if(!src||!day) return false;
+  const copy=Object.assign({},src,{id:uid(), groupId:null, done:false, due:day});
+  delete copy.doneAt;
+  /* by value, like pDupTask: ticking the copy's step must not tick the
+     original's */
+  copy.steps=(src.steps||[]).map(x=>({id:uid(), text:x.text, done:false}));
+  if(hour==null){ copy.time=""; if(copy.kind==="event") copy.kind="task"; }
+  else copy.time=pHHMM(Math.max(0,Math.min(23.75,pSnapQ(hour))));
+  S.planner.tasks.push(copy);
+  touch();
+  return true;
+}
+function pSelClear(){ pSel.clear(); pStampSrc=null; pSelSync(); }
 function pSelToggle(id){ if(pSel.has(id)) pSel.delete(id); else pSel.add(id); pSelSync(); }
 /* prune ids that no longer exist (deleted, or a Quick Task that changed kind)
    so the count can never claim more than the bar would actually act on */
@@ -7884,9 +7914,19 @@ function pSelSync(){
   });
   const bar=$("#pSelBar");
   if(!bar) return;
-  bar.hidden=n===0;
+  /* while armed the bar must stay up whatever the count says, or there is no
+     way left to turn the mode off again */
+  bar.hidden=n===0&&!pStampSrc;
+  const st=$("#pSelStamp");
+  if(st){
+    st.setAttribute("aria-pressed",String(!!pStampSrc));
+    st.textContent=pStampSrc?t("Stop copying"):t("Click to copy");
+    st.disabled=!pStampSrc&&n!==1;      // one block at a time: you point at one place
+  }
   const lab=$("#pSelCount");
-  if(lab) lab.textContent=t("{n} selected").replace("{n}",n);
+  if(lab) lab.textContent=pStampSrc
+    ? t("Click a day to drop a copy — Esc when done")
+    : t("{n} selected").replace("{n}",n);
 }
 /* every bulk action ends the same way: write once, repaint once */
 function pSelApply(fn){
@@ -7897,7 +7937,7 @@ function pSelApply(fn){
 }
 $("#pSelBtn").addEventListener("click",()=>{
   pSelMode=!pSelMode;
-  if(!pSelMode) pSel.clear();
+  if(!pSelMode){ pSel.clear(); pStampSrc=null; }
   pSelSync();
 });
 $("#pSelAllDone").addEventListener("click",()=>pSelApply(tk=>{
@@ -7931,6 +7971,16 @@ $("#pSelAllDelete").addEventListener("click",async()=>{
     if(left.length<2) left.forEach(x=>{ x.groupId=null; }); });
   pSel.clear(); touch(); renderPlanner(); pSelSync();
 });
+$("#pSelStamp").addEventListener("click",()=>{
+  if(pStampSrc){ pStampOff(); return; }
+  const one=pSelLive();
+  if(one.length!==1) return;
+  pStampArm(one[0].id);
+});
+/* Esc is the way out of every other mode in the app, so it is the way out of
+   this one. Leaving select mode or clearing the selection disarms it too —
+   the source it was copying is gone either way. */
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") pStampOff(); });
 $("#pSelClear").addEventListener("click",pSelClear);
 /* ---- Duplicate ----
    Asked for repeatedly on the beta call ("potřebuju vzít blok a hodit ho
@@ -8773,6 +8823,25 @@ function pBoardHtml(days,opts){
 function pWireBoard(){
   const board=document.getElementById("pWeekBoard");
   if(!board) return;
+  /* Armed "click to copy" takes the board before the gesture engine sees it:
+     capture phase, and it stops the event dead. Otherwise a press on empty
+     track would start the drag-a-new-slot gesture instead of dropping the
+     copy. The board is rebuilt on every render, so this listener goes with
+     the old nodes rather than stacking up. */
+  if(pStampSrc){
+    board.classList.add("stamping");
+    board.addEventListener("pointerdown",e=>{
+      if(e.button!==0&&e.pointerType==="mouse") return;
+      const col=e.target.closest(".wb-col"); if(!col) return;
+      e.preventDefault(); e.stopPropagation();
+      const trk=col.querySelector(".wb-track");
+      const r=trk&&trk.getBoundingClientRect();
+      /* above the hour grid there is no hour to read, so the copy parks */
+      const hour=(r&&e.clientY>=r.top&&e.clientY<=r.bottom)
+        ? (+board.dataset.starth||0)+(e.clientY-r.top)/WB_PXH : null;
+      if(pStampPlace(col.dataset.wbday,hour)) renderPlanner();
+    },true);
+  }
   /* this board is new, so whatever gesture the previous one owned went with
      it and its commit/abort will never run. Clear the repaint guard here or a
      gesture interrupted by an unrelated re-render (tapping Week mid-drag)
