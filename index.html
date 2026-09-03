@@ -2905,6 +2905,74 @@ html.pfocus .n-quick{display:none}
 
 </style>
 
+<style id="control-glass">
+/* ---- machined glass: one material across every control ---- */
+/* Additive specular/lift rims only (box-shadow), so layouts, radii and the
+   app's own glass fills are untouched. Token-free whites stay faint so they
+   read as catch-light on every palette. */
+
+/* buttons & chips: top specular, underside rim, ambient + lift shadow */
+.btn, .chip{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.22),
+    inset 0 -1px 0 rgba(0,0,0,.12),
+    0 1px 2px rgba(0,0,0,.16),
+    0 5px 14px -7px rgba(0,0,0,.32);
+  transition:transform .15s cubic-bezier(.2,.8,.2,1), box-shadow .18s, color .18s, filter .18s;
+}
+.btn:hover, .chip:hover{
+  filter:brightness(1.05);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.28),
+    inset 0 -1px 0 rgba(0,0,0,.12),
+    0 2px 4px rgba(0,0,0,.18),
+    0 9px 20px -9px rgba(0,0,0,.4);
+}
+.btn:active:not([disabled]), .chip:active{ transform:translateY(1px) scale(.97); }
+.btn.primary{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.30),
+    inset 0 -1px 0 rgba(0,0,0,.16),
+    0 2px 4px rgba(0,0,0,.22),
+    0 12px 26px -10px color-mix(in srgb,var(--accent) 60%,transparent);
+}
+.btn.primary:hover{ filter:brightness(1.06); }
+
+/* chips pick up the glass fill like buttons, instead of a flat tint */
+.chip{
+  background-image:var(--glass-sheen);
+  background-color:color-mix(in srgb,var(--surface-2) 70%,transparent);
+}
+.chip[aria-pressed="true"]{
+  background-image:none;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.24),
+    inset 0 -1px 0 rgba(0,0,0,.16),
+    0 4px 12px -4px color-mix(in srgb,var(--accent) 55%,transparent);
+}
+
+/* segmented control rail + lit active thumb */
+.seg{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.16),
+    inset 0 -1px 0 rgba(0,0,0,.14),
+    0 1px 2px rgba(0,0,0,.16);
+}
+.seg button[aria-pressed="true"]{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.26),
+    inset 0 -1px 0 rgba(0,0,0,.16),
+    0 3px 10px -3px color-mix(in srgb,var(--accent) 52%,transparent);
+}
+
+/* frosted fields: a specular + soffit rather than a flat rectangle */
+input, select, textarea{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.13),
+    inset 0 -1px 0 rgba(0,0,0,.05),
+    0 1px 2px rgba(0,0,0,.10);
+}
+</style>
 <header class="top">
   <button class="gear" id="settingsBtn" aria-label="Settings" title="Settings">⚙</button>
   <div class="brandwrap">
