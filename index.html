@@ -9121,7 +9121,11 @@ function pWireBoard(){
         return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"); };
       const dy=e.clientY-g.y0;
       const wrapped=((g.from0+dy/WB_PXH)%24+24)%24;
-      pSleepSetFor(g.owner,fmt(snap(wrapped)),pSleepFor(g.owner).hours);
+      /* carry the night's own nap, wind-down and LOCK through the drag --
+         passing only a time silently stripped all three, so dragging a
+         locked night unlocked it and the next Apply then swept it away */
+      const cur=pSleepFor(g.owner);
+      pSleepSetFor(g.owner,fmt(snap(wrapped)),cur.hours,cur.nap,cur.buffer,cur.locked);
       done(); return;
     }
     if(g.mode==="rz8"){
@@ -10146,11 +10150,28 @@ function pSleepFormSync(){
     ? t("Applies from today onwards. Earlier nights, and any locked night, stay as they are.")
     : t("Saved.");
 }
+/* A night you happened to change is not a night you pinned. Editing one --
+   in its dialog, or just by dragging the block -- writes an exception, and an
+   exception beat the defaults for ever: the night went deaf to every later
+   change to the weekday/weekend times. That is the "I set weekday and weekend
+   to the same times and they still show different things" report, and it made
+   the lock pointless, since an unlocked night was already just as immovable.
+
+   So Apply clears every UNLOCKED exception from today forward, and the lock
+   switch becomes the only thing that holds a night against the defaults --
+   which is what it was added for. Nights already past keep whatever they had:
+   the regime history has them covered and rewriting them is the one thing
+   Apply must never do. */
+function pSleepClearLooseEx(){
+  const today=pToday(), ex=S.planner.sleepEx||{};
+  Object.keys(ex).forEach(iso=>{ if(iso>=today&&!ex[iso].locked) delete ex[iso]; });
+}
 function pSleepApply(){
   const wd=pSleepRead("sleepWeekday"), we=pSleepRead("sleepWeekend");
   if(pSleepSame(wd,S.planner.sleepWeekday)&&pSleepSame(we,S.planner.sleepWeekend)) return;
   pSleepFreezeRegime();
   S.planner.sleepWeekday=wd; S.planner.sleepWeekend=we;
+  pSleepClearLooseEx();
   touch(); pSleepFormSync(); pDayPanel(); renderSchedule();
 }
 $("#pSleepOff").addEventListener("change",e=>{
