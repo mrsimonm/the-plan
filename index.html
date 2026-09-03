@@ -6055,7 +6055,7 @@ const $=s=>document.querySelector(s);
 /* Build stamp. `n` is incremented by bump.py at publish time so two phones can
    be compared at a glance — an installed PWA serving a stale service-worker
    cache is otherwise indistinguishable from an up-to-date one. */
-const BUILD={ver:"1.0",n:50,at:"2026-09-03"};
+const BUILD={ver:"1.0",n:51,at:"2026-09-03"};
 const uid=()=>Math.random().toString(36).slice(2,9);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
@@ -18806,6 +18806,10 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "words":"slov","learned":"naučeno","overdue":"po termínu","review":"opakování","reviews":"opakování",
 "Nothing to undo":"Není co vrátit","Nothing to redo":"Není co zopakovat",
 "A plan — no completion needed":"Plán — nevyžaduje splnění",
+/* the sync badge: setSync writes straight to textContent, so the observer catches it */
+"synced":"synchronizováno","shared":"sdíleno","queued":"ve frontě","sync: offline":"synchronizace: offline",
+"Needs at least three waterings on a plant before the gaps mean anything. Keep logging and this fills in.":"Než mezery začnou něco znamenat, potřebuje rostlina aspoň tři zálivky. Zapisuj dál a tohle se zaplní.",
+"No matches.":"Žádná shoda.","No subtasks yet.":"Zatím žádné podúkoly.",
 });
 
 /* ---------------- teachbench student app: mode gate ----------------
