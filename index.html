@@ -3038,6 +3038,10 @@ html{overscroll-behavior-y:none}
         </span>
         <button type="button" class="btn mini" id="pNowBtn"
           title="Jump to today">Now</button>
+        <span class="pcal-nav">
+          <button type="button" class="btn mini" id="pUndoBtn" title="Undo (Ctrl+Z)" disabled>↶</button>
+          <button type="button" class="btn mini" id="pRedoBtn" title="Redo (Ctrl+Shift+Z)" disabled>↷</button>
+        </span>
         <button type="button" class="btn mini" id="pSelBtn"
           title="Select several blocks" aria-pressed="false">Select</button>
         <button type="button" class="btn mini pfocus-btn" id="pFocusBtn"
@@ -6228,6 +6232,11 @@ function touch(){
      fires, so nothing is ever stranded. */
   if(!pWriteQueued){ pWriteQueued=true; setTimeout(pFlushWrite,0); }
   dirty=true;
+  /* Every planner mutation ends here, so this is the one place that sees all
+     of them — instrumenting each drag, dialog, tick and bulk action instead
+     would have meant finding all of them, and missing one leaves a change
+     that silently cannot be undone. */
+  if(typeof pUndoNote==="function") pUndoNote();
   if(readOnly){ setSync("readonly","view only"); return; }
   if(!ART){ setSync("local","this device"); return; }
   setSync("saving","saving…");
@@ -20302,6 +20311,97 @@ if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
   });
 }
 /* ============================================================================
+   PLANNER UNDO / REDO
+   The Projects canvas has had undo since it was built, but the calendar --
+   where the dragging, duplicating and bulk-deleting actually happens -- had
+   none, and deleting a block was flatly irreversible.
+
+   It works by snapshot rather than by recording each action's inverse: the
+   planner is small enough to serialise, and a snapshot cannot disagree with
+   what the action really did, which an inverse written by hand eventually
+   does. touch() hands us every mutation, and we keep the state as it was
+   BEFORE the one that just happened -- so a step is captured without any
+   caller knowing this exists.
+   ========================================================================= */
+const P_UNDO_MAX=100;                     // far past the "+10 or -20" asked for
+const P_UNDO_MERGE=500;                   // ms; one burst of typing is one step
+let pUndoStack=[], pRedoStack=[], pUndoPrev=null, pUndoAt=0, pUndoBusy=false;
+const pUndoSnap=()=>{ try{ return JSON.stringify(S.planner); }catch(e){ return null; } };
+/* Called from touch(), i.e. AFTER the mutation. pUndoPrev still holds the
+   state from before it, which is exactly the thing to put on the stack. */
+function pUndoNote(){
+  if(pUndoBusy||!S||!S.planner) return;
+  const now=pUndoSnap(); if(now===null) return;
+  if(pUndoPrev===null){ pUndoPrev=now; return; }
+  if(now===pUndoPrev) return;             // a touch() from some other app
+  const t0=Date.now();
+  /* A burst -- dragging, or typing a title a letter at a time -- is one step,
+     not thirty. The pending undo target stays where the burst began. */
+  if(pUndoAt&&t0-pUndoAt<P_UNDO_MERGE&&pUndoStack.length){ pUndoPrev=now; pUndoAt=t0; pRedoStack=[]; pUndoUI(); return; }
+  pUndoStack.push(pUndoPrev);
+  if(pUndoStack.length>P_UNDO_MAX) pUndoStack.shift();
+  pRedoStack=[];
+  pUndoPrev=now; pUndoAt=t0;
+  pUndoUI();
+}
+/* Put a snapshot back. pUndoBusy stops the write below from being recorded as
+   yet another step, which would make undo un-undoable. */
+function pUndoRestore(json){
+  pUndoBusy=true;
+  try{
+    S.planner=JSON.parse(json);
+    pUndoPrev=json; pUndoAt=0;
+    if(typeof pCareCache!=="undefined") pCareCache={};
+    pSel.clear(); pStampSrc=null;
+    touch();
+  } finally { pUndoBusy=false; }
+  if(typeof renderPlanner==="function") renderPlanner();
+  if(typeof pSleepSettingsSync==="function") pSleepSettingsSync();
+  pUndoUI();
+}
+function pUndoDo(){
+  if(!pUndoStack.length) return;
+  pRedoStack.push(pUndoSnap());
+  pUndoRestore(pUndoStack.pop());
+}
+function pRedoDo(){
+  if(!pRedoStack.length) return;
+  pUndoStack.push(pUndoSnap());
+  pUndoRestore(pRedoStack.pop());
+}
+function pUndoUI(){
+  const u=document.getElementById("pUndoBtn"), r=document.getElementById("pRedoBtn");
+  if(!u||!r) return;
+  u.disabled=!pUndoStack.length; r.disabled=!pRedoStack.length;
+  /* the count is the point of the button: it says how far back you can go */
+  u.title=(pUndoStack.length?`Undo — ${pUndoStack.length} step${pUndoStack.length===1?"":"s"} back`:"Nothing to undo")+" (Ctrl+Z)";
+  r.title=(pRedoStack.length?`Redo — ${pRedoStack.length} step${pRedoStack.length===1?"":"s"} forward`:"Nothing to redo")+" (Ctrl+Shift+Z)";
+}
+/* A state arriving from another device is not something this device did, so
+   it is not on this device's undo path. Clearing beats offering to "undo"
+   somebody else's edit into a state neither of you chose. */
+function pUndoReset(){ pUndoStack=[]; pRedoStack=[]; pUndoPrev=pUndoSnap(); pUndoAt=0; pUndoUI(); }
+addEventListener("DOMContentLoaded",()=>{
+  const u=document.getElementById("pUndoBtn"), r=document.getElementById("pRedoBtn");
+  if(u) u.addEventListener("click",pUndoDo);
+  if(r) r.addEventListener("click",pRedoDo);
+  pUndoUI();
+});
+/* Timeline has its own undo over the Projects canvas and binds the same keys,
+   so this one stands aside there rather than both firing on one press. */
+window.addEventListener("keydown",e=>{
+  if(typeof curView==="undefined"||curView!=="planner") return;
+  if(typeof pScope!=="undefined"&&pScope==="timeline") return;
+  if(!(e.ctrlKey||e.metaKey)) return;
+  const tag=(e.target.tagName||"").toLowerCase();
+  if(tag==="input"||tag==="textarea"||e.target.isContentEditable) return;
+  if(document.querySelector("dialog[open]")) return;
+  const k=(e.key||"").toLowerCase();
+  if(k==="z"){ e.preventDefault(); if(e.shiftKey) pRedoDo(); else pUndoDo(); }
+  else if(k==="y"){ e.preventDefault(); pRedoDo(); }
+});
+
+/* ============================================================================
    NOTES — a block editor in the shape of Notion, kept deliberately plain.
 
    Every block is its own <textarea> rather than one big contenteditable. That
@@ -20856,6 +20956,10 @@ var PSYNC = (() => {
        dirty and schedule a push, sending the other device's own edit back
        to it in an endless round trip. */
     try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
+    /* This device did not make that change, so it is not on this device's
+       undo path -- and the stack now holds snapshots of a planner that no
+       longer exists here. Undoing into one would quietly republish it. */
+    try{ if(typeof pUndoReset==="function") pUndoReset(); }catch(e){}
     try{ renderWho(); renderAll(); renderAcademy(); show(curView); }catch(e){}
     setSync("saved","synced");
   }
