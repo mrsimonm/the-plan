@@ -830,6 +830,21 @@ input[type="time"].mono-input{width:88px}
   padding:6px 4px 10px; margin-bottom:8px; border-bottom:1px solid var(--line);
   border-radius:var(--r-xs); transition:background .12s}
 .wb-parking .eyebrow{flex:0 0 auto; margin-right:2px}
+/* The quick strip: the parking lot's twin, sitting directly above it. Quick
+   Tasks used to live in each day column's own all-day lane, which meant a
+   Week showed seven little lanes and a Month thirty — and every one of them
+   pushed the hour grid further down the screen. They are tick-only and have
+   no time, so nothing about them wanted a place on the clock; they only ever
+   needed a place on the DAY. One row, chips tagged with their day, out of
+   the grid's way. Same metrics as .wb-parking deliberately: the two read as
+   one two-storey band rather than two unrelated strips. */
+.wb-quick{display:flex; flex-wrap:wrap; align-items:center; gap:7px; min-height:34px;
+  max-height:132px; overflow-y:auto;
+  padding:6px 4px 10px; margin-bottom:8px; border-bottom:1px solid var(--line);
+  border-radius:var(--r-xs)}
+.wb-quick .eyebrow{flex:0 0 auto; margin-right:2px}
+/* not draggable, so it must not offer the grab cursor the tray chips do */
+.wb-quick .wb-traychip{cursor:default}
 .wb-parking.over{background:color-mix(in srgb,var(--accent) 12%,transparent)}
 /* an unplaced project says so with the same "!" a missed block uses — he
    asked for unassigned things to carry a mark, not just sit there */
@@ -3005,6 +3020,8 @@ html{overscroll-behavior-y:none}
           <span class="pcal-month" id="pBoardLabel"></span>
           <button type="button" class="btn mini" id="pBoardNext" aria-label="Next">›</button>
         </span>
+        <button type="button" class="btn mini" id="pNowBtn"
+          title="Jump to today">Now</button>
         <button type="button" class="btn mini" id="pSelBtn"
           title="Select several blocks" aria-pressed="false">Select</button>
         <button type="button" class="btn mini pfocus-btn" id="pFocusBtn"
@@ -8411,11 +8428,10 @@ function pBoardHtml(days,opts){
     kept.forEach(k=>{ k.it.clash=kept.some(o=>o!==k&&o.s<k.e&&k.s<o.e); });
     return {kept,parked};
   });
-  /* must match what the lane actually draws, Quick Tasks included, or a day
-     full of them reserves too few rows and clips its own contents */
-  const adCount=days.map((d,di)=>byDay[di].filter(it=>
-      it.ref&&it.ref.kind==="quick"&&!it.time&&it.ref.due===d).length
-    + (byDay[di].some(it=>it.kind==="care")?1:0));
+  /* must match what the lane actually draws. Quick Tasks left it for the
+     .wb-quick strip above the board, so all that is left in a column's
+     all-day lane is the plant-care marker — one row, at most. */
+  const adCount=days.map((d,di)=>(byDay[di].some(it=>it.kind==="care")?1:0));
   const adRows=Math.min(3,Math.max(1,...adCount));
   const cols=days.map((d,di)=>{
     const items=byDay[di];
@@ -8535,15 +8551,8 @@ function pBoardHtml(days,opts){
        pack in packedByDay) lives in the parking lot row above the grid, so
        it's in one place whatever width the board is instead of scattered
        across seven or thirty little lanes. */
-    const adTasks=items.filter(it=>it.ref&&it.ref.kind==="quick"&&!it.time&&it.ref.due===d);
-    const allday=(adTasks.length||care)?`<div class="wb-allday">${
-      adTasks.map(it=>{
-        const dn=it.ref.done;
-        return `<span class="wb-adtask quick${dn?" done":""}" title="${esc(it.name)}">
-          <i class="wb-adtick${dn?" on":""}" data-adtick="${it.ref.id}" role="button" tabindex="0"
-            aria-label="${esc(dn?t("Mark not done"):t("Mark done"))}"></i>${esc(it.name)}</span>`;
-      }).join("")}${
-      care?`<span class="wb-adcare" title="${esc(care.name)} · ${pFmtH(care.hours)}h">🌿</span>`:""}</div>`
+    const allday=care?`<div class="wb-allday"><span class="wb-adcare" title="${
+      esc(care.name)} · ${pFmtH(care.hours)}h">🌿</span></div>`
       :'<div class="wb-allday"></div>';
     /* drawn before the real blocks, so it sits underneath them in stacking
        order — anything genuinely scheduled during the night stays reachable,
@@ -8696,13 +8705,34 @@ function pBoardHtml(days,opts){
     const c=byDay[di].find(it=>it.kind==="care"); if(!c) return;
     lot.push(`<span class="wb-traychip info">🌿 ${days.length>1?esc(dayTag(d))+" ":""}<small>${c.jobs} ${esc(t("jobs"))}</small></span>`);
   });
+  /* ---- the quick strip ----
+     Every Quick Task on the days currently on screen, in day order. It is
+     NOT the parking lot and must not behave like one: a Quick Task has no
+     time by definition, so it carries no data-wb and cannot be dragged onto
+     an hour — the one thing it must never become is a timed Event. Ticking
+     is the whole interaction, and the tick works both ways because a Quick
+     Task stays here after it is done rather than leaving the board. */
+  const qlot=[];
+  days.forEach((d,di)=>{
+    byDay[di].filter(it=>it.ref&&it.ref.kind==="quick"&&!it.time&&it.ref.due===d)
+      .forEach(it=>{
+        const dn=!!it.ref.done;
+        qlot.push(`<span class="wb-traychip quick${dn?" done":""}" data-day="${d}"
+          title="${esc(it.name)}">${tick(it.ref.id,dn)}<span class="wb-tc">${
+          esc(it.name)}</span>${days.length>1?`<small>${esc(dayTag(d))}</small>`:""}</span>`);
+      });
+  });
+  const quick=`<div class="wb-quick">
+    <span class="eyebrow">${esc(t("Quick"))}</span>
+    ${qlot.length?qlot.join(""):`<small class="hint" style="margin:0">${esc(t("No quick tasks."))}</small>`}
+  </div>`;
   const parking=`<div class="wb-parking">
     <span class="eyebrow">${esc(t("Parking lot"))}</span>
     ${lot.length?lot.join(""):`<small class="hint" style="margin:0">${esc(t("Nothing parked — everything has a time."))}</small>`}
   </div>`;
 
   return `<div class="wb${opts&&opts.plachta?" wb-plachta":""}" id="pWeekBoard" data-starth="${startH}" data-maxshift="${maxShift}" style="--adrows:${adRows}">
-    ${parking}
+    ${quick}${parking}
     <div class="wb-scroll"><div class="wb-grid">${gutter}${cols}</div></div></div>`;
 }
 
@@ -9874,8 +9904,13 @@ $("#pRollover").addEventListener("click",e=>{
   pOverdue().forEach(tk=>{ tk.due=pToday(); tk.time=""; });
   touch(); renderPlanner();
 });
-$("#pJumpToday").addEventListener("click",()=>{
+/* "today" in the day header and "Now" in the calendar toolbar are the same
+   gesture — the header one is easy to miss once the board is scrolled, and
+   in Week/Month/Timeline it is the board, not the day panel, you are trying
+   to bring back. One function, wired to both, so they can never drift. */
+function pJumpNow(){
   pSelISO=pToday();
+  pWinShift=0;
   $("#pAddDue").value=pSelISO;
   /* Plachta and Timeline each keep their OWN idea of what's on screen
      (pPlachtaAnchor, L.ppView/ppGridISO) instead of reading pSelISO, so
@@ -9890,7 +9925,9 @@ $("#pJumpToday").addEventListener("click",()=>{
     renderSchedule(); return;
   }
   renderPlanner();
-});
+}
+$("#pJumpToday").addEventListener("click",pJumpNow);
+$("#pNowBtn").addEventListener("click",pJumpNow);
 $("#pBoardPrev").addEventListener("click",()=>{
   if(pScope==="plachta"){ pPlachtaAnchor=pStepIso(pPlachtaViewDay(),-14);
     renderSchedule(); pPlachtaCentre(pPlachtaAnchor); return; }
