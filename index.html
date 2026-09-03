@@ -7832,7 +7832,10 @@ $("#pSlotSave").addEventListener("click",()=>{
      would push Event edits onto the Task and pSetGroupSpan would mint Events
      back over it. Same splitter as the body-drag, so no remainder keeps a
      hole. */
-  const leavesRun = newDue!==tk.due || (tk.kind==="event"&&!isEvent);
+  /* now that a run can be Tasks as well as Events, ANY change of kind takes
+     this day out of it -- a run that mixed the two would have pApplyToGroup
+     pushing one kind's edits onto the other */
+  const leavesRun = newDue!==tk.due || (tk.kind==="event")!==isEvent;
   if(leavesRun) pDetachFromRun(tk);
   /* title, time, duration and project describe the whole run — but once this
      record has left, the "group" is just itself, which is what we want */
@@ -8289,8 +8292,12 @@ function pSetGroupSpan(tk,firstIso,lastIso,keepIso){
     let rec=byDay[day];
     if(rec){ delete byDay[day]; }
     else{
+      /* inherit the kind being stretched. Hardcoding "event" here meant
+         dragging a Task's W/E handle across days minted Events beside it, so
+         the run came back mixed and the Task had turned into one. */
       rec={id:uid(),title:tk.title,due:day,time:tk.time,hours:tk.hours,
-           done:false,kind:"event",steps:[],projectId:tk.projectId||null,groupId:gid};
+           done:false,kind:tk.kind==="task"?"task":"event",
+           steps:[],projectId:tk.projectId||null,groupId:gid};
       S.planner.tasks.push(rec);
     }
     rec.groupId=gid; rec.time=tk.time; rec.hours=tk.hours;
@@ -9397,10 +9404,20 @@ function pWireBoard(){
         pDetachFromRun(tk);
         tk.due=day; tk.time=fmtT(t2);
         if(!(+tk.hours>0)) tk.hours=1;       // a slot implies a duration
-        /* under the v7 model a clock slot IS what makes something an Event —
-           dropping a dateless task onto an hour promotes it rather than
-           leaving a Task that contradicts its own definition */
-        tk.kind="event";
+        /* A Task keeps being a Task. It used to be promoted to an Event the
+           moment a drop gave it a clock slot, on the theory that a time is
+           what makes something an Event -- but the add box has always let you
+           enter a Task "at 14:00 for 2h", so a timed Task is an ordinary
+           thing the app creates itself, not a contradiction. Giving a block a
+           time by dragging it is the same edit as typing that time in, and
+           neither should silently change what the thing IS. Reported as
+           exactly that: a task called "the trip", moved once, came back an
+           event.
+
+           Use is what tells them apart, not the clock: a Task still to be
+           done rolls forward when its day passes, an Event stays on the day
+           it was scheduled for. Switching between them is deliberate, on the
+           Task/Event control in the editor. */
         done(); return; }
     }
     if(g.kind==="block"){
