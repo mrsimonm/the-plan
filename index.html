@@ -2822,6 +2822,17 @@ main > #view-teachbench-student:not([hidden]) ~ .n-quick-pad, html.pfocus .n-qui
 .n-file-auto{gap:6px; cursor:pointer; flex:0 0 auto; white-space:nowrap}
 .n-file-auto input{margin:0}
 .n-cn-col > .btn{align-self:flex-start}
+
+/* ---- notes, part six: the canvas ---- */
+.n-moderow{display:flex; justify-content:flex-end}
+.n-moderow .seg button{border:0; background:none; font:inherit; font-size:13px; padding:5px 12px; border-radius:var(--r-pill); color:var(--ink-2); cursor:pointer}
+.n-moderow .seg button[aria-selected="true"]{background:var(--accent); color:var(--on-accent)}
+.n-cv-card{overflow:hidden}
+.n-cv-bar{display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:10px 12px; border-bottom:1px solid var(--line-soft)}
+.n-cv-bar .hint{flex:1 1 200px}
+#nCanvas{display:block; width:100%; height:min(72vh,720px); touch-action:none; cursor:grab; background:var(--sunk)}
+#nCanvas.n-cv-drag{cursor:grabbing}
+@media (max-width:560px){ #nCanvas{height:70vh} .n-cv-bar .hint{display:none} }
 .n-planpop{position:absolute; z-index:61; width:min(300px,calc(100vw - 16px)); padding:12px; background:var(--surface);
   border:1px solid var(--line); border-radius:13px; box-shadow:0 14px 38px -10px rgba(0,0,0,.28); display:flex; flex-direction:column; gap:8px}
 .n-planpop .n-pp-row{display:flex; gap:8px; align-items:center; font-size:13px}
@@ -5010,11 +5021,28 @@ html[data-design="r2"]{
         </select>
       </div>
       <div class="n-tagrow" id="nTagRow" hidden></div>
+      <div class="n-moderow">
+        <div class="seg" role="tablist" aria-label="View">
+          <button type="button" role="tab" data-nmode="list" aria-selected="true">List</button>
+          <button type="button" role="tab" data-nmode="canvas" aria-selected="false">Canvas</button>
+        </div>
+      </div>
     </div>
 
-    <div class="card">
+    <div class="card" id="nListCard">
       <div id="nList"></div>
       <p class="empty" id="nEmpty" hidden></p>
+    </div>
+
+    <!-- the canvas: every note a card you can drag around; links drawn between them -->
+    <div class="card n-cv-card" id="nCanvasCard" hidden>
+      <div class="n-cv-bar">
+        <button type="button" class="btn mini" id="nCvGraph">Arrange as graph</button>
+        <button type="button" class="btn mini" id="nCvCluster">Auto-cluster</button>
+        <button type="button" class="btn mini" id="nCvFit">Fit</button>
+        <span class="hint" id="nCvHint">Drag cards. Drag the background to pan, pinch or scroll to zoom, double-tap a card to open it.</span>
+      </div>
+      <canvas id="nCanvas" aria-label="Notes canvas"></canvas>
     </div>
   </section>
 
@@ -22312,6 +22340,8 @@ Object.assign(CS,{
 "Add as task":"Přidat jako úkol","Block the time":"Zablokovat čas",
 "Cues & questions":"Otázky a hesla","Generate":"Vygenerovat","Questions you'd ask yourself about the notes":"Otázky, které byste si k poznámkám položili",
 "Summary":"Shrnutí","In your own words, what was this about?":"Vlastními slovy: o čem to bylo?",
+"List":"Seznam","Canvas":"Plátno","Arrange as graph":"Uspořádat jako graf","Auto-cluster":"Shlukovat","Fit":"Přizpůsobit",
+"Drag cards. Drag the background to pan, pinch or scroll to zoom, double-tap a card to open it.":"Přetahujte karty. Tahem pozadí posouváte, štipnutím nebo kolečkem zoomujete, dvojklepnutím kartu otevřete.",
 });
 
 
@@ -22519,6 +22549,8 @@ function nNormalise(d){
               daily:(typeof n.daily==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(n.daily))?n.daily:null,   /* the day this is the daily note of */
               layout:n.layout==="cornell"?"cornell":null,
               autoTasks:n.autoTasks===true,
+              pos:(n.pos&&isFinite(n.pos.x)&&isFinite(n.pos.y))?{x:+n.pos.x,y:+n.pos.y}:null,   /* where it sits on the canvas */
+              cluster:typeof n.cluster==="string"?n.cluster.slice(0,60):null,
               source:typeof n.source==="string"?n.source.slice(0,500):null,                        /* where a clipping came from */
               trashedAt:Number(n.trashedAt)||null,
               createdAt:made, updatedAt:Number(n.updatedAt)||made};
@@ -22578,6 +22610,7 @@ function renderNotes(){
   const host=$("#nList"); if(!host) return;
   const V=nV();
   nRenderNbRow(); nRenderTagRow();
+  if(typeof nCvSync==="function") nCvSync();
   const raw=(nQuery||"").trim();
   let q=nFold(raw), tagQ=null;
   /* "#mon" in the search box filters by tag, the way Bear and Apple Notes do */
@@ -23591,6 +23624,235 @@ async function nCornellGenerate(n){
     const b=n.blocks.find(x=>x.id===ta.dataset.ta); if(b) nAutoPush(n,b);
   });
   const back=$("#nBack"); if(back) back.addEventListener("click",()=>{ nClosePlanPop(); nAutoPushAll(nOpenNote()); },true);
+})();
+
+/* ============================================================================
+   Notes, part six — the canvas. Every note in the current filter is a card on
+   an infinite plane; [[links]] are drawn between them. Cards remember where
+   you left them (n.pos). "Arrange as graph" runs a small force layout so
+   linked notes pull together; "Auto-cluster" groups them — the model names
+   the groups if there is a key, shared tags and links do it otherwise — and
+   lays each group out around its own centre.
+
+   Plain 2D canvas, redrawn on demand. A few hundred cards is nothing.
+   ============================================================================ */
+var nCv={ox:0,oy:0,z:1,drag:null,pointers:{},pinch:null,lastTap:0,lastTapId:null,raf:0};
+const N_CW=176, N_CH=96;                        /* card size in world units */
+const N_CLUSTER_HUES=[172,28,262,205,340,95,50,300];
+function nCvNotes(){
+  const V=nV();
+  return (S.notes||[]).filter(n=>!n.trashedAt&&!n.archived
+    &&(V.nb==="all"||V.nb==="archive"||n.notebook===V.nb)
+    &&(!V.tag||(n.tags||[]).includes(V.tag)));
+}
+function nCvCanvas(){ return $("#nCanvas"); }
+function nCvSync(){
+  const V=nV(), on=V.mode==="canvas";
+  const lc=$("#nListCard"), cc=$("#nCanvasCard"); if(!lc||!cc) return;
+  lc.hidden=on; cc.hidden=!on;
+  document.querySelectorAll("[data-nmode]").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.nmode===(on?"canvas":"list"))));
+  if(on){ nCvPlaceNew(); nCvDraw(); }
+}
+/* cards that have never been placed go into a grid to the right of the rest */
+function nCvPlaceNew(){
+  const list=nCvNotes(); const fresh=list.filter(n=>!n.pos); if(!fresh.length) return;
+  let maxX=0, minY=Infinity; list.forEach(n=>{ if(n.pos){ maxX=Math.max(maxX,n.pos.x+N_CW); minY=Math.min(minY,n.pos.y); } });
+  if(!isFinite(minY)) minY=0;
+  const cols=Math.max(1,Math.round(Math.sqrt(fresh.length)));
+  fresh.forEach((n,i)=>{ n.pos={x:maxX+(maxX?40:0)+(i%cols)*(N_CW+24), y:minY+Math.floor(i/cols)*(N_CH+24)}; });
+  touch();
+}
+function nCvColor(name){
+  if(!name) return null;
+  let h=0; for(let i=0;i<name.length;i++) h=(h*31+name.charCodeAt(i))>>>0;
+  return N_CLUSTER_HUES[h%N_CLUSTER_HUES.length];
+}
+function nCvDraw(){
+  const c=nCvCanvas(); if(!c||$("#nCanvasCard").hidden) return;
+  const dpr=window.devicePixelRatio||1, W=c.clientWidth, H=c.clientHeight;
+  if(!W||!H) return;
+  if(c.width!==Math.round(W*dpr)||c.height!==Math.round(H*dpr)){ c.width=Math.round(W*dpr); c.height=Math.round(H*dpr); }
+  const g=c.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0); g.clearRect(0,0,W,H);
+  const cs=getComputedStyle(document.documentElement);
+  const ink=cs.getPropertyValue("--ink").trim()||"#222", ink3=cs.getPropertyValue("--ink-3").trim()||"#888",
+        line=cs.getPropertyValue("--line").trim()||"#ccc", surface=cs.getPropertyValue("--surface").trim()||"#fff",
+        accent=cs.getPropertyValue("--accent").trim()||"#5EA3A3";
+  const list=nCvNotes(), byId={}; list.forEach(n=>{ byId[n.id]=n; });
+  g.save(); g.translate(nCv.ox,nCv.oy); g.scale(nCv.z,nCv.z);
+  /* faint grid so panning reads as movement */
+  const step=120, x0=Math.floor(-nCv.ox/nCv.z/step)*step, y0=Math.floor(-nCv.oy/nCv.z/step)*step;
+  g.strokeStyle=line; g.globalAlpha=.25; g.lineWidth=1/nCv.z; g.beginPath();
+  for(let x=x0;x<x0+W/nCv.z+step;x+=step){ g.moveTo(x,y0); g.lineTo(x,y0+H/nCv.z+step); }
+  for(let y=y0;y<y0+H/nCv.z+step;y+=step){ g.moveTo(x0,y); g.lineTo(x0+W/nCv.z+step,y); }
+  g.stroke(); g.globalAlpha=1;
+  /* cluster labels */
+  const groups={}; list.forEach(n=>{ if(n.cluster){ (groups[n.cluster]=groups[n.cluster]||[]).push(n); } });
+  Object.keys(groups).forEach(name=>{
+    const ns=groups[name]; let minx=Infinity,miny=Infinity,maxx=-Infinity,maxy=-Infinity;
+    ns.forEach(n=>{ minx=Math.min(minx,n.pos.x); miny=Math.min(miny,n.pos.y); maxx=Math.max(maxx,n.pos.x+N_CW); maxy=Math.max(maxy,n.pos.y+N_CH); });
+    const hue=nCvColor(name);
+    g.fillStyle=`hsla(${hue},45%,50%,.08)`; g.strokeStyle=`hsla(${hue},45%,50%,.35)`; g.lineWidth=1/nCv.z;
+    nCvRound(g,minx-16,miny-30,maxx-minx+32,maxy-miny+46,18); g.fill(); g.stroke();
+    g.fillStyle=`hsl(${hue},45%,45%)`; g.font=`600 ${12}px ${cs.getPropertyValue("--font")||"system-ui"}`; g.fillText(name,minx-4,miny-12);
+  });
+  /* links */
+  g.strokeStyle=accent; g.globalAlpha=.55; g.lineWidth=1.5/nCv.z; g.beginPath();
+  list.forEach(n=>nLinksOut(n).forEach(l=>{ if(!l.note||!byId[l.note.id]||!l.note.pos) return;
+    g.moveTo(n.pos.x+N_CW/2,n.pos.y+N_CH/2); g.lineTo(l.note.pos.x+N_CW/2,l.note.pos.y+N_CH/2); }));
+  g.stroke(); g.globalAlpha=1;
+  /* cards */
+  const font=cs.getPropertyValue("--font")||"system-ui";
+  list.forEach(n=>{
+    const x=n.pos.x, y=n.pos.y, hue=nCvColor(n.cluster);
+    g.fillStyle=surface; g.strokeStyle=hue!=null?`hsl(${hue},45%,55%)`:line; g.lineWidth=(nCv.drag&&nCv.drag.note===n?2:1)/nCv.z;
+    g.shadowColor="rgba(0,0,0,.18)"; g.shadowBlur=10; g.shadowOffsetY=3;
+    nCvRound(g,x,y,N_CW,N_CH,12); g.fill(); g.shadowColor="transparent"; g.stroke();
+    if(n.pinned){ g.fillStyle=accent; g.beginPath(); g.arc(x+N_CW-12,y+12,3.5,0,Math.PI*2); g.fill(); }
+    g.fillStyle=ink; g.font=`600 13px ${font}`;
+    nCvText(g,n.title||"Untitled",x+12,y+22,N_CW-24,2,16);
+    g.fillStyle=ink3; g.font=`12px ${font}`;
+    nCvText(g,nSnippet(n)||"",x+12,y+58,N_CW-24,2,15);
+    const tags=(n.tags||[]).slice(0,3).map(tg=>"#"+tg).join("  ");
+    if(tags){ g.fillStyle=accent; g.font=`11px ${font}`; nCvText(g,tags,x+12,y+N_CH-10,N_CW-24,1,12); }
+  });
+  g.restore();
+}
+function nCvRound(g,x,y,w,h,r){ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
+function nCvText(g,text,x,y,maxW,maxLines,lh){
+  const words=String(text).split(/\s+/); let line="", lines=0;
+  for(let i=0;i<words.length;i++){
+    const test=line?line+" "+words[i]:words[i];
+    if(g.measureText(test).width>maxW&&line){
+      if(++lines===maxLines){ let s=line; while(g.measureText(s+"…").width>maxW&&s.length) s=s.slice(0,-1); g.fillText(s+"…",x,y); return; }
+      g.fillText(line,x,y); y+=lh; line=words[i];
+    } else line=test;
+  }
+  if(line){ let s=line; while(g.measureText(s).width>maxW&&s.length>1) s=s.slice(0,-1); g.fillText(s===line?line:s+"…",x,y); }
+}
+function nCvToWorld(px,py){ return {x:(px-nCv.ox)/nCv.z, y:(py-nCv.oy)/nCv.z}; }
+function nCvHit(px,py){
+  const w=nCvToWorld(px,py), list=nCvNotes();
+  for(let i=list.length-1;i>=0;i--){ const n=list[i]; if(w.x>=n.pos.x&&w.x<=n.pos.x+N_CW&&w.y>=n.pos.y&&w.y<=n.pos.y+N_CH) return n; }
+  return null;
+}
+function nCvFit(){
+  const c=nCvCanvas(), list=nCvNotes(); if(!c||!list.length){ nCv.ox=nCv.oy=0; nCv.z=1; nCvDraw(); return; }
+  let minx=Infinity,miny=Infinity,maxx=-Infinity,maxy=-Infinity;
+  list.forEach(n=>{ minx=Math.min(minx,n.pos.x); miny=Math.min(miny,n.pos.y); maxx=Math.max(maxx,n.pos.x+N_CW); maxy=Math.max(maxy,n.pos.y+N_CH); });
+  const W=c.clientWidth, H=c.clientHeight, pad=40;
+  nCv.z=Math.min(2,Math.max(.2,Math.min((W-pad*2)/(maxx-minx),(H-pad*2)/(maxy-miny))));
+  nCv.ox=(W-(maxx-minx)*nCv.z)/2-minx*nCv.z; nCv.oy=(H-(maxy-miny)*nCv.z)/2-miny*nCv.z;
+  nCvDraw();
+}
+/* force layout: linked cards attract, all cards repel, everything drifts to the middle */
+function nCvGraphLayout(list,rounds){
+  list=list||nCvNotes(); if(list.length<2) return;
+  const byId={}; list.forEach(n=>{ byId[n.id]=n; });
+  const edges=[]; list.forEach(n=>nLinksOut(n).forEach(l=>{ if(l.note&&byId[l.note.id]&&l.note!==n) edges.push([n,l.note]); }));
+  const cx=list.reduce((a,n)=>a+n.pos.x,0)/list.length, cy=list.reduce((a,n)=>a+n.pos.y,0)/list.length;
+  const R=260, K=.02, C=.004;
+  for(let it=0;it<(rounds||220);it++){
+    const f={}; list.forEach(n=>{ f[n.id]={x:0,y:0}; });
+    for(let i=0;i<list.length;i++) for(let j=i+1;j<list.length;j++){
+      const a=list[i], b=list[j]; let dx=a.pos.x-b.pos.x, dy=a.pos.y-b.pos.y; let d=Math.hypot(dx,dy)||1;
+      if(d<R*2){ const s=(R*2-d)/d*.5; f[a.id].x+=dx*s; f[a.id].y+=dy*s; f[b.id].x-=dx*s; f[b.id].y-=dy*s; }
+    }
+    edges.forEach(([a,b])=>{ const dx=b.pos.x-a.pos.x, dy=b.pos.y-a.pos.y; f[a.id].x+=dx*K; f[a.id].y+=dy*K; f[b.id].x-=dx*K; f[b.id].y-=dy*K; });
+    list.forEach(n=>{ f[n.id].x+=(cx-n.pos.x)*C; f[n.id].y+=(cy-n.pos.y)*C; });
+    const damp=1-it/(rounds||220);
+    list.forEach(n=>{ n.pos.x+=Math.max(-40,Math.min(40,f[n.id].x*damp)); n.pos.y+=Math.max(-40,Math.min(40,f[n.id].y*damp)); });
+  }
+  list.forEach(n=>{ n.pos.x=Math.round(n.pos.x); n.pos.y=Math.round(n.pos.y); });
+}
+/* clusters: the model names them if it can; otherwise the most-shared tag,
+   then link-connected groups, then "Other" */
+async function nCvAutoCluster(){
+  const list=nCvNotes(); if(list.length<2){ nToast(L.lang==="cs"?"Málo poznámek na shlukování.":"Not enough notes to cluster."); return; }
+  const cs=L.lang==="cs"; let groups=null;
+  nToast(cs?"Shlukuji…":"Clustering…",true);
+  try{
+    const payload=list.map(n=>({id:n.id,title:n.title,snippet:nSnippet(n).slice(0,140),tags:n.tags||[]}));
+    const r=await nAI("Group these notes into 2 to 8 clusters by topic. Every note id appears in exactly one cluster. Give each cluster a short name (1-3 words) in the notes' language. Return ONLY JSON: {\"clusters\":[{\"name\":\"...\",\"ids\":[\"...\"]}]}",JSON.stringify(payload),{maxTokens:2000});
+    const j=nAiJson(r); if(j&&Array.isArray(j.clusters)) groups=j.clusters.filter(c=>c&&Array.isArray(c.ids)).map(c=>({name:String(c.name||"?").slice(0,40),ids:c.ids.map(String)}));
+  }catch(e){ if(e.message!=="nokey") nAiFail(e); else nToast(cs?"Bez klíče API — shluky podle štítků a odkazů.":"No API key — clusters by tags and links."); }
+  if(!groups){
+    groups=[]; const left=new Set(list.map(n=>n.id)), byId={}; list.forEach(n=>{ byId[n.id]=n; });
+    const tagCount={}; list.forEach(n=>(n.tags||[]).forEach(t=>{ tagCount[t]=(tagCount[t]||0)+1; }));
+    Object.keys(tagCount).filter(t=>tagCount[t]>=2).sort((a,b)=>tagCount[b]-tagCount[a]).forEach(t=>{
+      const ids=list.filter(n=>left.has(n.id)&&(n.tags||[]).includes(t)).map(n=>n.id);
+      if(ids.length>=2){ groups.push({name:"#"+t,ids}); ids.forEach(i=>left.delete(i)); }
+    });
+    /* connected components over links among what is left */
+    const adj={}; list.forEach(n=>{ adj[n.id]=new Set(); });
+    list.forEach(n=>nLinksOut(n).forEach(l=>{ if(l.note&&byId[l.note.id]){ adj[n.id].add(l.note.id); adj[l.note.id].add(n.id); } }));
+    list.forEach(n=>{ if(!left.has(n.id)) return; const comp=[], st=[n.id]; left.delete(n.id);
+      while(st.length){ const id=st.pop(); comp.push(id); adj[id].forEach(o=>{ if(left.has(o)){ left.delete(o); st.push(o); } }); }
+      if(comp.length>=2) groups.push({name:byId[comp[0]].title.slice(0,24)||"…",ids:comp}); else left.add(n.id); });
+    if(left.size) groups.push({name:cs?"Ostatní":"Other",ids:[...left]});
+  }
+  const byId={}; list.forEach(n=>{ byId[n.id]=n; n.cluster=null; });
+  groups.forEach(g=>g.ids.forEach(id=>{ if(byId[id]) byId[id].cluster=g.name; }));
+  /* lay each cluster out around its own centre, centres on a ring */
+  const named=groups.filter(g=>g.ids.some(id=>byId[id]));
+  const ring=Math.max(420,named.length*170);
+  named.forEach((g,gi)=>{
+    const ang=gi/named.length*Math.PI*2, gx=Math.cos(ang)*ring, gy=Math.sin(ang)*ring;
+    const ns=g.ids.map(id=>byId[id]).filter(Boolean), cols=Math.max(1,Math.ceil(Math.sqrt(ns.length)));
+    ns.forEach((n,i)=>{ n.pos={x:Math.round(gx+(i%cols-(cols-1)/2)*(N_CW+22)), y:Math.round(gy+Math.floor(i/cols)*(N_CH+22))}; });
+  });
+  touch(); nHideUndo(); nCvFit();
+}
+
+(function nWire6(){
+  const c=nCvCanvas(); if(!c) return;
+  const on=(sel,ev,fn)=>{ const el=$(sel); if(el) el.addEventListener(ev,fn); };
+  document.addEventListener("click",e=>{ const m=e.target.closest("[data-nmode]"); if(!m) return; nV().mode=m.dataset.nmode; renderNotes(); if(nV().mode==="canvas") requestAnimationFrame(nCvFit); });
+  on("#nCvFit","click",nCvFit);
+  on("#nCvGraph","click",()=>{ nCvGraphLayout(); touch(); nCvFit(); });
+  on("#nCvCluster","click",nCvAutoCluster);
+  window.addEventListener("resize",()=>{ if(nV().mode==="canvas") nCvDraw(); });
+  const pos=e=>{ const r=c.getBoundingClientRect(); return {x:e.clientX-r.left,y:e.clientY-r.top}; };
+  c.addEventListener("pointerdown",e=>{
+    try{ c.setPointerCapture(e.pointerId); }catch(err){}
+    const p=pos(e); nCv.pointers[e.pointerId]=p;
+    const ids=Object.keys(nCv.pointers);
+    if(ids.length===2){ const a=nCv.pointers[ids[0]], b=nCv.pointers[ids[1]]; nCv.pinch={d:Math.hypot(a.x-b.x,a.y-b.y),z:nCv.z,mx:(a.x+b.x)/2,my:(a.y+b.y)/2,ox:nCv.ox,oy:nCv.oy}; nCv.drag=null; return; }
+    const hit=nCvHit(p.x,p.y);
+    /* double tap opens */
+    const now=Date.now();
+    if(hit&&nCv.lastTapId===hit.id&&now-nCv.lastTap<350){ nCv.lastTap=0; nCv.drag=null; nReturn=null; openNote(hit.id); return; }
+    nCv.lastTap=now; nCv.lastTapId=hit?hit.id:null;
+    nCv.drag=hit?{note:hit,dx:p.x-(hit.pos.x*nCv.z+nCv.ox),dy:p.y-(hit.pos.y*nCv.z+nCv.oy),moved:false}
+                :{pan:true,sx:p.x,sy:p.y,ox:nCv.ox,oy:nCv.oy,moved:false};
+    c.classList.add("n-cv-drag");
+  });
+  c.addEventListener("pointermove",e=>{
+    if(!(e.pointerId in nCv.pointers)) return;
+    const p=pos(e); nCv.pointers[e.pointerId]=p;
+    if(nCv.pinch){ const ids=Object.keys(nCv.pointers); if(ids.length<2) return;
+      const a=nCv.pointers[ids[0]], b=nCv.pointers[ids[1]], d=Math.hypot(a.x-b.x,a.y-b.y);
+      const z=Math.min(3,Math.max(.15,nCv.pinch.z*d/nCv.pinch.d)), mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+      nCv.ox=mx-(nCv.pinch.mx-nCv.pinch.ox)*z/nCv.pinch.z; nCv.oy=my-(nCv.pinch.my-nCv.pinch.oy)*z/nCv.pinch.z; nCv.z=z; nCvDraw(); return; }
+    const d=nCv.drag; if(!d) return;
+    d.moved=true;
+    if(d.pan){ nCv.ox=d.ox+(p.x-d.sx); nCv.oy=d.oy+(p.y-d.sy); }
+    else{ d.note.pos.x=Math.round((p.x-d.dx-nCv.ox)/nCv.z); d.note.pos.y=Math.round((p.y-d.dy-nCv.oy)/nCv.z); }
+    if(!nCv.raf) nCv.raf=requestAnimationFrame(()=>{ nCv.raf=0; nCvDraw(); });
+  });
+  const up=e=>{
+    delete nCv.pointers[e.pointerId];
+    if(Object.keys(nCv.pointers).length<2) nCv.pinch=null;
+    const d=nCv.drag; nCv.drag=null; c.classList.remove("n-cv-drag");
+    if(d&&!d.pan&&d.moved) touch();
+    nCvDraw();
+  };
+  c.addEventListener("pointerup",up); c.addEventListener("pointercancel",up);
+  c.addEventListener("wheel",e=>{
+    e.preventDefault();
+    const p=pos(e), z=Math.min(3,Math.max(.15,nCv.z*(e.deltaY<0?1.1:1/1.1)));
+    nCv.ox=p.x-(p.x-nCv.ox)*z/nCv.z; nCv.oy=p.y-(p.y-nCv.oy)*z/nCv.z; nCv.z=z; nCvDraw();
+  },{passive:false});
+  c.addEventListener("dblclick",e=>{ const p=pos(e), hit=nCvHit(p.x,p.y); if(hit){ nReturn=null; openNote(hit.id); } });
 })();
 async function nBreakDown(n,b){
   const task=(b.text||"").trim(); if(!task) return;
