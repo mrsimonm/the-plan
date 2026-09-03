@@ -724,6 +724,11 @@ input[type="time"].mono-input{width:88px}
 }
 #pplWhenSeg{flex:0 0 auto; width:auto}
 #pplWhenSeg button{padding:6px 12px}
+/* what you typed, found in the result — red, so the eye lands on it without
+   having to re-read the line and work out why it matched */
+.ppl-hit{background:color-mix(in srgb,var(--crit) 22%,transparent);
+  color:var(--crit); font-weight:700; border-radius:3px; padding:0 1px;
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--crit) 35%,transparent)}
 .ppl-results{margin-top:8px; max-height:280px; overflow-y:auto;
   border:1px solid var(--glass-border); border-radius:var(--r-sm); background:var(--glass-fill)}
 .ppl-row{display:flex; align-items:center; gap:10px; width:100%; text-align:left;
@@ -10184,10 +10189,54 @@ $("#pScopeSeg").addEventListener("click",e=>{
    recurring block templates in S.planner.blocks, which is why those are
    left out here). Scoped to Plachta only for now, per request. */
 let pplWhen="upcoming";
+/* ---- folding, so a search matches what was MEANT ----
+   Typing "rezat" has to find "Řezat", and "Sea, with family" has to find
+   "sea with family". Czech is the case that forces this: nobody reaching for
+   the search box stops to put the háčky and čárky on, and lowercase-only
+   matching left the app looking as though the entry was not there at all.
+
+   Each source character is folded to its base letter (NFD, then the
+   combining marks dropped) and lowercased; anything that is not a letter or
+   digit becomes a single space, with runs collapsed, so punctuation and
+   spacing stop mattering. `map` records which ORIGINAL character each folded
+   one came from, which is what lets the result list underline the real text
+   rather than the folded copy. */
+function pFold(str){
+  const src=String(str==null?"":str);
+  let f=""; const map=[];
+  for(let i=0;i<src.length;i++){
+    const base=src[i].normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+    for(const c of base){
+      if(/[a-z0-9]/.test(c)){ f+=c; map.push(i); }
+      else if(f&&f[f.length-1]!==" "){ f+=" "; map.push(i); }
+    }
+  }
+  /* a trailing separator would stop "run " matching "run" */
+  while(f.endsWith(" ")){ f=f.slice(0,-1); map.pop(); }
+  return {f,map};
+}
+const pFoldStr=v=>pFold(v).f;
+/* the matched stretch of the ORIGINAL title, as [start,end) — or null */
+function pFoldSpan(title,qf){
+  if(!qf) return null;
+  const {f,map}=pFold(title);
+  const at=f.indexOf(qf);
+  if(at<0) return null;
+  return [map[at], map[at+qf.length-1]+1];
+}
+/* the title with its match wrapped, everything else escaped */
+function pplMark(title,qf){
+  const raw=String(title==null?"":title);
+  const span=pFoldSpan(raw,qf);
+  if(!span) return esc(raw);
+  return esc(raw.slice(0,span[0]))
+    +`<mark class="ppl-hit">${esc(raw.slice(span[0],span[1]))}</mark>`
+    +esc(raw.slice(span[1]));
+}
 function pplMatches(q){
   const today=pToday();
   return (S.planner.tasks||[])
-    .filter(tk=>tk.due && (tk.title||"").toLowerCase().includes(q))
+    .filter(tk=>tk.due && pFoldStr(tk.title).includes(q))
     .filter(tk=>pplWhen==="upcoming" ? tk.due>=today : tk.due<today)
     .sort((a,b)=>{
       const ka=a.due+" "+(a.time||"00:00"), kb=b.due+" "+(b.time||"00:00");
@@ -10196,7 +10245,7 @@ function pplMatches(q){
     .slice(0,40);
 }
 function pplRender(){
-  const q=$("#pplQuery").value.trim().toLowerCase();
+  const q=pFoldStr($("#pplQuery").value);
   const box=$("#pplResults");
   if(!q){ box.hidden=true; box.innerHTML=""; return; }
   const hits=pplMatches(q);
@@ -10208,7 +10257,7 @@ function pplRender(){
     const when=pDueLabel(tk.due)+(tk.time?" · "+tk.time:"");
     return `<button type="button" class="ppl-row" data-pplgo="${tk.due}">
       <span class="ppl-row-when${overdue?" overdue":""}">${esc(when)}</span>
-      <span class="ppl-row-title">${esc(tk.title||t("Untitled"))}</span>
+      <span class="ppl-row-title">${tk.title?pplMark(tk.title,q):esc(t("Untitled"))}</span>
       <span class="ppl-row-kind">${esc(tk.kind==="event"?t("Event"):t("Task"))}</span>
     </button>`;
   }).join(""):`<p class="ppl-empty">${esc(t("No matches."))}</p>`;
