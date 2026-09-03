@@ -3560,6 +3560,208 @@ html[data-design="r3"]{
 }
 
 </style>
+<style id="dz-structural">
+/* ============================================================================
+   THREE STRUCTURAL DESIGNS — s1 Rail, s2 Folio, s3 Briefing.
+
+   These are not skins. Each one moves the skeleton: where navigation lives
+   (s1), whether content sits in boxes at all (s2), and what the app opens on
+   (s3). What they deliberately do NOT touch is the palette: every rule below
+   derives from the six gem palettes' own tokens (--bg, --surface, --accent,
+   --ink…) with color-mix, so all six still work under all three, in light and
+   dark. What they DO replace is the treatment — the four-blob aurora and the
+   frosted-glass recipe give way to matte surfaces and hairlines, because the
+   glass is what made the previous three variants read as one design.
+
+   Scoped entirely to html[data-design="s1"|"s2"|"s3"]; Default and Redesigns
+   1-3 are untouched. The runtime pieces (the rail, the briefing) are built by
+   the DZ module at the end of the script and removed when you switch away.
+   ============================================================================ */
+
+/* ---- shared: kill the glass, keep the colour ---- */
+html[data-design="s1"], html[data-design="s2"], html[data-design="s3"]{
+  --glass-blur:none;
+  --glass-fill:var(--surface); --glass-fill-2:var(--surface); --glass-sheen:var(--surface);
+  --glass-border:var(--line); --glass-shadow:none;
+  --blob-1:transparent; --blob-2:transparent; --blob-3:transparent; --blob-4:transparent;
+}
+html[data-design="s1"] body::before, html[data-design="s2"] body::before, html[data-design="s3"] body::before,
+html[data-design="s1"] body::after,  html[data-design="s2"] body::after,  html[data-design="s3"] body::after{
+  display:none;
+}
+html[data-design="s1"] .card, html[data-design="s3"] .card{
+  backdrop-filter:none; -webkit-backdrop-filter:none;
+  background:var(--surface); border:1px solid var(--line); box-shadow:none;
+}
+html[data-design="s1"] .nav, html[data-design="s3"] .nav{
+  backdrop-filter:none; -webkit-backdrop-filter:none; background:var(--surface-2); box-shadow:none;
+}
+html[data-design="s1"] .top, html[data-design="s3"] .top{
+  backdrop-filter:none; -webkit-backdrop-filter:none; background:var(--surface);
+}
+
+/* ============================ s1 · RAIL ============================
+   Navigation moves out of the header dropdown and the tab strip into one
+   permanent left rail, so all ten modules are one click away instead of two
+   menus deep. The rail is fixed and out of flow — body just gets padding —
+   which keeps dialogs, toasts and the notes scratchpad exactly where they are. */
+html[data-design="s1"]{
+  --r:10px; --r-sm:8px; --r-xs:6px; --r-pill:7px;
+}
+html[data-design="s1"] body{
+  background-image:linear-gradient(180deg, color-mix(in oklab, var(--accent) 5%, var(--bg)) 0, var(--bg) 420px);
+}
+@media (min-width:900px){
+  html[data-design="s1"] body{ padding-left:238px }
+  /* the header is not removed — the rail takes its NAVIGATION and it keeps
+     its controls, which is what lets the whole switch be pure CSS: below the
+     breakpoint the rail simply stops being displayed and the header and tab
+     strip are already there, intact, with nothing to put back. */
+  html[data-design="s1"] .top{ background:none; border-bottom:1px solid var(--line);
+    padding:9px 34px; justify-content:flex-end; min-height:0 }
+  html[data-design="s1"] .top .brandwrap{ display:none }
+  html[data-design="s1"] .navwrap{ display:none }
+  html[data-design="s1"] main{ max-width:1200px; padding:22px 34px 72px }
+  html[data-design="s1"] .sec-head h2{ font-size:26px; letter-spacing:-.025em }
+}
+.dz-rail{ display:none }
+@media (min-width:900px){
+  html[data-design="s1"] .dz-rail{
+    display:flex; flex-direction:column; position:fixed; left:0; top:0; bottom:0; width:238px; z-index:40;
+    background:var(--surface-2); border-right:1px solid var(--line);
+    padding:16px 12px 10px; overflow-y:auto; scrollbar-width:thin;
+  }
+}
+.dz-brand{ display:flex; align-items:center; gap:9px; padding:2px 8px 16px; min-width:0 }
+.dz-brand b{ font-size:14px; font-weight:700; color:var(--ink-strong); letter-spacing:-.01em; white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis }
+.dz-grp{ font-size:10px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3);
+  padding:14px 8px 5px }
+.dz-i{ display:flex; align-items:center; gap:10px; width:100%; padding:8px 9px; border:0; background:none;
+  border-radius:7px; font:inherit; font-size:13.5px; color:var(--ink); cursor:pointer; text-align:left;
+  min-height:36px }
+.dz-i svg{ flex:0 0 auto; opacity:.85 }
+.dz-i:hover{ background:color-mix(in oklab, var(--accent) 8%, transparent); color:var(--ink-strong) }
+.dz-i[aria-current="true"]{ background:var(--accent-soft); color:var(--accent); font-weight:600 }
+.dz-i[aria-current="true"] svg{ opacity:1 }
+.dz-i:focus-visible{ outline:2px solid var(--accent); outline-offset:-2px }
+.dz-rail-foot{ margin-top:auto; padding:12px 8px 2px; border-top:1px solid var(--line);
+  font-size:11px; color:var(--ink-3); letter-spacing:.02em }
+
+/* ============================ s2 · FOLIO ============================
+   The card is abolished. Nothing is a box: content is typeset on the page,
+   separated by hairline rules and space, with a serif for anything that is
+   read and the system face kept for anything that is operated. */
+html[data-design="s2"]{
+  --r:0px; --r-sm:0px; --r-xs:0px; --r-pill:2px;
+  --dz-serif:"Source Serif 4", Georgia, "Iowan Old Style", "Times New Roman", serif;
+}
+html[data-design="s2"] body{
+  background:color-mix(in oklab, var(--surface) 88%, var(--bg));
+  background-image:none;
+}
+html[data-design="s2"] main{ max-width:860px; padding:8px 30px 90px }
+html[data-design="s2"] .top{
+  background:none; backdrop-filter:none; -webkit-backdrop-filter:none;
+  border-bottom:1px solid color-mix(in oklab, var(--ink) 45%, transparent);
+  padding:14px 30px 10px; max-width:860px; margin:0 auto; width:100%; box-sizing:border-box;
+}
+html[data-design="s2"] .mark{ font-family:var(--dz-serif); font-size:19px; font-weight:600; letter-spacing:0 }
+html[data-design="s2"] .mark span{ color:var(--ink-3) }
+html[data-design="s2"] .navwrap{ padding:12px 30px 2px; max-width:860px; margin:0 auto; justify-content:flex-start;
+  width:100%; box-sizing:border-box }
+html[data-design="s2"] .nav{
+  background:none; box-shadow:none; backdrop-filter:none; -webkit-backdrop-filter:none;
+  padding:0; gap:20px; border-radius:0; mask-image:none; -webkit-mask-image:none;
+}
+html[data-design="s2"] .nav button{
+  background:none !important; box-shadow:none !important; border-radius:0; padding:4px 0 6px;
+  font-size:11.5px; letter-spacing:.09em; text-transform:uppercase; font-weight:600; color:var(--ink-3);
+}
+html[data-design="s2"] .nav button[aria-selected="true"]{
+  color:var(--ink-strong); box-shadow:0 2px 0 -1px var(--accent) !important;
+}
+html[data-design="s2"] .card{
+  background:none; border:0; border-radius:0; box-shadow:none;
+  backdrop-filter:none; -webkit-backdrop-filter:none;
+  border-top:1px solid color-mix(in oklab, var(--ink) 16%, transparent);
+}
+html[data-design="s2"] .stack > .card:first-child, html[data-design="s2"] .view > .card:first-child{ border-top:0 }
+html[data-design="s2"] .pad{ padding:16px 0 20px }
+html[data-design="s2"] .card-sec{ padding:12px 0 }
+html[data-design="s2"] .sec-head{ margin:26px 0 6px }
+html[data-design="s2"] .sec-head h2{ font-family:var(--dz-serif); font-size:34px; font-weight:600; letter-spacing:-.02em }
+html[data-design="s2"] .eyebrow{ letter-spacing:.11em }
+html[data-design="s2"] .empty{ font-family:var(--dz-serif); font-style:italic; font-size:16px }
+html[data-design="s2"] .pline-v, html[data-design="s2"] .n-row-title, html[data-design="s2"] .n-block-ta{
+  font-family:var(--dz-serif);
+}
+html[data-design="s2"] .n-block[data-type="p"] .n-block-ta{ font-size:16.5px; line-height:1.62 }
+html[data-design="s2"] .n-row-title{ font-size:17px; font-weight:600 }
+html[data-design="s2"] .n-title-input{ font-family:var(--dz-serif); font-weight:600 }
+html[data-design="s2"] .btn{ border-radius:3px; font-size:12.5px }
+html[data-design="s2"] .chip{ border-radius:3px }
+html[data-design="s2"] .n-row{ border-bottom:1px solid color-mix(in oklab, var(--ink) 13%, transparent) }
+html[data-design="s2"] .tile{ background:none; border:0; border-radius:0; box-shadow:none }
+html[data-design="s2"] .tile-ph{ border-radius:0 }
+html[data-design="s2"] .duestrip{ border-top:1px solid color-mix(in oklab, var(--ink) 16%, transparent) }
+
+/* ============================ s3 · BRIEFING ============================
+   The app stops opening on a list and opens on the day: what care is owed,
+   what the planner holds, what you wrote last — gathered from every module
+   into one panel above the garden. The tab strip stays, demoted to a quiet
+   row rather than the first thing you see. */
+html[data-design="s3"]{ --r:14px; --r-sm:10px; --r-xs:7px }
+html[data-design="s3"] body{
+  background-image:radial-gradient(120vw 60vh at 82% -10%, color-mix(in oklab, var(--accent) 9%, transparent), transparent 70%);
+}
+html[data-design="s3"] main{ max-width:760px }
+/* the strip is no longer the first thing you see: it moves below the content
+   and sticks to the bottom, so navigation is available without being the
+   opening statement */
+html[data-design="s3"] .navwrap{ order:3; position:sticky; top:auto; bottom:8px; padding:0 12px 8px }
+html[data-design="s3"] .nav{ background:var(--surface); border:1px solid var(--line); box-shadow:none; padding:3px; gap:6px }
+html[data-design="s3"] .nav button{ font-size:12.5px; opacity:.75 }
+html[data-design="s3"] .nav button[aria-selected="true"]{ opacity:1 }
+#dzBrief{ display:none }
+html[data-design="s3"] #dzBrief.on{ display:block; margin:6px 0 22px }
+.dz-b-day{ font-size:10.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3) }
+.dz-b-h{ font-size:31px; font-weight:700; color:var(--ink-strong); letter-spacing:-.028em; line-height:1.16;
+  margin:6px 0 0; text-wrap:balance }
+.dz-b-find{ display:flex; align-items:center; gap:10px; margin-top:18px; padding:12px 15px;
+  background:var(--surface); border:1px solid var(--line); border-radius:11px; cursor:pointer; width:100%;
+  font:inherit; color:var(--ink-3); text-align:left; min-height:46px }
+.dz-b-find:hover{ border-color:var(--accent) }
+.dz-b-find span{ flex:1 1 auto; font-size:14.5px }
+.dz-b-find kbd{ font-size:10.5px; font-weight:700; border:1px solid var(--line); border-radius:4px;
+  padding:2px 6px; color:var(--ink-3); font-family:inherit }
+.dz-b-list{ margin-top:22px }
+.dz-b-i{ display:flex; align-items:center; gap:13px; padding:13px 0;
+  border-bottom:1px solid var(--line-soft); min-height:46px }
+.dz-b-i:last-child{ border-bottom:0 }
+.dz-b-t{ flex:0 0 54px; font-size:12.5px; color:var(--ink-3); font-variant-numeric:tabular-nums }
+.dz-b-n{ flex:1 1 auto; min-width:0; font-size:15px; color:var(--ink-strong); overflow:hidden;
+  text-overflow:ellipsis; white-space:nowrap }
+.dz-b-k{ flex:0 0 auto; font-size:11px; color:var(--ink-3) }
+.dz-b-go{ flex:0 0 auto; border:1px solid var(--line); background:var(--surface); border-radius:7px;
+  font:inherit; font-size:12px; color:var(--ink); padding:5px 10px; cursor:pointer; min-height:32px }
+.dz-b-go:hover{ border-color:var(--accent); color:var(--accent) }
+.dz-b-clear{ padding:26px 4px; text-align:center; color:var(--ink-3); font-size:14.5px }
+.dz-b-strips{ display:flex; gap:10px; margin-top:18px; flex-wrap:wrap }
+.dz-b-s{ flex:1 1 220px; min-width:0; display:flex; align-items:center; gap:11px; padding:13px 15px;
+  background:var(--surface); border:1px solid var(--line); border-radius:11px; cursor:pointer;
+  font:inherit; text-align:left; color:var(--ink) }
+.dz-b-s:hover{ border-color:var(--accent) }
+.dz-b-s b{ display:block; font-size:13.5px; color:var(--ink-strong); font-weight:600; overflow:hidden;
+  text-overflow:ellipsis; white-space:nowrap }
+.dz-b-s small{ display:block; font-size:12px; color:var(--ink-3); margin-top:1px; overflow:hidden;
+  text-overflow:ellipsis; white-space:nowrap }
+.dz-b-rule{ display:flex; align-items:center; gap:10px; margin:24px 0 2px }
+.dz-b-rule i{ flex:1 1 auto; height:1px; background:var(--line); font-style:normal }
+.dz-b-rule span{ font-size:10.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3) }
+@media (prefers-reduced-motion:reduce){ .dz-i, .dz-b-find, .dz-b-s{ transition:none } }
+</style>
+
 <header class="top">
   <button class="gear" id="settingsBtn" aria-label="Settings" title="Settings">⚙</button>
   <div class="brandwrap">
@@ -4247,6 +4449,9 @@ html[data-design="r3"]{
                   <option value="r1">Redesign 1 · liquid glass</option>
                   <option value="r2">Frosted Glass</option>
                   <option value="r3">Monolith · gunmetal</option>
+                  <option value="s1">Rail · side navigation</option>
+                  <option value="s2">Folio · typeset</option>
+                  <option value="s3">Briefing · today first</option>
                 </select>
                 <p class="hint">A/B test skins. Redesigns are built one at a time; Default is the original look. Per device.</p>
               </div>
@@ -7016,7 +7221,7 @@ const expert=()=>L.expert===true;
 const PALETTES=["obsidian","rose","emerald","amethyst","sapphire","citrine"];
 /* A/B design scenarios. "off" is the original look; each redesign is a
    separate, switchable skin so beta testers can be split across them. */
-const DESIGNS=["off","r1","r2","r3"];
+const DESIGNS=["off","r1","r2","r3","s1","s2","s3"];
 function applyDesign(){
   document.documentElement.setAttribute("data-design",DESIGNS.includes(L.design)?L.design:"off");
 }
@@ -22511,6 +22716,10 @@ Object.assign(CS,{
 "Add as task":"Přidat jako úkol","Block the time":"Zablokovat čas",
 "Cues & questions":"Otázky a hesla","Generate":"Vygenerovat","Questions you'd ask yourself about the notes":"Otázky, které byste si k poznámkám položili",
 "Summary":"Shrnutí","In your own words, what was this about?":"Vlastními slovy: o čem to bylo?",
+"Sections":"Sekce","Bench":"Pěstírna","Plan":"Plán","Write":"Psaní","Teach":"Výuka",
+"Daily Planner":"Denní plánovač","Student Bench":"Studentský stůl","Jump anywhere…":"Skočit kamkoli…",
+"Open":"Otevřít","No care due, nothing scheduled.":"Nic k péči, nic v plánu.","Everything else":"Všechno ostatní",
+"Rail · side navigation":"Lišta · boční navigace","Folio · typeset":"Folio · sazba","Briefing · today first":"Briefing · nejdřív dnešek",
 "List":"Seznam","Canvas":"Plátno","Arrange as graph":"Uspořádat jako graf","Auto-cluster":"Shlukovat","Fit":"Přizpůsobit",
 "Drag cards. Drag the background to pan, pinch or scroll to zoom, double-tap a card to open it.":"Přetahujte karty. Tahem pozadí posouváte, štipnutím nebo kolečkem zoomujete, dvojklepnutím kartu otevřete.",
 });
@@ -24852,5 +25061,231 @@ var PSYNC = (() => {
 
   return { start, renderPanel };
 })();
+
+/* ============================================================================
+   DZ — the runtime half of the three structural designs (s1 Rail, s2 Folio,
+   s3 Briefing). The CSS lives in <style id="dz-structural"> near the top.
+
+   Everything here is additive and reversible: switching to s1 builds a rail
+   and MOVES the header's own controls into it (moved, not copied — every
+   getElementById in the app still finds them); switching away puts them back
+   and removes the rail. Nothing in the default design or in Redesigns 1-3
+   changes, and no view's markup is rewritten.
+
+   How it knows what is on screen: show() toggles [hidden] on every .view, so
+   one MutationObserver over <main> is enough to keep the rail's current item
+   marked and the briefing shown only on the garden — no hook into show().
+   ============================================================================ */
+const DZ_ICON={
+  garden:'<path d="M12 20v-8"/><path d="M12 12a6 6 0 0 1 6-6 6 6 0 0 1-6 6Z"/><path d="M12 14a5 5 0 0 0-5-5 5 5 0 0 0 5 5Z"/>',
+  mix:'<path d="M9 3h6"/><path d="M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/>',
+  cuttings:'<circle cx="6" cy="7" r="2.5"/><circle cx="6" cy="17" r="2.5"/><path d="M8 8.5 19 17M8 15.5 19 7"/>',
+  plan:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/>',
+  library:'<path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2Z"/><path d="M9 3v18"/>',
+  stats:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  planner:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><rect x="7" y="13" width="5" height="4" rx="1"/>',
+  hours:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  notes:'<path d="M5 3h9l5 5v13H5Z"/><path d="M14 3v5h5M8 13h8M8 17h5"/>',
+  teachbench:'<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 5.5a3 3 0 0 1 0 5M18 20a6 6 0 0 0-3-5.2"/>',
+  student:'<path d="M3 8.5 12 4l9 4.5-9 4.5Z"/><path d="M7 11v5c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5v-5"/>'
+};
+const dzSvg=k=>'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'+(DZ_ICON[k]||"")+'</svg>';
+
+/* One list, two consumers: the s1 rail and the s3 jump menu. `app` is the
+   APPS id to switch to; `view` is the bench view to land on, when the app is
+   the bench (the other apps carry their own single view). */
+const DZ_ITEMS=[
+  {g:"Bench", items:[
+    {k:"garden",   app:"bench", view:"garden",   en:"Garden"},
+    {k:"mix",      app:"bench", view:"mix",      en:"Bench"},
+    {k:"cuttings", app:"bench", view:"cuttings", en:"Grow"},
+    {k:"plan",     app:"bench", view:"plan",     en:"Diary"},
+    {k:"library",  app:"bench", view:"library",  en:"Library"},
+    {k:"stats",    app:"bench", view:"stats",    en:"Stats"}]},
+  {g:"Plan", items:[
+    {k:"planner",  app:"planner", en:"Daily Planner"},
+    {k:"hours",    app:"hours",   en:"Hours"}]},
+  {g:"Write", items:[
+    {k:"notes",    app:"notes",   en:"Notes"}]},
+  {g:"Teach", items:[
+    {k:"teachbench", app:"teachbench",         en:"Teachbench"},
+    {k:"student",    app:"teachbench-student", en:"Student Bench"}]}
+];
+function dzGo(it){
+  if(it.app==="bench"){ setApp("bench"); show(it.view); }
+  else setApp(it.app);
+}
+/* which DZ_ITEMS entry the visible view corresponds to */
+function dzCurrentKey(){
+  const v=(typeof curView==="string")?curView:"";
+  if(v==="planner") return "planner";
+  if(v==="hours"||v==="hproject") return "hours";
+  if(v==="notes"||v==="note") return "notes";
+  if(v==="teachbench") return "teachbench";
+  if(v==="teachbench-student") return "student";
+  const parent=(typeof NAV_PARENT==="object"&&NAV_PARENT[v])||v;
+  return parent;
+}
+
+/* ---------------- s1: the rail ---------------- */
+function dzRailOn(){
+  if($("#dzRail")) return;
+  const r=document.createElement("nav");
+  r.id="dzRail"; r.className="dz-rail"; r.setAttribute("aria-label",t("Sections"));
+  r.innerHTML=
+    '<div class="dz-brand">'+dzSvg("garden")+'<b data-no-i18n>Potting·Bench</b></div>'
+    +DZ_ITEMS.map(grp=>'<div class="dz-grp">'+esc(t(grp.g))+'</div>'
+      +grp.items.map(it=>'<button type="button" class="dz-i" data-dz="'+esc(it.k)+'">'
+        +dzSvg(it.k)+'<span>'+esc(t(it.en))+'</span></button>').join("")).join("")
+    +'<div class="dz-rail-foot" data-no-i18n></div>';
+  document.body.insertBefore(r,document.body.firstChild);
+  const foot=r.querySelector(".dz-rail-foot");
+  if(foot) foot.textContent="v"+BUILD.ver+" · "+BUILD.n;
+  r.addEventListener("click",e=>{
+    const b=e.target.closest("[data-dz]"); if(!b) return;
+    let hit=null; DZ_ITEMS.forEach(g=>g.items.forEach(i=>{ if(i.k===b.dataset.dz) hit=i; }));
+    if(hit) dzGo(hit);
+  });
+  dzMark();
+}
+function dzRailOff(){ const r=$("#dzRail"); if(r) r.remove(); }
+function dzMark(){
+  const r=$("#dzRail"); if(!r) return;
+  const k=dzCurrentKey();
+  r.querySelectorAll("[data-dz]").forEach(b=>{
+    if(b.dataset.dz===k) b.setAttribute("aria-current","true"); else b.removeAttribute("aria-current");
+  });
+}
+
+/* ---------------- s3: the briefing ----------------
+   Gathered from the modules that already hold it: plant care from S.tasks,
+   the day's own work from S.planner.tasks, and the last thing written from
+   S.notes. Nothing is stored — it is a view onto what is already there. */
+function dzBriefEl(){
+  let el=$("#dzBrief");
+  if(!el){
+    const main=document.querySelector("main"); if(!main) return null;
+    el=document.createElement("section"); el.id="dzBrief";
+    main.insertBefore(el,main.firstChild);
+    el.addEventListener("click",e=>{
+      const j=e.target.closest("[data-dzjump]");
+      if(j){ let hit=null; DZ_ITEMS.forEach(g=>g.items.forEach(i=>{ if(i.k===j.dataset.dzjump) hit=i; }));
+        if(hit) dzGo(hit); return; }
+      if(e.target.closest("[data-dzfind]")) dzJumpMenu(e.target.closest("[data-dzfind]"));
+    });
+  }
+  return el;
+}
+function dzRenderBrief(){
+  const el=dzBriefEl(); if(!el) return;
+  const on=document.documentElement.getAttribute("data-design")==="s3"
+        && (typeof curView==="string") && curView==="garden";
+  el.classList.toggle("on",on);
+  if(!on) return;
+  const cs=L.lang==="cs", today=ymd(Date.now());
+  /* Plant care counts a day from midnight; the planner counts it from
+     L.dayStartHour. Before 4am those are different dates, and asking both in
+     the same terms silently emptied one of them. Each is asked its own way. */
+  const pday=(typeof pToday==="function")?pToday():today;
+  const care=(S.tasks||[]).filter(x=>!x.done&&x.day<=today);
+  const pt=(S.planner&&S.planner.tasks||[]).filter(x=>!x.done&&!x.untracked&&x.due===pday)
+    .sort((a,b)=>String(a.time||"~").localeCompare(String(b.time||"~")));
+  const plants=(S.subjects||[]).filter(x=>x.module==="plants");
+  const note=(S.notes||[]).filter(n=>!n.trashedAt&&!n.archived)
+    .sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0))[0];
+  const n=care.length+pt.length;
+  const head = n===0 ? (cs?"Máte volno.":"You're clear.")
+    : (cs ? (pl3(n,"Jedna věc,","Dvě věci,","Věcí: "+n+",")+"\n"+(n===1?"a máte hotovo.":"a máte hotovo."))
+          : (n===1?"One thing,\nthen you're done.":n+" things,\nthen you're done."));
+  const rows=[]
+    .concat(pt.map(x=>({t:x.time||"",n:x.title||t("Untitled task"),k:cs?"plán":"planner",go:"planner"})))
+    .concat(care.map(x=>({t:"",n:x.text||"",k:cs?"péče":"care",go:"garden"})))
+    .slice(0,7);
+  el.innerHTML=
+    '<div class="dz-b-day" data-no-i18n>'+esc(new Date().toLocaleDateString(locale(),{weekday:"long",day:"numeric",month:"long"}))+'</div>'
+    +'<h2 class="dz-b-h" style="white-space:pre-line" data-no-i18n>'+esc(head)+'</h2>'
+    +'<button type="button" class="dz-b-find" data-dzfind="1">'
+      +'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>'
+      +'<span>'+esc(t("Jump anywhere…"))+'</span><kbd data-no-i18n>⌘K</kbd></button>'
+    +(rows.length?'<div class="dz-b-list">'+rows.map(r=>
+        '<div class="dz-b-i"><span class="dz-b-t" data-no-i18n>'+esc(r.t||"—")+'</span>'
+        +'<span class="dz-b-n" data-no-i18n>'+esc(r.n)+'</span>'
+        +'<span class="dz-b-k" data-no-i18n>'+esc(r.k)+'</span>'
+        +'<button type="button" class="dz-b-go" data-dzjump="'+esc(r.go)+'">'+esc(t("Open"))+'</button></div>').join("")+'</div>'
+      :'<div class="dz-b-clear">'+esc(t("No care due, nothing scheduled."))+'</div>')
+    +'<div class="dz-b-strips">'
+      +'<button type="button" class="dz-b-s" data-dzjump="garden">'+dzSvg("garden")
+        +'<span style="min-width:0"><b data-no-i18n>'+plants.length+' '+esc(pl3(plants.length,cs?"rostlina":"plant",cs?"rostliny":"plants",cs?"rostlin":"plants"))+'</b>'
+        +'<small data-no-i18n>'+esc(care.length?(care.length+" "+(cs?"čeká":"due")):(cs?"vše v pořádku":"all cared for"))+'</small></span></button>'
+      +(note?'<button type="button" class="dz-b-s" data-dzjump="notes">'+dzSvg("notes")
+        +'<span style="min-width:0"><b data-no-i18n>'+esc(note.title||t("Untitled"))+'</b>'
+        +'<small data-no-i18n>'+esc(nWhen(note.updatedAt||note.createdAt))+'</small></span></button>':"")
+    +'</div>'
+    +'<div class="dz-b-rule"><i></i><span>'+esc(t("Everything else"))+'</span><i></i></div>';
+}
+/* the jump menu: the same item list as the rail, as a command list */
+function dzJumpMenu(anchorEl){
+  const old=$("#dzJump"); if(old){ old.remove(); return; }
+  const m=document.createElement("div");
+  m.id="dzJump"; m.className="n-btype-menu"; m.setAttribute("role","menu");
+  m.innerHTML=DZ_ITEMS.map(g=>'<div class="n-menu-hint">'+esc(t(g.g))+'</div>'
+    +g.items.map(i=>'<button type="button" role="menuitem" data-dzjump="'+esc(i.k)+'">'+esc(t(i.en))+'</button>').join("")).join("");
+  document.body.appendChild(m);
+  const r=anchorEl.getBoundingClientRect();
+  m.style.top=(window.scrollY+r.bottom+6)+"px";
+  m.style.left=Math.max(8,Math.min(window.scrollX+r.left,window.scrollX+window.innerWidth-m.offsetWidth-8))+"px";
+  const f=m.querySelector("button[data-dzjump]"); if(f) f.focus();
+  const close=e=>{
+    const b=e&&e.target&&e.target.closest?e.target.closest("#dzJump [data-dzjump]"):null;
+    if(b){ let hit=null; DZ_ITEMS.forEach(g=>g.items.forEach(i=>{ if(i.k===b.dataset.dzjump) hit=i; })); m.remove(); document.removeEventListener("click",close,true); if(hit) dzGo(hit); return; }
+    if(m.contains(e&&e.target)) return;
+    m.remove(); document.removeEventListener("click",close,true);
+  };
+  setTimeout(()=>document.addEventListener("click",close,true),0);
+}
+
+/* ---------------- keeping it all in step ---------------- */
+/* Folio's serif is fetched only for whoever chooses Folio — everyone else
+   never pays for it, and the service worker keeps it for offline once loaded. */
+function dzFont(on){
+  const id="dzFolioFont"; let l=document.getElementById(id);
+  if(!on){ if(l) l.remove(); return; }
+  if(l) return;
+  l=document.createElement("link"); l.id=id; l.rel="stylesheet";
+  l.href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap";
+  document.head.appendChild(l);
+}
+/* The rail is built whenever Rail is the chosen design, at any width — which
+   width it is actually SHOWN at is left entirely to the media query. An
+   earlier version moved the header's controls into the rail and so had to
+   know the breakpoint in JS too; it tore down correctly on the way to a phone
+   width and did not always come back on the way up, because a window that
+   grows does not reliably deliver the event it was listening for. Nothing is
+   moved now, so there is no state to get wrong. */
+function dzApplyNow(){
+  const d=document.documentElement.getAttribute("data-design");
+  if(d==="s1") dzRailOn(); else dzRailOff();
+  dzFont(d==="s2");
+  dzMark();
+  dzRenderBrief();
+}
+(function dzWire(){
+  const main=document.querySelector("main");
+  if(main){
+    /* show() flips [hidden] on the views — that is the signal, no hook needed */
+    new MutationObserver(()=>{ dzMark(); dzRenderBrief(); })
+      .observe(main,{attributes:true,attributeFilter:["hidden"],subtree:true});
+  }
+  new MutationObserver(dzApplyNow)
+    .observe(document.documentElement,{attributes:true,attributeFilter:["data-design"]});
+  document.addEventListener("keydown",e=>{
+    if(document.documentElement.getAttribute("data-design")!=="s3") return;
+    if((e.metaKey||e.ctrlKey)&&(e.key==="k"||e.key==="K")){
+      const b=document.querySelector("[data-dzfind]"); if(b){ e.preventDefault(); dzJumpMenu(b); }
+    }
+  });
+  dzApplyNow();
+})();
+
 
 </script>
