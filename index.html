@@ -17647,7 +17647,6 @@ const RECAP = (() => {
     return [
       `LESSON PLANNING NOTES — ${student.name} — ${month}`,
       ``,
-      `Level: ${student.level || "not set"}`,
       `Vocabulary items: ${g.byType.vocab} · Grammar: ${g.byType.grammar} · Pronunciation: ${g.byType.pron}`,
       `Total cards: ${g.total} (${g.added.length} added this month)`,
       `Reviews done: ${g.reviews}${g.accuracy!==null?` · recall ${g.accuracy}%`:""}`,
@@ -18170,6 +18169,11 @@ const TBS_UI = (() => {
 
   function renderCardList(){
     const box = $$("tbsCardList");
+    /* A failed load leaves state.cards empty too, so "nothing here yet"
+       would be a lie about the connection rather than about the words —
+       the Today screen already distinguishes these and this must match. */
+    if(state.cardsError){
+      box.innerHTML = `<p class="empty">Can't reach your words — check your internet.</p>`; return; }
     if(!state.cards.length){ box.innerHTML = `<p class="empty">Nothing here yet.</p>`; return; }
     box.innerHTML = state.cards.map(c => `
       <div class="tbs-row">
@@ -18286,7 +18290,9 @@ const TBS_UI = (() => {
     grid.innerHTML = cells.join("");
 
     const total = [...due.values()].reduce((n,e) => n+e.count, 0);
-    $$("tbsCalNote").textContent = !state.cards.length
+    $$("tbsCalNote").textContent = state.cardsError
+      ? "Can't reach your words — check your internet."
+      : !state.cards.length
       ? "No words yet — your teacher will add some."
       : total ? "Dots show how many words come back for review that day."
               : "Nothing scheduled this month.";
