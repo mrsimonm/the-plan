@@ -4528,6 +4528,11 @@ html{overscroll-behavior-y:none}
     </div>
     <p class="hint" id="pSleepHint"></p>
     <label class="lu" style="border:0; padding:6px 0">
+      <span class="sw"><input type="checkbox" id="pSleepLock"><i></i></span>
+      <span class="lu-name" id="pSleepLockLabel">Lock this night</span>
+    </label>
+    <p class="hint" id="pSleepLockHint"></p>
+    <label class="lu" style="border:0; padding:6px 0">
       <span class="sw"><input type="checkbox" id="pNapOn"><i></i></span>
       <span class="lu-name" id="pNapLabel">Also a rest during the day</span>
     </label>
@@ -5873,6 +5878,14 @@ function migrate(d){
      exception stay on the record, so turning it back on restores exactly
      what was there instead of resetting to the 23:00/8h default. */
   d.planner.sleepOff=!!d.planner.sleepOff;
+  /* Superseded weekday/weekend regimes, oldest first, each stamped with the
+     day it stopped applying. A night before that day is still read through
+     the times that were actually in force then, so editing the defaults can
+     never rewrite a night that has already happened. */
+  d.planner.sleepHist=Array.isArray(d.planner.sleepHist)
+    ? d.planner.sleepHist.filter(e=>e&&/^\d{4}-\d{2}-\d{2}$/.test(e.until)&&pSleepBucketOk(e.wd)&&pSleepBucketOk(e.we))
+        .sort((a,b)=>a.until<b.until?-1:a.until>b.until?1:0)
+    : [];
   if(d.planner.linkCare===undefined) d.planner.linkCare=true;
   if(d.planner.linkHours===undefined) d.planner.linkHours=true;
   if(d.planner.linkProjects===undefined) d.planner.linkProjects=true;
@@ -7093,9 +7106,18 @@ function pSleepHoursFor(iso){
   const s=pSleepFor(iso);
   return Math.min(24,Math.max(0,s.hours)+(s.nap?Math.max(0,s.nap.hours):0)+2*(s.buffer||0));
 }
+/* Which weekday/weekend pair was in force on `iso`. The history is sorted
+   oldest first and each entry's `until` is the day it stopped applying, so
+   the first entry the day falls before is the one that governed it; a day
+   past every entry is governed by the live settings. */
+function pSleepRegime(iso){
+  const h=S.planner.sleepHist||[];
+  for(const e of h) if(iso<e.until) return e;
+  return {wd:S.planner.sleepWeekday, we:S.planner.sleepWeekend};
+}
 function pSleepBucket(iso){
-  const key=pIsWeekendNight(iso)?"sleepWeekend":"sleepWeekday";
-  const v=S.planner[key];
+  const reg=pSleepRegime(iso);
+  const v=pIsWeekendNight(iso)?reg.we:reg.wd;
   const from=(v&&/^\d{2}:\d{2}$/.test(v.from))?v.from:"23:00";
   const hours=(v&&typeof v.hours==="number")?Math.min(24,Math.max(0,v.hours)):8;
   return {from,hours,nap:pNapOf(v),buffer:pBufOf(v)};
@@ -7104,22 +7126,28 @@ function pSleepDefault(iso){ return pSleepBucket(iso); }
 function pSleepFor(iso){
   const ex=S.planner.sleepEx&&S.planner.sleepEx[iso];
   if(ex&&/^\d{2}:\d{2}$/.test(ex.from)&&typeof ex.hours==="number")
-    return {from:ex.from, hours:Math.min(24,Math.max(0,ex.hours)), nap:pNapOf(ex), buffer:pBufOf(ex)};
-  return pSleepDefault(iso);
+    return {from:ex.from, hours:Math.min(24,Math.max(0,ex.hours)), nap:pNapOf(ex),
+            buffer:pBufOf(ex), locked:!!ex.locked};
+  return Object.assign({locked:false},pSleepDefault(iso));
 }
-function pSleepSetFor(iso,from,hours,nap,buffer){
+function pSleepSetFor(iso,from,hours,nap,buffer,locked){
   const def=pSleepDefault(iso);
   S.planner.sleepEx=S.planner.sleepEx||{};
   const buf=Math.min(3,Math.max(0,Number(buffer)||0));
   const napSame=(!nap&&!def.nap)||(nap&&def.nap&&nap.from===def.nap.from&&Math.abs(nap.hours-def.nap.hours)<1e-6);
   const bufSame=Math.abs(buf-(def.buffer||0))<1e-6;
   /* matches the default exactly → no exception needed, same tidy-up rule
-     ppSetDayHours uses for a Project day that drifts back to its default */
-  if(from===def.from&&Math.abs(hours-def.hours)<1e-6&&napSame&&bufSame) delete S.planner.sleepEx[iso];
+     ppSetDayHours uses for a Project day that drifts back to its default.
+     A LOCKED night is the one case that must survive it: the whole point of
+     the lock is that this night is pinned where it is, and a night pinned to
+     the same times the default happens to hold right now would otherwise be
+     tidied away and then dragged along by the next change to that default. */
+  if(!locked&&from===def.from&&Math.abs(hours-def.hours)<1e-6&&napSame&&bufSame) delete S.planner.sleepEx[iso];
   else {
     const rec={from,hours:Math.min(24,Math.max(0,hours))};
     if(nap) rec.nap={from:nap.from,hours:Math.min(24,Math.max(0,nap.hours))};
     if(buf>0) rec.buffer=buf;
+    if(locked) rec.locked=true;
     S.planner.sleepEx[iso]=rec;
   }
 }
@@ -7999,6 +8027,9 @@ function pSleepHintUpdate(){
   const bf=Math.min(3,Math.max(0,+$("#pBufInput").value||0));
   $("#pBufHint").textContent=bf>0
     ? t("{h}h before bed and {h}h after waking, kept clear.").replace(/\{h\}/g,pFmtH(bf)) : "";
+  $("#pSleepLockHint").textContent=$("#pSleepLock").checked
+    ? t("Kept exactly as set here. Changing the weekday or weekend times will not move it.")
+    : t("Follows the weekday/weekend times unless you change this night by hand.");
   const on=$("#pNapOn").checked;
   $("#pNapRow").hidden=!on;
   $("#pNapHint").textContent=on?t("{h}h of rest").replace("{h}",pFmtH(pNapDlgHours())):"";
@@ -8012,6 +8043,8 @@ function pOpenSleepDialog(iso){
   $("#pNapUntilLabel").textContent=t("until");
   $("#pBufLabel").textContent=t("Wind-down either side");
   $("#pBufInput").value=pSleepFor(pSleepCtx).buffer||0;
+  $("#pSleepLockLabel").textContent=t("Lock this night");
+  $("#pSleepLock").checked=!!pSleepFor(pSleepCtx).locked;
   $("#pNapOn").checked=!!nap;
   $("#pNapFromInput").value=nap?nap.from:"14:00";
   $("#pNapUntilInput").value=nap?pSleepUntilStr(nap.from,nap.hours):"15:00";
@@ -8031,6 +8064,7 @@ function pOpenSleepDialog(iso){
 $("#pSleepFromInput").addEventListener("input",pSleepHintUpdate);
 $("#pSleepUntilInput").addEventListener("input",pSleepHintUpdate);
 $("#pBufInput").addEventListener("input",pSleepHintUpdate);
+$("#pSleepLock").addEventListener("change",pSleepHintUpdate);
 $("#pNapOn").addEventListener("change",pSleepHintUpdate);
 $("#pNapFromInput").addEventListener("input",pSleepHintUpdate);
 $("#pNapUntilInput").addEventListener("input",pSleepHintUpdate);
@@ -8045,7 +8079,7 @@ $("#pSleepSave").addEventListener("click",()=>{
   const napH=pNapDlgHours();
   const nap=($("#pNapOn").checked&&napH>0)?{from:$("#pNapFromInput").value||"14:00",hours:napH}:null;
   pSleepSetFor(pSleepCtx,from,Math.min(24,Math.max(0,pSleepDlgDiffHours())),nap,
-    Math.min(3,Math.max(0,+$("#pBufInput").value||0)));
+    Math.min(3,Math.max(0,+$("#pBufInput").value||0)),$("#pSleepLock").checked);
   $("#pSleepDlg").close(); touch(); renderPlanner();
 });
 $("#pSlotKind").addEventListener("click",e=>{
@@ -8547,7 +8581,11 @@ function pBoardHtml(days,opts){
       const isContinuation=sp.time==="00:00"&&sp.owner!==d;
       const contClass=spills?(isContinuation?" wb-sleep-cont-t":" wb-sleep-cont-b"):"";
       const range=`${esc(full.from)}–${esc(pSleepUntilStr(full.from,full.hours))} · ${pFmtH(full.hours)}h`;
-      const label=isContinuation?"⟶ "+esc(t("Sleep")):esc(t("Sleep"))+(spills?" ⟶":"");
+      /* A locked night says so on the board, not only inside its dialog —
+         otherwise the one fact that makes it behave differently from every
+         other night is invisible until you open it. */
+      const lk=full.locked?" 🔒":"";
+      const label=(isContinuation?"⟶ "+esc(t("Sleep")):esc(t("Sleep"))+(spills?" ⟶":""))+lk;
       return `<div class="wb-blk wb-sleep${contClass}" data-sleepblk="${sp.owner}" style="top:${top}px; height:${hpx}px; left:0; width:100%"
         role="button" tabindex="0" aria-label="${esc(t("Sleep settings"))}">
         <b>${label}</b><span>${range}</span>
@@ -9996,11 +10034,24 @@ function pSleepSettingsSync(){
   $("#pSleepWeekendUntil").value=pSleepUntilStr(we.from,we.hours);
   $("#pSleepWeekendHint").textContent=pFmtH(we.hours)+"h";
 }
+/* Called immediately before the weekday/weekend settings are overwritten.
+   It files the OUTGOING pair under today, which is what makes the change
+   apply from today forward only. Once per day: a second edit on the same day
+   must not file the times the first edit just wrote, or the genuinely older
+   regime the past still needs would be lost. */
+function pSleepFreezeRegime(){
+  const today=pToday(), h=S.planner.sleepHist=S.planner.sleepHist||[];
+  if(h.some(e=>e.until===today)) return;
+  h.push({until:today,
+          wd:Object.assign({},S.planner.sleepWeekday),
+          we:Object.assign({},S.planner.sleepWeekend)});
+}
 function pSleepBucketCommit(bucket){
   const wk=bucket==="sleepWeekday"?"Weekday":"Weekend";
   const from=$(`#pSleep${wk}From`).value||"23:00", until=$(`#pSleep${wk}Until`).value||"07:00";
   const [fh,fm]=from.split(":").map(Number), [uh,um]=until.split(":").map(Number);
   let diff=(uh*60+um)-(fh*60+fm); if(diff<=0) diff+=1440;
+  pSleepFreezeRegime();
   S.planner[bucket]={from,hours:Math.min(24,Math.max(0,diff/60))};
   $(`#pSleep${wk}Hint`).textContent=pFmtH(S.planner[bucket].hours)+"h";
   touch(); pDayPanel(); renderSchedule();
