@@ -20658,7 +20658,14 @@ var PSYNC = (() => {
           dirty = false;
         }
         claim();
-        setSync("saved","synced");
+        /* Upload it NOW rather than waiting for the next edit. Adopting is
+           a claim on an empty cloud, and a claim nobody can see is worth
+           nothing: the device would sit there saying "synced" having sent
+           nothing, and the next device to sign in would find the cloud
+           still empty, adopt ITS state, and publish that over this one.
+           That is precisely how a full phone loses to an empty laptop. */
+        dirty = true;
+        touch();
       }
     }catch(e){
       console.warn("PSYNC: first read", e);
