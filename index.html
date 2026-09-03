@@ -849,6 +849,28 @@ input[type="time"].mono-input{width:88px}
 /* armed for "click to copy": the whole board is a target, so it says so —
    and nothing on it should look draggable while a click means "drop here" */
 .wb.stamping, .wb.stamping *{cursor:copy !important}
+/* ---- the quick row ----
+   One cell per day, inside the grid and above the day headers, so a Quick
+   Task sits in the column of the day it belongs to. Every cell is the same
+   height (the busiest day's row count) or the hour grids below would start
+   at different offsets and the board would go crooked. */
+.wb-qcell{display:flex; flex-direction:column; align-items:stretch; gap:2px;
+  height:calc(var(--qrows,1) * 18px + 6px); box-sizing:border-box;
+  padding:3px 2px; overflow-y:auto; overflow-x:hidden;
+  border-bottom:1px solid var(--line-soft); cursor:copy}
+.wb-qcell.over{background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.wb-qcell-lab{cursor:default; display:flex; justify-content:flex-end;
+  align-items:flex-start; padding-right:5px}
+.wb-qcell-lab span{font-family:var(--font); font-size:9px; font-weight:600;
+  letter-spacing:.04em; text-transform:uppercase; color:var(--ink-3)}
+.wb-qchip{display:flex; align-items:center; gap:4px; min-width:0; cursor:grab;
+  touch-action:none; user-select:none; padding:1px 4px; border-radius:5px;
+  background:var(--surface-2); border:1px solid var(--line);
+  font-size:10.5px; line-height:1.35}
+.wb-qchip .wb-tc{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.wb-qchip.done{border-color:var(--ok); background:color-mix(in srgb,var(--ok) 16%,var(--surface-2))}
+.wb-qchip.done .wb-tc{text-decoration:line-through; text-decoration-thickness:1px}
+.wb-qchip.lift{opacity:.85; box-shadow:var(--shadow-lift)}
 /* The quick strip: the parking lot's twin, sitting directly above it. Quick
    Tasks used to live in each day column's own all-day lane, which meant a
    Week showed seven little lanes and a Month thirty — and every one of them
@@ -8523,6 +8545,7 @@ function pBoardHtml(days,opts){
      one's height ever changes, both sides move together automatically
      instead of this needing a hand-tuned pixel offset that can drift again. */
   const gutter=`<div class="wb-gutter">
+    <div class="wb-qcell wb-qcell-lab" aria-hidden="true"><span>${esc(t("Quick"))}</span></div>
     <button type="button" class="wb-head" style="visibility:hidden" tabindex="-1" aria-hidden="true">·</button>
     <div class="wb-allday" style="visibility:hidden" aria-hidden="true"></div>
     <div class="wb-gutter-hours" style="height:${H}px">${
@@ -8568,6 +8591,33 @@ function pBoardHtml(days,opts){
      all-day lane is the plant-care marker — one row, at most. */
   const adCount=days.map((d,di)=>(byDay[di].some(it=>it.kind==="care")?1:0));
   const adRows=Math.min(3,Math.max(1,...adCount));
+  /* ---- the quick row ----
+     A Quick Task belongs to a DAY and to nothing smaller, so it is drawn in
+     that day's own column rather than in a full-width strip: one cell per
+     day, sitting inside the grid just above the day headers, so it scrolls
+     and lines up with the columns underneath it without any extra work.
+
+     It reads as a second storey of the parking lot and behaves like one --
+     tap an empty cell to start a Quick Task on that day, drag a chip from
+     one cell to another to move it -- with the one difference that a Quick
+     Task can never be given a time. It has no data-wb, so the hour grid's
+     drag engine will not take it and cannot turn it into a timed Event.
+     Ticking is the whole of what a Quick Task is, so unlike a parked chip it
+     does keep its tick, and the tick works both ways because a Quick Task
+     stays on its day after it is done. */
+  const quickByDay=days.map((d,di)=>
+    byDay[di].filter(it=>it.ref&&it.ref.kind==="quick"&&!it.time&&it.ref.due===d));
+  /* every cell reserves the busiest day's row count, or the columns below
+     would start at different heights and the grid would stop lining up */
+  const qRows=Math.min(4,Math.max(1,...quickByDay.map(l=>l.length)));
+  const quickCell=(d,di)=>`<div class="wb-qcell" data-wbquick="${d}">${
+    quickByDay[di].map(it=>{
+      const dn=!!it.ref.done;
+      return `<span class="wb-qchip${dn?" done":""}" data-wbq="${it.ref.id}" data-day="${d}"
+        title="${esc(it.name)}"><i class="wb-adtick${dn?" on":""}" data-adtick="${it.ref.id}"
+          role="button" tabindex="0" aria-label="${esc(dn?t("Mark not done"):t("Mark done"))}"
+          ></i><span class="wb-tc">${esc(it.name)}</span></span>`;
+    }).join("")}</div>`;
   const cols=days.map((d,di)=>{
     const items=byDay[di];
     const care=items.find(it=>it.kind==="care");
@@ -8738,6 +8788,7 @@ function pBoardHtml(days,opts){
       </div>`;
     }).join("");
     return `<div class="wb-col${d===pToday()?" today":""}${d.slice(8)==="01"?" mstart":""}" data-wbday="${d}">
+      ${quickCell(d,di)}
       <button type="button" class="wb-head" data-wbgo="${d}">${label(d)}</button>
       ${allday}
       <div class="wb-track" style="height:${H}px">${lines}${now}${sleepHtml}${blocks}</div>
@@ -8772,16 +8823,19 @@ function pBoardHtml(days,opts){
   const dayTag=d=>{ if(d===today) return t("today"); const x=pParseISO(d);
     return dowName(x.getDay()).slice(0,3)+" "+x.getDate(); };
   const lot=[], seen=new Set();
-  /* an untracked record has nothing to tick, so it is given no tick rather
-     than one that does nothing */
-  const tick=(id,on)=>{ const r=pFindTask(id); if(r&&r.untracked) return "";
-    return `<i class="wb-adtick${on?" on":""}" data-adtick="${id}" role="button" tabindex="0" aria-label="${esc(on?t("Mark not done"):t("Mark done"))}"></i>`; };
+  /* A parked chip carries NO tick. The parking lot is where a thing waits to
+     be given a time, not a place to work from -- and a tick sitting on the
+     edge of a drag target was too easy to hit by accident, which is how
+     things were being marked done without anyone meaning to. Open it, or
+     drag it onto an hour first; the quick row below keeps its ticks, because
+     ticking is the whole of what a Quick Task is. */
+  const noTick=()=>"";
   const untimedChip=(tk,tag)=>{
     if(seen.has("t"+tk.id)) return; seen.add("t"+tk.id);
     const dn=!!tk.done;
     lot.push(`<span class="wb-traychip${dn?" done":tk.due&&tk.due<today?" late":""}" data-wb="tray:${tk.id}"
       title="${esc(tk.title||"")} — ${esc(dn?t("Done"):t("drag onto an hour to give it a time"))}">${
-      tick(tk.id,dn)}<span class="wb-tc">${
+      noTick()}<span class="wb-tc">${
       esc(tk.title||t("Untitled task"))}</span><small>${esc(dn?t("Done"):tag)}</small></span>`);
   };
   /* dateless first — they are the most "parked" of all */
@@ -8837,7 +8891,7 @@ function pBoardHtml(days,opts){
       const key=it.kind+":"+it.ref.id+":"+d; if(seen.has(key)) return; seen.add(key);
       lot.push(`<span class="wb-traychip clash" data-wb="${it.kind}:${it.ref.id}" data-day="${d}"
         title="${esc(it.name)} · ${esc(it.time)} · ${pFmtH(it.hours)}h — ${esc(t("double-booked — drag onto a free hour"))}">${
-        it.kind==="task"?tick(it.ref.id):""}⚠ ${it.kind==="block"?"↻ ":""}<span class="wb-tc">${
+        noTick()}⚠ ${it.kind==="block"?"↻ ":""}<span class="wb-tc">${
         esc(it.name)}</span><small>${esc(dayTag(d))} ${esc(it.time)}</small></span>`);
     });
   });
@@ -8845,34 +8899,13 @@ function pBoardHtml(days,opts){
     const c=byDay[di].find(it=>it.kind==="care"); if(!c) return;
     lot.push(`<span class="wb-traychip info">🌿 ${days.length>1?esc(dayTag(d))+" ":""}<small>${c.jobs} ${esc(t("jobs"))}</small></span>`);
   });
-  /* ---- the quick strip ----
-     Every Quick Task on the days currently on screen, in day order. It is
-     NOT the parking lot and must not behave like one: a Quick Task has no
-     time by definition, so it carries no data-wb and cannot be dragged onto
-     an hour — the one thing it must never become is a timed Event. Ticking
-     is the whole interaction, and the tick works both ways because a Quick
-     Task stays here after it is done rather than leaving the board. */
-  const qlot=[];
-  days.forEach((d,di)=>{
-    byDay[di].filter(it=>it.ref&&it.ref.kind==="quick"&&!it.time&&it.ref.due===d)
-      .forEach(it=>{
-        const dn=!!it.ref.done;
-        qlot.push(`<span class="wb-traychip quick${dn?" done":""}" data-day="${d}"
-          title="${esc(it.name)}">${tick(it.ref.id,dn)}<span class="wb-tc">${
-          esc(it.name)}</span>${days.length>1?`<small>${esc(dayTag(d))}</small>`:""}</span>`);
-      });
-  });
-  const quick=`<div class="wb-quick">
-    <span class="eyebrow">${esc(t("Quick"))}</span>
-    ${qlot.length?qlot.join(""):`<small class="hint" style="margin:0">${esc(t("No quick tasks."))}</small>`}
-  </div>`;
   const parking=`<div class="wb-parking">
     <span class="eyebrow">${esc(t("Parking lot"))}</span>
     ${lot.length?lot.join(""):`<small class="hint" style="margin:0">${esc(t("Nothing parked — everything has a time."))}</small>`}
   </div>`;
 
-  return `<div class="wb${opts&&opts.plachta?" wb-plachta":""}" id="pWeekBoard" data-starth="${startH}" data-maxshift="${maxShift}" style="--adrows:${adRows}">
-    ${quick}${parking}
+  return `<div class="wb${opts&&opts.plachta?" wb-plachta":""}" id="pWeekBoard" data-starth="${startH}" data-maxshift="${maxShift}" style="--adrows:${adRows}; --qrows:${qRows}">
+    ${parking}
     <div class="wb-scroll"><div class="wb-grid">${gutter}${cols}</div></div></div>`;
 }
 
@@ -8880,6 +8913,48 @@ function pBoardHtml(days,opts){
 function pWireBoard(){
   const board=document.getElementById("pWeekBoard");
   if(!board) return;
+  /* ---- the quick row's own gestures ----
+     Kept apart from the hour grid's engine on purpose: the only two things a
+     Quick Task can do are move to another day and be ticked, and routing it
+     through the engine that gives things times is how it would end up with
+     one. Capture phase, so a press on a chip never reaches that engine. */
+  board.addEventListener("pointerdown",e=>{
+    if(pStampSrc) return;                       // click-to-copy owns the board
+    const chip=e.target.closest(".wb-qchip"); if(!chip) return;
+    if(e.target.closest("[data-adtick]")) return;   // ticking is not dragging
+    e.preventDefault(); e.stopPropagation();
+    const id=chip.dataset.wbq, from=chip.dataset.day;
+    let moved=false, over=null;
+    const mv=ev=>{
+      if(!moved&&Math.abs(ev.clientY-e.clientY)+Math.abs(ev.clientX-e.clientX)<4) return;
+      moved=true; chip.classList.add("lift");
+      const cell=document.elementFromPoint(ev.clientX,ev.clientY);
+      const q=cell&&cell.closest(".wb-qcell:not(.wb-qcell-lab)");
+      if(q!==over){ if(over) over.classList.remove("over"); over=q; if(over) over.classList.add("over"); }
+    };
+    const up=ev=>{
+      removeEventListener("pointermove",mv,true); removeEventListener("pointerup",up,true);
+      if(over) over.classList.remove("over");
+      chip.classList.remove("lift");
+      /* a press that never moved is a tap: open it, the way every other
+         block on the board opens */
+      if(!moved){ pOpenEditDialog(id); return; }
+      const to=over&&over.dataset.wbquick;
+      if(!to||to===from){ renderSchedule(); return; }
+      const tk=pFindTask(id);
+      if(tk&&tk.kind==="quick"){ tk.due=to; touch(); }
+      renderPlanner();
+    };
+    addEventListener("pointermove",mv,true); addEventListener("pointerup",up,true);
+  },true);
+  /* an empty patch of a day's cell starts a Quick Task on THAT day — the same
+     gesture the parking lot answers, pointed at one column */
+  board.addEventListener("click",e=>{
+    if(pStampSrc) return;
+    const cell=e.target.closest(".wb-qcell:not(.wb-qcell-lab)"); if(!cell) return;
+    if(e.target.closest(".wb-qchip")) return;
+    pQuickAdd(cell.dataset.wbquick);
+  });
   /* Armed "click to copy" takes the board before the gesture engine sees it:
      capture phase, and it stops the event dead. Otherwise a press on empty
      track would start the drag-a-new-slot gesture instead of dropping the
@@ -10011,6 +10086,18 @@ function renderPlanner(){
   $("#pBlockEmpty").hidden=blocks.length>0;
 }
 
+/* Start a Quick Task on a given day from the board. It points the add form
+   at that day rather than opening a dialog of its own: a Quick Task is a
+   title and nothing else, so a whole dialog for one field would be more
+   ceremony than the thing deserves, and the form is already where every
+   other kind is made. */
+function pQuickAdd(day){
+  if(!day) return;
+  pAddKindVal="quick"; pSyncAddKind();
+  const due=$("#pAddDue"); if(due) due.value=day;
+  const ti=$("#pAddTitle");
+  if(ti){ ti.value=""; ti.focus({preventScroll:true}); ti.scrollIntoView({block:"center"}); }
+}
 /* ---- wiring ---- */
 $("#pAddForm").addEventListener("submit",e=>{
   e.preventDefault();
