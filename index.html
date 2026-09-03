@@ -6080,10 +6080,11 @@ $("#askDlg").addEventListener("cancel",e=>{ e.preventDefault(); askDone(false); 
 /* ---------------- sync ---------------- */
 let ART=null, saveTimer=null, pushing=false;
 function setSync(s,msg){ $("#syncTag").dataset.s=s; $("#syncText").textContent=msg||s; }
-/* Single-user app now — shared/multi-device sync is disabled on purpose.
-   Never setting ART keeps touch()/push() from running at all (both are
-   gated on `if(!ART)`), so this is a full, safe no-op rather than a stub
-   that still risks hitting the sync code paths. */
+/* Sync is off until a device signs in. Until then ART stays null and
+   touch()/push() are inert exactly as they were when this was a
+   single-device app (both are gated on `if(!ART)`), so a signed-out or
+   offline device behaves as it always has: local, and never worse.
+   PSYNC, at the end of this script, is what sets ART. */
 async function initSync(){ setSync("local","this device"); }
 async function loadShared(){
   /* Did we FAIL to read stored state, as opposed to finding none? The two must
@@ -18809,6 +18810,11 @@ async function boot(){
   document.querySelectorAll(".langsel button").forEach(b=>
     b.setAttribute("aria-pressed",String(b.dataset.lang===L.lang)));
   applyLang(); watchLang();
+  /* Sync starts last, deliberately. initSync() runs before loadShared(),
+     so starting it there would let a remote state land in S moments before
+     boot overwrote it with the local one. By here S is loaded and rendered,
+     which is also the only honest moment to begin publishing it. */
+  try{ PSYNC.start(); }catch(e){ console.warn("sync unavailable",e); }
 }
 document.querySelector(".langsel").addEventListener("click",e=>{
   const b=e.target.closest("[data-lang]"); if(b) setLang(b.dataset.lang);
@@ -20446,5 +20452,268 @@ function nQueueSave(){
   clearTimeout(nMetaTimer);
   nMetaTimer=setTimeout(nRenderMeta,250);
 }
+
+
+/* ---------------------------------------------------------- PSYNC ----
+   Cross-device sync for the main app: the same state on the phone and on
+   the laptop.
+
+   This is not new plumbing so much as a back end for plumbing that was
+   already here. touch() -> push() -> ART.publish() has always existed and
+   has been switched off since the app became single-user (initSync never
+   set ART, and both touch() and push() are gated on it). Everything that
+   makes that path safe — the debounce, the dirty flag that re-arms a save
+   that lands mid-flight, and above all the stateLoaded guard that refuses
+   to publish state we failed to read — is worth more than it would cost to
+   rewrite, so PSYNC supplies an ART whose publish() writes to Firestore
+   and changes nothing else.
+
+   Photos deliberately never travel. They are megabytes of base64 and the
+   thing actually worth syncing is the data and the schedules; push()
+   already sends them as a separate file, which this adapter ignores, and
+   applyRemote() keeps whichever photos are on this device.
+
+   The whole state goes over as ONE JSON string field rather than as a
+   structured document. Firestore cannot store an array inside an array,
+   and there is no promise anywhere in this app that no record ever nests
+   one — a string has no such rule, is written and read atomically, and
+   costs one document read per change instead of a fan-out.
+
+   Conflict resolution is whole-state, newest-wins, which is honest for one
+   person with two devices: edit in one place at a time and it is always
+   right; edit in both at once and the later save wins the document rather
+   than the two being merged into something neither device ever had. */
+var PSYNC = (() => {
+  const SDK   = "https://www.gstatic.com/firebasejs/10.12.2/";
+  const PARTS = ["firebase-app-compat.js","firebase-auth-compat.js",
+                 "firebase-firestore-compat.js"];
+  /* Which device is this? Written alongside every save so the listener can
+     recognise the echo of our own write and not re-apply it. */
+  const DEVICE_KEY = "pottingbench.deviceId";
+  let deviceId = null;
+  try{
+    deviceId = localStorage.getItem(DEVICE_KEY);
+    if(!deviceId){ deviceId = Math.random().toString(36).slice(2) + Date.now().toString(36);
+                   localStorage.setItem(DEVICE_KEY, deviceId); }
+  }catch(e){ deviceId = "anon" + Math.random().toString(36).slice(2); }
+
+  let ready=null, db=null, auth=null, uid=null, unsub=null, lastRev=0, started=false;
+
+  function loadScript(src){
+    return new Promise((ok, fail) => {
+      const s=document.createElement("script");
+      s.src=src; s.async=false; s.onload=ok;
+      s.onerror=()=>fail(new Error("offline"));
+      document.head.appendChild(s);
+    });
+  }
+
+  /* Idempotent, and shares one Firebase app with Teachbench: whichever
+     module starts first calls initializeApp, the other picks it up.
+     Calling it twice would throw. */
+  function init(){
+    if(ready) return ready;
+    ready = (async () => {
+      for(const p of PARTS) await loadScript(SDK + p);
+      if(!(firebase.apps && firebase.apps.length)) firebase.initializeApp(FIREBASE_CONFIG);
+      auth = firebase.auth();
+      db   = firebase.firestore();
+      return true;
+    })();
+    return ready;
+  }
+
+  const stateDoc = () =>
+    db.collection("users").doc(uid).collection("state").doc("main");
+
+  /* ---- writing ---- */
+  /* The shape push() expects: an object of path -> contents. Only
+     data/state.json is ours; data/photos.json is dropped on purpose. */
+  function makeArt(){
+    return { publish: async files => {
+      const raw = files["data/state.json"];
+      if(raw == null) return;                 // a photos-only publish: nothing to do
+      try{
+        await stateDoc().set({
+          json: raw,
+          rev: ++lastRev,
+          device: deviceId,
+          updatedAt: new Date().toISOString()
+        });
+      }catch(err){
+        /* Translated into the codes push() already knows how to handle,
+           so its retry, backoff and read-only handling all still apply. */
+        const c = err && err.code;
+        const e = new Error(String(c || "write-failed"));
+        if(c === "permission-denied")      e.code = "not_writer";
+        else if(c === "resource-exhausted")e.code = "rate_limited";
+        else if(c === "invalid-argument")  e.code = "too_large";
+        throw e;                              // anything else: push() retries
+      }
+    }};
+  }
+
+  /* ---- reading ---- */
+  function applyRemote(d){
+    let data=null;
+    try{ data = JSON.parse(d.json); }
+    catch(e){ console.error("PSYNC: remote state unreadable", e);
+              setSync("error","sync: bad data"); return; }
+    /* The same rule the local load path learned the hard way: a document we
+       cannot make sense of is not an empty app. Refuse it rather than let
+       it blank the screen and be written back over the real thing. */
+    if(!data || !data.products){ setSync("error","sync: bad data"); return; }
+
+    const keepPhotos = S.photos;              // photos are per-device, never synced
+    let next;
+    try{ next = migrate(data); }
+    catch(e){ console.error("PSYNC: remote state would not migrate", e);
+              setSync("error","sync: bad data"); return; }
+
+    S = next;
+    S.photos = keepPhotos || [];
+    lastRev = d.rev || 0;
+    /* Persist directly instead of via touch(): touch() would mark the state
+       dirty and schedule a push, sending the other device's own edit back
+       to it in an endless round trip. */
+    try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
+    try{ renderWho(); renderAll(); renderAcademy(); show(curView); }catch(e){}
+    setSync("saved","synced");
+  }
+
+  function watch(){
+    if(unsub){ unsub(); unsub=null; }
+    unsub = stateDoc().onSnapshot(snap => {
+      if(!snap.exists){ setSync("saved","synced"); return; }
+      const d = snap.data() || {};
+      if(d.device === deviceId){             // the echo of our own write
+        lastRev = Math.max(lastRev, d.rev || 0);
+        return;
+      }
+      if((d.rev || 0) <= lastRev) return;    // already have it, or older
+      /* Unsaved local work wins for now: our own push is seconds away and
+         will carry a higher revision. Applying here would throw away an
+         edit the user has just made and can still see on screen. */
+      if(dirty) return;
+      applyRemote(d);
+    }, err => {
+      console.warn("PSYNC: listener", err);
+      setSync("error", err && err.code === "permission-denied"
+        ? "sync: not allowed" : "sync: offline");
+    });
+  }
+
+  /* ---- session ---- */
+  /* Signed in as a real account: sync. Anonymous (a student device) or
+     signed out: behave exactly as the app did before, purely local. */
+  async function attach(user){
+    if(!user || user.isAnonymous){
+      if(unsub){ unsub(); unsub=null; }
+      uid=null; lastRev=0; ART=null;
+      setSync("local","this device");
+      renderPanel();
+      return;
+    }
+    uid = user.uid;
+    ART = makeArt();
+    setSync("saving","syncing…");
+    /* Pull before the first push, or an empty-ish device that happens to
+       save first would publish over the other one's state. */
+    try{
+      const snap = await stateDoc().get();
+      if(snap.exists){
+        const d = snap.data() || {};
+        if(d.device !== deviceId && !dirty) applyRemote(d);
+        else lastRev = Math.max(lastRev, d.rev || 0);
+      }else{
+        setSync("saved","synced");
+      }
+    }catch(e){
+      console.warn("PSYNC: first read", e);
+      setSync("error","sync: offline");
+    }
+    watch();
+    renderPanel();
+    /* Anything typed while we were connecting still needs sending. */
+    if(dirty) touch();
+  }
+
+  async function start(){
+    if(started) return; started = true;
+    try{ await init(); }
+    catch(e){ setSync("local","this device"); return; }   // offline: local as ever
+    auth.onAuthStateChanged(u => { attach(u).catch(err => console.warn("PSYNC", err)); });
+  }
+
+  async function signIn(email, password){
+    await init();
+    await auth.signInWithEmailAndPassword(email, password);
+  }
+  async function signOut(){
+    await init();
+    await auth.signOut();
+  }
+
+  /* ---- settings panel ----
+     Built here rather than in the markup so that two sessions editing this
+     file cannot collide over the same block of HTML. */
+  let panel = null;
+  function buildPanel(){
+    const host = document.querySelector("#setCatBench .setcat-body .stack")
+              || document.querySelector("#setCatBench .setcat-body");
+    if(!host) return null;
+    const wrap = document.createElement("div");
+    wrap.innerHTML =
+      '<h3 class="sec">Sync</h3>' +
+      '<div class="card pad"><div class="stack" id="psyncBody"></div></div>';
+    host.appendChild(wrap);
+    return wrap.querySelector("#psyncBody");
+  }
+  function renderPanel(){
+    if(!panel) panel = buildPanel();
+    if(!panel) return;
+    const user = auth && auth.currentUser;
+    if(user && !user.isAnonymous){
+      panel.innerHTML =
+        '<div class="field"><label>Signed in</label>' +
+        '<p class="hint">Syncing as <b></b>. Changes appear on your other ' +
+        'devices within a second or two. Photos stay on the device that took them.</p>' +
+        '<button class="btn" id="psyncOut">Sign out of sync</button></div>';
+      panel.querySelector("b").textContent = user.email || "your account";
+      panel.querySelector("#psyncOut").onclick = async () => {
+        if(!confirm("Sign this device out of sync? Your data stays on this device.")) return;
+        try{ await signOut(); }catch(e){}
+      };
+    }else{
+      panel.innerHTML =
+        '<div class="field"><label for="psyncEmail">Sync across devices</label>' +
+        '<p class="hint">Sign in with the same account on your phone and your ' +
+        'laptop and they keep the same data. Photos are not synced.</p>' +
+        '<input id="psyncEmail" type="email" autocomplete="username" placeholder="you@example.com">' +
+        '<input id="psyncPass" type="password" autocomplete="current-password" placeholder="Password">' +
+        '<button class="btn" id="psyncIn">Sign in</button>' +
+        '<p class="hint" id="psyncErr" hidden></p></div>';
+      const err = panel.querySelector("#psyncErr");
+      panel.querySelector("#psyncIn").onclick = async () => {
+        const b = panel.querySelector("#psyncIn");
+        err.hidden = true; b.disabled = true; b.textContent = "Signing in…";
+        try{
+          await signIn(panel.querySelector("#psyncEmail").value.trim(),
+                       panel.querySelector("#psyncPass").value);
+        }catch(e){
+          const c = e && e.code;
+          err.textContent =
+            c === "auth/wrong-password" || c === "auth/invalid-credential" ? "Wrong email or password." :
+            c === "auth/user-not-found" ? "No account with that email." :
+            c === "auth/network-request-failed" ? "No connection. Try again." :
+            "Could not sign in.";
+          err.hidden = false;
+        }finally{ b.disabled = false; b.textContent = "Sign in"; }
+      };
+    }
+  }
+
+  return { start, renderPanel };
+})();
 
 </script>

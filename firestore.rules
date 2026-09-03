@@ -130,5 +130,17 @@ service cloud.firestore {
         allow delete: if canManage(studentId);
       }
     }
+
+    // ---------- potting bench: one person's own app state ----------
+    // Cross-device sync for the main app (data and schedules; photos are
+    // never uploaded). Strictly private: a document under users/{userId}
+    // is readable and writable only by that signed-in account, and by
+    // nobody else at all — not other staff, not the owner. Anonymous
+    // student devices can never reach it, because their uid is not the
+    // uid in the path.
+    match /users/{userId}/state/{docId} {
+      allow read, write: if signedIn() && request.auth.uid == userId;
+    }
+
   }
 }
