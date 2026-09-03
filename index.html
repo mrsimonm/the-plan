@@ -2712,6 +2712,103 @@ html{overscroll-behavior-y:none}
 :root[data-theme="dark"]{ --sleep-hue:#7FA6C9; }
 :root[data-theme="light"]{ --sleep-hue:#A9CBE6; }
 </style>
+<style id="calendar-glass">
+/* ---- Liquid-glass treatment for the planner calendar board ----
+   Full-glamour edition. Sits after the app's own sheet so equal-specificity
+   rules win by source order. Token-driven (color-mix on --glass-* / --accent /
+   --surface-*) so every palette/theme stays coherent. No backdrop-filter on
+   repeated board elements — reflection is painted with gradients, per the
+   app's own performance rule. */
+
+/* ---- blocks: lit glass slabs ---- */
+.wb-blk{
+  box-shadow:
+    0 10px 24px -10px rgba(0,0,0,.6),
+    0 2px 4px rgba(0,0,0,.32),
+    inset 0 1px 0 rgba(255,255,255,.20),
+    inset 0 -1px 0 rgba(0,0,0,.24),
+    inset 0 0 0 1px rgba(255,255,255,.05);
+}
+.wb-blk::before{
+  content:""; position:absolute; inset:0; z-index:1; pointer-events:none;
+  background:
+    radial-gradient(130% 75% at 50% -14%, rgba(255,255,255,.28), transparent 54%),
+    linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,0) 50%),
+    linear-gradient(90deg, rgba(255,255,255,.06), transparent 26%, transparent 76%, rgba(255,255,255,.05));
+  mix-blend-mode:screen;
+}
+.wb-blk b,.wb-blk span{ position:relative; z-index:2; }
+.wb-blk b{ text-shadow:0 1px 1px rgba(0,0,0,.45); }
+
+/* ---- day columns: frosted glass panes ---- */
+.wb-col{
+  background:linear-gradient(180deg,
+    color-mix(in srgb,var(--glass-fill-2) 78%, var(--surface-2)),
+    color-mix(in srgb,var(--glass-fill) 62%, var(--surface-2)) 88%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.10),
+    inset -1px 0 0 rgba(255,255,255,.04);
+}
+/* lightly alternate so the board reads as separate plates */
+.wb-col:nth-child(odd){
+  background:linear-gradient(180deg,
+    color-mix(in srgb,var(--glass-fill-2) 86%, var(--surface-2)),
+    color-mix(in srgb,var(--glass-fill) 70%, var(--surface-2)) 88%);
+}
+
+/* ---- day headers: glass pills; today floods with accent ---- */
+.wb-head{
+  border-radius:10px; margin:2px 3px;
+  border:1px solid var(--glass-border);
+  background:color-mix(in srgb,var(--glass-fill-2) 74%,transparent);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14);
+  transition:background .18s, color .18s, box-shadow .18s;
+}
+.wb-head:hover{ background:color-mix(in srgb,var(--glass-fill-2) 96%,transparent); }
+.wb-col.today .wb-head{
+  background:linear-gradient(180deg,
+    color-mix(in srgb,var(--accent) 46%,var(--glass-fill-2)),
+    color-mix(in srgb,var(--accent) 30%,var(--glass-fill-2)));
+  border-color:color-mix(in srgb,var(--accent) 70%,transparent);
+  color:var(--on-accent);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.26), 0 5px 18px -5px color-mix(in srgb,var(--accent) 70%,transparent);
+  text-shadow:0 1px 1px rgba(0,0,0,.25);
+}
+
+/* ---- today's column: a lit accent pane ---- */
+.wb-col.today{
+  background:linear-gradient(180deg,
+    color-mix(in srgb,var(--accent) 26%,var(--glass-fill)),
+    color-mix(in srgb,var(--accent) 12%,var(--glass-fill)) 60%);
+  box-shadow:
+    inset 0 0 0 1.5px color-mix(in srgb,var(--accent) 70%,transparent),
+    inset 0 1px 0 rgba(255,255,255,.16),
+    0 0 34px -6px color-mix(in srgb,var(--accent) 60%,transparent);
+}
+
+/* ---- hour gutter: frosted strip; brighter, readable numbers ---- */
+.wb-gutter{
+  background:linear-gradient(180deg,var(--glass-fill-2),var(--glass-fill));
+  box-shadow:1px 0 0 rgba(255,255,255,.08), inset -1px 0 0 rgba(0,0,0,.16);
+}
+.wb-gutter-hours span{
+  color:var(--ink);
+  text-shadow:0 0 8px rgba(0,0,0,.55);
+}
+.wb-hl{ border-top-color:color-mix(in srgb,var(--grid-sep) 80%,transparent); }
+
+/* ---- now-line: glowing runner ---- */
+.wb-now.today{ border-top:2px solid var(--crit); box-shadow:0 0 12px color-mix(in srgb,var(--crit) 60%,transparent); }
+.wb-now.today::before{ box-shadow:0 0 8px color-mix(in srgb,var(--crit) 70%,transparent); }
+
+/* ---- the board's coat of glass: a faint top reflection across the grid ---- */
+.wb-scroll{ position:relative; }
+.wb-scroll::after{
+  content:""; position:absolute; inset:0 0 auto 0; height:120px; pointer-events:none; z-index:6;
+  background:linear-gradient(180deg, rgba(255,255,255,.06), transparent);
+  mix-blend-mode:screen;
+}
+</style>
 
 <header class="top">
   <button class="gear" id="settingsBtn" aria-label="Settings" title="Settings">⚙</button>
@@ -6039,7 +6136,7 @@ const STR_STOPS=[25,50,75,100];
 
 let S=seed();                     // shared, synced
 let L={me:"u1",vol:5,scope:"day",app:"bench",benchView:"garden",mode:"formula",formulaId:null,productId:null,
-       strength:100,done:{},adv:false,expert:false,chart:"col",ppmScale:700,lang:null,dayStartHour:4,theme:null,palette:"obsidian"};  // per-device
+       strength:100,done:{},adv:false,expert:false,chart:"col",ppmScale:700,lang:null,dayStartHour:4,theme:null,palette:"amethyst"};  // per-device
 const adv=()=>L.adv===true;
 const expert=()=>L.expert===true;
 
