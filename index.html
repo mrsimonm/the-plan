@@ -1262,6 +1262,13 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .psel-bar{display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:10px;
   padding:9px 12px; border-radius:var(--r-sm); background:var(--surface-2);
   border:1px solid var(--glass-border)}
+/* Same [hidden] trap as .navwrap/.field/.dlg-foot: an author rule with
+   display:flex beats the user-agent's [hidden]{display:none} whatever the
+   source order, so `bar.hidden=n===0&&!pStampSrc` in renderPlanner was setting
+   an attribute nothing honoured. The bar — "0 selected", Mark done, Not done,
+   Duplicate, Delete — has been sitting on the planner permanently, costing
+   150px on a phone. */
+.psel-bar[hidden]{display:none}
 .psel-bar b{font-size:13px; flex:0 0 auto; margin-right:2px}
 .psel-bar .grow{flex:1 1 auto}
 .wb-blk.lift{z-index:5; box-shadow:var(--shadow-lift); opacity:.9; cursor:grabbing}
@@ -3560,6 +3567,89 @@ html[data-design="r3"]{
 }
 
 </style>
+<style id="layout-modes">
+/* ============================================================================
+   PHONE / LANDSCAPE / WIDE — layout, not decoration. Scoped to data-layout and
+   data-orient so every design and palette keeps working underneath.
+   ============================================================================ */
+
+/* ---------------- phone ---------------- */
+html[data-layout="phone"] main{ padding:10px 10px 84px; max-width:none }
+html[data-layout="phone"] .pad{ padding:13px 13px }
+html[data-layout="phone"] .card-sec{ padding:11px 12px }
+html[data-layout="phone"] .sec-head h2{ font-size:20px }
+html[data-layout="phone"] .stack{ gap:9px }
+/* a finger needs a target: nothing interactive under 44px */
+html[data-layout="phone"] .btn{ min-height:44px; padding:10px 15px }
+html[data-layout="phone"] .btn.mini{ min-height:38px; padding:8px 13px; font-size:13.5px }
+html[data-layout="phone"] .chip{ min-height:40px }
+html[data-layout="phone"] select, html[data-layout="phone"] input[type="text"],
+html[data-layout="phone"] input[type="search"], html[data-layout="phone"] input[type="number"],
+html[data-layout="phone"] input[type="date"], html[data-layout="phone"] input[type="time"]{
+  min-height:44px; font-size:16px;   /* 16px or iOS zooms the page on focus */
+}
+
+/* The add form was 243px of always-open form above the calendar. On a phone it
+   shows its kind switch and its one text field; the date, time, hours and
+   project row unfolds when you actually put the caret in it. */
+html[data-layout="phone"] #pAddForm .qadd-row2{ display:none }
+html[data-layout="phone"] #pAddForm:focus-within .qadd-row2{ display:flex }
+html[data-layout="phone"] #pAddForm{ padding-bottom:11px }
+
+/* The board gets its own scroll instead of riding the page's, so the hours are
+   a pane you look at rather than a thing you scroll the whole app past. */
+html[data-layout="phone"] .wb-scroll{
+  max-height:calc(100dvh - 300px); min-height:240px; overflow-y:auto; overscroll-behavior:contain;
+  margin-top:8px; padding:4px 0;
+}
+html[data-layout="phone"] .wb-grid{ min-width:0 }
+html[data-layout="phone"] .wb-col{ min-width:0 }
+html[data-layout="phone"] .wb-gutter-hours span{ font-size:10px }
+
+/* On a phone you open the planner to look at the day, so the day goes first:
+   the calendar card is lifted above the add form and the summary. .pstack is
+   already a flex column, so this is one `order`. :has() is how the card is
+   picked out (it has no id of its own); where :has() is unsupported the order
+   simply stays as authored. */
+html[data-layout="phone"] .pstack > .card:has(#pScheduleBody){ order:-1 }
+
+/* the scope switch runs off the side of a phone rather than wrapping onto
+   three lines, and the row below it stays a row */
+html[data-layout="phone"] .pcal-head{ flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none;
+  gap:7px; margin-bottom:8px; padding-bottom:2px }
+html[data-layout="phone"] .pcal-head::-webkit-scrollbar{ display:none }
+html[data-layout="phone"] .pcal-head .segsm button{ padding:7px 11px; font-size:13px }
+html[data-layout="phone"] .ppl-search{ margin-bottom:8px }
+html[data-layout="phone"] .ppl-search-row{ flex-wrap:nowrap }
+
+/* ---------------- phone, turned sideways ----------------
+   844x390: wide and very short. The chrome has to give up almost all of its
+   vertical room so the board keeps what is left. */
+/* Orientation is asked of CSS, not of JavaScript. data-orient exists for the
+   hour-height estimate, but it is set from a resize/orientationchange event
+   and those are not guaranteed to arrive (a viewport that changes without
+   one leaves the attribute stale). The media query cannot be stale. */
+@media (orientation:landscape){
+  html[data-layout="phone"] .top{ padding:4px 12px }
+  html[data-layout="phone"] .navwrap{ padding:4px 10px 0 }
+  html[data-layout="phone"] main{ padding:8px 12px 60px }
+  html[data-layout="phone"] .sec-head{ margin-bottom:6px }
+  html[data-layout="phone"] .sec-head h2{ font-size:17px }
+  html[data-layout="phone"] .wb-scroll{ max-height:calc(100dvh - 150px); min-height:170px }
+  html[data-layout="phone"] #pAddForm{ display:none }
+  /* the summary and the sleep panel are the first things to go when there is
+     no height to spare — the day is what you turned the phone sideways for */
+  html[data-layout="phone"] .pcal-head{ margin-bottom:5px }
+  html[data-layout="phone"] .ppl-search{ display:none }
+}
+
+/* ---------------- wide ----------------
+   1180px and up the content column stops being a 1060px strip in the middle of
+   an empty screen: it takes the width, and the calendar takes it with it. */
+html[data-layout="wide"] main{ max-width:1440px; padding:18px 28px 64px }
+html[data-layout="wide"] .wb-grid{ min-width:0 }
+</style>
+
 <style id="dz-structural">
 /* ============================================================================
    THREE STRUCTURAL DESIGNS — s1 Rail, s2 Folio, s3 Briefing.
@@ -4441,6 +4531,15 @@ html[data-design="s3"] #dzBrief.on{ display:block; margin:6px 0 22px }
                   <option value="dark">Dark mode</option>
                 </select>
                 <p class="hint">Choose light or dark, or follow your device's system setting.</p>
+              </div>
+              <div class="field">
+                <label for="layoutSelect">Layout</label>
+                <select id="layoutSelect">
+                  <option value="auto">Automatic</option>
+                  <option value="phone">Phone</option>
+                  <option value="desktop">Desktop</option>
+                </select>
+                <p class="hint">Automatic reads the screen. Force Phone on a tablet, or Desktop in a small laptop window.</p>
               </div>
               <div class="field">
                 <label for="designSelect">Design</label>
@@ -8789,7 +8888,12 @@ function pMonthGen(m){ return (L.lang==="cs"?MONTH_CS_GEN:MONTH_EN)[m]; }
    board element, a slop arms mouse drags and long-press arms touch, and the
    DOM is never rebuilt mid-gesture — a ghost transform moves, the commit
    renders once on release. */
-const WB_PXH=34, WB_SNAP=0.25;
+/* Pixels per hour on the calendar board. This was a const at 34, which put a
+   24-hour day at 816px — taller than a phone screen, before any of the page's
+   own chrome. It is a `let` now and LAYOUT_PXH picks a value per layout; every
+   consumer (the hour lines, the block geometry, the "now" marker AND the drag
+   maths) reads the same variable, so they cannot drift apart. */
+let WB_PXH=34; const WB_SNAP=0.25;
 /* How far you drag a W/E handle for one day, when the board has no second
    column to snap to (Day view). Roughly a Plachta column, so the effort of
    spanning a day feels the same whichever board you are on. */
@@ -25287,5 +25391,117 @@ function dzApplyNow(){
   dzApplyNow();
 })();
 
+
+/* ============================================================================
+   LAYOUT — phone / normal / wide, and portrait / landscape.
+
+   Separate from the Design switch on purpose: a design is what the app looks
+   like, a layout is how much room it has. They compose, so any of the seven
+   designs can be used on a phone or on a wide laptop.
+
+   <html> carries data-layout="phone|normal|wide" and data-orient="portrait|
+   landscape". Settings offers Automatic (the default), or a forced Phone or
+   Desktop for when the automatic answer is wrong — a small laptop window, or
+   a tablet that wants the phone treatment.
+
+   Why a phone needs its own layout rather than a narrower one: measured on a
+   390x844 phone, the planner rendered 3672px tall. The add form (243px) and
+   the day summary (183px) came first, then the calendar card at 1374px, of
+   which the hour grid alone was 884px — so a whole day could not fit on the
+   screen even if it had started at the top. Both halves of that are fixed
+   here: the grid is sized to the room it actually has, and the chrome above
+   it collapses until it is asked for.
+   ============================================================================ */
+const LAYOUTS=["auto","phone","desktop"];
+function layoutMode(){
+  const pref=LAYOUTS.includes(L.layout)?L.layout:"auto";
+  if(pref==="phone") return "phone";
+  const w=window.innerWidth, h=window.innerHeight, small=Math.min(w,h);
+  if(pref==="desktop") return w>=1180?"wide":"normal";
+  /* Automatic, on the SHORTER side: a landscape phone is 844x390 — wide, but
+     only 390 tall — so width alone calls it a desktop and hands it a layout
+     that needs 800px of height. Whether the pointer is coarse is deliberately
+     not part of this: it made the rule untestable and a 500px-tall window on
+     a laptop is better served by the phone layout anyway. Anyone who
+     disagrees can force Desktop in Settings. */
+  if(small<=520) return "phone";
+  if(w>=1180) return "wide";
+  return "normal";
+}
+/* How tall an hour is, given the room the board will actually have. The board
+   sits under the page's own chrome, so the budget is the viewport minus what
+   is above it, and never less than a legible 16px per hour. */
+function layoutPxh(mode){
+  if(mode!=="phone") return 34;
+  const land=window.innerWidth>window.innerHeight;
+  const budget=Math.max(240,(window.innerHeight||800)-(land?150:330));
+  return Math.max(16,Math.min(34,Math.round(budget/24)));
+}
+let layoutCur="", layoutOrient="", layoutFitting=false, layoutMeasured=0;
+/* The estimate above is a guess at how much chrome sits above the board. Once
+   the board is actually on screen we can stop guessing and measure: whatever
+   room is left below its top edge is what a day has to fit into. Re-rendering
+   at the measured height converges in one step, because everything above the
+   grid keeps its height when the grid changes. */
+function layoutFit(){
+  if(layoutFitting) return;
+  if(document.documentElement.getAttribute("data-layout")!=="phone") return;
+  if(curView!=="planner") return;
+  const trk=document.querySelector("#pWeekBoard .wb-track"); if(!trk) return;
+  const top=trk.getBoundingClientRect().top;
+  if(top<=0||top>window.innerHeight) return;          /* scrolled away — nothing to measure */
+  const room=window.innerHeight-top-14;
+  if(room<160) return;
+  const want=Math.max(16,Math.min(34,Math.floor(room/24)));
+  layoutMeasured=want;
+  if(want===WB_PXH) return;
+  layoutFitting=true;
+  WB_PXH=want;
+  document.documentElement.style.setProperty("--wb-pxh",want+"px");
+  try{ if(typeof renderPlanner==="function") renderPlanner(); }catch(e){}
+  layoutFitting=false;
+}
+function applyLayout(){
+  const root=document.documentElement;
+  const mode=layoutMode();
+  const orient=(window.innerWidth>window.innerHeight)?"landscape":"portrait";
+  /* The estimate is only used until the board has been seen once. After that
+     the measured value wins — otherwise every resize, and every re-entry into
+     the planner, threw away the measurement and put the guess back. */
+  if(mode!==layoutCur||orient!==layoutOrient) layoutMeasured=0;
+  const pxh=layoutMeasured||layoutPxh(mode);
+  const changed=(mode!==layoutCur||orient!==layoutOrient||pxh!==WB_PXH);
+  root.setAttribute("data-layout",mode);
+  root.setAttribute("data-orient",orient);
+  root.style.setProperty("--wb-pxh",pxh+"px");
+  WB_PXH=pxh;
+  layoutCur=mode; layoutOrient=orient;
+  /* the board is drawn in pixels, so a new hour height means a redraw */
+  if(changed&&typeof renderPlanner==="function"&&curView==="planner"){ try{ renderPlanner(); }catch(e){} }
+  /* twice: once on the next frame, and once after the view transition and
+     renderPlanner have settled — the first pass often measures a board that
+     has not been drawn yet and bails out. */
+  requestAnimationFrame(layoutFit); setTimeout(layoutFit,140);
+}
+(function layoutWire(){
+  applyLayout();
+  let t=null;
+  const nudge=()=>{ clearTimeout(t); t=setTimeout(applyLayout,120); };
+  window.addEventListener("resize",nudge);
+  window.addEventListener("orientationchange",nudge);
+  /* arriving at the planner from another view is the other moment the board
+     first gets a size worth measuring */
+  const main=document.querySelector("main");
+  if(main) new MutationObserver(()=>{ requestAnimationFrame(layoutFit); setTimeout(layoutFit,140); })
+    .observe(main,{attributes:true,attributeFilter:["hidden"],subtree:true});
+  /* a forced choice is stored per device, like the palette and the design */
+  const sel=$("#layoutSelect");
+  if(sel){
+    sel.value=LAYOUTS.includes(L.layout)?L.layout:"auto";
+    sel.addEventListener("change",()=>{
+      L.layout=LAYOUTS.includes(sel.value)?sel.value:"auto"; saveLocal(); applyLayout();
+    });
+  }
+})();
 
 </script>
