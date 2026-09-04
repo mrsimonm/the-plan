@@ -3731,6 +3731,39 @@ dialog:has(> .dlg-foot) > .dlg-head,
 dialog:has(> .dlg-foot) > .dlg-foot{flex:0 0 auto}
 </style>
 
+<style id="checklist-tune">
+/* ---- subtask rows ----
+   A step is a line of text you tick, not a form field. Frosted Glass and
+   Monolith give every input a border and a 44-46px min-height — sensible for
+   a date or an hours box, wrong here: it turned each step into a chunky
+   control and made a four-step list twice as tall as the thing it belongs to.
+   The gem palettes never did this, so the panel read as thin on some themes
+   and bloated on others.
+
+   Steps opt out in every theme. This block sits after the palettes and after
+   layout-modes on purpose: the rules it overrides carry the same specificity,
+   so source order settles it, and that is cheaper to read than a selector
+   written to out-weigh them. The phone keeps more room to tap, and the 16px
+   font stays because anything smaller makes iOS zoom the page on focus. */
+.pstep .ptask-title{
+  min-height:0; height:auto; padding:2px 5px; border:0; background:none;
+  font-size:13.5px; line-height:1.35;
+}
+.pstep .ptask-title:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; background:var(--sunk) }
+.pstep{ padding:1px 0 }
+.psteps{ gap:1px }
+html[data-layout="phone"] .pstep .ptask-title{ min-height:32px; font-size:16px }
+
+/* The add row is the only one that repeats, so it says so: a press you can
+   see, not just an Enter you have to know about. */
+.pstep-new{ margin-top:2px }
+.pstep-add-btn{
+  flex:0 0 auto; appearance:none; border:0; background:none; cursor:pointer;
+  color:var(--ink-3); font:inherit; font-size:12px; padding:3px 8px; border-radius:5px;
+}
+.pstep-add-btn:hover{ background:var(--sunk); color:var(--ink) }
+.pstep-new .ptask-title::placeholder{ opacity:.75 }
+</style>
 <style id="dz-structural">
 /* ============================================================================
    THE SHELL — the rail.
@@ -11814,6 +11847,8 @@ function pChecklistRow(tk){
       <li class="pstep pstep-new">
         <span class="pstep-plus" aria-hidden="true">+</span>
         <input type="text" class="ptask-title" data-pstepadd="${tk.id}" placeholder="${esc(t("Add a subtask…"))}">
+        <button type="button" class="pstep-add-btn" data-pstepgo="${tk.id}"
+          aria-label="${esc(t("Add this subtask"))}">${esc(t("add"))}</button>
       </li>
     </ul>
   </div>`;
@@ -12439,17 +12474,30 @@ document.querySelector("#view-planner").addEventListener("click",async e=>{
     renderPlanner();
   }
 });
+/* One path for both ways of committing a subtask, so they can never drift.
+   Enter is the fast way once you know it; the "add" button beside the field is
+   the discoverable one — with only Enter, a list that plainly repeats still
+   looked like it took a single step. Focus returns to the add row either way,
+   so several can be typed one after another without reaching for the mouse. */
+function pAddStep(taskId,input){
+  const text=(input&&input.value||"").trim(); if(!text) return false;
+  const tk=pFindTask(taskId); if(!tk) return false;
+  tk.steps=tk.steps||[]; tk.steps.push({id:uid(),text,done:false});
+  touch(); renderPlanner();
+  const again=document.querySelector(`[data-pstepadd="${taskId}"]`);
+  if(again) again.focus();
+  return true;
+}
 document.querySelector("#view-planner").addEventListener("keydown",e=>{
   const add=e.target.closest("[data-pstepadd]");
   if(!add||e.key!=="Enter") return;
   e.preventDefault();
-  const text=add.value.trim(); if(!text) return;
-  const tk=pFindTask(add.dataset.pstepadd); if(!tk) return;
-  tk.steps=tk.steps||[]; tk.steps.push({id:uid(),text,done:false});
-  touch(); renderPlanner();
-  /* keep the cursor in the add row so several can be typed in a row */
-  const again=document.querySelector(`[data-pstepadd="${tk.id}"]`);
-  if(again) again.focus();
+  pAddStep(add.dataset.pstepadd,add);
+});
+document.querySelector("#view-planner").addEventListener("click",e=>{
+  const go=e.target.closest("[data-pstepgo]"); if(!go) return;
+  e.preventDefault();
+  pAddStep(go.dataset.pstepgo, go.parentElement.querySelector("[data-pstepadd]"));
 });
 document.querySelector("#view-planner").addEventListener("input",e=>{
   const title=e.target.closest("[data-ptitle]"), hours=e.target.closest("[data-phours]"),
