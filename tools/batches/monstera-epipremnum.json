@@ -1,0 +1,249 @@
+{
+  "plants": [
+    {
+      "name": "Monstera 'Thai Constellation'",
+      "category": "Aroids & foliage",
+      "water": 8, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "The cream marbling needs bright, indirect light and browns in harsh sun.",
+      "colour": "Creamy white-and-green marbled leaves"
+    },
+    {
+      "name": "Monstera 'Albo Variegata'",
+      "category": "Aroids & foliage",
+      "water": 8, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "The white sectors scorch easily. Bright, indirect light with no direct sun.",
+      "colour": "White sectors on green, half-moon on some leaves"
+    },
+    {
+      "name": "Monstera 'Thai Sunrise'",
+      "category": "Aroids & foliage",
+      "water": 8, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Gold variegation is stronger in good light; cut back any fully green stem.",
+      "colour": "Gold-yellow variegation on dark green"
+    },
+    {
+      "name": "Monstera 'Marmorata'",
+      "category": "Aroids & foliage",
+      "water": 8, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The yellow speckle holds in bright, indirect light and fades in shade.",
+      "colour": "Yellow speckled marbling on green"
+    },
+    {
+      "name": "Monstera 'Peru'",
+      "category": "Aroids & foliage",
+      "water": 9, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The quilted leaves drink slowly — let most of the soil dry between waterings.",
+      "colour": "Quilted dark green, almost leathery"
+    },
+    {
+      "name": "Monstera 'Standleyana'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "A self-clinging climber. Give it a moss pole and keep it out of cold drafts.",
+      "colour": "Glossy dark green with cream blotches"
+    },
+    {
+      "name": "Monstera 'Esqueleto'",
+      "category": "Aroids & foliage",
+      "water": 8, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The skeleton-like holes need bright, indirect light and a tall support to develop.",
+      "colour": "Deeply fenestrated, skeleton-like leaves"
+    },
+    {
+      "name": "Monstera obliqua 'Peru'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "False obliqua — the lacy holes stay deeper in bright, indirect light.",
+      "colour": "Lacy, hole-filled narrow leaves"
+    },
+    {
+      "name": "Monstera 'Dubia'",
+      "category": "Aroids & foliage",
+      "water": 8, "feed": 14, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "A shingle climber that scales flat surfaces; keep it humid and let the top dry out.",
+      "colour": "Juvenile shingled dark green with silver veining"
+    },
+    {
+      "name": "Monstera siltepecana",
+      "category": "Aroids & foliage",
+      "water": 8, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The silver speckle shows best on juvenile leaves in bright, indirect light.",
+      "colour": "Silver-speckled grey-green"
+    },
+    {
+      "name": "Monstera 'Burle Marx Flame'",
+      "category": "Aroids & foliage",
+      "water": 8, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "The winding cream variegation needs strong, indirect light to stay bright.",
+      "colour": "Winding, mottled cream-and-green"
+    },
+    {
+      "name": "Monstera pinnatipartita",
+      "category": "Aroids & foliage",
+      "water": 8, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Young leaves are solid; the deep lobes come with maturity and a pole to climb.",
+      "colour": "Deeply lobed climbing leaves"
+    },
+    {
+      "name": "Monstera adansonii 'Laniata'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "A vigorous climber. The holes stay pronounced with bright, indirect light.",
+      "colour": "Long-stalked leaves with pronounced fenestrations"
+    },
+    {
+      "name": "Epipremnum 'Neon'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The lime fades to green in dim light; bright, indirect light keeps it glowing.",
+      "colour": "Solid lime-yellow"
+    },
+    {
+      "name": "Epipremnum 'Njoy'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "The white edges need bright, indirect light; direct sun browns them.",
+      "colour": "Cream-white blotches on green"
+    },
+    {
+      "name": "Epipremnum 'Global Green'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The grey mottling softens in low light; it is hardier than its looks suggest.",
+      "colour": "Green with silvery-grey mottling"
+    },
+    {
+      "name": "Epipremnum 'Pearls and Jade'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Marbling needs bright, indirect light; too little and the leaves go green.",
+      "colour": "White, green and grey marbling"
+    },
+    {
+      "name": "Epipremnum 'Manjula'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Slow for a pothos. The wavy, marbled leaves scorch in direct sun.",
+      "colour": "Wavy leaves marbled cream and white"
+    },
+    {
+      "name": "Epipremnum 'Snow Queen'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "The most white of the pothos — bright, indirect light or the colour washes out.",
+      "colour": "Mostly white leaves with green flecks"
+    },
+    {
+      "name": "Epipremnum 'Jade'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 3, "humidity": 1, "toxic": 1,
+      "tip": "The plain green form is the most forgiving — happy in far dimmer corners.",
+      "colour": "Uniform dark green"
+    },
+    {
+      "name": "Epipremnum 'Cebu Blue'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The blue sheen shows best in bright light; older leaves can split like a Monstera.",
+      "colour": "Steel-blue, lance-shaped leaves"
+    },
+    {
+      "name": "Epipremnum 'Skeleton Key'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The key-shape appears only on mature vines — let it climb rather than hanging down.",
+      "colour": "Key-shaped leaf with a long basal stem"
+    },
+    {
+      "name": "Epipremnum 'Glacier'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "The silver edges need bright, indirect light and crisp air to stay clean.",
+      "colour": "Silver-veined, silver-edged green"
+    },
+    {
+      "name": "Epipremnum 'Jessenia'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Like a softer Marble Queen; the yellow-green marbling needs bright light.",
+      "colour": "Yellow-green marbling on green"
+    },
+    {
+      "name": "Epipremnum 'Harlequin'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "The white-dominant leaves are slow to grow and easy to sunburn — bright, indirect only.",
+      "colour": "White-dominant marbled leaves"
+    },
+    {
+      "name": "Epipremnum 'Shangri La'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The leaves stay crinkled and curled by nature; do not mistake it for a sick plant.",
+      "colour": "Crinkled, ruffled leaves"
+    },
+    {
+      "name": "Epipremnum 'Galaxy'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "A newer mottled pothos; keep the variegation bright with strong, indirect light.",
+      "colour": "Green flecked and marbled white"
+    },
+    {
+      "name": "Epipremnum 'Albo Variegata'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "White sectors scorch in sun and revert in shade — bright, indirect light holds them.",
+      "colour": "White-splashed green leaves"
+    },
+    {
+      "name": "Scindapsus 'Exotica'",
+      "category": "Aroids & foliage",
+      "water": 8, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The silver sheen fades in low light; bright, indirect light brings it back.",
+      "colour": "Silver-grey sheen, large wide leaves"
+    },
+    {
+      "name": "Scindapsus 'Argyraeus'",
+      "category": "Aroids & foliage",
+      "water": 8, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Water when the top of the soil dries — it rots sooner than it droops.",
+      "colour": "Silver dots on green"
+    },
+    {
+      "name": "Scindapsus 'Silver Lady'",
+      "category": "Aroids & foliage",
+      "water": 8, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "The heavy silver needs the brightest light you can give without direct sun.",
+      "colour": "Silver-dominant, almost metallic"
+    },
+    {
+      "name": "Scindapsus 'Treubii'",
+      "category": "Aroids & foliage",
+      "water": 8, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Grows upright before it trails. Let the top of the soil dry between waterings.",
+      "colour": "Dark solid green, upright"
+    },
+    {
+      "name": "Scindapsus 'Treubii Moonlight'",
+      "category": "Aroids & foliage",
+      "water": 8, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The silvery spears stay brightest in good indirect light.",
+      "colour": "Silvery spear-shaped leaves"
+    },
+    {
+      "name": "Scindapsus 'Jade Satin'",
+      "category": "Aroids & foliage",
+      "water": 8, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The satin finish is on the leaf, not the pot — wipe dust off so the sheen stays.",
+      "colour": "Satin jade-green with faint silver"
+    },
+    {
+      "name": "Scindapsus 'Alba Variegata'",
+      "category": "Aroids & foliage",
+      "water": 8, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "White sectors are sensitive — bright, indirect light, never hot sun.",
+      "colour": "White-marbled silver-green"
+    }
+  ]
+}

@@ -1,0 +1,298 @@
+{
+  "plants": [
+    {
+      "name": "Pinguicula moranensis",
+      "category": "Carnivorous",
+      "water": 5, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Swaps to small succulent leaves in winter. Stop tray watering then, or the crown rots.",
+      "colour": "Olive-green rosette flushing pink, with magenta flowers"
+    },
+    {
+      "name": "Pinguicula moranensis var. neovolcanica",
+      "category": "Carnivorous",
+      "water": 5, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Larger and flatter than the type. Give it a wide pot and keep the winter rosette dry.",
+      "colour": "Broad pale green leaves with large rose-pink flowers"
+    },
+    {
+      "name": "Pinguicula agnata",
+      "category": "Carnivorous",
+      "water": 4, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Stays carnivorous all year, so keep the compost just damp in winter rather than bone dry.",
+      "colour": "Thick apple-green leaves with translucent margins and white flowers"
+    },
+    {
+      "name": "Pinguicula agnata 'True Blue'",
+      "category": "Carnivorous",
+      "water": 4, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "The blue on the petal edge washes out in weak light. A bright sill holds it.",
+      "colour": "Apple-green leaves with white flowers edged blue-violet"
+    },
+    {
+      "name": "Pinguicula esseriana",
+      "category": "Carnivorous",
+      "water": 6, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Tiny and rot-prone. Water briefly from the tray, then let the compost dry back before the next.",
+      "colour": "Tight silver-green succulent rosette with purple-pink flowers"
+    },
+    {
+      "name": "Pinguicula ehlersiae",
+      "category": "Carnivorous",
+      "water": 6, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Leaf pullings root readily in damp sand, which is the easiest way to get more of it.",
+      "colour": "Grey-pink succulent rosette with pink flowers"
+    },
+    {
+      "name": "Pinguicula cyclosecta",
+      "category": "Carnivorous",
+      "water": 5, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "The colour comes from strong light, not from feeding. In shade it goes plain green and flat.",
+      "colour": "Blue-grey rosette, often purple-flushed, with violet flowers"
+    },
+    {
+      "name": "Pinguicula gypsicola",
+      "category": "Carnivorous",
+      "water": 6, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "The winter rosette looks nothing like the summer plant. Keep it dry until spring leaves appear.",
+      "colour": "Narrow strap summer leaves, tight succulent winter rosette, violet flowers"
+    },
+    {
+      "name": "Pinguicula moctezumae",
+      "category": "Carnivorous",
+      "water": 4, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Takes more water than most Mexican butterworts. Keep a shallow tray under it through summer.",
+      "colour": "Long narrow green leaves with large rose-pink flowers"
+    },
+    {
+      "name": "Pinguicula laueana",
+      "category": "Carnivorous",
+      "water": 5, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "One of the few red-flowered butterworts. Keep it bright, and dry it off once winter leaves form.",
+      "colour": "Green rosette with deep scarlet-red flowers"
+    },
+    {
+      "name": "Pinguicula emarginata",
+      "category": "Carnivorous",
+      "water": 5, "feed": 0, "light": 2, "humidity": 1, "toxic": 0,
+      "tip": "Prefers shade to a sunny sill and dislikes a hot dry spell. Keep it just damp.",
+      "colour": "Pale green leaves with white flowers veined violet"
+    },
+    {
+      "name": "Pinguicula rotundiflora",
+      "category": "Carnivorous",
+      "water": 6, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Very small and slow. Use a shallow pot so the mineral compost cannot stay wet underneath.",
+      "colour": "Small grey-green rosette with round pale lilac flowers"
+    },
+    {
+      "name": "Pinguicula debbertiana",
+      "category": "Carnivorous",
+      "water": 6, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "The resting rosette is smaller than a coin. Cut watering right back or the plant will vanish.",
+      "colour": "Silvery succulent rosette with violet-pink flowers"
+    },
+    {
+      "name": "Pinguicula jaumavensis",
+      "category": "Carnivorous",
+      "water": 6, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Sold separately though very close to P. ehlersiae. Same mineral compost and same dry winter.",
+      "colour": "Compact grey-green rosette with pale pink flowers"
+    },
+    {
+      "name": "Pinguicula zecheri",
+      "category": "Carnivorous",
+      "water": 5, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Wants a real dry rest. Withhold water once the succulent leaves form and resume in spring.",
+      "colour": "Bright green rosette with violet-purple flowers"
+    },
+    {
+      "name": "Pinguicula colimensis",
+      "category": "Carnivorous",
+      "water": 5, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Bigger than most Mexican species and hungrier for light. Keep it close to the glass.",
+      "colour": "Large green rosette with deep pink flowers"
+    },
+    {
+      "name": "Pinguicula heterophylla",
+      "category": "Carnivorous",
+      "water": 6, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Retreats to a tight resting bud and looks dead all winter. Leave it dry and it comes back.",
+      "colour": "Narrow strap leaves lying flat, with pink-purple flowers"
+    },
+    {
+      "name": "Pinguicula hemiepiphytica",
+      "category": "Carnivorous",
+      "water": 5, "feed": 0, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "A cloud-forest plant, so it takes more shade and hates dry heat. Keep the air moist.",
+      "colour": "Broad soft green leaves with large purple flowers"
+    },
+    {
+      "name": "Pinguicula gigantea",
+      "category": "Carnivorous",
+      "water": 4, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Stays carnivorous all year and never shrinks back. Keep it just damp, and never fully dry.",
+      "colour": "Very large flat pale green rosette with pale violet flowers"
+    },
+    {
+      "name": "Pinguicula mesophytica",
+      "category": "Carnivorous",
+      "water": 4, "feed": 0, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Central American and evergreen, with no dry rest. Water lightly right through the year.",
+      "colour": "Soft green rosette with violet flowers"
+    },
+    {
+      "name": "Pinguicula 'Sethos'",
+      "category": "Carnivorous",
+      "water": 5, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Vigorous and forgiving, and the usual first Mexican butterwort. Still give it a dry winter.",
+      "colour": "Green rosette with violet flowers striped white down each petal"
+    },
+    {
+      "name": "Pinguicula 'Weser'",
+      "category": "Carnivorous",
+      "water": 5, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Often confused with 'Sethos'. Care is identical: bright light, damp summer, dry winter.",
+      "colour": "Green rosette with magenta flowers and a white throat, unstriped"
+    },
+    {
+      "name": "Pinguicula 'Aphrodite'",
+      "category": "Carnivorous",
+      "water": 5, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "The long leaves arch over the pot rim. Water into the tray so the foliage stays dry.",
+      "colour": "Elongated arching leaves with large white flowers marked violet"
+    },
+    {
+      "name": "Pinguicula 'Pirouette'",
+      "category": "Carnivorous",
+      "water": 5, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Offsets freely into a clump. Split it every second year or the middle stops flowering.",
+      "colour": "Compact rosette flushed rose-pink, with pink flowers"
+    },
+    {
+      "name": "Pinguicula 'Titan'",
+      "category": "Carnivorous",
+      "water": 5, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "One of the largest hybrids. Give it a wide shallow pan rather than a deep pot.",
+      "colour": "Large pale green rosette with white to pale lilac flowers"
+    },
+    {
+      "name": "Pinguicula 'Tina'",
+      "category": "Carnivorous",
+      "water": 5, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Flowers for months and roots easily from leaf pullings. A good first butterwort.",
+      "colour": "Rounded lime-green leaves with pale lavender flowers"
+    },
+    {
+      "name": "Pinguicula 'Gina'",
+      "category": "Carnivorous",
+      "water": 5, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Vigorous enough to fill a pot in a season. Keep the winter rosette dry and it lasts years.",
+      "colour": "Green rosette with large violet-pink flowers"
+    },
+    {
+      "name": "Pinguicula 'John Rizzi'",
+      "category": "Carnivorous",
+      "water": 5, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "The flat wide leaves catch fungus gnats well. Do not let them lie on wet compost.",
+      "colour": "Broad flat green rosette with large pink flowers"
+    },
+    {
+      "name": "Pinguicula 'Florian'",
+      "category": "Carnivorous",
+      "water": 5, "feed": 0, "light": 2, "humidity": 1, "toxic": 0,
+      "tip": "Wants a little more shade than the moranensis hybrids. Bright indirect light suits it.",
+      "colour": "Narrow arching green leaves with violet flowers"
+    },
+    {
+      "name": "Pinguicula 'L'Hautil'",
+      "category": "Carnivorous",
+      "water": 5, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Compact and free-flowering. Feed it nothing: fertiliser in the tray burns the roots.",
+      "colour": "Grey-green rosette with lilac-pink flowers"
+    },
+    {
+      "name": "Pinguicula emarginata × gypsicola",
+      "category": "Carnivorous",
+      "water": 5, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Narrow leaves and a small winter rosette. Keep it dry from late autumn until spring.",
+      "colour": "Narrow strap-like leaves with pale violet flowers veined darker"
+    },
+    {
+      "name": "Pinguicula laueana × emarginata",
+      "category": "Carnivorous",
+      "water": 5, "feed": 0, "light": 2, "humidity": 1, "toxic": 0,
+      "tip": "Grow it bright but not baked, and let the compost dry back between waterings.",
+      "colour": "Green rosette with red-orange flowers"
+    },
+    {
+      "name": "Pinguicula grandiflora",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Needs a cold winter. It shrinks to a resting bud outdoors and will not survive indoors.",
+      "colour": "Yellow-green rosette with large violet flowers"
+    },
+    {
+      "name": "Pinguicula vulgaris",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "A hardy bog plant, not a windowsill one. Keep it outside, wet, and let it go dormant.",
+      "colour": "Pale yellow-green leaves with small violet flowers"
+    },
+    {
+      "name": "Pinguicula alpina",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Alpine and short-lived in warmth. It wants cool roots, constant moisture and a cold rest.",
+      "colour": "Small pale green rosette with white flowers marked yellow"
+    },
+    {
+      "name": "Pinguicula vallisneriifolia",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 2, "humidity": 1, "toxic": 0,
+      "tip": "Grows on damp shaded rock in the wild. Constant moisture, and shelter from midday sun.",
+      "colour": "Long strap-shaped green leaves with pale violet flowers"
+    },
+    {
+      "name": "Pinguicula longifolia subsp. reichenbachiana",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 2, "humidity": 1, "toxic": 0,
+      "tip": "Long leaves on a shallow root run. A wide pan kept wet suits it better than a deep pot.",
+      "colour": "Long narrow green leaves with pale lilac flowers"
+    },
+    {
+      "name": "Pinguicula primuliflora",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Makes plantlets on old leaf tips. Peg one down onto wet moss and it roots itself.",
+      "colour": "Bright green rosette with violet flowers and a white throat"
+    },
+    {
+      "name": "Pinguicula lutea",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "One of the few yellow-flowered species. Keep the tray topped up and give it full sun.",
+      "colour": "Flat green rosette with clear yellow flowers"
+    },
+    {
+      "name": "Pinguicula planifolia",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Grows almost submerged in the wild. Stand it in shallow water all year and give full sun.",
+      "colour": "Green rosette turning deep maroon in strong sun"
+    },
+    {
+      "name": "Pinguicula caerulea",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Full sun and a permanently wet tray. Rainwater only, as tap water kills it within weeks.",
+      "colour": "Green rosette with pale blue-violet flowers veined darker"
+    },
+    {
+      "name": "Pinguicula ionantha",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Protected in the wild, so buy nursery-propagated stock. Keep it wet, sunny and in rainwater.",
+      "colour": "Green rosette with white to pale violet flowers"
+    }
+  ]
+}

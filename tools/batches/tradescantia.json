@@ -1,0 +1,284 @@
+{
+  "plants": [
+    {
+      "name": "Tradescantia zebrina",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Pinch every stem back hard in spring. Left alone it goes bald at the crown and trails bare string.",
+      "colour": "Two silver bands on olive-purple leaves, deep magenta underside"
+    },
+    {
+      "name": "Tradescantia zebrina 'Purpusii'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "The purple is a sun pigment. In a dim spot it fades to bronze-green and stays that way.",
+      "colour": "Unbanded bronze to deep purple, faintly hairy"
+    },
+    {
+      "name": "Tradescantia zebrina 'Quadricolor'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Cut out any all-green shoots as they appear, or they will outgrow and swamp the striped ones.",
+      "colour": "Green, silver, cream and pink striping over a purple underside"
+    },
+    {
+      "name": "Tradescantia zebrina 'Silver Plus'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Broad silver means less chlorophyll and slower growth. Do not push it with extra feed.",
+      "colour": "Almost wholly silver leaf with narrow green margins, purple beneath"
+    },
+    {
+      "name": "Tradescantia zebrina 'Violet Hill'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Grow it bright to keep the near-black colour. Reverted green growth should be cut out at the node.",
+      "colour": "Very dark violet leaves with a faint silver sheen"
+    },
+    {
+      "name": "Tradescantia fluminensis",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "It roots from any node that touches damp compost. Trim it back rather than letting it sprawl and rot.",
+      "colour": "Plain glossy mid-green with purple-tinged stems"
+    },
+    {
+      "name": "Tradescantia fluminensis 'Tricolor'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The pink only holds in bright light. Remove reverted green stems, as reverted growth never comes back.",
+      "colour": "Green and cream stripes flushed pink at the leaf edge"
+    },
+    {
+      "name": "Tradescantia fluminensis 'Albovittata'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Grows faster than the pink forms and reverts less. Pinch tips monthly to keep it dense.",
+      "colour": "Mid-green with clean white longitudinal stripes"
+    },
+    {
+      "name": "Tradescantia fluminensis 'Quicksilver'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Vigorous and quick to go leggy. Cut it back by half in spring and root the trimmings in the same pot.",
+      "colour": "Broad white and grey-green stripes on a green ground"
+    },
+    {
+      "name": "Tradescantia fluminensis 'Maiden's Blush'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "New growth carries the pink; old leaves green over. Keep pinching to force fresh coloured shoots.",
+      "colour": "Cream and green leaves with strong pink on the new growth"
+    },
+    {
+      "name": "Tradescantia pallida 'Purpurea'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Wants more direct sun than the rest of the genus. Too little and the purple turns dull green.",
+      "colour": "Deep violet-purple lance-shaped leaves, pale pink flowers"
+    },
+    {
+      "name": "Tradescantia pallida 'Pink Stripes'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "The stripes come out on new leaves in bright light. Shade gives plain purple growth instead.",
+      "colour": "Purple leaves streaked with pink and pale green"
+    },
+    {
+      "name": "Tradescantia spathacea",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "It holds water in the leaf bases, so let the top half of the pot dry before watering again.",
+      "colour": "Stiff green rosette with deep purple undersides"
+    },
+    {
+      "name": "Tradescantia spathacea 'Tricolor'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Water at the compost, not into the rosette, or the packed leaf bases will rot.",
+      "colour": "Green and cream striped leaves with pink flushing, purple beneath"
+    },
+    {
+      "name": "Tradescantia spathacea 'Sitara's Gold'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The yellow burns in direct sun. Bright indirect light keeps it gold rather than bleached.",
+      "colour": "Yellow-gold and green striped leaves, purple undersides"
+    },
+    {
+      "name": "Tradescantia spathacea 'Vittata'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "A dwarf form that offsets from the base. Split the clump every second spring to keep it tidy.",
+      "colour": "Compact rosette striped cream and green, purple below"
+    },
+    {
+      "name": "Tradescantia sillamontana",
+      "category": "Aroids & foliage",
+      "water": 14, "feed": 30, "light": 1, "humidity": 0, "toxic": 1,
+      "tip": "Treat it as a succulent. The felted leaves mark if watered overhead, so water the compost only.",
+      "colour": "Grey-green leaves under dense white wool, magenta flowers"
+    },
+    {
+      "name": "Tradescantia 'Nanouk'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Thicker stemmed than most and slower to trail. Bright light keeps the pink; shade turns it green.",
+      "colour": "Broad green leaves striped cream and bright pink, purple beneath"
+    },
+    {
+      "name": "Tradescantia cerinthoides 'Variegata'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Sturdier and more upright than the trailing kinds. Cut back any plain green reversion at once.",
+      "colour": "Thick green leaves striped cream, undersides deep maroon"
+    },
+    {
+      "name": "Tradescantia chrysophylla 'Baby Bunny Bellies'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "The soft leaves scorch in direct sun and crisp in dry air. Keep it out of the path of radiators.",
+      "colour": "Velvety olive-green leaves with rich burgundy undersides"
+    },
+    {
+      "name": "Tradescantia 'Bubblegum'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Colour is light-driven. In a dim corner the pink drains away and the stems stretch between leaves.",
+      "colour": "Green leaves washed pink and cream, magenta undersides"
+    },
+    {
+      "name": "Tradescantia virginiana",
+      "category": "Flowering",
+      "water": 5, "feed": 30, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Each flower lasts a morning. Shear the whole clump back after the first flush and it repeats.",
+      "colour": "Grassy green leaves, three-petalled violet-blue flowers"
+    },
+    {
+      "name": "Tradescantia ohiensis",
+      "category": "Flowering",
+      "water": 5, "feed": 30, "light": 0, "humidity": 1, "toxic": 1,
+      "tip": "Tougher and more drought-tolerant than the garden hybrids, but it flops in rich soil and shade.",
+      "colour": "Blue-grey waxy foliage, pale blue to purple flowers"
+    },
+    {
+      "name": "Tradescantia 'Sweet Kate'",
+      "category": "Flowering",
+      "water": 5, "feed": 30, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "The gold foliage scorches in hard midday sun. Morning sun with afternoon shade keeps it clean.",
+      "colour": "Bright chartreuse-gold leaves with deep blue flowers"
+    },
+    {
+      "name": "Tradescantia 'Concord Grape'",
+      "category": "Flowering",
+      "water": 5, "feed": 30, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Cut it to the ground when the foliage tires in midsummer. Fresh leaves and a second flush follow.",
+      "colour": "Blue-grey foliage with rich purple-grape flowers"
+    },
+    {
+      "name": "Tradescantia 'Zwanenburg Blue'",
+      "category": "Flowering",
+      "water": 5, "feed": 30, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Large flowered and inclined to flop. Give it a support ring early rather than staking it later.",
+      "colour": "Green strap leaves, large deep blue flowers"
+    },
+    {
+      "name": "Tradescantia 'Osprey'",
+      "category": "Flowering",
+      "water": 5, "feed": 30, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Deadhead the spent stems to stop it seeding about, as seedlings come nothing like the parent.",
+      "colour": "White flowers with a fluffy blue central boss"
+    },
+    {
+      "name": "Tradescantia 'Bilberry Ice'",
+      "category": "Flowering",
+      "water": 5, "feed": 30, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Keep the soil moist. Drought turns the lower leaves yellow and it will not green up again.",
+      "colour": "Pale lilac-white petals with a deeper violet centre stripe"
+    },
+    {
+      "name": "Tradescantia 'Innocence'",
+      "category": "Flowering",
+      "water": 5, "feed": 30, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "The white shows every mark, so shear off tired stems as soon as the first flush finishes.",
+      "colour": "Pure white flowers with yellow stamens, mid-green leaves"
+    },
+    {
+      "name": "Tradescantia 'Red Grape'",
+      "category": "Flowering",
+      "water": 5, "feed": 30, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Flowers most freely in sun with moisture at the root. Dry shade gives leaves and almost nothing else.",
+      "colour": "Deep rose-magenta flowers over green foliage"
+    },
+    {
+      "name": "Tradescantia 'Little Doll'",
+      "category": "Flowering",
+      "water": 5, "feed": 30, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "A compact form that suits a pot. Divide it every third spring or the middle of the clump dies out.",
+      "colour": "Pale lavender-blue flowers on a short tidy clump"
+    },
+    {
+      "name": "Tradescantia 'Karminglut'",
+      "category": "Flowering",
+      "water": 5, "feed": 30, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Cut back by half after flowering. Left uncut it splays open and shows bare stem at the centre.",
+      "colour": "Carmine-red flowers against grey-green leaves"
+    },
+    {
+      "name": "Tradescantia 'Charlotte'",
+      "category": "Flowering",
+      "water": 5, "feed": 30, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Wants steady moisture and will wilt fast in a small pot. Mulch the crown rather than feeding harder.",
+      "colour": "Soft pink flowers with paler centres"
+    },
+    {
+      "name": "Tradescantia 'Purple Dome'",
+      "category": "Flowering",
+      "water": 5, "feed": 30, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Free flowering over a long season. Remove seed heads weekly and it keeps producing buds.",
+      "colour": "Rich purple flowers on a dense rounded clump"
+    },
+    {
+      "name": "Tradescantia 'Pauline'",
+      "category": "Flowering",
+      "water": 5, "feed": 30, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Taller than most, so plant it where neighbours can hold it up. Staking singly looks wrong.",
+      "colour": "Pale mauve-pink flowers with prominent stamens"
+    },
+    {
+      "name": "Tradescantia 'Blue Stone'",
+      "category": "Flowering",
+      "water": 5, "feed": 30, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Happier in damp ground than most perennials. It will take a border edge that stays wet in winter.",
+      "colour": "Clear mid-blue flowers over narrow green leaves"
+    },
+    {
+      "name": "Tradescantia 'Danielle'",
+      "category": "Flowering",
+      "water": 5, "feed": 30, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Shear to the ground in midsummer once it looks tired, and it returns fresh for a late flush.",
+      "colour": "White flowers held above upright green foliage"
+    },
+    {
+      "name": "Tradescantia 'J.C. Weguelin'",
+      "category": "Flowering",
+      "water": 5, "feed": 30, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "One of the largest flowered, and it needs the moisture to match. Never let the clump dry out.",
+      "colour": "Large soft china-blue flowers"
+    },
+    {
+      "name": "Tradescantia 'Leonora'",
+      "category": "Flowering",
+      "water": 5, "feed": 30, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Reliable and upright. Divide in spring rather than autumn, as new divisions rot in cold wet soil.",
+      "colour": "Violet-blue flowers over grey-green strap leaves"
+    },
+    {
+      "name": "Tradescantia 'Purewell Giant'",
+      "category": "Flowering",
+      "water": 5, "feed": 30, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Vigorous and wide spreading. Give it half a metre or it will lean over smaller neighbours.",
+      "colour": "Deep carmine-purple flowers on a tall clump"
+    }
+  ]
+}

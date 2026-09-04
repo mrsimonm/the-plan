@@ -1,0 +1,284 @@
+{
+  "plants": [
+    {
+      "name": "Dionaea 'Akai Ryu'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The burgundy only develops in hours of direct sun. In shade it greens up and stays that way until the next season.",
+      "colour": "Deep burgundy throughout, petioles and traps"
+    },
+    {
+      "name": "Dionaea 'Alien'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Distorted traps catch less, so it grows slowly. Leave the traps alone and let it feed itself outdoors in summer.",
+      "colour": "Green traps with a red interior and blunt, irregular teeth"
+    },
+    {
+      "name": "Dionaea 'B52'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Traps this size need a full season of direct sun to build. Rainwater only, as tap water kills it within months.",
+      "colour": "Green outside, deep red inside, on very large traps"
+    },
+    {
+      "name": "Dionaea 'Bohemian Garnet'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Compact and slow. Give it a cold winter rest of three months or it exhausts itself and dies in its second year.",
+      "colour": "Dark garnet-red rosette, low and compact"
+    },
+    {
+      "name": "Dionaea 'Clayton's Red Sunset'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Red interiors fade fast in indirect light. A south-facing spot outdoors from spring onwards keeps the colour.",
+      "colour": "Bright red trap interiors on green petioles"
+    },
+    {
+      "name": "Dionaea 'Coquillage'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The cupped traps rarely close on prey. Feed it nothing; it lives perfectly well on photosynthesis alone.",
+      "colour": "Green shell-shaped traps, flushed red inside"
+    },
+    {
+      "name": "Dionaea 'Cupped Trap'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Fused lobes mean the traps barely function, so never fertilise the soil to compensate. It burns the roots.",
+      "colour": "Pale green fused cup-shaped traps"
+    },
+    {
+      "name": "Dionaea 'Dentate Traps'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Short teeth interlock cleanly and catch well. Keep the pot standing in two centimetres of rainwater.",
+      "colour": "Green with a red interior and short triangular teeth"
+    },
+    {
+      "name": "Dionaea 'Fondue'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Traps distort most in summer heat and look more ordinary in spring. Nothing is wrong with the plant.",
+      "colour": "Green traps that look melted and run together"
+    },
+    {
+      "name": "Dionaea 'Fused Tooth'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The fused teeth leave gaps, so prey escapes. That is fine, as a flytrap needs no insects to survive indoors.",
+      "colour": "Green with red interiors, teeth fused in pairs"
+    },
+    {
+      "name": "Dionaea 'Green Dragon'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The red lining needs direct sun to deepen. Peat and sharp sand only, never potting compost.",
+      "colour": "Green outside with a deep red trap lining"
+    },
+    {
+      "name": "Dionaea 'Holland Red'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Sold everywhere and often potted in the wrong soil. Repot into peat and sand within the first year.",
+      "colour": "Green petioles with strongly red trap interiors"
+    },
+    {
+      "name": "Dionaea 'Jaws'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Vigorous enough to clump quickly. Divide in early spring, before the traps of the new season open.",
+      "colour": "Green with red interiors and long shark-like teeth"
+    },
+    {
+      "name": "Dionaea 'Justina Davis'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Stays green no matter how much sun it gets, so pale colour is not a sign that the light is short.",
+      "colour": "Entirely green, with no red anywhere even in full sun"
+    },
+    {
+      "name": "Dionaea 'Korean Melody Shark'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The traps often fail to shut fully. Leave them be and water from below with rainwater.",
+      "colour": "Light tangerine traps on vine-like green petioles"
+    },
+    {
+      "name": "Dionaea 'Korrigans'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Small and slow to bulk up. Three cold months over winter, then it starts again from the rhizome.",
+      "colour": "Green cupped traps with short teeth"
+    },
+    {
+      "name": "Dionaea 'Louchapates'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The wide flat spines let small prey walk back out. Never make up for it with fertiliser in the soil.",
+      "colour": "Burgundy traps with long, wide, flattened spines"
+    },
+    {
+      "name": "Dionaea 'Microdent'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Short teeth close tightly on gnats. Keep the soil wet at all times; it will not recover from drying out.",
+      "colour": "Green with red interiors and very short teeth"
+    },
+    {
+      "name": "Dionaea 'Mirror'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "A mutant with unreliable traps and slow growth. Judge it on the rosette, not on what it catches.",
+      "colour": "Green traps with fused, mirrored teeth"
+    },
+    {
+      "name": "Dionaea 'Petite Dragon'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Small enough to lose in a big pot. Grow it in a shallow container of peat and sand, in full sun.",
+      "colour": "Small red traps on short green petioles"
+    },
+    {
+      "name": "Dionaea 'Red Burgundy'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Colour builds through the season and is deepest by late summer. It will not go red on a shaded sill.",
+      "colour": "Burgundy-red traps deepening through the season"
+    },
+    {
+      "name": "Dionaea 'Red Piranha'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Thick short teeth hold larger prey. Cut off the flower stalk unless you want seed, as flowering sets it back.",
+      "colour": "Red traps with short, thick, blunt teeth"
+    },
+    {
+      "name": "Dionaea 'Royal Red'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "One of the darkest, but only in unshaded direct sun. Indoor light turns it a dull green within weeks.",
+      "colour": "Deep red-purple across the whole plant"
+    },
+    {
+      "name": "Dionaea 'Sawtooth'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Uneven teeth make the traps look damaged when they are not. Rainwater or distilled water only.",
+      "colour": "Green with red interiors and uneven, saw-like teeth"
+    },
+    {
+      "name": "Dionaea 'Wacky Traps'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Traps twist and often will not shut. Grow it for the shape and let it photosynthesise.",
+      "colour": "Green, twisted and irregular traps"
+    },
+    {
+      "name": "Dionaea 'Big Mouth'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Broad traps colour up strongly outdoors. Put it out after the last frost and leave it out until autumn.",
+      "colour": "Wide rounded traps with strong red interiors"
+    },
+    {
+      "name": "Dionaea 'Low Giant'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Grows flat rather than upright, so it needs light from directly above rather than from a side window.",
+      "colour": "Large red traps held low and flat"
+    },
+    {
+      "name": "Dionaea 'Ginormous'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Big traps need a deep pot, as the roots go down further than the plant suggests. Rainwater only.",
+      "colour": "Very large candy-red traps on thick petioles"
+    },
+    {
+      "name": "Dionaea 'King Henry'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Fast and free-clumping. Split the clump every second spring or the crowns compete and the traps shrink.",
+      "colour": "Large traps turning scarlet in full sun"
+    },
+    {
+      "name": "Dionaea 'Maroon Monster'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The maroon deepens with direct sun and cold nights. It will look ordinary green in a heated room.",
+      "colour": "Deep maroon traps edged in apple green"
+    },
+    {
+      "name": "Dionaea 'Long Red Fingers'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The long crossed spines are the point of it. Keep it wet and unfed and they lengthen through the season.",
+      "colour": "Red cupped traps with long, crossed spines"
+    },
+    {
+      "name": "Dionaea 'Trichterfalle'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The funnel traps cannot close on prey at all. Treat it as a foliage plant and never fertilise it.",
+      "colour": "Green funnel-shaped traps, fused at the base"
+    },
+    {
+      "name": "Dionaea 'Phalanx'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The long spines need a full season to reach their length. Cut off flower stalks to keep the energy in the traps.",
+      "colour": "Red traps with exceptionally long red spines"
+    },
+    {
+      "name": "Dionaea 'Whale'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Low and wide, so give it a broad shallow pot. It sits happily in a tray of rainwater all summer.",
+      "colour": "Bright yellow-green, low and wavy traps"
+    },
+    {
+      "name": "Dionaea 'Triton'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The largest of the cup-trap forms, and still slow. Do not repot more than once every two years.",
+      "colour": "Bright yellow-green hooded cup traps"
+    },
+    {
+      "name": "Dionaea 'Angel Wings'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Splayed traps still catch well, so it needs no help. Water from the tray and never from above.",
+      "colour": "Traps splayed wide open, green through yellow to red"
+    },
+    {
+      "name": "Dionaea 'Cross Teeth'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Colour swings from green to orange to purple with the light it gets. All of them are healthy.",
+      "colour": "Cupped traps in green, orange or purple with crossed spines"
+    },
+    {
+      "name": "Dionaea 'Spider'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Upright petioles reach for light and will lean badly on a windowsill. Turn the pot weekly.",
+      "colour": "Green traps on thin, upright petioles"
+    },
+    {
+      "name": "Dionaea 'Bristle Tooth'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Vigorous, with red interiors that need direct sun. Give it three cold months of dormancy each winter.",
+      "colour": "Bright red trap interiors with jagged, irregular teeth"
+    },
+    {
+      "name": "Dionaea 'Dracula'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Arched traps and red teeth both fade indoors. It wants outdoor sun from spring to the first frost.",
+      "colour": "Arched traps banded red outside, with red fang-like teeth"
+    }
+  ]
+}

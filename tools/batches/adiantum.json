@@ -1,0 +1,284 @@
+{
+  "plants": [
+    {
+      "name": "Adiantum raddianum",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "One dry day costs you the fronds. Keep the compost damp, and cut a crisped plant to the base to force fresh growth.",
+      "colour": "Fresh mid-green fans on wiry black stems"
+    },
+    {
+      "name": "Adiantum raddianum 'Fragrans'",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "The florist's maidenhair, sold in tight pots that dry out fast. Water before the surface goes pale, not after.",
+      "colour": "Dense pale green fans, finely divided"
+    },
+    {
+      "name": "Adiantum raddianum 'Fritz Luthi'",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Compact enough for a terrarium or a bathroom shelf. Dry air browns the outer fronds first.",
+      "colour": "Compact mid-green fans held in overlapping tiers"
+    },
+    {
+      "name": "Adiantum raddianum 'Kensington Gem'",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "More robust than most delta maidenhairs, but still unforgiving of a dry rootball. Water from below to spare the crown.",
+      "colour": "Broad deep green fans on dark, arching stems"
+    },
+    {
+      "name": "Adiantum raddianum 'Microphyllum'",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "The small leaflets crisp faster than larger forms. Stand the pot on damp gravel rather than misting it.",
+      "colour": "Very small mid-green pinnae, lacy overall"
+    },
+    {
+      "name": "Adiantum raddianum 'Gracillimum'",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "The finest fronds of the group and the least forgiving. It wants steady damp and no draught from a door or vent.",
+      "colour": "Extremely fine, feathery light green foliage"
+    },
+    {
+      "name": "Adiantum raddianum 'Elegans'",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Grows lax and looks best raised on a stand. Trim spent fronds at the base to stop the middle going bare.",
+      "colour": "Soft green fans on lax, trailing stems"
+    },
+    {
+      "name": "Adiantum raddianum 'Variegatum'",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "The white flecking fades in a dim corner and scorches in sun. Bright indirect light holds the pattern.",
+      "colour": "Mid-green pinnae flecked and streaked with white"
+    },
+    {
+      "name": "Adiantum raddianum 'Ocean Spray'",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Sold as a dense dome that hides a dry centre. Check the compost in the middle of the pot, not at the rim.",
+      "colour": "Pale sea-green fans with a slightly ruffled edge"
+    },
+    {
+      "name": "Adiantum raddianum 'Pacific Maid'",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Vigorous for a maidenhair and quick to fill a pot. Repot once it starts drying out within a day or two.",
+      "colour": "Broad, overlapping bright green pinnae"
+    },
+    {
+      "name": "Adiantum raddianum 'Pacotti'",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Holds a tight shape, so a bare patch means the roots dried out. Cut it back hard and keep it damp.",
+      "colour": "Dense dark green fronds on a compact, upright plant"
+    },
+    {
+      "name": "Adiantum raddianum 'Brilliantelse'",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "A nursery selection grown for speed, and it drinks accordingly. In summer it may want water every other day.",
+      "colour": "Glossy fresh green fans, densely packed"
+    },
+    {
+      "name": "Adiantum raddianum 'Tinctum'",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "The pink sits only on new growth, so feed lightly through summer to keep fresh fronds coming.",
+      "colour": "New fronds flushed pink, ageing to mid-green"
+    },
+    {
+      "name": "Adiantum tenerum",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Coarser than delta maidenhair and just as intolerant of drying. The stems snap, so lift it by the pot.",
+      "colour": "Large fan-shaped pinnae in bright green on black stems"
+    },
+    {
+      "name": "Adiantum tenerum 'Farleyense'",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Sterile, so it can only be divided, never grown from spores. It sulks below about 15C and wants steady damp.",
+      "colour": "Large, ruffled, overlapping pale green pinnae"
+    },
+    {
+      "name": "Adiantum tenerum 'Scutum Roseum'",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "The rose flush lasts a week or two on each new frond, so warmth through summer is what keeps the colour going.",
+      "colour": "New fronds a strong rose pink, maturing mid-green"
+    },
+    {
+      "name": "Adiantum tenerum 'Lady Moxam'",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Dense growth traps moisture, so give it moving air as well as humidity or the crown rots.",
+      "colour": "Densely overlapping, slightly ruffled bright green pinnae"
+    },
+    {
+      "name": "Adiantum hispidulum",
+      "category": "Palms & ferns",
+      "water": 5, "feed": 28, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Tougher than the delta maidenhairs and forgives a brief dry spell, though the frond tips still crisp.",
+      "colour": "Bronze-pink new fronds hardening to rough, dull green"
+    },
+    {
+      "name": "Adiantum hispidulum 'Bronze Venus'",
+      "category": "Palms & ferns",
+      "water": 5, "feed": 28, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Bright indirect light brings the bronze out. In shade the new fronds come through plain green instead.",
+      "colour": "New fronds deep copper-bronze, ageing to mid-green"
+    },
+    {
+      "name": "Adiantum capillus-veneris",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "It grows on wet limestone in the wild, so hard tap water suits it. Drying out is the thing that kills it.",
+      "colour": "Delicate pale green wedges on hair-fine black stems"
+    },
+    {
+      "name": "Adiantum peruvianum",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Coin-sized pinnae that snap easily, so keep it where nothing brushes past. Warmth and damp air all year.",
+      "colour": "Very large, coin-sized pinnae, pink when new"
+    },
+    {
+      "name": "Adiantum trapeziforme",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Fronds reach about a metre, so it needs floor space rather than a shelf. Stake the arching stems if they splay.",
+      "colour": "Large diamond-shaped pinnae on arching fronds"
+    },
+    {
+      "name": "Adiantum macrophyllum",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 3, "humidity": 2, "toxic": 0,
+      "tip": "Fewer, bigger leaflets than most maidenhairs. Deep shade and constant damp suit it, as does a closed case.",
+      "colour": "Few large pinnae, coppery pink when new, then deep green"
+    },
+    {
+      "name": "Adiantum formosum",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Spreads by underground rhizome and surfaces away from the parent, so give it a wide pot or a bed of its own.",
+      "colour": "Tall triangular fronds, dark green on black stems"
+    },
+    {
+      "name": "Adiantum caudatum",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Frond tips root where they touch soil, so peg one into a second pot to make a new plant.",
+      "colour": "Narrow arching fronds, hairy, mid-green"
+    },
+    {
+      "name": "Adiantum reniforme",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 28, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Not fern-shaped at all: each frond is a single kidney-shaped blade. It rots in soggy compost, so ease off in winter.",
+      "colour": "Single round kidney-shaped blades on fine black stalks"
+    },
+    {
+      "name": "Adiantum polyphyllum",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 3, "humidity": 2, "toxic": 0,
+      "tip": "Big and vigorous for a maidenhair. A deep pot keeps the roots cool and slows the drying that kills it.",
+      "colour": "Large arching fronds with many small blue-green pinnae"
+    },
+    {
+      "name": "Adiantum concinnum",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Naturally drooping, so it suits a hanging pot. The thin fronds crisp quickly above a radiator.",
+      "colour": "Drooping, finely divided fronds in soft light green"
+    },
+    {
+      "name": "Adiantum diaphanum",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 3, "humidity": 2, "toxic": 0,
+      "tip": "Small enough for a terrarium, where the closed air suits its thin fronds. It cannot cope with a dry room.",
+      "colour": "Small dark green pinnae, thin and almost translucent"
+    },
+    {
+      "name": "Adiantum flabellulatum",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Stiffer and more leathery than most maidenhairs, so slower to crisp. It still wants soil that stays damp.",
+      "colour": "Stiff fan-shaped fronds, leathery dark green"
+    },
+    {
+      "name": "Adiantum latifolium",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 3, "humidity": 2, "toxic": 0,
+      "tip": "Runs from the rhizome and will colonise a bed, so keep it potted unless you actually want the spread.",
+      "colour": "Broad, widely spaced pale green pinnae"
+    },
+    {
+      "name": "Adiantum seemannii",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 3, "humidity": 2, "toxic": 0,
+      "tip": "Grown for the blue-grey cast, which is strongest on new fronds. Warmth and humidity keep them coming.",
+      "colour": "Drooping fronds with blue-grey, wedge-shaped pinnae"
+    },
+    {
+      "name": "Adiantum philippense",
+      "category": "Palms & ferns",
+      "water": 4, "feed": 28, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Arching fronds that root at the tip. Pot the tip on rather than trying to split the crown, which resents it.",
+      "colour": "Arching fronds with half-moon pinnae"
+    },
+    {
+      "name": "Adiantum pedatum",
+      "category": "Palms & ferns",
+      "water": 5, "feed": 30, "light": 3, "humidity": 1, "toxic": 0,
+      "tip": "Hardy and deciduous, so it dies back in autumn. Clear the old fronds in late winter before the new crooks rise.",
+      "colour": "Blue-green pinnae in a horseshoe on glossy black stems"
+    },
+    {
+      "name": "Adiantum aleuticum",
+      "category": "Palms & ferns",
+      "water": 5, "feed": 30, "light": 3, "humidity": 1, "toxic": 0,
+      "tip": "Wants shade and a moist, leafy soil. A spell of full sun bleaches the fronds within a fortnight.",
+      "colour": "Fan of blue-green fingers on near-black wiry stems"
+    },
+    {
+      "name": "Adiantum aleuticum 'Imbricatum'",
+      "category": "Palms & ferns",
+      "water": 5, "feed": 30, "light": 3, "humidity": 1, "toxic": 0,
+      "tip": "Low and slow, so it is easily swamped by neighbours. Keep the ground around it clear.",
+      "colour": "Overlapping blue-grey pinnae on a low, tight plant"
+    },
+    {
+      "name": "Adiantum aleuticum 'Subpumilum'",
+      "category": "Palms & ferns",
+      "water": 5, "feed": 30, "light": 3, "humidity": 1, "toxic": 0,
+      "tip": "Stays under about 15cm, which suits a trough or a shady rockery. The soil must never bake dry.",
+      "colour": "Dwarf blue-green fans, rarely above 15cm"
+    },
+    {
+      "name": "Adiantum venustum",
+      "category": "Palms & ferns",
+      "water": 5, "feed": 30, "light": 3, "humidity": 1, "toxic": 0,
+      "tip": "Spreads slowly by rhizome into a carpet. Old fronds hold through winter, so shear them off in early spring.",
+      "colour": "Triangular fronds, bronze in spring, turning mid-green"
+    },
+    {
+      "name": "Adiantum x mairisii",
+      "category": "Palms & ferns",
+      "water": 5, "feed": 30, "light": 3, "humidity": 1, "toxic": 0,
+      "tip": "A hybrid that takes more cold than the tender maidenhairs, but it still wants shelter from wind and winter wet.",
+      "colour": "Arching mid-green fronds on dark, thin stems"
+    },
+    {
+      "name": "Adiantum aethiopicum",
+      "category": "Palms & ferns",
+      "water": 5, "feed": 30, "light": 3, "humidity": 1, "toxic": 0,
+      "tip": "Dies back in drought and returns from the rhizome, so a collapsed plant is often not dead. Keep watering it.",
+      "colour": "Light green fans on fine black stems, loosely held"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "plants": [
+    {
+      "name": "Howea belmoreana (curly palm)",
+      "category": "Palms & ferns",
+      "water": 10,
+      "feed": 30,
+      "light": 3,
+      "humidity": 1,
+      "toxic": 0,
+      "tip": "Let the top few centimetres dry before watering. Sitting wet is what kills it, not a dim corner.",
+      "colour": "Deep glossy green, leaflets held upright in a V along a strongly arching frond"
+    }
+  ]
+}

@@ -1,0 +1,284 @@
+{
+  "plants": [
+    {
+      "name": "Philodendron 'Pink Princess'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "The pink only holds in bright light. Cut back to a variegated node if it reverts.",
+      "colour": "Dark green with pink variegation"
+    },
+    {
+      "name": "Philodendron 'White Knight'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "The white areas scorch in strong sun and revert in shade. Bright, indirect light keeps the pattern stable.",
+      "colour": "Dark green with cream-white variegation"
+    },
+    {
+      "name": "Philodendron 'White Wizard'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "The white sections need bright, indirect light to stay white, and scorch in direct sun.",
+      "colour": "Green with pure white splashes"
+    },
+    {
+      "name": "Philodendron 'White Princess'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Variegation is unstable. Cut back any stem that reverts to plain green.",
+      "colour": "Green with white-streaked edges"
+    },
+    {
+      "name": "Philodendron 'Rio'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "A slow trailing form. Let the top third of the soil dry before watering again.",
+      "colour": "Grey-green splashed cream"
+    },
+    {
+      "name": "Philodendron 'Silver Stripe'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The silver striping holds best in bright, indirect light and fades in shade.",
+      "colour": "Green with silver-grey striping"
+    },
+    {
+      "name": "Philodendron 'Snow Drift'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Leaves stay creamier in bright light; too little and the variegation goes plain green.",
+      "colour": "Creamy white mottling over green"
+    },
+    {
+      "name": "Philodendron 'Lemon Lime'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Colour fades to plain green in dim light. Keep it bright, but out of hot sun.",
+      "colour": "Bright yellow-green"
+    },
+    {
+      "name": "Philodendron 'Golden Crocodile'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "The gold speckling needs bright light; in shade it fades back to green.",
+      "colour": "Green and gold speckled"
+    },
+    {
+      "name": "Philodendron 'Malay Gold'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "The gold contrast needs bright, indirect light and reverts quickly in shade.",
+      "colour": "Yellow-green splashed dark green"
+    },
+    {
+      "name": "Philodendron 'Rojo Congo'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "New leaves open deep red before fading to green. Wipe the big leaves to keep them glossy.",
+      "colour": "Deep green flushed ruby"
+    },
+    {
+      "name": "Philodendron 'McColley's Finale'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The coral on new growth is the show. Bright, indirect light keeps it coming.",
+      "colour": "Coral-orange new leaves maturing to green"
+    },
+    {
+      "name": "Philodendron 'Prince of Orange'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "New leaves open bright orange then fade; the strongest colour needs the brightest light.",
+      "colour": "Vivid orange young leaves"
+    },
+    {
+      "name": "Philodendron 'Autumn'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Colour is richest in bright, indirect light. Water when the top few centimetres are dry.",
+      "colour": "Ochre and amber young leaves"
+    },
+    {
+      "name": "Philodendron 'Imperial Red'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The red is strongest on new growth in bright, indirect light.",
+      "colour": "Deep red young leaves over dark green"
+    },
+    {
+      "name": "Philodendron 'Imperial Green'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Slow and sturdy. Brush dust off the big leaves regularly so they can photosynthesise.",
+      "colour": "Large glossy emerald"
+    },
+    {
+      "name": "Philodendron 'Black Cardinal'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The dark pigment fades in dim light. Bright, indirect light keeps the leaves almost black.",
+      "colour": "Near-black burgundy foliage"
+    },
+    {
+      "name": "Philodendron 'Black Knight'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Full, near-black colour needs the brightest spot you have.",
+      "colour": "Almost black leaves with red stems"
+    },
+    {
+      "name": "Philodendron 'Red Empress'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "New growth is deep red. Keep it in bright, indirect light to hold the colour.",
+      "colour": "Red-flushed, near-black leaves"
+    },
+    {
+      "name": "Philodendron 'Painted Lady'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The blotching needs bright light, and the red stems respond to cooler nights.",
+      "colour": "Yellow-mottled green with red stems"
+    },
+    {
+      "name": "Philodendron 'Moonlight'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The lime colour is brightest in bright, indirect light; dim rooms turn it dull green.",
+      "colour": "Lime-yellow new leaves"
+    },
+    {
+      "name": "Philodendron 'Golden Dragon'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "The dragon-scale speckle needs strong, indirect light to stay bright.",
+      "colour": "Dark green freckled chartreuse"
+    },
+    {
+      "name": "Philodendron 'Ring of Fire'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Each new leaf unfurls a different mix of cream, orange and maroon; keep it in bright light or the colour washes out.",
+      "colour": "Lobed leaves in cream, orange and maroon"
+    },
+    {
+      "name": "Philodendron 'Jungle Boogie'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The leaves stay deeply lobed in bright light. Water as the top of the soil dries.",
+      "colour": "Deeply lobed pale green"
+    },
+    {
+      "name": "Philodendron 'Narrow Escape'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Young leaves are very narrow; they widen as the plant matures. Keep it bright.",
+      "colour": "Very narrow wavy green leaves"
+    },
+    {
+      "name": "Philodendron 'Florida Ghost'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "New leaves open white and colour up; the brightest white needs strong, indirect light.",
+      "colour": "White new leaves maturing green"
+    },
+    {
+      "name": "Philodendron 'Florida Green'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "A vigorous climber. Give it a moss pole and it rewards with bigger, more divided leaves.",
+      "colour": "Deeply lobed glossy green"
+    },
+    {
+      "name": "Philodendron 'Splendid'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "A velvet hybrid that wants humidity. Keep the leaf surfaces free of standing water.",
+      "colour": "Velvet green with pale veins"
+    },
+    {
+      "name": "Philodendron gloriosum",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "A ground crawler — plant it flat in a wide pot, not up a pole. The white veins prefer a humid corner.",
+      "colour": "Velvet with pronounced white veins"
+    },
+    {
+      "name": "Philodendron melanochrysum",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "A climbing velvet. It wants humidity and a moss pole to reach full, large-leaf form.",
+      "colour": "Velvet dark green with gold veins"
+    },
+    {
+      "name": "Philodendron verrucosum",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "Fussy about humidity; a misted, humid corner beats a dry living room.",
+      "colour": "Velvet green with red-fringed veins"
+    },
+    {
+      "name": "Philodendron sodiroi",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "The silver speckle holds in good, indirect light and humidity.",
+      "colour": "Silver-speckled dark leaves"
+    },
+    {
+      "name": "Philodendron mayoi",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "A self-heading plant with hand-like leaves. Water when the top of the soil dries.",
+      "colour": "Finger-divided dark green"
+    },
+    {
+      "name": "Philodendron brandtianum",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "A trailing climber. The silver marbling fades without bright, indirect light.",
+      "colour": "Olive green with silver blotches"
+    },
+    {
+      "name": "Philodendron plowmanii",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "A crawler with a frilled leaf base; keep it wide and low in a humid spot.",
+      "colour": "Heart-shaped with ruffled edges"
+    },
+    {
+      "name": "Philodendron pastazanum",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "Big leaves mean big thirst — keep the soil lightly moist and the air humid.",
+      "colour": "Huge round velvet leaves"
+    },
+    {
+      "name": "Philodendron mamei",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "The silver is etched on the leaf surface; it likes humidity and bright, indirect light.",
+      "colour": "Silvery blotched, puckered"
+    },
+    {
+      "name": "Philodendron 'Burle Marx'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Narrow, fanning leaves on short stems. Water as the top of the soil dries.",
+      "colour": "Narrow, bright green"
+    },
+    {
+      "name": "Philodendron 'Red Emerald'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "A climber named for its red stems and petioles; give it something to scale.",
+      "colour": "Green with burgundy stems"
+    },
+    {
+      "name": "Philodendron giganteum",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "One of the largest philodendrons; give it room and let the top of the soil dry before watering.",
+      "colour": "Huge corrugated green with red-edged new growth"
+    }
+  ]
+}

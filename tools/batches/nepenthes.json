@@ -1,0 +1,298 @@
+{
+  "plants": [
+    {
+      "name": "Nepenthes ventricosa",
+      "category": "Carnivorous",
+      "water": 4, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "The most forgiving of the genus, but only rainwater will do. Tap minerals build up in the sphagnum and kill it.",
+      "colour": "Pale green pitchers waisted in the middle, with a glossy red peristome"
+    },
+    {
+      "name": "Nepenthes × ventrata",
+      "category": "Carnivorous",
+      "water": 4, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "The starter Nepenthes. It pitchers in ordinary room air, which almost nothing else in the genus will do.",
+      "colour": "Light green pitchers flushed orange-red, on a fast-climbing vine"
+    },
+    {
+      "name": "Nepenthes × miranda",
+      "category": "Carnivorous",
+      "water": 4, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Grows fast and gets heavy. Hang it where spent pitchers can be cut away without dragging the vine down.",
+      "colour": "Large speckled cream and maroon pitchers with a broad striped peristome"
+    },
+    {
+      "name": "Nepenthes alata",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Pitchers fail before leaves do. If new leaves keep arriving bare, raise the humidity before changing anything else.",
+      "colour": "Slim pale green pitchers flecked red, with a narrow winged front"
+    },
+    {
+      "name": "Nepenthes sanguinea",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 1, "humidity": 2, "toxic": 0,
+      "tip": "A highlander. It wants nights around ten degrees cooler than its days, or it stops making pitchers altogether.",
+      "colour": "Long cylindrical pitchers in deep red, orange or lime, depending on the clone"
+    },
+    {
+      "name": "Nepenthes maxima",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Intermediate and adaptable, but it resents drying out. Keep the sphagnum damp to the touch at all times.",
+      "colour": "Tall pitchers marbled cream and purple-brown, peristome finely ribbed"
+    },
+    {
+      "name": "Nepenthes truncata",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Leaves are enormous and slow to replace. Use a wide, shallow pot and leave the roots alone for years at a time.",
+      "colour": "Squat scarlet to maroon pitchers beneath broad, blunt-ended leaves"
+    },
+    {
+      "name": "Nepenthes rafflesiana",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "A lowlander. It wants warmth all year and sulks below eighteen degrees, so keep it off cold winter windowsills.",
+      "colour": "Bulbous lower pitchers, cream blotched purple, with a glossy striped peristome"
+    },
+    {
+      "name": "Nepenthes ampullaria",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 3, "humidity": 2, "toxic": 0,
+      "tip": "It lives on fallen leaf litter rather than insects, so shade and steady warm damp matter more than catching prey.",
+      "colour": "Rounded squat pitchers in green, or green speckled red, carpeting the pot base"
+    },
+    {
+      "name": "Nepenthes bicalcarata",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "The slowest and fussiest lowlander. Constant warmth and near-saturated air, or it simply stops growing.",
+      "colour": "Orange-red pitchers with two downward-pointing fangs under the lid"
+    },
+    {
+      "name": "Nepenthes gracilis",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 1, "humidity": 2, "toxic": 0,
+      "tip": "Small, quick and tolerant of hard light once settled. Raise the light in stages or the thin leaves scorch.",
+      "colour": "Small narrow pitchers, green through to near-black, on wiry stems"
+    },
+    {
+      "name": "Nepenthes mirabilis",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 1, "humidity": 2, "toxic": 0,
+      "tip": "The widest-ranging species and among the easiest lowlanders. Warmth and rainwater are most of what it asks for.",
+      "colour": "Slender green to red pitchers with a fringed lid margin"
+    },
+    {
+      "name": "Nepenthes khasiana",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "The only Indian Nepenthes and unusually cold-tolerant. It still will not take tap water for a season.",
+      "colour": "Green pitchers ageing to deep red, with a narrow red peristome"
+    },
+    {
+      "name": "Nepenthes spectabilis",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Highland Sumatran. Cool nights bring the dark colour out, and a warm still room loses it again.",
+      "colour": "Purple-black speckled pitchers with a pale striped peristome"
+    },
+    {
+      "name": "Nepenthes glabrata",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "A cool grower that hates heat. Above thirty degrees it declines fast, so keep it out of a summer conservatory.",
+      "colour": "Small white pitchers spotted red, with a yellow-green lid"
+    },
+    {
+      "name": "Nepenthes hamata",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "The hooked teeth only develop in cool, wet air. Highland conditions are not optional for this one.",
+      "colour": "Dark maroon pitchers with a black, hooked, comb-toothed peristome"
+    },
+    {
+      "name": "Nepenthes veitchii",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 1, "humidity": 2, "toxic": 0,
+      "tip": "Some forms climb by clasping bark flat against a trunk. Give it a slab or a stake rather than a hanging basket.",
+      "colour": "Broad golden-yellow banded peristome above a squat cream and red pitcher"
+    },
+    {
+      "name": "Nepenthes lowii",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Difficult and slow. It needs genuinely cold nights, and the odd flared upper pitchers take years to appear.",
+      "colour": "Waisted, flared upper pitchers, green outside and deep red within"
+    },
+    {
+      "name": "Nepenthes rajah",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Cool nights, lean open media and patience. Kept warm and stuffy the thick roots rot before you notice.",
+      "colour": "Huge low-slung maroon-purple pitchers with a heavily ribbed flared peristome"
+    },
+    {
+      "name": "Nepenthes villosa",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Among the hardest in cultivation. Nights near ten degrees and living sphagnum, or it will not persist.",
+      "colour": "Globose pitchers with an extreme, deeply toothed orange-red peristome"
+    },
+    {
+      "name": "Nepenthes robcantleyi",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Intermediate rather than true highland, and easier for it. The near-black colour only holds under strong light.",
+      "colour": "Very dark, almost black pitchers with a broad ribbed peristome"
+    },
+    {
+      "name": "Nepenthes singalana",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 1, "humidity": 2, "toxic": 0,
+      "tip": "A tough highlander that takes brighter light than most. It still wants a real temperature drop overnight.",
+      "colour": "Squat dark red pitchers with pale bands across the peristome"
+    },
+    {
+      "name": "Nepenthes tentaculata",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Small, cool-growing and intolerant of dry air. A lit terrarium suits it far better than an open shelf.",
+      "colour": "Small speckled pitchers with bristly hairs on the upper surface of the lid"
+    },
+    {
+      "name": "Nepenthes fusca",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Adaptable for a highlander and quick to climb. Cut the vine back and it throws basal shoots rather than sulking.",
+      "colour": "Narrow dark purple-brown pitchers with a slim toothed peristome"
+    },
+    {
+      "name": "Nepenthes aristolochioides",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Rare and cool-growing. The domed shape only forms on mature growth, so young plants look unremarkable.",
+      "colour": "Domed, inflated pitchers with a small opening set at the front"
+    },
+    {
+      "name": "Nepenthes eymae",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Highland Sulawesi. It makes ordinary lower pitchers for years before the funnel-shaped uppers arrive.",
+      "colour": "Funnel-shaped upper pitchers, pale yellow-green flushed pink"
+    },
+    {
+      "name": "Nepenthes ramispina",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 1, "humidity": 2, "toxic": 0,
+      "tip": "One of the easier highlanders. Strong light keeps the pitchers near-black, and shade fades them to green.",
+      "colour": "Slim near-black pitchers on dark wiry stems"
+    },
+    {
+      "name": "Nepenthes sibuyanensis",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Intermediate and vigorous, and behind a lot of nursery hybrids. Keep the media open or the thick roots rot.",
+      "colour": "Squat pale pitchers with a very wide pink-red peristome"
+    },
+    {
+      "name": "Nepenthes northiana",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "A limestone-cliff plant. Growers often add a little crushed limestone, but warmth and damp matter more.",
+      "colour": "Large pale pitchers with a broad, strongly striped red peristome"
+    },
+    {
+      "name": "Nepenthes stenophylla",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Intermediate and forgiving by highland standards. It climbs hard, so put a stake in early rather than late.",
+      "colour": "Long funnel pitchers, yellow-green speckled red, with a glossy banded peristome"
+    },
+    {
+      "name": "Nepenthes 'Bloody Mary'",
+      "category": "Carnivorous",
+      "water": 4, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "A compact hybrid that colours hard in bright light and copes with ordinary room air rather than a terrarium.",
+      "colour": "Small squat pitchers in deep blood-red with a darker peristome"
+    },
+    {
+      "name": "Nepenthes 'Rebecca Soper'",
+      "category": "Carnivorous",
+      "water": 4, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Stays small enough for a windowsill. Strong light holds the red; a dim spot turns the pitchers plain green.",
+      "colour": "Small dark red pitchers with a fine pale peristome"
+    },
+    {
+      "name": "Nepenthes 'St. Gaya'",
+      "category": "Carnivorous",
+      "water": 4, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Sold widely as a beginner's plant. Rainwater and bright light are the two things it will not compromise on.",
+      "colour": "Green pitchers freckled red, with a red-striped peristome"
+    },
+    {
+      "name": "Nepenthes 'Rokko'",
+      "category": "Carnivorous",
+      "water": 4, "feed": 0, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "A tough nursery hybrid. It will pitcher in a bright bathroom without any enclosed case to hold the humidity.",
+      "colour": "Speckled cream and red pitchers on a robust vine"
+    },
+    {
+      "name": "Nepenthes 'Lady Luck'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 1, "humidity": 2, "toxic": 0,
+      "tip": "The red is strongest on new pitchers in hard light. Older pitchers dull down, and that is age rather than a fault.",
+      "colour": "Rounded pitchers in a uniform deep red"
+    },
+    {
+      "name": "Nepenthes 'Bill Bailey'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "A compact intermediate hybrid. Keep it damp and it pitchers steadily without needing cold highland nights.",
+      "colour": "Squat orange-red pitchers with a dark peristome"
+    },
+    {
+      "name": "Nepenthes 'Peter D'Amato'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Vigorous for a plant with so broad a peristome. Open, airy media and steady damp keep the roots sound.",
+      "colour": "Large pale pitchers with a wide, dark red, flared peristome"
+    },
+    {
+      "name": "Nepenthes 'Judith Finn'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Easier than either parent and keeps the broad toothed peristome. Steady intermediate temperatures throughout.",
+      "colour": "Squat red pitchers with a broad, banded, toothed peristome"
+    },
+    {
+      "name": "Nepenthes × hookeriana",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "A natural lowland hybrid. Warmth all year matters more than light, and cold wet roots in winter finish it.",
+      "colour": "Rounded pitchers, cream mottled maroon, midway between its two parents"
+    },
+    {
+      "name": "Nepenthes × trichocarpa",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "A vigorous small lowland hybrid. It takes more shade than most of the genus, but no cold at all.",
+      "colour": "Small green to red pitchers, narrow at the base and widening upward"
+    },
+    {
+      "name": "Nepenthes × dyeriana",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "A Victorian glasshouse hybrid still grown today. It wants the warm, wet air those houses were built to hold.",
+      "colour": "Long green pitchers heavily speckled maroon, with a striped peristome"
+    },
+    {
+      "name": "Nepenthes × coccinea",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "An old warm-growing hybrid, easy by the standards of the genus. Keep it above eighteen degrees all year.",
+      "colour": "Green pitchers washed and speckled scarlet"
+    }
+  ]
+}

@@ -1,0 +1,284 @@
+{
+  "plants": [
+    {
+      "name": "Aglaonema modestum",
+      "category": "Aroids & foliage",
+      "water": 14, "feed": 45, "light": 4, "humidity": 1, "toxic": 1,
+      "tip": "The toughest of the genus and the one that copes with a dim hallway. Let the top half of the pot dry first.",
+      "colour": "Plain mid-green, slightly glossy, on pale stems"
+    },
+    {
+      "name": "Aglaonema commutatum",
+      "category": "Aroids & foliage",
+      "water": 12, "feed": 30, "light": 3, "humidity": 1, "toxic": 1,
+      "tip": "Cold is what kills it, not neglect. Below 15C the leaves pit and blacken, and the marks do not grow out.",
+      "colour": "Mid-green with silver-grey feathering along the side veins"
+    },
+    {
+      "name": "Aglaonema costatum",
+      "category": "Aroids & foliage",
+      "water": 12, "feed": 30, "light": 3, "humidity": 2, "toxic": 1,
+      "tip": "Dwarf and slow. It sits happily in a small pot for years, so repot only once roots fill it.",
+      "colour": "Dark green with a white midrib and scattered white spots"
+    },
+    {
+      "name": "Aglaonema rotundum",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 3, "humidity": 2, "toxic": 1,
+      "tip": "Wants steady warmth and moist air. Dry rooms leave permanent brown pitting on the dark leaves.",
+      "colour": "Near-black leaves with bright pink veins and a red underside"
+    },
+    {
+      "name": "Aglaonema pictum 'Tricolor'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "Humid air, no direct sun. The camouflage pattern flattens towards plain green in a dim spot.",
+      "colour": "Matt green patched with grey-green and cream, like camouflage"
+    },
+    {
+      "name": "Aglaonema nitidum 'Curtisii'",
+      "category": "Aroids & foliage",
+      "water": 12, "feed": 30, "light": 3, "humidity": 1, "toxic": 1,
+      "tip": "Tolerates dry rooms better than most of the genus. Wipe the broad leaves rather than misting them.",
+      "colour": "Deep green with narrow silver bands running out from the midrib"
+    },
+    {
+      "name": "Aglaonema 'White Rajah'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 3, "humidity": 1, "toxic": 1,
+      "tip": "The pale midrib scorches in direct sun. Keep it a metre back from a south-facing window.",
+      "colour": "Green leaves split by a broad creamy-white midrib and centre"
+    },
+    {
+      "name": "Aglaonema 'Silver Queen'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 3, "humidity": 1, "toxic": 1,
+      "tip": "Old stems go bare at the base. Cut one back hard each spring and it reshoots from the stump.",
+      "colour": "Silver-grey leaves edged and flecked with dark green"
+    },
+    {
+      "name": "Aglaonema 'Silver Bay'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 3, "humidity": 1, "toxic": 1,
+      "tip": "Grows wide rather than tall, so give it floor space. Water when the top third of the pot has dried.",
+      "colour": "Large leaves with a wide silver centre and green margin"
+    },
+    {
+      "name": "Aglaonema 'Silver King'",
+      "category": "Aroids & foliage",
+      "water": 12, "feed": 30, "light": 3, "humidity": 1, "toxic": 1,
+      "tip": "Narrower leaved and slower than 'Silver Bay'. Overwatering shows first as yellowing lower leaves.",
+      "colour": "Slim silver-grey leaves with fine green veining"
+    },
+    {
+      "name": "Aglaonema 'Maria'",
+      "category": "Aroids & foliage",
+      "water": 14, "feed": 45, "light": 4, "humidity": 1, "toxic": 1,
+      "tip": "The one to pick for a dark corner. In low light it drinks far less, so check the pot before watering.",
+      "colour": "Dark green with soft grey-green feathering between the veins"
+    },
+    {
+      "name": "Aglaonema 'Maria Christina'",
+      "category": "Aroids & foliage",
+      "water": 12, "feed": 30, "light": 3, "humidity": 1, "toxic": 1,
+      "tip": "Copes with medium light, but the silver dulls in deep shade. Keep the compost barely moist, never wet.",
+      "colour": "Silvery-green leaves with a green midrib and darker edge"
+    },
+    {
+      "name": "Aglaonema 'Cutlass'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 3, "humidity": 1, "toxic": 1,
+      "tip": "The narrow leaves lose water faster than the broad cultivars, so check it weekly in summer.",
+      "colour": "Long lance-shaped leaves, silver-grey with green margins"
+    },
+    {
+      "name": "Aglaonema 'Stripes'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Bright indirect light keeps the striping crisp. Direct sun bleaches it to a flat cream.",
+      "colour": "Green leaves ruled with fine silver-white stripes along the veins"
+    },
+    {
+      "name": "Aglaonema 'Emerald Star'",
+      "category": "Aroids & foliage",
+      "water": 12, "feed": 30, "light": 3, "humidity": 1, "toxic": 1,
+      "tip": "The speckling comes with maturity, so young leaves look plainer. Feed monthly through summer.",
+      "colour": "Mid-green with cream and pale green speckling"
+    },
+    {
+      "name": "Aglaonema 'First Diamond'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 3, "humidity": 1, "toxic": 1,
+      "tip": "Compact and upright. Let it dry down between waterings, as the slim stems rot at the base quickly.",
+      "colour": "Narrow silver-white leaves with thin green edges"
+    },
+    {
+      "name": "Aglaonema 'Jubilee Petite'",
+      "category": "Aroids & foliage",
+      "water": 8, "feed": 30, "light": 3, "humidity": 1, "toxic": 1,
+      "tip": "A small desk plant in a small pot, so it dries out sooner than a full-size Aglaonema.",
+      "colour": "Compact green leaves with silver-grey centres"
+    },
+    {
+      "name": "Aglaonema 'BJ Freeman'",
+      "category": "Aroids & foliage",
+      "water": 12, "feed": 30, "light": 3, "humidity": 1, "toxic": 1,
+      "tip": "Gets large and top-heavy. Use a wide, weighted pot or it topples once the leaves fan out.",
+      "colour": "Big pale silver-green leaves with darker green mottling"
+    },
+    {
+      "name": "Aglaonema 'Pattaya Beauty'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 3, "humidity": 1, "toxic": 1,
+      "tip": "Keep it above 16C. A cold draught from a door leaves grey blotches that never fade out.",
+      "colour": "Pale silver-green centres with a dark green margin, pink stems"
+    },
+    {
+      "name": "Aglaonema 'Super White'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Nearly white leaves carry little chlorophyll, so growth is slow. Give bright indirect light and do not overfeed.",
+      "colour": "Almost pure white leaves with green veining and edges"
+    },
+    {
+      "name": "Aglaonema 'White Lance'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The long narrow leaves crease if knocked, so site it clear of doorways. Let the top half dry out.",
+      "colour": "Very narrow silver-white leaves on upright green stems"
+    },
+    {
+      "name": "Aglaonema 'Osaka'",
+      "category": "Aroids & foliage",
+      "water": 12, "feed": 30, "light": 3, "humidity": 1, "toxic": 1,
+      "tip": "Dwarf and dense. Water less than you expect, as the small root ball stays wet a long time.",
+      "colour": "Dark green dwarf leaves flecked with white"
+    },
+    {
+      "name": "Aglaonema 'Key Lime'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The lime tone depends on light. In shade it dulls back to an ordinary mid-green.",
+      "colour": "Pale lime-green leaves with darker green margins"
+    },
+    {
+      "name": "Aglaonema 'Golden Fluorite'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Pale leaves scorch in direct sun. Bright indirect light keeps the gold without bleaching it.",
+      "colour": "Soft gold-green leaves with pink midribs and stems"
+    },
+    {
+      "name": "Aglaonema 'Green Papaya'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The pink midrib deepens in brighter light. Let the top few centimetres dry between waterings.",
+      "colour": "Yellow-green leaves with a bright pink midrib and stem"
+    },
+    {
+      "name": "Aglaonema 'Siam Aurora'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Also sold as Red Siam. The red edge fades in low light, so keep it bright but out of direct sun.",
+      "colour": "Green leaves with red midribs and broad red margins"
+    },
+    {
+      "name": "Aglaonema 'Red Valentine'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Needs more light than the green types to hold its colour, but still scorches in direct sun.",
+      "colour": "Green leaves heavily splashed with red and pink"
+    },
+    {
+      "name": "Aglaonema 'Red Anjamani'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Almost entirely red leaves, so it grows slowly by nature. Do not try to push it with extra feed.",
+      "colour": "Deep red leaves with a thin green edge and red stems"
+    },
+    {
+      "name": "Aglaonema 'Red Peacock'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Bright indirect light keeps the pink veining. Water once the top third of the pot is dry.",
+      "colour": "Dark green leaves with pink veins and a red midrib"
+    },
+    {
+      "name": "Aglaonema 'Lady Valentine'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The pink is strongest on new growth. Take off the faded old leaves at the base to keep it looking well.",
+      "colour": "Bright pink leaves with green margins and speckling"
+    },
+    {
+      "name": "Aglaonema 'Prestige'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Holds its colour better than most reds in average light. Let it dry down between waterings.",
+      "colour": "Pink and cream leaves marbled with green"
+    },
+    {
+      "name": "Aglaonema 'Anyamanee'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Wants warmth. Below 15C the growth stops and the leaves spot, so keep it off cold windowsills.",
+      "colour": "Dark green leaves flecked and washed with deep pink"
+    },
+    {
+      "name": "Aglaonema 'Chocolate'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The dark colour needs decent light to develop. In a dim spot new leaves open plain green.",
+      "colour": "Very dark brown-green leaves with a red midrib"
+    },
+    {
+      "name": "Aglaonema 'Pink Dalmatian'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The spotting varies from leaf to leaf and is not a fault. Bright indirect light gives the most of it.",
+      "colour": "Dark green leaves spattered with pink flecks"
+    },
+    {
+      "name": "Aglaonema 'Creta'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The red margin widens in brighter light and narrows to a thin line in shade.",
+      "colour": "Green leaves outlined in red, with red midribs and stems"
+    },
+    {
+      "name": "Aglaonema 'Wishes'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Keep it warm and out of draughts, and let the top of the pot dry before watering again.",
+      "colour": "Pink and red centres with green margins"
+    },
+    {
+      "name": "Aglaonema 'Sparkling Sarah'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Upright and compact. It sulks in a permanently wet pot, so water when the top third dries.",
+      "colour": "Green leaves with pink midribs and a light pink speckling"
+    },
+    {
+      "name": "Aglaonema 'Firecracker'",
+      "category": "Aroids & foliage",
+      "water": 8, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Narrow red leaves that dry out faster than the broad cultivars. Check it twice a week in summer.",
+      "colour": "Slim red leaves with green flecking and red stems"
+    },
+    {
+      "name": "Aglaonema 'Harlequin'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The colour mix shifts with light levels. Bright indirect light gives the widest range across a leaf.",
+      "colour": "Yellow-green leaves marked with pink midribs and green flecks"
+    },
+    {
+      "name": "Aglaonema 'Indo Rojo'",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Strong red needs bright light. In shade the new leaves come through green and stay that way.",
+      "colour": "Deep red leaves with green centres and dark red edges"
+    }
+  ]
+}

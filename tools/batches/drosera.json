@@ -1,0 +1,284 @@
+{
+  "plants": [
+    {
+      "name": "Drosera capensis",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Rainwater or distilled only. Tap water kills it within weeks. Stand the pot in 2cm of water all year.",
+      "colour": "Green strap leaves with red tentacles and clear dew"
+    },
+    {
+      "name": "Drosera capensis 'Alba'",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "No red pigment at all, so judge the light by leaf size rather than colour. Rainwater only, tray topped up.",
+      "colour": "Uniformly pale green with clear dew and white flowers"
+    },
+    {
+      "name": "Drosera capensis (broad leaf)",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Wider leaves hold more dew and catch more flies. Same care as the type: rainwater, permanent tray, full sun.",
+      "colour": "Broad green laminae with dense red tentacles"
+    },
+    {
+      "name": "Drosera capensis 'Bainskloof'",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The narrow leaves colour deep red in strong sun. Rainwater only, and never let the tray run dry.",
+      "colour": "Narrow leaves flushing red, with red tentacles"
+    },
+    {
+      "name": "Drosera aliciae",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Forms a tight rosette that reddens in full sun. Rainwater in the tray, and no fertiliser at the roots.",
+      "colour": "Flat green rosette flushing red, red-tipped tentacles"
+    },
+    {
+      "name": "Drosera spatulata",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Self-seeds freely into neighbouring pots. Rainwater only, a permanent tray, and as much sun as you can give.",
+      "colour": "Small green spoon-shaped leaves with pink tentacles"
+    },
+    {
+      "name": "Drosera tokaiensis",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "A natural hybrid that is unusually forgiving of neglect. Rainwater, permanent tray, bright direct light.",
+      "colour": "Green spoon-shaped rosette with pink-red tentacles"
+    },
+    {
+      "name": "Drosera venusta",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Colours almost black-red in full sun and stays plain green in shade. Rainwater only, tray kept topped up.",
+      "colour": "Green wedge leaves with deep red tentacles"
+    },
+    {
+      "name": "Drosera nidiformis",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Leaves lengthen and arch as the plant ages, which is normal. Rainwater in a permanent tray, never fertilise.",
+      "colour": "Slim arching green leaves with red tentacles"
+    },
+    {
+      "name": "Drosera admirabilis",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Old leaves persist as a black skirt under the rosette. Leave them alone. Rainwater only, permanent tray.",
+      "colour": "Small green rosette with red-tipped tentacles"
+    },
+    {
+      "name": "Drosera slackii",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Slow but long-lived. Rainwater only, a permanent tray, and full sun to bring the red into the leaves.",
+      "colour": "Broad green rosette with red tentacles and red edges"
+    },
+    {
+      "name": "Drosera cuneifolia",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The flat wedge leaves press to the soil. In weak light it stretches and pales instead. Rainwater only.",
+      "colour": "Flat green wedge leaves with red tentacles"
+    },
+    {
+      "name": "Drosera burmannii",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 2, "toxic": 0,
+      "tip": "An annual: let it flower and set seed rather than trying to keep the plant going. Rainwater, always wet.",
+      "colour": "Small green rosette turning red, with long snap tentacles"
+    },
+    {
+      "name": "Drosera indica",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 2, "toxic": 0,
+      "tip": "Annual, and it needs real heat to grow well. Sow fresh seed each spring. Rainwater only, tray kept full.",
+      "colour": "Thread-like green stems with pink glandular tentacles"
+    },
+    {
+      "name": "Drosera capillaris",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Small and quick from seed. Rainwater in a permanent tray, full sun, and a cool winter rest.",
+      "colour": "Green rosette flushing red with pink tentacles"
+    },
+    {
+      "name": "Drosera binata",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Dies back to the rootstock in winter. Do not throw it out; it returns in spring. Rainwater only.",
+      "colour": "Forked green leaves on tall stalks with red tentacles"
+    },
+    {
+      "name": "Drosera binata var. multifida 'Extrema'",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The running roots need a deep pot. Rainwater only, permanent tray, full sun, and a winter dieback.",
+      "colour": "Repeatedly forked green leaves with red tentacles"
+    },
+    {
+      "name": "Drosera binata var. dichotoma 'Giant'",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Leaves reach 40cm, so stake it or give it room. Rainwater in a deep tray; winter dieback is normal.",
+      "colour": "Large Y-forked green leaves with dense red tentacles"
+    },
+    {
+      "name": "Drosera 'Marston Dragon'",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "A vigorous forked cultivar that spreads by root. Rainwater only, a deep tray, and expect winter dormancy.",
+      "colour": "Tall multi-forked green leaves with red tentacles"
+    },
+    {
+      "name": "Drosera adelae",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 1, "humidity": 2, "toxic": 0,
+      "tip": "Scorches in direct sun and spreads by root runners. Bright indirect light, rainwater, always wet.",
+      "colour": "Long lance-shaped green leaves with red tentacles"
+    },
+    {
+      "name": "Drosera prolifera",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 1, "humidity": 2, "toxic": 0,
+      "tip": "Flower stalks arch over and root into plantlets. Peg them down. Warm, humid, rainwater, never dry.",
+      "colour": "Round green leaves on red petioles with red tentacles"
+    },
+    {
+      "name": "Drosera schizandra",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "The fussy one. Deep shade, high humidity and a permanently wet rainwater tray, or it collapses.",
+      "colour": "Broad paddle-shaped green leaves with short red tentacles"
+    },
+    {
+      "name": "Drosera madagascariensis",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 2, "toxic": 0,
+      "tip": "The stem lengthens and flops, so give it support. Rainwater in a permanent tray, warmth, and full sun.",
+      "colour": "Small green leaves on an upright stem with red tentacles"
+    },
+    {
+      "name": "Drosera regia",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The largest sundew, and it resents heat at the roots. Keep it cool and bright, tray always full of rainwater.",
+      "colour": "Strap leaves to 40cm, green flushing red, red tentacles"
+    },
+    {
+      "name": "Drosera hamiltonii",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Spreads slowly into a clump by root. Rainwater in a permanent tray, full sun, and no fertiliser.",
+      "colour": "Flat green rosette with red tentacles and pink flowers"
+    },
+    {
+      "name": "Drosera anglica",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Needs a genuinely cold winter dormancy. An unheated windowsill or a cold frame, and rainwater only.",
+      "colour": "Upright narrow green leaves with red tentacles"
+    },
+    {
+      "name": "Drosera rotundifolia",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Hardy, and it must have a cold winter to survive the next year. Live sphagnum, rainwater and full sun.",
+      "colour": "Round green leaves on flat petioles with red tentacles"
+    },
+    {
+      "name": "Drosera intermedia",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Tolerates standing water better than most sundews. Rainwater tray year round, full sun, cold winter rest.",
+      "colour": "Upright green spoon leaves flushing red, red tentacles"
+    },
+    {
+      "name": "Drosera filiformis",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Dies back to a winter bud. Keep the bud cold and wet, and cut the dead threads away in spring.",
+      "colour": "Upright green threads with red-purple tentacles"
+    },
+    {
+      "name": "Drosera filiformis var. tracyi",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Taller and greener than the type, and it still needs a cold winter bud. Rainwater only, permanent tray.",
+      "colour": "Tall green threads with pale pink tentacles"
+    },
+    {
+      "name": "Drosera × obovata",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "A sterile hybrid, so increase it from leaf cuttings rather than seed. Cold winter dormancy, rainwater only.",
+      "colour": "Upright green spoon leaves with red tentacles"
+    },
+    {
+      "name": "Drosera petiolaris",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 2, "toxic": 0,
+      "tip": "Wants heat and humidity, and it sulks below 20°C. Rainwater, a warm shallow tray, and bright light.",
+      "colour": "Green rosette on hairy petioles with red tentacles"
+    },
+    {
+      "name": "Drosera falconeri",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 2, "toxic": 0,
+      "tip": "Needs a hot humid summer and a drier but still warm winter. Rainwater only, and never let it get cold.",
+      "colour": "Flat round green leaves flushing red, on short petioles"
+    },
+    {
+      "name": "Drosera lanata",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 2, "toxic": 0,
+      "tip": "Keep it hot and humid on rainwater, then cut the water right back for a warm winter rest.",
+      "colour": "Silver-woolly petioles with small red-tentacled leaves"
+    },
+    {
+      "name": "Drosera paradoxa",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 2, "toxic": 0,
+      "tip": "The most forgiving of the woolly sundews, but it still wants real heat. Rainwater, warm and humid.",
+      "colour": "Small green leaves on woolly petioles with red tentacles"
+    },
+    {
+      "name": "Drosera derbyensis",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 2, "toxic": 0,
+      "tip": "Woolly petioles and a need for constant warmth. Rainwater only, humid air, and drier through winter.",
+      "colour": "White-woolly petioles with round red-tentacled leaves"
+    },
+    {
+      "name": "Drosera scorpioides",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Makes gemmae in autumn. Scatter them on damp peat to increase it. Rainwater only, shallow tray.",
+      "colour": "Silvery stem with green red-tentacled leaves in a rosette"
+    },
+    {
+      "name": "Drosera pulchella",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Tiny, and the parent often fades after making gemmae. Collect and sow them in autumn to keep it going.",
+      "colour": "Flat green rosette with red tentacles and pink flowers"
+    },
+    {
+      "name": "Drosera roseana",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "A pygmy that needs a cool bright winter before it will set gemmae. Rainwater only and a shallow tray.",
+      "colour": "Green rosette with red tentacles and a silver central bud"
+    },
+    {
+      "name": "Drosera peltata",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Grows from a tuber in winter and dies back in summer. Keep it bone dry until autumn or the tuber rots.",
+      "colour": "Shield-shaped green leaves on a wiry stem, red tentacles"
+    }
+  ]
+}

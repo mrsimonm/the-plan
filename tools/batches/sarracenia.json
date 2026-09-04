@@ -1,0 +1,312 @@
+{
+  "plants": [
+    {
+      "name": "Sarracenia purpurea",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The hardiest of the genus and fine outdoors all year. The pitchers hold their own rainwater, so never tip them out.",
+      "colour": "Squat green pitchers veined and flushed maroon"
+    },
+    {
+      "name": "Sarracenia purpurea subsp. venosa",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Squatter and hairier than the northern form. Full sun all day, or the red veining never colours up.",
+      "colour": "Low broad pitchers, green to deep maroon with dense red veins"
+    },
+    {
+      "name": "Sarracenia purpurea f. heterophylla",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "No red pigment at all, so judge the light by pitcher size rather than colour. Rainwater only, tray topped up.",
+      "colour": "Entirely yellow-green, with green flowers and no veining"
+    },
+    {
+      "name": "Sarracenia flava",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Tall trumpets that want a metre of headroom and full sun. Cut the spent pitchers down in late winter, not autumn.",
+      "colour": "Yellow-green trumpets with a red throat blotch and flared lid"
+    },
+    {
+      "name": "Sarracenia flava var. rubricorpora",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The red tube only develops under direct sun. In part shade it comes up green and stays that way all season.",
+      "colour": "Deep red tube with a contrasting yellow-green lid"
+    },
+    {
+      "name": "Sarracenia flava var. atropurpurea",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The darkest flava. It needs a full day of sun and a cold dormancy, or the colour thins and the plant weakens.",
+      "colour": "Wholly deep red, tube and lid alike"
+    },
+    {
+      "name": "Sarracenia flava var. ornata",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The veining is heaviest on late-summer pitchers. Stand it in rainwater and never put it in ordinary compost.",
+      "colour": "Green tube with heavy dark red veining over lid and throat"
+    },
+    {
+      "name": "Sarracenia flava var. rugelii",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "One of the largest and easiest. Give it a deep, wide pot, as the rhizome runs sideways a little each year.",
+      "colour": "Plain yellow-green with a single dark red throat blotch"
+    },
+    {
+      "name": "Sarracenia flava var. maxima",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Without red pigment it looks the same in sun or shade. Give it full sun anyway or the pitchers grow weak and flop.",
+      "colour": "Uniformly yellow-green, without any red marking"
+    },
+    {
+      "name": "Sarracenia flava var. cuprea",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The copper lid deepens through summer. Keep the pot standing in rainwater and never feed the compost.",
+      "colour": "Green tube topped with a coppery bronze lid"
+    },
+    {
+      "name": "Sarracenia leucophylla",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The autumn flush is the showy one. Leave those pitchers standing until late winter rather than trimming them off.",
+      "colour": "Green tube topped with white panels netted in red veins"
+    },
+    {
+      "name": "Sarracenia leucophylla 'Tarnok'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The mutant flower sets no seed, so divide the rhizome in early spring if you want more of it.",
+      "colour": "White-topped pitchers with red veins; flowers a tuft of sepals"
+    },
+    {
+      "name": "Sarracenia alata",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Understated and very hardy. It wants full sun and a genuinely cold winter rest, outdoors wherever you can manage it.",
+      "colour": "Slim pale yellow-green trumpets with faint red veining"
+    },
+    {
+      "name": "Sarracenia alata 'Black Tube'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The near-black colour needs hours of direct sun. In a shaded greenhouse corner it comes up dull green instead.",
+      "colour": "Near-black maroon tubes with a dark lid"
+    },
+    {
+      "name": "Sarracenia minor",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The hood curls over the mouth so rain never fills the trap. Water the tray, never the pitcher.",
+      "colour": "Green hooded pitchers with white windows and a red-flushed back"
+    },
+    {
+      "name": "Sarracenia minor var. okefenokeensis",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The giant form, and slow for its first few years. Deep pot, full sun, and patience rather than feeding.",
+      "colour": "Tall hooded pitchers, green with white windows and red veins"
+    },
+    {
+      "name": "Sarracenia oreophila",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "It stops making pitchers by midsummer and puts out flat leaves instead. That is normal, not a failure.",
+      "colour": "Broad yellow-green trumpets with a faint red throat"
+    },
+    {
+      "name": "Sarracenia rubra",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Small and clump-forming, and the flowers genuinely smell sweet. Full sun, rainwater, and no feed at all.",
+      "colour": "Slender coppery-green pitchers with fine red veins"
+    },
+    {
+      "name": "Sarracenia rubra subsp. gulfensis",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The tallest of the rubra group. Divide it every third spring or the clump crowds itself into small pitchers.",
+      "colour": "Tall slim pitchers, green ageing to bronze with red veins"
+    },
+    {
+      "name": "Sarracenia psittacina",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "It lies flat and traps like a lobster pot. Keep it wetter than the rest, and let it sit flooded over winter.",
+      "colour": "Ground-hugging rosette of red-veined pitchers with white windows"
+    },
+    {
+      "name": "Sarracenia × catesbaei",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "A vigorous old hybrid that forgives more than either parent. Rainwater and full sun still decide whether it thrives.",
+      "colour": "Broad green pitchers with red veining and a flared lid"
+    },
+    {
+      "name": "Sarracenia × moorei",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Tall enough that wind snaps the pitchers. Give it a sheltered sunny spot and cut back only in late winter.",
+      "colour": "Tall trumpets with white upper panels and red veining"
+    },
+    {
+      "name": "Sarracenia × mitchelliana",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Squatter than the trumpet hybrids and very hardy. Stand it in rainwater all summer and let it freeze in winter.",
+      "colour": "Stout white-topped pitchers flushed maroon"
+    },
+    {
+      "name": "Sarracenia × excellens",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The hood keeps rain out, so judge watering by the tray rather than the trap. Full sun brings up the veining.",
+      "colour": "Hooded white-windowed pitchers with dark red veins"
+    },
+    {
+      "name": "Sarracenia × popei",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Mid-sized and reliable. Peat and sand only, as any compost with fertiliser in it kills the roots within a season.",
+      "colour": "Yellow-green trumpets with red throat veining"
+    },
+    {
+      "name": "Sarracenia × areolata",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Slow to bulk up but long-lived. Full sun through summer and three cold months of rest each winter.",
+      "colour": "Slim pitchers with white patches and fine red netting"
+    },
+    {
+      "name": "Sarracenia × swaniana",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Compact enough for a windowsill bog pot, though it still needs a cold winter spent outdoors.",
+      "colour": "Short hooded pitchers, green with white windows and red veins"
+    },
+    {
+      "name": "Sarracenia × chelsonii",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "One of the reddest hybrids, and the colour depends entirely on direct sun rather than on anything you feed it.",
+      "colour": "Squat deep red pitchers with heavy veining"
+    },
+    {
+      "name": "Sarracenia × formosa",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Half-lying like its psittacina parent. Keep it very wet and it spreads into a low mat over a few years.",
+      "colour": "Small decumbent pitchers with white windows and red veins"
+    },
+    {
+      "name": "Sarracenia × wrigleyana",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Often sold as a shop plant in ordinary compost. Repot into peat and sand as soon as you get it home.",
+      "colour": "Squat white-topped pitchers with strong red veining"
+    },
+    {
+      "name": "Sarracenia × courtii",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Tolerates standing water better than most of the genus. Never let the tray run dry in summer.",
+      "colour": "Low half-upright pitchers, red-veined with white flecking"
+    },
+    {
+      "name": "Sarracenia × readii",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Mid-height and slow. Divide only once the pot is full, as it sulks for a year if cut up too young.",
+      "colour": "Slim pitchers with white upper panels and red veining"
+    },
+    {
+      "name": "Sarracenia × harperi",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The partial hood keeps the traps dry, so water from the tray with rainwater and leave the pitchers alone.",
+      "colour": "Green trumpets with a partly hooded lid and red throat"
+    },
+    {
+      "name": "Sarracenia × exornata",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Squat and very hardy. A cold wet winter outdoors suits it far better than any indoor windowsill.",
+      "colour": "Broad pitchers, green flushed maroon with red veins"
+    },
+    {
+      "name": "Sarracenia 'Judith Hindle'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The usual garden-centre Sarracenia. It reddens properly only after a full day of direct sun, not a bright windowsill.",
+      "colour": "Squat pitchers with white throats and dense red veining"
+    },
+    {
+      "name": "Sarracenia 'Juthatip Soper'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Colour deepens through the season and peaks in autumn. Leave those pitchers standing until spring.",
+      "colour": "Tall pink-red pitchers with white windows and dark veins"
+    },
+    {
+      "name": "Sarracenia 'Adrian Slack'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Slow, costly and increased only by division. Give it the sunniest spot you have and never feed the compost.",
+      "colour": "Large white-topped pitchers with heavy crimson veining"
+    },
+    {
+      "name": "Sarracenia 'Dana's Delight'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The white shows best on late pitchers. Rainwater only, as tap minerals brown the lip within weeks.",
+      "colour": "White upper pitcher with fine purple veining over a green tube"
+    },
+    {
+      "name": "Sarracenia 'Scarlet Belle'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Sold everywhere in tiny pots. Move it to a deeper pot of peat and sand and stand that in a tray of rainwater.",
+      "colour": "Short broad pitchers, white-windowed with deep red veins"
+    },
+    {
+      "name": "Sarracenia 'Doodle Bug'",
+      "category": "Carnivorous",
+      "water": 2, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Stays low and small, so a shallow bog tray suits it. Keep it wetter than the tall hybrids.",
+      "colour": "Small semi-prostrate pitchers, red-veined with white flecks"
+    },
+    {
+      "name": "Sarracenia 'Leah Wilkerson'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "It only reaches full size in a big pot in full sun. Divide in early spring, before the flowers open.",
+      "colour": "Very large white-topped pitchers with broad red veins"
+    },
+    {
+      "name": "Sarracenia 'Daniel Rudd'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Robust and quick to clump. Split it every second or third spring or it stops making full-size pitchers.",
+      "colour": "Stout pitchers with a white throat and heavy red netting"
+    },
+    {
+      "name": "Sarracenia 'Godzuki'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "A compact hybrid for a small bog pot. It still wants full sun and three cold months each winter.",
+      "colour": "Small squat pitchers, green with red veining and a wide mouth"
+    },
+    {
+      "name": "Sarracenia 'Bug Bat'",
+      "category": "Carnivorous",
+      "water": 3, "feed": 0, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The lid is held out over the mouth and keeps rain from the trap. Water the tray, never the pitcher itself.",
+      "colour": "Dark red pitchers with the lid held out over the mouth"
+    }
+  ]
+}

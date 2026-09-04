@@ -1,0 +1,284 @@
+{
+  "plants": [
+    {
+      "name": "Begonia rex 'Escargot'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "Water the compost, never the leaves. Wet foliage in still air is how powdery mildew starts.",
+      "colour": "Silver and olive spiral, edged in maroon and covered in fine hairs"
+    },
+    {
+      "name": "Begonia rex 'Fireworks'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "Keep it out of draughts. Sudden cold air, not dry compost, is what strips the leaves in winter.",
+      "colour": "Silver leaf with a deep purple centre and purple radiating veins"
+    },
+    {
+      "name": "Begonia rex 'Silver Limbo'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "Small enough for a terrarium. Let the top two centimetres dry before you water it again.",
+      "colour": "Small silver-blue leaves flecked and edged with dark green"
+    },
+    {
+      "name": "Begonia rex 'Red Kiss'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "A dark leaf still needs bright indirect light. In a dim spot the red band loses its contrast.",
+      "colour": "Near-black leaf with a broad rose-red band inside the margin"
+    },
+    {
+      "name": "Begonia rex 'Inca Flame'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "Rex begonias go dormant if they get cold. Hold back the water and it will releaf in spring.",
+      "colour": "Orange-red leaf overlaid with silver and a dark centre"
+    },
+    {
+      "name": "Begonia rex 'Jurassic Silver Swirl'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "Sturdier than the older rex types, but it still rots if the pot is left standing in water.",
+      "colour": "Broad silver leaf with a dark green swirl around the centre"
+    },
+    {
+      "name": "Begonia rex 'Salsa'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "Pinch the flower stems off as they appear. They take energy from the leaves and are barely worth having.",
+      "colour": "Red centre spreading into a silver and green outer margin"
+    },
+    {
+      "name": "Begonia 'Benitochiba'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "Grows from a surface rhizome. Bury it and it rots, so let it sit on top of the compost.",
+      "colour": "Deeply lobed silver leaf with purple-red veins and margin"
+    },
+    {
+      "name": "Begonia masoniana (iron cross begonia)",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "The bristly leaves hold droplets and mark. Water at the base and keep the air moving.",
+      "colour": "Puckered apple-green leaf with a dark brown cross at the centre"
+    },
+    {
+      "name": "Begonia masoniana 'River'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "Wants humidity above average. A pebble tray or a closed case does more for it than misting.",
+      "colour": "Quilted bronze-green leaf with silver netting between the veins"
+    },
+    {
+      "name": "Begonia bowerae (eyelash begonia)",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "Shallow-rooted, so it prefers a wide shallow pot to a deep one and dislikes sitting wet.",
+      "colour": "Small bright green leaf edged with dark stitching and white hairs"
+    },
+    {
+      "name": "Begonia bowerae 'Tiger Paws'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "Leaf edges crisp in dry air, so keep it well away from a radiator over winter.",
+      "colour": "Lime-green leaf marbled with chocolate-brown and fringed with pale hairs"
+    },
+    {
+      "name": "Begonia 'Cleopatra'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Hard sun bleaches the bronze out to yellow. Bright indirect light keeps the contrast.",
+      "colour": "Star-shaped leaf in bronze and gold, red on the underside"
+    },
+    {
+      "name": "Begonia 'Erythrophylla' (beefsteak begonia)",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 21, "light": 3, "humidity": 1, "toxic": 1,
+      "tip": "One of the toughest begonias. It forgives a missed watering far better than a soggy pot.",
+      "colour": "Round glossy olive leaves with deep red undersides"
+    },
+    {
+      "name": "Begonia 'Marmaduke'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The large leaves are brittle. Site it where nothing brushes past, as a snapped leaf does not regrow.",
+      "colour": "Large chartreuse leaf spotted and splashed with chocolate-brown"
+    },
+    {
+      "name": "Begonia soli-mutata",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "Leaf colour tracks the light it gets, so after a move expect the new growth to look different.",
+      "colour": "Puckered leaf shifting from olive-green to bronze in brighter light"
+    },
+    {
+      "name": "Begonia goegoensis (fire king begonia)",
+      "category": "Aroids & foliage",
+      "water": 5, "feed": 21, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "A jungle species that sulks in average room air. A bathroom or a closed case suits it better.",
+      "colour": "Round bronze-green peltate leaf with a network of pale veins"
+    },
+    {
+      "name": "Begonia rajah",
+      "category": "Aroids & foliage",
+      "water": 5, "feed": 21, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "Needs steady warmth and humidity. Cold nights are what kill it, not a dry week.",
+      "colour": "Small puckered chocolate leaf with bright green veining"
+    },
+    {
+      "name": "Begonia pavonina (peacock begonia)",
+      "category": "Aroids & foliage",
+      "water": 5, "feed": 21, "light": 3, "humidity": 2, "toxic": 1,
+      "tip": "The blue sheen is an adaptation to deep shade, so bright light washes it out.",
+      "colour": "Dark green leaf with a blue iridescent sheen in low light"
+    },
+    {
+      "name": "Begonia carolineifolia",
+      "category": "Aroids & foliage",
+      "water": 10, "feed": 21, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The thick rhizome stores water, so it takes a dry spell far better than a wet one.",
+      "colour": "Fans of glossy mid-green leaflets on a stout upright rhizome"
+    },
+    {
+      "name": "Begonia maculata 'Wightii'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "It grows tall and topples. Cut it back hard each spring and root the cuttings in water.",
+      "colour": "Olive wing-shaped leaf with silver-white spots, deep red beneath"
+    },
+    {
+      "name": "Begonia listada",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "Bright indirect light and no draughts. It sheds leaves when the air around it dries out.",
+      "colour": "Dark velvety leaf with a single lime stripe down the centre"
+    },
+    {
+      "name": "Begonia serratipetala",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 21, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "The pink flecking is strongest on new growth in good light. Older leaves settle to plain bronze.",
+      "colour": "Bronze-green saw-edged leaf flecked with pink"
+    },
+    {
+      "name": "Begonia amphioxus",
+      "category": "Aroids & foliage",
+      "water": 5, "feed": 21, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "A Borneo species for a terrarium. Ordinary room humidity is not enough to keep it going.",
+      "colour": "Narrow green leaf spotted red, with a red tip at each end"
+    },
+    {
+      "name": "Begonia luxurians (palm leaf begonia)",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "It needs room and light to build the full palm-like leaves. Cramped, it stays leggy and sparse.",
+      "colour": "Fans of narrow green leaflets held on tall red stems"
+    },
+    {
+      "name": "Begonia venosa",
+      "category": "Aroids & foliage",
+      "water": 14, "feed": 21, "light": 1, "humidity": 0, "toxic": 1,
+      "tip": "The felted leaves hold water and rot. Water the compost only, and give it more light than most begonias.",
+      "colour": "Thick felted grey-white leaves on a stout upright stem"
+    },
+    {
+      "name": "Begonia 'Gryphon'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Vigorous for a begonia and grown purely for the leaves. Pot it on each spring or growth stalls.",
+      "colour": "Large lobed leaves in deep green with silver between the veins"
+    },
+    {
+      "name": "Begonia 'Lucerna'",
+      "category": "Flowering",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Cane begonias flower on mature growth, so never cut every stem back in the same year.",
+      "colour": "Silver-spotted olive leaves, red beneath, with pendent pink flower clusters"
+    },
+    {
+      "name": "Begonia 'Sophie Cecile'",
+      "category": "Flowering",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Stake the canes early. Once a stem has leaned it will not straighten again.",
+      "colour": "Large silver-spotted leaves with cut edges and pink flower clusters"
+    },
+    {
+      "name": "Begonia coccinea (angel wing begonia)",
+      "category": "Flowering",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "It flowers best slightly pot-bound, so resist moving it up a pot size too soon.",
+      "colour": "Glossy green wing-shaped leaves with red margins and coral flowers"
+    },
+    {
+      "name": "Begonia 'Tamaya'",
+      "category": "Flowering",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Sold as a standard on a single trunk. Rub out the shoots at the base or it reverts to a bush.",
+      "colour": "Silver-spotted olive leaves on one thick trunk, with pink flowers"
+    },
+    {
+      "name": "Begonia 'Dragon Wing Red'",
+      "category": "Flowering",
+      "water": 5, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Bred to take heat and rain outdoors. It sheds spent flowers itself, so deadheading is wasted effort.",
+      "colour": "Glossy deep green wing-shaped leaves with red flower clusters"
+    },
+    {
+      "name": "Begonia 'Dragon Wing Pink'",
+      "category": "Flowering",
+      "water": 5, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Feed it fortnightly right through summer, or the flowering thins out by late August.",
+      "colour": "Glossy deep green leaves with clear pink flower clusters"
+    },
+    {
+      "name": "Begonia boliviensis",
+      "category": "Flowering",
+      "water": 5, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Tuberous, so it dies back for winter. Keep the tuber dry and frost-free until spring.",
+      "colour": "Narrow toothed leaves with pendent orange-red flowers"
+    },
+    {
+      "name": "Begonia 'Bonfire'",
+      "category": "Flowering",
+      "water": 5, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Best in a hanging basket where the stems can arch. Let the top of the compost dry between waterings.",
+      "colour": "Arching stems of narrow leaves with fiery orange-red flowers"
+    },
+    {
+      "name": "Begonia x tuberhybrida (tuberous begonia)",
+      "category": "Flowering",
+      "water": 5, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Start the tubers hollow side up in spring. Planted the wrong way up they rot before they shoot.",
+      "colour": "Large double flowers in red, orange, yellow, pink or white"
+    },
+    {
+      "name": "Begonia 'Nonstop'",
+      "category": "Flowering",
+      "water": 5, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Bred to flower without a rest, but it still needs deadheading to carry on into autumn.",
+      "colour": "Compact plants with double flowers in warm reds, oranges and yellows"
+    },
+    {
+      "name": "Begonia x hiemalis (Rieger begonia)",
+      "category": "Flowering",
+      "water": 7, "feed": 14, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Sold in full flower and usually thrown away after. Cut it back instead and it flowers again.",
+      "colour": "Glossy dark green leaves with double flowers in red, orange or pink"
+    },
+    {
+      "name": "Begonia semperflorens (wax begonia)",
+      "category": "Flowering",
+      "water": 5, "feed": 14, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "The bronze-leaved forms take full sun; the green-leaved ones scorch and want some shade.",
+      "colour": "Waxy green or bronze leaves with small pink, red or white flowers"
+    },
+    {
+      "name": "Begonia grandis (hardy begonia)",
+      "category": "Flowering",
+      "water": 7, "feed": 21, "light": 3, "humidity": 1, "toxic": 1,
+      "tip": "The one begonia that comes through a British winter outdoors. It dies back and returns in late spring.",
+      "colour": "Olive leaves with red veins and undersides, sprays of pale pink flowers"
+    }
+  ]
+}

@@ -1,0 +1,298 @@
+{
+  "plants": [
+    {
+      "name": "Ficus elastica 'Robusta'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 28, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Let the top third of the pot dry before watering. Cold, wet compost is what kills it.",
+      "colour": "Broad, glossy deep green leaves"
+    },
+    {
+      "name": "Ficus elastica 'Burgundy'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 28, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The dark colour deepens in strong light. In a dim corner new leaves open plain green.",
+      "colour": "Near-black leaves with a red midrib and pink new-leaf sheath"
+    },
+    {
+      "name": "Ficus elastica 'Abidjan'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 28, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Wipe the leaves monthly. Dust shows badly on dark foliage and it does slow growth.",
+      "colour": "Very dark burgundy-green leaves with a deep red underside"
+    },
+    {
+      "name": "Ficus elastica 'Melany'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 28, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Pinch the growing tip to keep it branching, or it runs up as one bare stem.",
+      "colour": "Compact dark green leaves with a reddish flush beneath"
+    },
+    {
+      "name": "Ficus elastica 'Sofia'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 28, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Turn the pot a quarter each week or it leans hard towards the window.",
+      "colour": "Small, rounded dark green leaves on a compact plant"
+    },
+    {
+      "name": "Ficus elastica 'Tineke'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 28, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Needs brighter light than the plain green sort, but the cream margins scorch in midday sun.",
+      "colour": "Grey-green centre, irregular cream margins, pink midrib"
+    },
+    {
+      "name": "Ficus elastica 'Ruby'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 28, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "The pink comes from light, not feed. Too dim and new leaves open cream and green only.",
+      "colour": "Cream and green leaves flushed deep pink, strongest on new growth"
+    },
+    {
+      "name": "Ficus elastica 'Belize'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 28, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Cut stems bleed white latex that stains and irritates skin. Wear gloves and blot the cut.",
+      "colour": "Green centre with cream and pink margins, pink stems"
+    },
+    {
+      "name": "Ficus elastica 'Doescheri'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 28, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "An all-green shoot will outgrow the variegated growth. Cut it back to a marked leaf.",
+      "colour": "Grey-green marbling, cream margins, pink midrib and stalks"
+    },
+    {
+      "name": "Ficus elastica 'Shivereana'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 28, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "The speckling varies leaf to leaf. Bright light fixes it; more feed does not.",
+      "colour": "Pale green leaves speckled and blotched with cream"
+    },
+    {
+      "name": "Ficus benjamina 'Starlight'",
+      "category": "Trees & large plants",
+      "water": 7, "feed": 28, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Drops leaves after any move. Settle it in one bright spot and then leave it there.",
+      "colour": "Mostly white leaves with irregular green centres"
+    },
+    {
+      "name": "Ficus benjamina 'Danielle'",
+      "category": "Trees & large plants",
+      "water": 7, "feed": 28, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Sudden leaf drop means a change: a draught, a move, or cold water. Keep it all steady.",
+      "colour": "Dark glossy green leaves with straight, flat edges"
+    },
+    {
+      "name": "Ficus benjamina 'Golden King'",
+      "category": "Trees & large plants",
+      "water": 7, "feed": 28, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Loses the cream margins in poor light. Bright indirect, and never a cold draught.",
+      "colour": "Mid-green with broad grey-green and cream margins"
+    },
+    {
+      "name": "Ficus benjamina 'Anastasia'",
+      "category": "Trees & large plants",
+      "water": 7, "feed": 28, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Expect a round of leaf drop when you bring it home; it regrows once it settles.",
+      "colour": "Dark green centres with wavy lime-green margins"
+    },
+    {
+      "name": "Ficus benjamina 'Natasja'",
+      "category": "Trees & large plants",
+      "water": 7, "feed": 28, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Small pot, small plant, so it dries quickly. Check it twice a week in summer.",
+      "colour": "Small dark green leaves on a dwarf, dense plant"
+    },
+    {
+      "name": "Ficus benjamina 'Exotica'",
+      "category": "Trees & large plants",
+      "water": 7, "feed": 28, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Keep it away from doorways. Draughts and temperature swings strip the leaves.",
+      "colour": "Glossy mid-green leaves with a long twisted tip"
+    },
+    {
+      "name": "Ficus benjamina 'Barok'",
+      "category": "Trees & large plants",
+      "water": 7, "feed": 28, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The curled leaves hide pests. Check the undersides for scale and spider mite monthly.",
+      "colour": "Small mid-green leaves that curl tightly into rings"
+    },
+    {
+      "name": "Ficus lyrata 'Bambino'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 28, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Water thoroughly, then wait until the top few centimetres dry. Brown blotches are root rot.",
+      "colour": "Smaller, rounder deep green fiddle-shaped leaves"
+    },
+    {
+      "name": "Ficus lyrata 'Compacta'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 28, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Bright light and steady warmth. A cold windowpane in winter marks the leaves brown.",
+      "colour": "Deep green fiddle-shaped leaves packed on short internodes"
+    },
+    {
+      "name": "Ficus lyrata 'Variegata'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 28, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "The white margins burn in direct sun and fade in shade. Bright indirect light only.",
+      "colour": "Deep green leaves with wide creamy-white margins"
+    },
+    {
+      "name": "Ficus microcarpa 'Moclame'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 28, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The thick leaves hold water. Let the compost dry well down before watering again.",
+      "colour": "Thick, rounded, dark green leaves"
+    },
+    {
+      "name": "Ficus microcarpa 'Green Island'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 28, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Takes hard pruning. Cut it back in spring and it breaks freely from old wood.",
+      "colour": "Small, round, very thick glossy green leaves"
+    },
+    {
+      "name": "Ficus microcarpa 'Tiger Bark'",
+      "category": "Trees & large plants",
+      "water": 5, "feed": 21, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "In a shallow bonsai pot it dries within a day in summer. Water before the leaves flag.",
+      "colour": "Small glossy leaves over pale, mottled grey bark"
+    },
+    {
+      "name": "Creeping fig (Ficus pumila)",
+      "category": "Aroids & foliage",
+      "water": 5, "feed": 28, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "It never fully recovers from drying out. Keep the compost lightly moist all year.",
+      "colour": "Small, heart-shaped matt green leaves on wiry stems"
+    },
+    {
+      "name": "Ficus pumila 'Variegata'",
+      "category": "Aroids & foliage",
+      "water": 5, "feed": 28, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "The cream parts burn easily. Bright indirect light and steady moisture suit it best.",
+      "colour": "Small green leaves edged and splashed with cream"
+    },
+    {
+      "name": "Ficus pumila 'Quercifolia'",
+      "category": "Aroids & foliage",
+      "water": 4, "feed": 28, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "Tiny leaves in a small pot dry out fast. It does best in a terrarium or a humid spot.",
+      "colour": "Tiny lobed leaves shaped like an oak's, deep green"
+    },
+    {
+      "name": "Ficus pumila 'White Sunny'",
+      "category": "Aroids & foliage",
+      "water": 5, "feed": 28, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "Trim it hard once it goes leggy; it breaks freely from the cut stems.",
+      "colour": "Small green leaves with clean white margins"
+    },
+    {
+      "name": "Ficus sagittata 'Variegata'",
+      "category": "Aroids & foliage",
+      "water": 5, "feed": 28, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "Indoors it does better trailing than climbing. Keep it out of direct sun.",
+      "colour": "Pointed green leaves with broad cream margins"
+    },
+    {
+      "name": "Ficus benghalensis 'Audrey'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 28, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "More forgiving than a fiddle leaf, but it still will not tolerate sitting wet.",
+      "colour": "Matt sage-green leaves with pale, clearly raised veins"
+    },
+    {
+      "name": "Ficus altissima 'Yellow Gem'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 28, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Bright light keeps the yellow margins. It sulks and drops leaves if moved about.",
+      "colour": "Broad leaves marbled green with yellow-green margins"
+    },
+    {
+      "name": "Ficus umbellata",
+      "category": "Trees & large plants",
+      "water": 7, "feed": 28, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "The thin leaves wilt quickly. Water before the pot goes fully dry, not after.",
+      "colour": "Large, thin, heart-shaped bright green leaves"
+    },
+    {
+      "name": "Ficus cyathistipula",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 28, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "One of the easier figs indoors: it takes medium light without shedding leaves.",
+      "colour": "Narrow leathery dark green leaves; small green figs indoors"
+    },
+    {
+      "name": "Ficus aspera 'Parcellii'",
+      "category": "Trees & large plants",
+      "water": 7, "feed": 28, "light": 2, "humidity": 2, "toxic": 1,
+      "tip": "Wants humid air. A dry room gives brown leaf edges and brings on red spider mite.",
+      "colour": "Green leaves marbled cream and white; cream figs striped red"
+    },
+    {
+      "name": "Ficus binnendijkii 'Alii'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 28, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Far less prone to leaf drop than a weeping fig, but still keep it out of draughts.",
+      "colour": "Long, narrow, drooping dark green leaves"
+    },
+    {
+      "name": "Ficus binnendijkii 'Amstel Gold'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 28, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "Give it the brightest spot you have; the cream fades to green in medium light.",
+      "colour": "Long narrow leaves marbled cream and pale green"
+    },
+    {
+      "name": "Ficus religiosa",
+      "category": "Trees & large plants",
+      "water": 7, "feed": 28, "light": 1, "humidity": 1, "toxic": 1,
+      "tip": "It is deciduous when cool, so leaf drop over winter is normal rather than a fault.",
+      "colour": "Heart-shaped leaves with long drip tips, bronze when new"
+    },
+    {
+      "name": "Ficus triangularis",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 28, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Drops leaves if it dries out completely. Small pot, so check it regularly.",
+      "colour": "Small, stiff triangular leaves in matt deep green"
+    },
+    {
+      "name": "Ficus triangularis 'Variegata'",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 28, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Bright indirect light holds the cream. Cut out any all-green stems as they appear.",
+      "colour": "Triangular leaves with wide cream margins"
+    },
+    {
+      "name": "Ficus deltoidea",
+      "category": "Aroids & foliage",
+      "water": 7, "feed": 28, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "It fruits young indoors. Keep it evenly moist; it sheds leaves when it dries out.",
+      "colour": "Rounded leathery leaves, brown-spotted beneath, with small yellow figs"
+    },
+    {
+      "name": "Ficus carica 'Brown Turkey'",
+      "category": "Herbs & edibles",
+      "water": 4, "feed": 14, "light": 0, "humidity": 0, "toxic": 1,
+      "tip": "Restrict the roots in a pot or a bed, or you get a large plant and very little fruit.",
+      "colour": "Brown-purple fruit with pale amber flesh; large lobed leaves"
+    },
+    {
+      "name": "Ficus carica 'Brunswick'",
+      "category": "Herbs & edibles",
+      "water": 4, "feed": 14, "light": 0, "humidity": 0, "toxic": 1,
+      "tip": "In autumn rub off every fig larger than a pea; only the pea-sized embryos overwinter.",
+      "colour": "Large green-bronze fruit and deeply cut leaves"
+    },
+    {
+      "name": "Ficus carica 'Violette de Bordeaux'",
+      "category": "Herbs & edibles",
+      "water": 4, "feed": 14, "light": 0, "humidity": 0, "toxic": 1,
+      "tip": "Ripens early enough for a British summer, but it wants the sunniest wall you have.",
+      "colour": "Small near-black fruit with deep red flesh"
+    }
+  ]
+}

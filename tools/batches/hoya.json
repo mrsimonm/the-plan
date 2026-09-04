@@ -1,0 +1,284 @@
+{
+  "plants": [
+    {
+      "name": "Hoya carnosa 'Krimson Queen'",
+      "category": "Flowering",
+      "water": 14, "feed": 14, "light": 2, "humidity": 1, "toxic": 0,
+      "tip": "The variegation sits on the leaf edge, so it scorches in hard sun. Bright indirect light holds the pink.",
+      "colour": "Mid-green centre with cream and pink outer margins"
+    },
+    {
+      "name": "Hoya carnosa 'Krimson Princess'",
+      "category": "Flowering",
+      "water": 14, "feed": 21, "light": 2, "humidity": 1, "toxic": 0,
+      "tip": "The pale centre carries little chlorophyll, so growth is slow. Do not try to push it with extra feed.",
+      "colour": "Cream to pink centre with a green margin, new stems flushed red"
+    },
+    {
+      "name": "Hoya carnosa 'Compacta' (Hindu rope)",
+      "category": "Flowering",
+      "water": 14, "feed": 14, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Water sits in the twisted leaves and rots them. Water at the pot rim and let the compost dry right out.",
+      "colour": "Tightly curled, crowded green leaves, often edged cream"
+    },
+    {
+      "name": "Hoya carnosa 'Krinkle 8'",
+      "category": "Flowering",
+      "water": 14, "feed": 14, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Slow to fill a pot. Leave it slightly rootbound rather than moving it up a size each spring.",
+      "colour": "Green leaves dimpled with about eight sunken puckers each"
+    },
+    {
+      "name": "Hoya carnosa 'Chelsea'",
+      "category": "Flowering",
+      "water": 14, "feed": 14, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "The thick cupped leaves store water, so it forgives a missed fortnight far better than a soggy pot.",
+      "colour": "Thick, cupped, deep green leaves with sunken veins"
+    },
+    {
+      "name": "Hoya carnosa 'Grey Ghost'",
+      "category": "Flowering",
+      "water": 14, "feed": 14, "light": 2, "humidity": 1, "toxic": 0,
+      "tip": "The silver flecking thins out in low light. A metre from an east window keeps new leaves dense.",
+      "colour": "Green leaves almost covered in dense silver flecking"
+    },
+    {
+      "name": "Hoya carnosa 'Freckles'",
+      "category": "Flowering",
+      "water": 14, "feed": 14, "light": 2, "humidity": 1, "toxic": 0,
+      "tip": "Speckling is strongest on leaves grown in bright light. Older leaves from a dim spell stay plain.",
+      "colour": "Deep green with scattered silver speckles"
+    },
+    {
+      "name": "Hoya carnosa 'Wilbur Graves'",
+      "category": "Flowering",
+      "water": 14, "feed": 14, "light": 2, "humidity": 1, "toxic": 0,
+      "tip": "A vigorous climber. Give it a trellis early, because the stems set their direction once they go woody.",
+      "colour": "Large green leaves heavily splashed with silver"
+    },
+    {
+      "name": "Hoya pubicalyx 'Splash'",
+      "category": "Flowering",
+      "water": 12, "feed": 14, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "One of the readiest hoyas to flower indoors. A few hours of direct morning sun brings the buds on.",
+      "colour": "Narrow dark green leaves flecked with silver"
+    },
+    {
+      "name": "Hoya pubicalyx 'Royal Hawaiian Purple'",
+      "category": "Flowering",
+      "water": 12, "feed": 14, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Flower colour deepens in strong light. Never cut off the bare flower spur, as the next buds form on it.",
+      "colour": "Dark green leaves, deep wine-red flowers with a near-black sheen"
+    },
+    {
+      "name": "Hoya pubicalyx 'Red Buttons'",
+      "category": "Flowering",
+      "water": 12, "feed": 14, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Leave the old flower stalks in place. It reblooms from the same short spur for years.",
+      "colour": "Green leaves with light silver flecks, small dark red flowers"
+    },
+    {
+      "name": "Hoya kerrii (sweetheart hoya)",
+      "category": "Flowering",
+      "water": 14, "feed": 21, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "A single rooted leaf almost never grows on. Buy a cutting with a length of stem if you want a vine.",
+      "colour": "Thick, plain green heart-shaped leaves"
+    },
+    {
+      "name": "Hoya kerrii 'Variegata'",
+      "category": "Flowering",
+      "water": 16, "feed": 21, "light": 2, "humidity": 1, "toxic": 0,
+      "tip": "Very slow, and rot follows overwatering quickly. Wait until the leaves feel slightly soft before watering.",
+      "colour": "Heart-shaped leaves, green centre with a broad butter-yellow margin"
+    },
+    {
+      "name": "Hoya kerrii 'Splash'",
+      "category": "Flowering",
+      "water": 14, "feed": 21, "light": 2, "humidity": 1, "toxic": 0,
+      "tip": "It sits still for a year or two, then runs. Keep the pot small and the compost gritty and open.",
+      "colour": "Heart-shaped green leaves with fine silver flecking"
+    },
+    {
+      "name": "Hoya obovata",
+      "category": "Flowering",
+      "water": 14, "feed": 14, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "The round leaves hold weeks of water between them. Overwatering, not neglect, is what kills it.",
+      "colour": "Round, thick, deep green leaves flecked with silver"
+    },
+    {
+      "name": "Hoya diversifolia",
+      "category": "Flowering",
+      "water": 14, "feed": 14, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "A large grower that flowers freely once mature. Give it a support and room to climb properly.",
+      "colour": "Broad, flat, leathery grey-green leaves"
+    },
+    {
+      "name": "Hoya australis",
+      "category": "Flowering",
+      "water": 14, "feed": 14, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Takes more direct sun than most hoyas, and it needs that sun before it will flower.",
+      "colour": "Glossy round mid-green leaves, thick and waxy"
+    },
+    {
+      "name": "Hoya australis 'Lisa'",
+      "category": "Flowering",
+      "water": 14, "feed": 14, "light": 2, "humidity": 1, "toxic": 0,
+      "tip": "The cream centre burns in midday sun. Bright light through a curtain keeps the colour without scorch.",
+      "colour": "Green leaves with a yellow-cream centre, pink on new growth"
+    },
+    {
+      "name": "Hoya bella",
+      "category": "Flowering",
+      "water": 7, "feed": 14, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "The thin leaves dry out far faster than a carnosa. Water weekly and keep it out of a draught.",
+      "colour": "Small pointed mid-green leaves on fine trailing stems"
+    },
+    {
+      "name": "Hoya linearis",
+      "category": "Flowering",
+      "water": 7, "feed": 21, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "The one hoya that hates heat and dry air. Keep it cool, humid and evenly moist or it drops whole strands.",
+      "colour": "Soft, downy, needle-thin pale green leaves hanging in curtains"
+    },
+    {
+      "name": "Hoya lacunosa",
+      "category": "Flowering",
+      "water": 10, "feed": 14, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "The small white flowers are strongly scented in the evening. Site it where that is welcome at night.",
+      "colour": "Small dark green diamond-shaped leaves with sunken veins"
+    },
+    {
+      "name": "Hoya lacunosa 'Eskimo'",
+      "category": "Flowering",
+      "water": 10, "feed": 14, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Prefers steady moisture to the hard dry-out a carnosa wants. Never let the leaves shrivel.",
+      "colour": "Dark green leaves dusted with pale silver flecking"
+    },
+    {
+      "name": "Hoya curtisii",
+      "category": "Flowering",
+      "water": 10, "feed": 14, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "It creeps flat rather than climbing. A wide shallow pot fills in far faster than a deep one.",
+      "colour": "Tiny spade-shaped leaves, olive green with silver marbling"
+    },
+    {
+      "name": "Hoya wayetii",
+      "category": "Flowering",
+      "water": 12, "feed": 14, "light": 2, "humidity": 1, "toxic": 0,
+      "tip": "The dark leaf margin only develops in good light. In shade the new leaves come through plain green.",
+      "colour": "Long narrow leaves, deep green with a chocolate-brown margin"
+    },
+    {
+      "name": "Hoya krohniana",
+      "category": "Flowering",
+      "water": 10, "feed": 14, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Small leaves mean a small water reserve. Check it weekly rather than on a fortnightly routine.",
+      "colour": "Small heart-shaped leaves, dark green with silver flecks"
+    },
+    {
+      "name": "Hoya macrophylla 'Albomarginata'",
+      "category": "Flowering",
+      "water": 12, "feed": 14, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "The large leaves guttate and drip sticky sap. Stand it where a marked floor will not matter.",
+      "colour": "Large ribbed leaves, green with a broad cream border"
+    },
+    {
+      "name": "Hoya multiflora (shooting star)",
+      "category": "Flowering",
+      "water": 10, "feed": 14, "light": 2, "humidity": 1, "toxic": 0,
+      "tip": "It grows as an upright shrub, not a vine, and flowers repeatedly through the year in good light.",
+      "colour": "Long glossy green leaves, swept-back white and yellow flowers"
+    },
+    {
+      "name": "Hoya retusa",
+      "category": "Flowering",
+      "water": 10, "feed": 14, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "The needle leaves scorch in direct sun and rot in wet compost. Bright shade and a fast, gritty mix.",
+      "colour": "Flat, grass-like green leaves in dense tufts"
+    },
+    {
+      "name": "Hoya serpens",
+      "category": "Flowering",
+      "water": 7, "feed": 21, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "A cool-growing species that sulks in a warm room. Keep it humid and away from radiators.",
+      "colour": "Small round fuzzy leaves, pale green with faint flecks"
+    },
+    {
+      "name": "Hoya polyneura (fishtail hoya)",
+      "category": "Flowering",
+      "water": 7, "feed": 14, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Thin leaves and shallow roots. It wants humidity and even moisture, never a complete dry-out.",
+      "colour": "Thin green leaves with pale veining, shaped like a fishtail"
+    },
+    {
+      "name": "Hoya cumingiana",
+      "category": "Flowering",
+      "water": 12, "feed": 14, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "It stands upright rather than trailing, and flowers readily on young plants in bright light.",
+      "colour": "Small stiff dark green leaves in neat pairs up upright stems"
+    },
+    {
+      "name": "Hoya shepherdii",
+      "category": "Flowering",
+      "water": 12, "feed": 14, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "The roots resent disturbance. Repot only when the compost has broken down, not on a schedule.",
+      "colour": "Long, narrow, downward-hanging green leaves"
+    },
+    {
+      "name": "Hoya 'Mathilde'",
+      "category": "Flowering",
+      "water": 12, "feed": 14, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "A carnosa and serpens cross that flowers young. Bright light and a full dry-out between waterings.",
+      "colour": "Small round semi-succulent leaves flecked with silver"
+    },
+    {
+      "name": "Hoya 'Rebecca'",
+      "category": "Flowering",
+      "water": 12, "feed": 14, "light": 2, "humidity": 1, "toxic": 0,
+      "tip": "Flowers young and often. Leave the spur intact after the blooms drop and it will use it again.",
+      "colour": "Green leaves, lavender-pink flowers with a yellow centre"
+    },
+    {
+      "name": "Hoya 'Sunrise'",
+      "category": "Flowering",
+      "water": 12, "feed": 14, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "The red colouring is a response to strong light. In a shaded spot the leaves simply stay green.",
+      "colour": "Green leaves that flush deep red-bronze in strong light"
+    },
+    {
+      "name": "Hoya burtoniae",
+      "category": "Flowering",
+      "water": 10, "feed": 14, "light": 2, "humidity": 1, "toxic": 0,
+      "tip": "The leaf edges redden under bright light. Fast-growing, and easy to root from a two-node cutting.",
+      "colour": "Small fuzzy olive leaves with red edges in bright light"
+    },
+    {
+      "name": "Hoya caudata",
+      "category": "Flowering",
+      "water": 10, "feed": 14, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Wants warmth and humidity. It stalls in a cold room and drops leaves in dry winter air.",
+      "colour": "Large mottled leaves, dark green splashed heavily with silver"
+    },
+    {
+      "name": "Hoya callistophylla",
+      "category": "Flowering",
+      "water": 10, "feed": 14, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "The vein pattern darkens as each leaf matures. Give it warmth, humidity and a pole to climb.",
+      "colour": "Long leaves with dark olive veins netted over pale green"
+    },
+    {
+      "name": "Hoya finlaysonii",
+      "category": "Flowering",
+      "water": 10, "feed": 14, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "A humidity lover with brittle leaves. Handle the stems rather than the leaves when training it.",
+      "colour": "Thick leaves with a dark sunken vein network over green"
+    },
+    {
+      "name": "Hoya nummularioides",
+      "category": "Flowering",
+      "water": 10, "feed": 14, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Flowers heavily and young, with a strong evening scent. Keep it bright and slightly pot-bound.",
+      "colour": "Small round fuzzy green leaves in close pairs"
+    }
+  ]
+}

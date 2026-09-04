@@ -1,0 +1,284 @@
+{
+  "plants": [
+    {
+      "name": "Platycerium bifurcatum",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 1, "toxic": 0,
+      "tip": "The brown shield frond at the back is alive. Peeling it off strips the plant of its own root cover.",
+      "colour": "Grey-green forked fronds over a tan shield"
+    },
+    {
+      "name": "Platycerium hillii",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 1, "toxic": 0,
+      "tip": "Water the mount, not the crown. It clumps freely, so pups can be cut off once they have a shield of their own.",
+      "colour": "Broad dark green fronds, pale green shield"
+    },
+    {
+      "name": "Platycerium veitchii",
+      "category": "Palms & ferns",
+      "water": 9, "feed": 30, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "The silver coat is living hair that shades the frond. Do not wipe it, and water at the base rather than overhead.",
+      "colour": "Silver-white furred fronds, held upright"
+    },
+    {
+      "name": "Platycerium willinckii",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Wants steady humidity and a mount it can dry out on. Soak it, then let the moss go light before soaking again.",
+      "colour": "Narrow silver-grey fronds hanging in ribbons"
+    },
+    {
+      "name": "Platycerium alcicorne",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 1, "toxic": 0,
+      "tip": "Small enough to dry out fast on a bare mount. Check the moss twice a week rather than watering to a schedule.",
+      "colour": "Mid-green, lightly forked fronds, tan shield"
+    },
+    {
+      "name": "Platycerium superbum",
+      "category": "Palms & ferns",
+      "water": 10, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "One growing bud only, hidden behind the shield. Water sitting there rots it, so soak the mount and keep the crown dry.",
+      "colour": "Light green antlers above a large brown crown shield"
+    },
+    {
+      "name": "Platycerium grande",
+      "category": "Palms & ferns",
+      "water": 10, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Single-budded like superbum, with no pups to fall back on. Err towards under-watering through winter.",
+      "colour": "Pale green forked fronds over a broad brown nest"
+    },
+    {
+      "name": "Platycerium wandae",
+      "category": "Palms & ferns",
+      "water": 10, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "It gets very heavy. Mount it on something that will still hold once the nest frond fills with debris and water.",
+      "colour": "Deep green fronds over a very large tan nest"
+    },
+    {
+      "name": "Platycerium coronarium",
+      "category": "Palms & ferns",
+      "water": 10, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Needs warmth and hanging room for the long fertile fronds. Cold and wet through winter is what kills it.",
+      "colour": "Green fronds with long pendent spore lobes"
+    },
+    {
+      "name": "Platycerium ridleyi",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Rot at the bud is the usual death. Keep humidity high, air moving, and the ridged shield itself dry.",
+      "colour": "Glossy green ridged shield, narrow upright fronds"
+    },
+    {
+      "name": "Platycerium holttumii",
+      "category": "Palms & ferns",
+      "water": 10, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "The nest frond collects leaf litter and the plant feeds on it. Do not clean the cup out.",
+      "colour": "Green antler fronds above a tall brown shield"
+    },
+    {
+      "name": "Platycerium wallichii",
+      "category": "Palms & ferns",
+      "water": 12, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "It drops its fertile fronds in winter and looks dead. Cut watering right back and wait for spring.",
+      "colour": "Grey-green fronds with a pale shield, deciduous"
+    },
+    {
+      "name": "Platycerium stemaria",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "An African species that resents cold. A chilly windowsill in winter blackens the frond tips first.",
+      "colour": "Dark green forked fronds, triangular shield"
+    },
+    {
+      "name": "Platycerium elephantotis",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "The undivided fronds scorch in direct sun. Bright shade and warmth, with a dry spell between soakings.",
+      "colour": "Plain undivided green fronds, no forking"
+    },
+    {
+      "name": "Platycerium andinum",
+      "category": "Palms & ferns",
+      "water": 9, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "The only staghorn from the Americas, and a cloud forest plant: cool nights, moving air, never sodden.",
+      "colour": "Long narrow grey-green fronds, upright shield"
+    },
+    {
+      "name": "Platycerium madagascariense",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 3, "humidity": 2, "toxic": 0,
+      "tip": "The honeycombed shield holds water in its ridges. Give it humidity, but keep air moving or those ridges rot.",
+      "colour": "Bright green fronds over a honeycombed shield"
+    },
+    {
+      "name": "Platycerium ellisii",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 3, "humidity": 2, "toxic": 0,
+      "tip": "Wants warmth and humidity the year round, and dislikes hard water. Use rainwater if you have it.",
+      "colour": "Glossy mid-green, shallowly forked fronds"
+    },
+    {
+      "name": "Platycerium quadridichotomum",
+      "category": "Palms & ferns",
+      "water": 12, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "It comes from a seasonally dry forest and needs a real winter rest. Water very sparingly until growth returns.",
+      "colour": "Grey-green fronds forking repeatedly, four ways"
+    },
+    {
+      "name": "Platycerium bifurcatum 'Netherlands'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 1, "toxic": 0,
+      "tip": "The commercial staghorn, and the forgiving one. A weekly soak in bright shade is the whole method.",
+      "colour": "Broad grey-green fronds, tan shield"
+    },
+    {
+      "name": "Platycerium bifurcatum 'Mickey's Rainbow'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 1, "toxic": 0,
+      "tip": "The crested growth is slower than plain bifurcatum. Feed lightly rather than pushing it.",
+      "colour": "Green fronds with crested, ruffled tips"
+    },
+    {
+      "name": "Platycerium bifurcatum 'Maui'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 1, "toxic": 0,
+      "tip": "Broad upright fronds that catch water in the crown. Soak the mount, then tip the water out.",
+      "colour": "Broad upright grey-green fronds"
+    },
+    {
+      "name": "Platycerium hillii 'Panama'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 1, "toxic": 0,
+      "tip": "Denser and tidier than the species, and wants the same weekly soak with good air around the mount.",
+      "colour": "Compact dark green fronds, tight shield"
+    },
+    {
+      "name": "Platycerium veitchii 'Lemoinei'",
+      "category": "Palms & ferns",
+      "water": 9, "feed": 30, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "The upright fronds take more direct sun than most staghorns. Full shade makes it floppy and green.",
+      "colour": "Narrow upright fronds with a heavy silver coat"
+    },
+    {
+      "name": "Platycerium veitchii 'Auburn River'",
+      "category": "Palms & ferns",
+      "water": 9, "feed": 30, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "The silver holds only in strong light. In a dim spot new fronds come out green and stay that way.",
+      "colour": "Dense silver fronds on a compact plant"
+    },
+    {
+      "name": "Platycerium veitchii 'Lisa'",
+      "category": "Palms & ferns",
+      "water": 9, "feed": 30, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Blunt-tipped fronds mark it out. Same dry-tolerant care as the species, in the brightest spot you have.",
+      "colour": "Silver fronds with wide, blunt tips"
+    },
+    {
+      "name": "Platycerium veitchii 'Pumilum'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "A half-size veitchii that dries out quicker than it looks. Check the mount rather than the calendar.",
+      "colour": "Half-size silver fronds, held upright"
+    },
+    {
+      "name": "Platycerium willinckii 'Jade Girl'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "The heavy silver is trichome, not dust. Water at the base and never try to mist the fronds clean.",
+      "colour": "Thick silver coat over jade-green fronds"
+    },
+    {
+      "name": "Platycerium willinckii 'Smurf'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "The narrow blue-green fronds burn easily. Bright shade and humidity, out of any direct afternoon sun.",
+      "colour": "Narrow blue-green fronds with a silver haze"
+    },
+    {
+      "name": "Platycerium willinckii 'Spur'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "It forks early and unevenly, which is the whole point of it. Do not tidy the growth back.",
+      "colour": "Silver-grey fronds forking early into spurs"
+    },
+    {
+      "name": "Platycerium willinckii 'Nano'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "A dwarf that still wants full willinckii humidity. On a small mount it dries out in a day or two.",
+      "colour": "Dwarf silver-grey ribbon fronds"
+    },
+    {
+      "name": "Platycerium willinckii 'Silky White'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "The white coat rubs off with handling and does not grow back on that frond. Move it by the mount.",
+      "colour": "Even white trichome coat, near-white fronds"
+    },
+    {
+      "name": "Platycerium willinckii 'Snow White'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Heavier and less pendulous than other willinckii. Give it a firm mount and room to hang clear.",
+      "colour": "Broad fronds with a bright white cast"
+    },
+    {
+      "name": "Platycerium willinckii 'Celso Tatsuta'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "The wide fronds hold water in the crown. Soak from below and let it drain before hanging it back.",
+      "colour": "Wide silver fronds, heavily furred"
+    },
+    {
+      "name": "Platycerium willinckii 'Masayu'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "The trichome coat needs light to develop. Too little and the fronds come through plain green.",
+      "colour": "Wide silver fronds with pronounced shields"
+    },
+    {
+      "name": "Platycerium willinckii 'Payton'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "A Java-type willinckii with long trailing fronds. Hang it high and let them fall clear of the wall.",
+      "colour": "Long trailing silver-green ribbons"
+    },
+    {
+      "name": "Platycerium willinckii 'Pygmaeum'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Wider fronds on a smaller plant. Treat it as a full willinckii for humidity, not as a beginner's fern.",
+      "colour": "Wide silver fronds on a small plant"
+    },
+    {
+      "name": "Platycerium ridleyi 'Pakarang'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "The coral-like fronds snap if knocked. Site it where nothing brushes past, and keep the air moving.",
+      "colour": "Green shield, fronds branching like coral"
+    },
+    {
+      "name": "Platycerium ridleyi 'Dwarf Silver'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Compact shields still rot at the bud if water sits behind them. Soak the mount, never the crown.",
+      "colour": "Small silver-green shields, narrow fronds"
+    },
+    {
+      "name": "Platycerium alcicorne 'Gorgon'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 1, "toxic": 0,
+      "tip": "The twisting fronds trap water between them. Water in the morning so they dry before nightfall.",
+      "colour": "Mid-green fronds, heavily divided and twisting"
+    },
+    {
+      "name": "Platycerium 'Charles Alford'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "A wandae by ridleyi hybrid, with ridleyi's intolerance of a wet crown. Warmth and airflow decide it.",
+      "colour": "Green ridged shield with long divided fronds"
+    }
+  ]
+}

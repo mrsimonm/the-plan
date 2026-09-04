@@ -1,0 +1,284 @@
+{
+  "plants": [
+    {
+      "name": "Echeveria elegans",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "Offsets crowd the pot and hide rot at the base. Lift the clump each spring and pull the pups off.",
+      "colour": "Pale blue-green with translucent margins and pink tips"
+    },
+    {
+      "name": "Echeveria agavoides",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 45, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "The thick leaves hold weeks of water. Soak it, then leave it until the lowest leaves go soft.",
+      "colour": "Glossy apple-green triangular leaves with a red terminal spine"
+    },
+    {
+      "name": "Echeveria agavoides 'Ebony'",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 45, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "The black margin only darkens under hours of direct sun. In shade it fades to a plain green edge.",
+      "colour": "Green leaves with deep maroon-black margins and tip"
+    },
+    {
+      "name": "Echeveria agavoides 'Lipstick'",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 45, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "The red edge is a sun response, not a fixed colour. A dim windowsill gives you a green rosette.",
+      "colour": "Bright green with a broad scarlet margin"
+    },
+    {
+      "name": "Echeveria colorata",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "Water sits in the tight centre and rots it. Water at the rim of the pot, never over the rosette.",
+      "colour": "Silvery blue-grey with red-pink leaf tips"
+    },
+    {
+      "name": "Echeveria lilacina",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 45, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "The silver bloom rubs off at a touch and never grows back on that leaf. Move it by the pot.",
+      "colour": "Silvery lilac-grey, heavily farinose"
+    },
+    {
+      "name": "Echeveria laui",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 60, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "Slow, and rot is the usual end. Let the compost dry right through, and never wet the farina.",
+      "colour": "Thick chalky white-pink leaves under a dense bloom"
+    },
+    {
+      "name": "Echeveria pulvinata",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "The hairs trap water and go mouldy. Water the compost only and keep air moving round the plant.",
+      "colour": "Velvety pale green leaves with red-brown tips"
+    },
+    {
+      "name": "Echeveria pulvinata 'Ruby'",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "The red hair tips need hours of direct sun. In poor light the whole plant reverts to plain green.",
+      "colour": "Green leaves under crimson hairs, red at the edges"
+    },
+    {
+      "name": "Echeveria leucotricha",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "The white felt marks permanently if you wet it. Water at the pot rim and keep the leaves dry.",
+      "colour": "Olive-green leaves in white felt with russet-brown tips"
+    },
+    {
+      "name": "Echeveria harmsii",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "It goes leggy fast in weak light. Cut the stems back after flowering and root the tops as cuttings.",
+      "colour": "Green hairy leaves edged red, with orange-red bell flowers"
+    },
+    {
+      "name": "Echeveria setosa",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "The bristles hold droplets against the leaf and cause rot. Water underneath, never over the top.",
+      "colour": "Dark green rosettes covered in white bristles"
+    },
+    {
+      "name": "Echeveria shaviana 'Pink Frills'",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "The crimped margins catch and hold water. Keep the rosette dry and give it the brightest sill you have.",
+      "colour": "Grey-green with crimped, wavy pink-mauve margins"
+    },
+    {
+      "name": "Echeveria runyonii 'Topsy Turvy'",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "The upturned leaves funnel water into the crown. Water at the rim and tip out anything that pools.",
+      "colour": "Powdery silver-blue leaves curled back on themselves"
+    },
+    {
+      "name": "Echeveria derenbergii",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "It offsets hard and the mat traps moisture underneath. Split the clump each spring rather than letting it crowd.",
+      "colour": "Blue-green with a fine red line at each tip"
+    },
+    {
+      "name": "Echeveria pulidonis",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "The red edge is a light response. Grow it hard and dry, and do not feed it into soft green growth.",
+      "colour": "Chalky blue-green with a thin red edge"
+    },
+    {
+      "name": "Echeveria purpusorum",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 60, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "Very slow. Feed it little and repot rarely; pushing it into growth only makes the markings fade.",
+      "colour": "Stiff olive leaves mottled and speckled maroon"
+    },
+    {
+      "name": "Echeveria nodulosa",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "The red lines fade in shade and in rich compost. Grow it lean and in full sun to keep them.",
+      "colour": "Green with fine red lines on both faces of the leaf"
+    },
+    {
+      "name": "Echeveria secunda var. glauca",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "Offsets ring the parent and rot in a wet pot. Use gritty compost and split the clump yearly.",
+      "colour": "Blue-grey rosettes with red-tipped leaves"
+    },
+    {
+      "name": "Echeveria chihuahuaensis",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "The pink tips only come with hours of direct sun. In low light it stretches and goes plain grey.",
+      "colour": "Pale blue-grey with a pink-red point at each leaf tip"
+    },
+    {
+      "name": "Echeveria subsessilis",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "The pink edge depends on strong light and cool nights. It fades to grey-green in a warm dim room.",
+      "colour": "Blue-grey leaves rimmed pink"
+    },
+    {
+      "name": "Echeveria cante",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 60, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "The white farina is fragile and any damage is permanent. Never mist it, and water at the pot rim.",
+      "colour": "Broad chalk-white leaves with a fine pink margin"
+    },
+    {
+      "name": "Echeveria minima",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 45, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "Small and easily drowned. A shallow pot of gritty compost dries fast enough to keep it alive.",
+      "colour": "Small blue-green rosettes edged red"
+    },
+    {
+      "name": "Echeveria peacockii",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "The bloom rubs off wherever you touch it. Lift it by the pot and water at the rim, never overhead.",
+      "colour": "Silvery blue-white with red leaf tips"
+    },
+    {
+      "name": "Echeveria gibbiflora",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 1, "humidity": 0, "toxic": 0,
+      "tip": "The large thin leaves scorch behind glass in high summer. Bright light, but out of the fiercest sun.",
+      "colour": "Large ruffled leaves in bronze, olive and purple"
+    },
+    {
+      "name": "Echeveria affinis",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "The near-black colour needs strong sun. In shade it turns ordinary green and the rosette opens out.",
+      "colour": "Deep blackish-green, matte"
+    },
+    {
+      "name": "Echeveria 'Perle von Nürnberg'",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 1, "humidity": 0, "toxic": 0,
+      "tip": "It stretches faster than most in poor light. Give it the brightest sill, and behead it if it does.",
+      "colour": "Grey-lilac leaves flushed dusty pink"
+    },
+    {
+      "name": "Echeveria 'Black Prince'",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "The dark colour comes with sun and cool nights. A warm dim room turns it green from the centre out.",
+      "colour": "Dark chocolate-maroon leaves with a green centre"
+    },
+    {
+      "name": "Echeveria 'Lola'",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "Rot is the usual cause of death. Gritty compost, a full soak, then leave it until it is bone dry.",
+      "colour": "Pale opalescent cream-lilac with a pink tip"
+    },
+    {
+      "name": "Echeveria 'Blue Bird'",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "The blue is farina, not the leaf itself. Once rubbed off it never returns, so handle it by the pot.",
+      "colour": "Broad powder-blue leaves with a faint pink edge"
+    },
+    {
+      "name": "Echeveria 'Afterglow'",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 1, "humidity": 0, "toxic": 0,
+      "tip": "Big soft leaves burn behind glass. Bright light with some direct sun, and shade at midday in summer.",
+      "colour": "Lavender-pink powdery leaves with bright pink margins"
+    },
+    {
+      "name": "Echeveria 'Doris Taylor'",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "The wool holds water against the leaf. Water the compost only and keep the air round it moving.",
+      "colour": "Silver-green leaves in fine white wool, red at the tips"
+    },
+    {
+      "name": "Echeveria 'Blue Curls'",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 1, "humidity": 0, "toxic": 0,
+      "tip": "The ruffled margins hold water in every fold. Water at the pot rim and tip out anything that pools.",
+      "colour": "Large blue-green leaves with frilled pink margins"
+    },
+    {
+      "name": "Echeveria 'Neon Breakers'",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 1, "humidity": 0, "toxic": 0,
+      "tip": "The violet edge needs strong light and cool nights. Warmth and shade turn the whole rosette green.",
+      "colour": "Ruffled grey-green leaves with vivid violet-pink edges"
+    },
+    {
+      "name": "Echeveria 'Fire and Ice'",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "The red rim is a stress colour. Keep it hard, dry and bright; heavy feeding washes it straight out.",
+      "colour": "Pale grey-green with rosy-red margins"
+    },
+    {
+      "name": "Echeveria 'Violet Queen'",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "It opens out flat and floppy in weak light. Full sun keeps the rosette tight and the leaves upright.",
+      "colour": "Pale grey-green pointed leaves with a lilac cast"
+    },
+    {
+      "name": "Echeveria 'Ramillete'",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "It offsets into a mound that traps damp underneath. Pull the pups off and pot them on each spring.",
+      "colour": "Apple-green rosettes flushing orange and red at the edges"
+    },
+    {
+      "name": "Echeveria 'Raindrops'",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "The blisters only form on plants grown in strong light. Shade gives you flat, ordinary leaves.",
+      "colour": "Blue-green leaves with a raised blister near each tip"
+    },
+    {
+      "name": "Echeveria 'Purple Pearl'",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 30, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "The purple deepens with sun and cool nights. Overfeeding gives you soft green leaves instead.",
+      "colour": "Grey-purple leaves with pink edges"
+    },
+    {
+      "name": "Echeveria 'Mexican Giant'",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 60, "light": 0, "humidity": 0, "toxic": 0,
+      "tip": "Slow, and very prone to rot. Gritty compost, full sun, and long dry spells between soakings.",
+      "colour": "Very large chalk-white rosette with a faint blue cast"
+    }
+  ]
+}

@@ -1,0 +1,284 @@
+{
+  "plants": [
+    {
+      "name": "Asplenium nidus 'Crispy Wave'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Water the compost, never the central cup. Water left standing in the crown rots it.",
+      "colour": "Mid-green, deeply rippled fronds held upright"
+    },
+    {
+      "name": "Asplenium nidus 'Crissie'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Keep the rosette out of draughts. Cold moving air scorches new fronds brown at the tip.",
+      "colour": "Light green with forked, crested frond tips"
+    },
+    {
+      "name": "Asplenium nidus 'Fimbriatum'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Old fronds brown from the tip inwards. Cut them off at the base rather than trimming edges.",
+      "colour": "Mid-green with finely fringed, lacerated margins"
+    },
+    {
+      "name": "Asplenium nidus 'Plicatum'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Dust settles in the pleats and blocks light. Wipe the fronds with a damp cloth monthly.",
+      "colour": "Deep green, heavily pleated along the length"
+    },
+    {
+      "name": "Asplenium nidus 'Leslie'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "The crested tips only form properly in humid air. In a dry room the fronds come plain.",
+      "colour": "Glossy green with branched, curled frond tips"
+    },
+    {
+      "name": "Asplenium nidus 'Cobra'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Pour at the pot edge and let the top centimetre dry before watering again.",
+      "colour": "Dark green, narrow and twisted with wavy edges"
+    },
+    {
+      "name": "Asplenium nidus 'Campio'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "The compact rosette traps water easily. Water at the rim and empty the saucer afterwards.",
+      "colour": "Bright green, broad and wavy in a tight rosette"
+    },
+    {
+      "name": "Asplenium nidus 'Avis'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Direct sun bleaches the fronds pale yellow, and that damage never grows out of a frond.",
+      "colour": "Mid-green strap fronds with strongly waved edges"
+    },
+    {
+      "name": "Asplenium antiquum",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Takes cooler rooms than most bird's nest ferns, but still will not tolerate a wet crown.",
+      "colour": "Glossy mid-green, upright and slightly rippled"
+    },
+    {
+      "name": "Asplenium antiquum 'Osaka'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Feed at half strength. Ferns scorch at the frond edges on full-rate fertiliser.",
+      "colour": "Deep green, narrow with tightly waved margins"
+    },
+    {
+      "name": "Asplenium antiquum 'Victoria'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "New fronds unfurl from the centre. Never pull at them, as they snap and do not regrow.",
+      "colour": "Mid-green, long and tapering with wavy edges"
+    },
+    {
+      "name": "Asplenium antiquum 'Hurricane'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "The twist in the frond tightens in good light and slackens off in a dim corner.",
+      "colour": "Bright green fronds twisted along their length"
+    },
+    {
+      "name": "Asplenium australasicum (crow's nest fern)",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "It gets large. Give it a wide, shallow pot and a metre of clear space around it.",
+      "colour": "Mid-green, broad, with a dark keel underneath"
+    },
+    {
+      "name": "Asplenium serratum",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Wants steady warmth above 15°C. Cold wet compost in winter is what usually kills it.",
+      "colour": "Apple green with a sawtoothed frond margin"
+    },
+    {
+      "name": "Asplenium musifolium",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "It grows on trees in the wild, so use an open bark-based mix rather than dense compost.",
+      "colour": "Broad pale-green fronds with a black midrib"
+    },
+    {
+      "name": "Asplenium bulbiferum (mother spleenwort)",
+      "category": "Palms & ferns",
+      "water": 5, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "The bulbils on the fronds root themselves if pressed onto damp compost while still attached.",
+      "colour": "Finely divided, soft mid-green lace"
+    },
+    {
+      "name": "Asplenium x lucrosum",
+      "category": "Palms & ferns",
+      "water": 5, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Sterile, so it spreads by plantlets rather than spores. Keep it evenly moist all year.",
+      "colour": "Fine, feathery mid-green with narrow segments"
+    },
+    {
+      "name": "Asplenium 'Austral Gem'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 1, "toxic": 0,
+      "tip": "The one Asplenium that copes with ordinary room humidity, though not with dry roots.",
+      "colour": "Glossy dark green, leathery and finely cut"
+    },
+    {
+      "name": "Asplenium 'Parvati'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 30, "light": 2, "humidity": 1, "toxic": 0,
+      "tip": "Slow to establish. Leave it in the same pot for two years before moving it on.",
+      "colour": "Dark glossy green, more finely divided than Austral Gem"
+    },
+    {
+      "name": "Asplenium daucifolium (Mauritius mother fern)",
+      "category": "Palms & ferns",
+      "water": 5, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Plantlets form along the fronds. Peg one into compost and cut it free once it has rooted.",
+      "colour": "Very finely divided mid-green, almost carrot-like"
+    },
+    {
+      "name": "Asplenium dimorphum",
+      "category": "Palms & ferns",
+      "water": 5, "feed": 30, "light": 2, "humidity": 2, "toxic": 0,
+      "tip": "Needs warmth and shade. The fronds crisp within days of direct afternoon sun.",
+      "colour": "Two frond types: broad sterile, thread-like fertile"
+    },
+    {
+      "name": "Asplenium oblongifolium (shining spleenwort)",
+      "category": "Palms & ferns",
+      "water": 5, "feed": 45, "light": 3, "humidity": 2, "toxic": 0,
+      "tip": "Tolerates a cool room down to about 5°C, but wants shade and compost that never dries.",
+      "colour": "Glossy dark green with long, pointed pinnae"
+    },
+    {
+      "name": "Asplenium scolopendrium (hart's tongue fern)",
+      "category": "Palms & ferns",
+      "water": 5, "feed": 45, "light": 3, "humidity": 2, "toxic": 0,
+      "tip": "A shade plant. Full sun turns the glossy straps yellow and papery within one season.",
+      "colour": "Glossy strap-shaped fronds, bright green"
+    },
+    {
+      "name": "Asplenium scolopendrium 'Angustatum'",
+      "category": "Palms & ferns",
+      "water": 5, "feed": 45, "light": 3, "humidity": 2, "toxic": 0,
+      "tip": "Cut last year's fronds back in early spring so the new croziers come up unshaded.",
+      "colour": "Narrow, strap-like glossy green fronds"
+    },
+    {
+      "name": "Asplenium scolopendrium 'Crispum'",
+      "category": "Palms & ferns",
+      "water": 5, "feed": 45, "light": 3, "humidity": 2, "toxic": 0,
+      "tip": "Sterile, so it never self-sows. Divide the crown in spring if you want more of it.",
+      "colour": "Bright green with tightly frilled, wavy margins"
+    },
+    {
+      "name": "Asplenium scolopendrium 'Undulatum'",
+      "category": "Palms & ferns",
+      "water": 5, "feed": 45, "light": 3, "humidity": 2, "toxic": 0,
+      "tip": "Prefers alkaline soil. A little lime or grit suits it far better than an ericaceous mix.",
+      "colour": "Glossy green with a strongly waved edge"
+    },
+    {
+      "name": "Asplenium scolopendrium 'Cristatum'",
+      "category": "Palms & ferns",
+      "water": 5, "feed": 45, "light": 3, "humidity": 2, "toxic": 0,
+      "tip": "The crested tips fade out on a hungry plant. Keep it fed and the branching holds.",
+      "colour": "Glossy green with a forked, crested tip"
+    },
+    {
+      "name": "Asplenium scolopendrium 'Kaye's Lacerated'",
+      "category": "Palms & ferns",
+      "water": 5, "feed": 45, "light": 3, "humidity": 2, "toxic": 0,
+      "tip": "Slow growing, so do not overpot it. A snug pot and steady moisture suit it best.",
+      "colour": "Broad green fronds with torn, jagged edges"
+    },
+    {
+      "name": "Asplenium scolopendrium 'Marginatum'",
+      "category": "Palms & ferns",
+      "water": 5, "feed": 45, "light": 3, "humidity": 2, "toxic": 0,
+      "tip": "Take browned fronds off at the base in spring. Once marked, a frond will not recover.",
+      "colour": "Green fronds with a narrow lobed frill at the margin"
+    },
+    {
+      "name": "Asplenium scolopendrium 'Muricatum'",
+      "category": "Palms & ferns",
+      "water": 5, "feed": 45, "light": 3, "humidity": 2, "toxic": 0,
+      "tip": "The rough surface traps dust and grit. Rinse the fronds under a cool tap now and then.",
+      "colour": "Rough-textured green with a puckered surface"
+    },
+    {
+      "name": "Asplenium scolopendrium 'Ramocristatum'",
+      "category": "Palms & ferns",
+      "water": 5, "feed": 45, "light": 3, "humidity": 2, "toxic": 0,
+      "tip": "Give it room. The branched tips tangle and rot where the crown is crowded and damp.",
+      "colour": "Green fronds branching into many crested tips"
+    },
+    {
+      "name": "Asplenium scolopendrium 'Peraferens'",
+      "category": "Palms & ferns",
+      "water": 5, "feed": 45, "light": 3, "humidity": 2, "toxic": 0,
+      "tip": "Buds along the frond root readily. Lay a frond on damp compost and weight it down.",
+      "colour": "Narrow green fronds carrying small proliferous buds"
+    },
+    {
+      "name": "Asplenium scolopendrium 'Crispum Bolton's Nobile'",
+      "category": "Palms & ferns",
+      "water": 5, "feed": 45, "light": 3, "humidity": 2, "toxic": 0,
+      "tip": "One of the slowest hart's tongues. Feed lightly and never let the roots dry out.",
+      "colour": "Deep green with broad, evenly frilled margins"
+    },
+    {
+      "name": "Asplenium trichomanes (maidenhair spleenwort)",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 60, "light": 3, "humidity": 2, "toxic": 0,
+      "tip": "A crevice fern. Grow it in gritty, limy compost and water it from below.",
+      "colour": "Black wiry stems with small, round green pinnae"
+    },
+    {
+      "name": "Asplenium trichomanes 'Incisum'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 60, "light": 3, "humidity": 2, "toxic": 0,
+      "tip": "Small and slow. A shallow pan of gritty compost suits it better than a deep pot.",
+      "colour": "Black stems with deeply cut, toothed pinnae"
+    },
+    {
+      "name": "Asplenium ceterach (rustyback fern)",
+      "category": "Palms & ferns",
+      "water": 10, "feed": 60, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "Drought adapted. It curls up shut when dry and reopens when watered, so never keep it soggy.",
+      "colour": "Green above, dense rust-brown scales beneath"
+    },
+    {
+      "name": "Asplenium platyneuron (ebony spleenwort)",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 60, "light": 3, "humidity": 1, "toxic": 0,
+      "tip": "Wants drier shade than most ferns. Let the top of the compost dry between waterings.",
+      "colour": "Dark glossy stems with narrow green pinnae"
+    },
+    {
+      "name": "Asplenium x ebenoides (Scott's spleenwort)",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 60, "light": 3, "humidity": 2, "toxic": 0,
+      "tip": "A limestone hybrid. Add grit and a little lime, and keep the crown clear of standing wet.",
+      "colour": "Irregular green blades on a dark, shining stem"
+    },
+    {
+      "name": "Asplenium x ebenoides 'Dragontail'",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 60, "light": 3, "humidity": 2, "toxic": 0,
+      "tip": "It resents division. Increase it from spores or buy another rather than splitting the crown.",
+      "colour": "Long tapering green blades with lobed edges"
+    },
+    {
+      "name": "Asplenium flabellifolium (necklace fern)",
+      "category": "Palms & ferns",
+      "water": 7, "feed": 60, "light": 3, "humidity": 2, "toxic": 0,
+      "tip": "The trailing tips root where they touch compost. Pin one down to start a new plant.",
+      "colour": "Trailing fronds of small fan-shaped green segments"
+    }
+  ]
+}
