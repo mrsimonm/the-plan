@@ -41,6 +41,11 @@ service cloud.firestore {
 
     // A student may only touch the spaced-repetition scheduling fields of a
     // card — never its content, type, or which student it belongs to.
+    //
+    // The card also carries `example`, an optional sentence the teacher
+    // writes, which the review screen turns into a gap-fill. It is
+    // deliberately NOT in this list: a student who could edit the example
+    // could edit the answer out of their own card.
     function onlyReviewFieldsChanged() {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(
         ['intervalStage', 'easeFactor', 'intervalDays',

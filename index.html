@@ -2550,6 +2550,12 @@ html{overscroll-behavior-y:none}
 .tbs-say{display:flex; gap:8px; flex-wrap:wrap; justify-content:center}
 .tbs-say .btn{min-height:44px}
 .tbs-heard{margin:0; font-size:14px; color:var(--ink-2); font-style:italic}
+.tbs-rescue-row{display:flex; align-items:baseline; gap:10px; padding:5px 0;
+  border-bottom:1px solid var(--line-soft)}
+.tbs-rescue-row:last-child{border-bottom:0}
+.tbs-rescue-row b{flex:1; min-width:0; font-weight:500; overflow:hidden;
+  text-overflow:ellipsis; white-space:nowrap}
+.tbs-rescue-row small{color:var(--crit); font-size:11.5px; flex:0 0 auto}
 .tbs-listening{border-color:var(--accent); color:var(--accent)}
 /* the grade the check thinks is honest — a hint, never a lock */
 .tbs-suggest{outline:2px solid var(--accent); outline-offset:2px}
@@ -5556,6 +5562,14 @@ html[data-design="s3"] #dzBrief.on{ display:block; margin:6px 0 22px }
             <div class="tbs-stat"><b id="tbsBestN">0</b><small>best</small></div>
           </div>
           <p class="tbs-muted" id="tbsStreakNote" style="font-size:12.5px; margin:10px 0 0"></p>
+        </div>
+
+        <!-- The handful of words that keep coming back. Naming them as a
+             thing to beat is more motivating than recycling them silently,
+             and it is the honest answer to "what am I bad at". -->
+        <div class="card pad stack" id="tbsRescueCard" hidden>
+          <span class="eyebrow">Words that keep beating you</span>
+          <div id="tbsRescueList" class="stack" style="gap:4px"></div>
         </div>
 
         <div class="card pad stack" id="tbsRecapCard" hidden>
@@ -20842,11 +20856,27 @@ const STREAK = (() => {
   const GRACE_DAYS = 1;          // a card is "let slip" only after this
   const KEEP_DAYS  = 62;         // history kept for the recap, then pruned
 
+  /* Rest days. A hundred-day run wiped out by one week of flu is the
+     commonest reason people abandon these apps for good, so the streak
+     can absorb an absence — but only one it has earned, and never one it
+     can buy. Earned by keeping the streak, spent automatically on the way
+     back, and capped so they cannot be hoarded into permanence. */
+  const FREEZE_EVERY = 14;       // one rest day per fortnight kept
+  const MAX_FREEZES  = 2;
+
+  const DAY_MS = 86400000;
+  function daysBetween(fromDay, toDay){
+    const a = new Date(fromDay), b = new Date(toDay);
+    if(!Number.isFinite(a.getTime()) || !Number.isFinite(b.getTime())) return 0;
+    return Math.round((b - a) / DAY_MS);
+  }
+
   const dayOf = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 
   function empty(){
     return { currentStreak:0, bestStreak:0, points:0, lastStudyDate:null,
-             onTime:0, late:0, extra:0, days:{} };
+             onTime:0, late:0, extra:0, days:{},
+             freezes:0, frozenOn:null };
   }
 
   /* One review. `ev` describes it in the algorithm's own terms:
@@ -20871,8 +20901,28 @@ const STREAK = (() => {
 
     /* The streak moves once per day, on the first review of that day. */
     if(p.lastStudyDate !== day){
-      p.currentStreak = ev.anySlipped ? 1 : (p.currentStreak||0) + 1;
+      const away = p.lastStudyDate ? Math.max(0, daysBetween(p.lastStudyDate, day) - 1) : 0;
+      const wouldBreak = ev.anySlipped || away > GRACE_DAYS;
+      /* A rest day is spent here, on the way back, not while away — so a
+         student who never returns has not silently burned one, and the
+         one who does return sees the streak they earned still standing. */
+      const canCover = away > 0 && away <= GRACE_DAYS + (p.freezes||0);
+      if(wouldBreak && (p.freezes||0) > 0 && canCover){
+        p.freezes -= 1;
+        p.frozenOn = day;
+        p.currentStreak = (p.currentStreak||0) + 1;
+      }else{
+        p.currentStreak = wouldBreak ? 1 : (p.currentStreak||0) + 1;
+        p.frozenOn = null;
+      }
       p.lastStudyDate = day;
+
+      /* Earned by keeping it, and capped: rest days are a cushion, never
+         a way to own a streak you are not keeping. */
+      if(p.currentStreak > 0 && p.currentStreak % FREEZE_EVERY === 0
+         && (p.freezes||0) < MAX_FREEZES){
+        p.freezes = (p.freezes||0) + 1;
+      }
     }
     if(p.currentStreak > (p.bestStreak||0)) p.bestStreak = p.currentStreak;
 
@@ -20902,13 +20952,19 @@ const STREAK = (() => {
     const at = now instanceof Date ? now : new Date(now || Date.now());
     const today = dayOf(at);
     let live = p.currentStreak || 0;
+    let covered = false;
     if(p.lastStudyDate && p.lastStudyDate !== today){
       const gap = Math.floor((new Date(today) - new Date(p.lastStudyDate)) / 86400000);
-      if(gap > GRACE_DAYS + 1) live = 0;
+      /* Each unspent rest day buys one more day away before the streak is
+         honestly gone. It is not spent here — view() reports, record()
+         decides — so simply opening the app never costs one. */
+      if(gap > GRACE_DAYS + 1 + (p.freezes||0)) live = 0;
+      else if(gap > GRACE_DAYS + 1) covered = true;
     }
     return { streak:live, best:Math.max(p.bestStreak||0, live), points:p.points||0,
              studiedToday: p.lastStudyDate === today,
-             onTime:p.onTime||0, late:p.late||0, extra:p.extra||0, days:p.days||{} };
+             onTime:p.onTime||0, late:p.late||0, extra:p.extra||0, days:p.days||{},
+             freezes:p.freezes||0, restingOn:covered, frozenOn:p.frozenOn||null };
   }
 
   return { empty, record, clearedDay, view, dayOf, PTS };
@@ -21702,13 +21758,50 @@ const TBS_UI = (() => {
     $$("tbsPointsN").textContent = v.points;
     $$("tbsBestN").textContent   = v.best;
     const due = dueCards().length;
-    $$("tbsStreakNote").textContent =
+    /* A rest day in hand is worth saying out loud: knowing the streak can
+       survive one bad week is the thing that stops a missed day turning
+       into giving up altogether. */
+    const rest = v.restingOn
+        ? (L.lang==="cs" ? "Použili jsme jeden den volna, aby série vydržela."
+                         : "A rest day is holding your streak.")
+      : v.freezes
+        ? (L.lang==="cs" ? `Máš ${v.freezes} ${pl3(v.freezes,"den volna","dny volna","dní volna")} v záloze.`
+                         : `You have ${v.freezes} rest ${v.freezes === 1 ? "day" : "days"} saved.`)
+      : "";
+
+    const note =
       v.streak && v.studiedToday && !due ? "Today is done. Come back when the next words are ready."
       : v.streak && due ? "Review what's due to keep the streak."
       : !v.streak && v.best ? (L.lang==="cs"
           ? `Tvoje nejlepší série byla ${v.best} ${pl3(v.best,"den","dny","dní")} — začni další ještě dnes.`
           : `Your best run was ${v.best} days — start another today.`)
       : "Reviewing on time is what builds the streak.";
+
+    $$("tbsStreakNote").textContent = rest ? note + " " + rest : note;
+    renderRescue();
+  }
+
+  /* The five worst offenders by lapse count. A lapse is recorded by SM-2
+     every time a card the student had learned comes back wrong, so this
+     needs nothing stored beyond what scheduling already keeps. */
+  function renderRescue(){
+    const box = $$("tbsRescueCard"); if(!box) return;
+    const worst = state.cards
+      .filter(c => (Number(c.lapses) || 0) >= 2)
+      .sort((a, b) => (Number(b.lapses)||0) - (Number(a.lapses)||0))
+      .slice(0, 5);
+    if(!worst.length || state.cardsError){ box.hidden = true; return; }
+    box.hidden = false;
+    $$("tbsRescueList").innerHTML = worst.map(c => {
+      const n = Number(c.lapses) || 0;
+      const times = L.lang === "cs"
+        ? `${n}× zapomenuto`
+        : `forgotten ${n} times`;
+      return `<div class="tbs-rescue-row">
+        <b data-no-i18n>${esc(c.front || "")}</b>
+        <small>${esc(times)}</small>
+      </div>`;
+    }).join("");
   }
 
   function renderRecap(){
