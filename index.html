@@ -3643,6 +3643,34 @@ html[data-layout="phone"] .ppl-search-row{ flex-wrap:nowrap }
   html[data-layout="phone"] .ppl-search{ display:none }
 }
 
+/* ============================================================================
+   THE [hidden] TRAP, closed once for the whole file.
+
+   `[hidden]{display:none}` lives in the user-agent stylesheet, and ANY author
+   rule that sets display beats it whatever the source order. So every
+   `el.hidden = true` in this app is silently ignored the moment the element
+   also matches a class that sets display — which .btn, .field, .stack,
+   .pslot-row and a dozen others all do.
+
+   The file already carries three comments explaining this, each next to a
+   hand-written guard for one more selector that got caught. A sweep found
+   thirteen MORE live instances, all of them things the code believes it has
+   hidden and the user can still see:
+
+     #askNo          every "Heads up" box has been showing a Cancel button
+     #pSlotSave #pSlotDelete #pSlotDup #pSlotAddTask #pSlotAddEvent
+                     the planner's slot dialog offers actions for a slot that
+                     does not exist yet
+     #pNapRow #pSleepReset #pRewards
+     #tbLessonDelete #tbsGradeWrap #tbsSpeak #tbsStartReview
+
+   One rule closes the class, and any future one, instead of a fourteenth
+   hand-written guard. The single exception is the notes scratchpad, which
+   keeps a box on purpose while it slides off the edge.
+   ============================================================================ */
+[hidden]{ display:none !important }
+.n-pad[hidden]{ display:flex !important }
+
 /* ---------------- wide ----------------
    1180px and up the content column stops being a 1060px strip in the middle of
    an empty screen: it takes the width, and the calendar takes it with it. */

@@ -47,9 +47,13 @@ text cut mid-word, every control reachable and >=44px on touch.
 
 ## 2 · Bug classes to sweep
 
-- ☐ `[hidden]` vs `display:` — a class that sets display beats the user agent's
-  `[hidden]{display:none}`. Four known so far (.navwrap, .field, .dlg-foot
-  guarded; .psel-bar found and fixed). Find the rest.
+- ☑ `[hidden]` vs `display:` — closed for the whole file with one rule
+  (`[hidden]{display:none!important}`), not a fifteenth hand-written guard.
+  A sweep found 13 more live instances beyond .psel-bar: #askNo (every "Heads
+  up" box was showing a Cancel button), the planner slot dialog's Save /
+  Delete / Duplicate / Add task / Add event, #pNapRow, #pSleepReset,
+  #pRewards, #tbLessonDelete, #tbsGradeWrap, #tbsSpeak, #tbsStartReview.
+  Sole exception: the notes scratchpad keeps a box while it slides out.
 - ☐ Console clean on boot and on every view, in all three targets
 - ☐ Anything that renders late, flashes, or shows stale content after a switch
 - ☐ Strings with no Czech, and attributes not passed through `t()`
