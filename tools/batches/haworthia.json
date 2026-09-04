@@ -1,0 +1,298 @@
+{
+  "plants": [
+    {
+      "name": "Haworthia attenuata",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 60, "light": 1, "humidity": 0, "toxic": 0,
+      "tip": "Tolerates a shadier spot than most succulents, but water it the same there and the roots rot.",
+      "colour": "Dark green pointed leaves banded with raised white tubercles"
+    },
+    {
+      "name": "Haworthia attenuata 'Variegata'",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 60, "light": 1, "humidity": 0, "toxic": 0,
+      "tip": "The cream sectors carry no chlorophyll and scorch first. Keep it off a hot midday windowsill.",
+      "colour": "Green and white tubercled leaves with broad cream longitudinal stripes"
+    },
+    {
+      "name": "Haworthia attenuata var. radula",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 60, "light": 1, "humidity": 0, "toxic": 0,
+      "tip": "The fine tubercles trap dust. Rinse the leaves under a tap and let it dry before watering.",
+      "colour": "Slender dark green leaves peppered with many small white dots"
+    },
+    {
+      "name": "Haworthia fasciata",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 60, "light": 1, "humidity": 0, "toxic": 0,
+      "tip": "Water into the compost, not the rosette. Water left sitting in the centre rots the growing point.",
+      "colour": "Thick dark green leaves with white banding on the undersides only"
+    },
+    {
+      "name": "Haworthia fasciata 'Big Band'",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 60, "light": 1, "humidity": 0, "toxic": 0,
+      "tip": "The broad banding fades in a dim corner. A bright sill through winter keeps the contrast.",
+      "colour": "Dark green leaves crossed by unusually wide chalk-white bands"
+    },
+    {
+      "name": "Haworthia limifolia",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 60, "light": 1, "humidity": 0, "toxic": 0,
+      "tip": "The ridges show best on a lean plant. Rich compost and heavy feeding give soft, flat, unmarked leaves.",
+      "colour": "Deep green triangular leaves with concentric raised ridges"
+    },
+    {
+      "name": "Haworthia limifolia var. striata",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 60, "light": 1, "humidity": 0, "toxic": 0,
+      "tip": "Grows slowly and resents disturbance. Leave it potted for three years and only refresh the top layer.",
+      "colour": "Olive leaves with pale raised ridges running the length of the leaf"
+    },
+    {
+      "name": "Haworthia limifolia 'Spider White'",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 60, "light": 1, "humidity": 0, "toxic": 0,
+      "tip": "The white areas burn in direct sun. Bright shade keeps the marking and stops the tips going papery.",
+      "colour": "Ridged green leaves overlaid with irregular chalky white variegation"
+    },
+    {
+      "name": "Haworthia coarctata",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 60, "light": 1, "humidity": 0, "toxic": 0,
+      "tip": "The stem lengthens until it topples. Cut the top off, dry the wound a week, then root it as a new plant.",
+      "colour": "Columns of overlapping green leaves studded with white tubercles"
+    },
+    {
+      "name": "Haworthia coarctata var. adelaidensis",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 60, "light": 1, "humidity": 0, "toxic": 0,
+      "tip": "Leaves flush red-brown under strong light and that is normal. Real burn shows as dry white patches.",
+      "colour": "Stacked leaves turning bronze to red-brown in strong light"
+    },
+    {
+      "name": "Haworthia reinwardtii",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 60, "light": 1, "humidity": 0, "toxic": 0,
+      "tip": "Stems flop once they pass a hand's length. Stake them or take cuttings; a sprawling column rarely re-roots.",
+      "colour": "Slim upright columns of incurved leaves dotted with white"
+    },
+    {
+      "name": "Haworthia scabra",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 60, "light": 1, "humidity": 0, "toxic": 0,
+      "tip": "Almost stops growing in summer heat. Hold back water through the hottest weeks and resume when nights cool.",
+      "colour": "Stiff dark olive leaves with a rough sandpaper surface"
+    },
+    {
+      "name": "Haworthia viscosa",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 60, "light": 1, "humidity": 0, "toxic": 0,
+      "tip": "The three ranks of leaves need light from all sides. Turn the pot a quarter each week or it grows lopsided.",
+      "colour": "Three ranks of stacked triangular leaves in dull green to bronze"
+    },
+    {
+      "name": "Haworthia tessellata",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 60, "light": 1, "humidity": 0, "toxic": 0,
+      "tip": "The leaf windows work like panels. Let them get dusty or buried and the plant stretches and loses its pattern.",
+      "colour": "Flat green leaves with a fine chequered pattern of translucent veining"
+    },
+    {
+      "name": "Haworthia nigra",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 60, "light": 1, "humidity": 0, "toxic": 0,
+      "tip": "Goes near-black in strong light and dull green in shade. Move it gradually; a sudden shift scorches it.",
+      "colour": "Very dark grey-green tubercled leaves in three stacked ranks"
+    },
+    {
+      "name": "Haworthia koelmaniorum",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 60, "light": 1, "humidity": 0, "toxic": 0,
+      "tip": "Slow even by Haworthia standards. Repot only when roots fill the pot, and never into anything much larger.",
+      "colour": "Broad rough-textured leaves in brown-green with paler tubercles"
+    },
+    {
+      "name": "Haworthia venosa",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 60, "light": 1, "humidity": 0, "toxic": 0,
+      "tip": "Spreads by underground runners and fills a shallow pot. Split the clump every second spring.",
+      "colour": "Blunt green leaves with a net of translucent veins on the upper face"
+    },
+    {
+      "name": "Haworthia pumila",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 60, "light": 1, "humidity": 0, "toxic": 0,
+      "tip": "The largest of the group and heavy once watered. A clay pot stops it tipping and dries the compost faster.",
+      "colour": "Large dark green rosette covered in pearly raised white tubercles"
+    },
+    {
+      "name": "Haworthia marginata",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 60, "light": 1, "humidity": 0, "toxic": 0,
+      "tip": "The smooth leaves show every mark. Handle it by the pot, as fingernail dents never grow out.",
+      "colour": "Glossy hard dark green leaves with pale horny margins"
+    },
+    {
+      "name": "Haworthia minima",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 60, "light": 1, "humidity": 0, "toxic": 0,
+      "tip": "Offsets slowly and takes years to reach size. Buy the size you want rather than expecting quick growth.",
+      "colour": "Blue-grey pointed leaves with scattered white tubercles"
+    },
+    {
+      "name": "Haworthia blackburniae",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 60, "light": 1, "humidity": 0, "toxic": 0,
+      "tip": "Grassy leaves over a thick tuberous root. It stores water underground, so water less than the foliage suggests.",
+      "colour": "Long trailing grass-like green leaves from a swollen root"
+    },
+    {
+      "name": "Haworthia cooperi",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 45, "light": 2, "humidity": 0, "toxic": 0,
+      "tip": "The translucent leaf tips go cloudy when it is thirsty and plump again after a soak. Use them as the gauge.",
+      "colour": "Pale green rosette of swollen leaves with clear glassy tips"
+    },
+    {
+      "name": "Haworthia cooperi var. truncata",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 45, "light": 2, "humidity": 0, "toxic": 0,
+      "tip": "The flat leaf tops sit at soil level in habitat. Top-dress with grit so the leaves rest on it, not on compost.",
+      "colour": "Tight cluster of blunt-tipped leaves with flat translucent windows"
+    },
+    {
+      "name": "Haworthia cooperi var. pilifera",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 45, "light": 2, "humidity": 0, "toxic": 0,
+      "tip": "The fine bristles on the leaf tips break off if handled. Water from below to keep the rosette dry.",
+      "colour": "Soft green windowed leaves each ending in a fine white bristle"
+    },
+    {
+      "name": "Haworthia cooperi var. obtusa",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 45, "light": 2, "humidity": 0, "toxic": 0,
+      "tip": "The plump leaves split if watered heavily after a dry spell. Bring it back into growth gradually.",
+      "colour": "Rounded bubble-like leaves in pale green with clear tops"
+    },
+    {
+      "name": "Haworthia cymbiformis",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 45, "light": 2, "humidity": 0, "toxic": 0,
+      "tip": "Offsets fast and crowds itself out. Divide it every other spring or the central rosette starves.",
+      "colour": "Boat-shaped light green leaves with translucent striped tips"
+    },
+    {
+      "name": "Haworthia cymbiformis 'Variegata'",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 45, "light": 2, "humidity": 0, "toxic": 0,
+      "tip": "Reverted all-green offsets grow faster and take over. Remove them as soon as they appear at the base.",
+      "colour": "Pale green boat-shaped leaves striped lengthways in cream and yellow"
+    },
+    {
+      "name": "Haworthia retusa",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 45, "light": 2, "humidity": 0, "toxic": 0,
+      "tip": "Leaves lie flat and face upward in good light. In poor light they stretch upright, and that never reverses.",
+      "colour": "Fat triangular leaves with flat upper windows lined in green"
+    },
+    {
+      "name": "Haworthia magnifica",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 45, "light": 2, "humidity": 0, "toxic": 0,
+      "tip": "The rough grey leaf surface marks permanently from water spots. Water the compost and keep the rosette dry.",
+      "colour": "Dark grey-green leaves with a rough matt surface and pale flecks"
+    },
+    {
+      "name": "Haworthia turgida",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 45, "light": 2, "humidity": 0, "toxic": 0,
+      "tip": "Forms mats of small rosettes that hide rot beneath them. Lift the clump each spring and check the base.",
+      "colour": "Clustering pale green rosettes with keeled translucent leaf tips"
+    },
+    {
+      "name": "Haworthia mirabilis",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 45, "light": 2, "humidity": 0, "toxic": 0,
+      "tip": "Rests through high summer. Watering it while dormant in the hottest weeks is the usual way this one dies.",
+      "colour": "Green leaves flushing purple-brown with pale window margins"
+    },
+    {
+      "name": "Haworthia emelyae",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 45, "light": 2, "humidity": 0, "toxic": 0,
+      "tip": "The windowed leaf faces need light from above. Under a shelf it stretches and the pattern flattens out.",
+      "colour": "Rough brown-green leaf faces marked with pale reticulated lines"
+    },
+    {
+      "name": "Haworthia emelyae var. major",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 45, "light": 2, "humidity": 0, "toxic": 0,
+      "tip": "The bristly leaf faces collect grit from top-dressing. Blow it out; picking it off tears the leaf skin.",
+      "colour": "Bristle-edged olive leaves with a coarse pitted upper surface"
+    },
+    {
+      "name": "Haworthia bayeri",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 45, "light": 2, "humidity": 0, "toxic": 0,
+      "tip": "Very slow and very rot-prone. Grow it in pure pumice or grit and water only once the leaves soften.",
+      "colour": "Dark leaf faces patterned with a fine pale translucent net"
+    },
+    {
+      "name": "Haworthia springbokvlakensis",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 45, "light": 2, "humidity": 0, "toxic": 0,
+      "tip": "Grows almost buried in habitat. Pot it deep in grit and expect only the leaf windows to show at the surface.",
+      "colour": "Blunt rounded leaves with large dull translucent windows"
+    },
+    {
+      "name": "Haworthia pygmaea",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 45, "light": 2, "humidity": 0, "toxic": 0,
+      "tip": "The frosted leaf surface is the plant's own sunscreen. Wiping it off leaves the leaf open to scorching.",
+      "colour": "Small green rosette with a frosted sugary coating on the leaf faces"
+    },
+    {
+      "name": "Haworthia pygmaea var. splendens",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 45, "light": 2, "humidity": 0, "toxic": 0,
+      "tip": "The leaf pattern only develops with age. Give it years of steady light and leave it in the same pot.",
+      "colour": "Broad leaf faces in bronze and green with raised pale markings"
+    },
+    {
+      "name": "Haworthia truncata",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 45, "light": 2, "humidity": 0, "toxic": 0,
+      "tip": "Deep roots want a tall pot. In a shallow one they circle and the fan of leaves never widens properly.",
+      "colour": "Two ranks of upright leaves cut flat across the top like teeth"
+    },
+    {
+      "name": "Haworthia maughanii",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 45, "light": 2, "humidity": 0, "toxic": 0,
+      "tip": "Grown for the flat leaf faces, so keep top-dressing grit off them and let them see the light.",
+      "colour": "Round cluster of cylindrical leaves with flat translucent tops"
+    },
+    {
+      "name": "Haworthia arachnoidea",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 45, "light": 2, "humidity": 0, "toxic": 0,
+      "tip": "The white bristles hold water against the leaves. Water at the base only and never leave it damp overnight.",
+      "colour": "Pale green rosette wrapped in a web of long white marginal bristles"
+    },
+    {
+      "name": "Haworthia semiviva",
+      "category": "Succulents & cacti",
+      "water": 21, "feed": 45, "light": 2, "humidity": 0, "toxic": 0,
+      "tip": "Looks dead through summer, which is simply its dormancy. Leave the dry outer leaves on as shade for the centre.",
+      "colour": "Grey-white rosette buried under papery dried outer leaves"
+    },
+    {
+      "name": "Haworthia cuspidata",
+      "category": "Succulents & cacti",
+      "water": 14, "feed": 45, "light": 2, "humidity": 0, "toxic": 0,
+      "tip": "A garden hybrid and tougher than either parent, but it still rots if left wet through a cold week.",
+      "colour": "Pale green star-shaped rosette with keeled semi-translucent leaves"
+    }
+  ]
+}

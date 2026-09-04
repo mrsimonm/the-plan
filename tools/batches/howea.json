@@ -5,11 +5,11 @@
       "category": "Palms & ferns",
       "water": 10,
       "feed": 30,
-      "light": 3,
+      "light": 2,
       "humidity": 1,
       "toxic": 0,
-      "tip": "Let the top few centimetres dry before watering. Sitting wet is what kills it, not a dim corner.",
-      "colour": "Deep glossy green, leaflets held upright in a V along a strongly arching frond"
+      "tip": "Let the top few centimetres dry before watering. Soggy compost in a cool room kills it, not shade.",
+      "colour": "Deep glossy green, leaflets held stiffly upright in a V along a strongly arching frond"
     }
   ]
 }

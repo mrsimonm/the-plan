@@ -1,0 +1,298 @@
+{
+  "plants": [
+    {
+      "name": "Ocimum basilicum 'Genovese'",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Pinch out the growing tip once it has four leaf pairs. Flower buds turn the remaining leaves bitter.",
+      "colour": "Large cupped mid-green leaves"
+    },
+    {
+      "name": "Ocimum basilicum 'Nufar'",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Bred for fusarium resistance, so it is the one to use if a previous basil wilted and died in the same compost.",
+      "colour": "Broad flat glossy green leaves"
+    },
+    {
+      "name": "Ocimum basilicum 'Napoletano'",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The blistered leaves hold water and rot in still, damp air. Give the plant space and some air movement.",
+      "colour": "Very large blistered pale-green leaves"
+    },
+    {
+      "name": "Ocimum basilicum 'Italian Large Leaf'",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Harvest whole stems back to a low leaf pair rather than picking single leaves, and it rebranches from there.",
+      "colour": "Large flat light-green leaves"
+    },
+    {
+      "name": "Ocimum basilicum 'Mammoth'",
+      "category": "Herbs & edibles",
+      "water": 2, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The leaves are big enough to wrap food but wilt within an hour of cutting. Pick immediately before use.",
+      "colour": "Huge crinkled mid-green leaves"
+    },
+    {
+      "name": "Ocimum basilicum 'Aroma 2'",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Copes with a cool summer better than most Genovese types, but growth still stalls on a cold windowsill at night.",
+      "colour": "Deep green cupped leaves"
+    },
+    {
+      "name": "Ocimum basilicum 'Eleonora'",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Downy mildew shows as yellowing between the veins with grey fuzz beneath. This one resists it; wet leaves still invite it.",
+      "colour": "Mid-green domed leaves with a matt finish"
+    },
+    {
+      "name": "Ocimum basilicum 'Dolce Fresca'",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Compact enough for a windowsill pot. Cut it hard and often or the base goes woody by midsummer.",
+      "colour": "Small glossy mid-green leaves on a dense mound"
+    },
+    {
+      "name": "Ocimum basilicum 'Prospera'",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Downy mildew resistant, so it survives humid spells that flatten a standard Genovese. Water the compost, not the leaves.",
+      "colour": "Dark green cupped Genovese-type leaves"
+    },
+    {
+      "name": "Ocimum basilicum 'Rutgers Devotion DMR'",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Resists downy mildew without losing the sweet Genovese flavour. Sow in succession; one plant will not keep up.",
+      "colour": "Broad dark green leaves, lightly cupped"
+    },
+    {
+      "name": "Ocimum basilicum 'Rutgers Obsession DMR'",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Remove flower spikes the day you see them. Once it is allowed to bloom the leaf flavour drops away.",
+      "colour": "Mid-green cupped leaves, slightly pointed"
+    },
+    {
+      "name": "Ocimum basilicum 'Amazel'",
+      "category": "Herbs & edibles",
+      "water": 4, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Sterile, so it sets no seed and never runs to flower. Feed it fortnightly because it keeps growing all season.",
+      "colour": "Large mid-green leaves on tall green stems"
+    },
+    {
+      "name": "Ocimum basilicum 'Everleaf Emerald Towers'",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Columnar and much slower to flower than Genovese. Let it grow upright and pick from the side shoots.",
+      "colour": "Dark green leaves on a narrow upright column"
+    },
+    {
+      "name": "Ocimum basilicum 'Everleaf Thai Towers'",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Slow to bolt for a Thai basil, so the aniseed flavour holds into late summer. Pick from the sides.",
+      "colour": "Green leaves with purple stems in an upright column"
+    },
+    {
+      "name": "Ocimum basilicum var. minimum (Greek bush basil)",
+      "category": "Herbs & edibles",
+      "water": 4, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Forms a tight dome on its own and needs no pinching for shape. Let the compost dry slightly between waterings.",
+      "colour": "Tiny bright green leaves in a tight dome"
+    },
+    {
+      "name": "Ocimum basilicum 'Spicy Globe'",
+      "category": "Herbs & edibles",
+      "water": 4, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The small leaves dry out fast in a small pot. A wide, shallow container keeps the dome even.",
+      "colour": "Very small mid-green leaves in a dense ball"
+    },
+    {
+      "name": "Ocimum basilicum 'Fino Verde'",
+      "category": "Herbs & edibles",
+      "water": 4, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The small leaves bruise far less than large-leaved basil, so cut whole sprigs for a garnish.",
+      "colour": "Small pointed light-green leaves"
+    },
+    {
+      "name": "Ocimum basilicum 'Pluto'",
+      "category": "Herbs & edibles",
+      "water": 4, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "A dwarf globe that suits a 12cm pot. It bolts quickly in heat, so keep it out of a closed conservatory.",
+      "colour": "Miniature dark-green leaves on a compact dome"
+    },
+    {
+      "name": "Ocimum basilicum 'Minette'",
+      "category": "Herbs & edibles",
+      "water": 4, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Fine-leaved and dense. Pick sprigs rather than single leaves and the mound shape is kept.",
+      "colour": "Fine mid-green leaves in a low mound"
+    },
+    {
+      "name": "Ocimum basilicum 'Dark Opal'",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The purple fades towards green in poor light. Hours of direct sun are what keep the colour.",
+      "colour": "Deep purple-black leaves with pink flowers"
+    },
+    {
+      "name": "Ocimum basilicum 'Purple Ruffles'",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Slower and fussier than plain purple basil. Sow it warm and never let the compost sit cold and wet.",
+      "colour": "Frilled and fringed deep purple leaves"
+    },
+    {
+      "name": "Ocimum basilicum 'Red Rubin'",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Comes truer from seed than Dark Opal and holds its colour better. Pinch early to stop it going lanky.",
+      "colour": "Uniform burgundy-purple leaves"
+    },
+    {
+      "name": "Ocimum basilicum 'Osmin Purple'",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The darkest of the purple basils in full sun. In shade the leaves turn a muddy bronze instead.",
+      "colour": "Near-black purple leaves with a metallic sheen"
+    },
+    {
+      "name": "Ocimum basilicum 'Amethyst Improved'",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Thick down-curling leaves that shade the crown. Cut the flower spikes out to keep new leaves coming.",
+      "colour": "Thick down-curved leaves in deep matt purple"
+    },
+    {
+      "name": "Ocimum basilicum 'Round Midnight'",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Compact purple basil that stays neat in a pot. Colour tracks the hours of direct sun it gets.",
+      "colour": "Dark purple leaves on a compact rounded plant"
+    },
+    {
+      "name": "Ocimum basilicum 'Green Ruffles'",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The frilled leaves trap water and mark easily. Water at the compost and pick in the morning.",
+      "colour": "Crinkled and fringed apple-green leaves"
+    },
+    {
+      "name": "Ocimum basilicum 'Cinnamon'",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Grow it hot and bright; the scent thins in a dim, cool spot. Pinch the tips to keep it bushy.",
+      "colour": "Olive-green leaves with purple veins and stems"
+    },
+    {
+      "name": "Ocimum basilicum 'Licorice' (anise basil)",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Aniseed-scented, with stems that darken in sun. Pinch out the flower spikes to keep the leaves tender.",
+      "colour": "Green leaves flushed purple with dark purple stems"
+    },
+    {
+      "name": "Ocimum × africanum (lemon basil)",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Bolts faster than sweet basil, so sow a fresh pot every three weeks through the summer.",
+      "colour": "Small pale-green leaves with white flowers"
+    },
+    {
+      "name": "Ocimum × africanum 'Sweet Dani'",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "A lemon basil selected for a strong citrus scent. It runs to flower quickly, so keep cutting the tips.",
+      "colour": "Light green narrow leaves with white flower spikes"
+    },
+    {
+      "name": "Ocimum × africanum 'Mrs Burns Lemon'",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Larger-leaved and slower to bolt than common lemon basil. Cut it back by half after the first flush.",
+      "colour": "Bright green oval leaves with white flowers"
+    },
+    {
+      "name": "Ocimum × citriodorum 'Pesto Perpetuo'",
+      "category": "Herbs & edibles",
+      "water": 4, "feed": 21, "light": 1, "humidity": 1, "toxic": 0,
+      "tip": "It does not flower or set seed, so it keeps cropping. The cream margins scorch in hard afternoon sun.",
+      "colour": "Mid-green leaves with a clean cream margin"
+    },
+    {
+      "name": "Ocimum basilicum 'Lime'",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Short-lived and quick to bolt. Take cuttings in water or resow rather than nursing an old plant.",
+      "colour": "Small pale lime-green leaves"
+    },
+    {
+      "name": "Ocimum basilicum 'Blue Spice'",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Better as a scented pot plant than a cropping basil, as the leaves stay small. Let the bracts develop.",
+      "colour": "Grey-green leaves with purple flower bracts"
+    },
+    {
+      "name": "Ocimum basilicum 'Christmas'",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Fruity-scented, with flower bracts worth leaving on. Pinch the growing tips to keep the plant dense.",
+      "colour": "Glossy dark green leaves with deep purple flower bracts"
+    },
+    {
+      "name": "Ocimum basilicum var. thyrsiflora (Thai sweet basil)",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "The aniseed flavour survives a hot pan where sweet basil collapses. Grow it warmer than Genovese.",
+      "colour": "Narrow green leaves with purple stems and bracts"
+    },
+    {
+      "name": "Ocimum basilicum 'Siam Queen'",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Strong Thai basil with dense purple flower heads. Leave a few for the bees and cut the rest for leaf.",
+      "colour": "Dark green leaves with dense purple flower heads"
+    },
+    {
+      "name": "Ocimum basilicum 'Cardinal'",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Grown for the thick crimson flower bracts rather than the leaves, so let it bloom rather than pinching.",
+      "colour": "Green leaves beneath thick crimson flower bracts"
+    },
+    {
+      "name": "Ocimum basilicum 'Magical Michael'",
+      "category": "Herbs & edibles",
+      "water": 3, "feed": 14, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "An ornamental basil grown for its flower bracts. The leaves are edible but small, so crop it lightly.",
+      "colour": "Green leaves with white flowers in dark purple bracts"
+    },
+    {
+      "name": "Ocimum tenuiflorum (holy basil)",
+      "category": "Herbs & edibles",
+      "water": 4, "feed": 21, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "A short-lived perennial rather than an annual. Keep it above 10°C over winter and it runs a second year.",
+      "colour": "Slightly hairy green leaves with purple-tinged stems"
+    },
+    {
+      "name": "Ocimum tenuiflorum 'Rama'",
+      "category": "Herbs & edibles",
+      "water": 4, "feed": 21, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Green-leaved tulsi with a clove scent. Pinch the flower spikes out to keep leaf production going.",
+      "colour": "Light green leaves with pale purple flower spikes"
+    },
+    {
+      "name": "Ocimum tenuiflorum 'Krishna'",
+      "category": "Herbs & edibles",
+      "water": 4, "feed": 21, "light": 0, "humidity": 1, "toxic": 0,
+      "tip": "Slower and smaller than the green tulsi, and it needs full sun to hold the purple in the leaf.",
+      "colour": "Purple-tinged green leaves with purple stems"
+    }
+  ]
+}

@@ -1,0 +1,277 @@
+{
+  "plants": [
+    {
+      "name": "Dracaena fragrans 'Massangeana'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Brown leaf tips come from fluoride in tap water, not dry air. Use rainwater or filtered water.",
+      "colour": "Arching mid-green leaves with a broad yellow-green central stripe"
+    },
+    {
+      "name": "Dracaena fragrans 'Lemon Lime'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The lime edges wash out in a dim corner. Keep it in bright indirect light to hold the contrast.",
+      "colour": "Grey-green centre with bright chartreuse and white edge stripes"
+    },
+    {
+      "name": "Dracaena fragrans 'Warneckii'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Let the top few centimetres dry before watering. Sitting wet rots the cane from the base up.",
+      "colour": "Stiff grey-green leaves with thin white edge stripes"
+    },
+    {
+      "name": "Dracaena fragrans 'White Jewel'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The white tissue burns in direct sun. Bright indirect light only, and keep water off the crown.",
+      "colour": "Deep green leaves with broad white margins"
+    },
+    {
+      "name": "Dracaena fragrans 'Janet Craig'",
+      "category": "Trees & large plants",
+      "water": 12, "feed": 30, "light": 3, "humidity": 1, "toxic": 1,
+      "tip": "The most shade-tolerant of the group, but growth stalls in true gloom. Dust the leaves regularly.",
+      "colour": "Glossy, solid dark green, softly arching"
+    },
+    {
+      "name": "Dracaena fragrans 'Janet Craig Compacta'",
+      "category": "Trees & large plants",
+      "water": 12, "feed": 30, "light": 3, "humidity": 1, "toxic": 1,
+      "tip": "Slow by nature, so do not overfeed to force it. One feed a month through summer is plenty.",
+      "colour": "Short, tight rosettes of glossy dark green"
+    },
+    {
+      "name": "Dracaena fragrans 'Limelight'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The newest leaves carry the colour and darken with age. Keep it out of direct sun.",
+      "colour": "Broad, luminous yellow-green leaves ageing to lime"
+    },
+    {
+      "name": "Dracaena fragrans 'Dorado'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Narrow leaves lose water quickly. Water when the top third of the pot is dry, not by the calendar.",
+      "colour": "Narrow dark green leaves edged in creamy yellow"
+    },
+    {
+      "name": "Dracaena fragrans 'Lemon Surprise'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The twisted leaves trap water in the crown. Water the compost, not the rosette, to avoid rot.",
+      "colour": "Twisted lime-green leaves with white and dark green striping"
+    },
+    {
+      "name": "Dracaena fragrans 'Malaika'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Cut a bare cane at any height and it branches from just below the cut within a few weeks.",
+      "colour": "Dark green leaves with a white central stripe"
+    },
+    {
+      "name": "Dracaena fragrans 'Art'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Feed in spring and summer only. Salt building up from year-round feeding scorches the leaf tips.",
+      "colour": "Dark green leaves with a wide lime-green centre"
+    },
+    {
+      "name": "Dracaena fragrans 'Steudneri'",
+      "category": "Trees & large plants",
+      "water": 12, "feed": 30, "light": 3, "humidity": 1, "toxic": 1,
+      "tip": "The broadest leaves of the group. Turn the pot monthly or it leans hard towards the window.",
+      "colour": "Very broad, plain deep green leaves"
+    },
+    {
+      "name": "Dracaena fragrans 'Rikki'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Water much less in winter. Cold compost that stays wet is the usual cause of a collapsed cane.",
+      "colour": "Dark green leaves with a narrow yellow central stripe"
+    },
+    {
+      "name": "Dracaena fragrans 'Golden Coast'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Keep it slightly pot-bound. A large pot leaves wet compost the roots cannot reach for weeks.",
+      "colour": "Glossy green leaves with a clean yellow margin"
+    },
+    {
+      "name": "Dracaena fragrans 'Cintho'",
+      "category": "Trees & large plants",
+      "water": 12, "feed": 30, "light": 3, "humidity": 1, "toxic": 1,
+      "tip": "Tough and slow. Water every couple of weeks and leave it in place; it resents being moved about.",
+      "colour": "Deep glossy green, upright and broad-leaved"
+    },
+    {
+      "name": "Dracaena fragrans 'Bausei'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The white band scorches in direct sun. Filtered light keeps the stripe clean and unmarked.",
+      "colour": "Dark green leaves with a broad white central band"
+    },
+    {
+      "name": "Dracaena fragrans 'Lindenii'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "The reverse of the corn plant: the colour sits at the margins, and it fades if the light is poor.",
+      "colour": "Mid-green leaves edged with creamy yellow bands"
+    },
+    {
+      "name": "Dracaena fragrans 'Jade Jewel'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Reverted all-green shoots grow faster and take over. Cut them out as soon as you notice them.",
+      "colour": "Deep green leaves with a wide creamy white centre"
+    },
+    {
+      "name": "Dracaena fragrans 'Green Jewel'",
+      "category": "Trees & large plants",
+      "water": 12, "feed": 30, "light": 3, "humidity": 1, "toxic": 1,
+      "tip": "Wipe the leaves every few weeks. Dust cuts the light it receives more than its position does.",
+      "colour": "Uniform deep green, broad and glossy"
+    },
+    {
+      "name": "Dracaena fragrans 'Michiko'",
+      "category": "Trees & large plants",
+      "water": 12, "feed": 30, "light": 3, "humidity": 1, "toxic": 1,
+      "tip": "Dense whorls hold moisture. Water at the compost and give it some air movement to stop spotting.",
+      "colour": "Narrow, dark green leaves in dense whorls"
+    },
+    {
+      "name": "Dracaena fragrans 'Lisa'",
+      "category": "Trees & large plants",
+      "water": 12, "feed": 30, "light": 3, "humidity": 1, "toxic": 1,
+      "tip": "The straight canes need decent light to stay straight. In shade the new growth leans and thins.",
+      "colour": "Upright, narrow, very dark green leaves"
+    },
+    {
+      "name": "Dracaena fragrans 'Hawaiian Sunshine'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Brown tips mean salts. Flush the pot through with plenty of water every few months to wash them out.",
+      "colour": "Dark green leaves with a soft light green central stripe"
+    },
+    {
+      "name": "Dracaena fragrans 'Roehrs Gold'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Little chlorophyll in the pale tissue, so it grows slowly. Do not push it along with extra feed.",
+      "colour": "Creamy yellow leaves with fine green striping"
+    },
+    {
+      "name": "Dracaena fragrans 'Tornado'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Grown for the twist, which only holds in good light. In shade the new leaves come out flat.",
+      "colour": "Short twisted leaves banded cream and grey-green"
+    },
+    {
+      "name": "Dracaena marginata 'Tricolor'",
+      "category": "Trees & large plants",
+      "water": 14, "feed": 30, "light": 2, "humidity": 0, "toxic": 1,
+      "tip": "The pink edge needs bright light. Softened water is high in sodium and browns the tips.",
+      "colour": "Narrow green leaves striped cream with red margins"
+    },
+    {
+      "name": "Dracaena marginata 'Colorama'",
+      "category": "Trees & large plants",
+      "water": 14, "feed": 30, "light": 2, "humidity": 0, "toxic": 1,
+      "tip": "Nearly all pink tissue, so it needs the brightest indirect spot you have or it fades to green.",
+      "colour": "Narrow leaves dominated by broad pink-red margins"
+    },
+    {
+      "name": "Dracaena marginata 'Bicolor'",
+      "category": "Trees & large plants",
+      "water": 14, "feed": 30, "light": 2, "humidity": 0, "toxic": 1,
+      "tip": "Drought-tolerant once established. Let the pot dry two thirds down before watering again.",
+      "colour": "Green leaves with clean red-pink edges"
+    },
+    {
+      "name": "Dracaena marginata 'Tarzan'",
+      "category": "Trees & large plants",
+      "water": 14, "feed": 30, "light": 2, "humidity": 0, "toxic": 1,
+      "tip": "Heavier heads than the ordinary form, so pot it deep and firm or it topples as the compost dries.",
+      "colour": "Thick stems with wide, stiff dark green leaves edged red"
+    },
+    {
+      "name": "Dracaena marginata 'Magenta'",
+      "category": "Trees & large plants",
+      "water": 14, "feed": 30, "light": 2, "humidity": 0, "toxic": 1,
+      "tip": "Water every couple of weeks and no more. Yellowing lower leaves usually mean the pot stayed wet.",
+      "colour": "Deep green leaves with wide purple-red margins"
+    },
+    {
+      "name": "Dracaena marginata 'Kiwi'",
+      "category": "Trees & large plants",
+      "water": 14, "feed": 30, "light": 2, "humidity": 0, "toxic": 1,
+      "tip": "All three colours only show in good light. A shaded plant loses the yellow first, then the red.",
+      "colour": "Green and yellow striped leaves with thin red edges"
+    },
+    {
+      "name": "Dracaena reflexa 'Song of Jamaica'",
+      "category": "Trees & large plants",
+      "water": 12, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Dense whorls of short leaves. Prune the tips to keep it bushy; it branches readily where cut.",
+      "colour": "Short dark green leaves with pale green margins"
+    },
+    {
+      "name": "Dracaena reflexa 'Anita'",
+      "category": "Trees & large plants",
+      "water": 12, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "Fine leaves dry out fast. Check the compost weekly rather than watering to a fixed schedule.",
+      "colour": "Very narrow, plain bright green leaves in tight whorls"
+    },
+    {
+      "name": "Dracaena surculosa (gold dust dracaena)",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 30, "light": 3, "humidity": 2, "toxic": 1,
+      "tip": "Unlike its tree relatives this one wants humidity. Group it with other plants or use a pebble tray.",
+      "colour": "Oval dark green leaves speckled with cream spots"
+    },
+    {
+      "name": "Dracaena surculosa 'Florida Beauty'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 30, "light": 3, "humidity": 2, "toxic": 1,
+      "tip": "The heavy spotting needs bright indirect light. In shade the new leaves come out plain green.",
+      "colour": "Dark green leaves heavily blotched with cream"
+    },
+    {
+      "name": "Dracaena surculosa 'Milky Way'",
+      "category": "Trees & large plants",
+      "water": 10, "feed": 30, "light": 3, "humidity": 2, "toxic": 1,
+      "tip": "Shrubby rather than tree-like. Pinch the shoot tips or it grows thin and leggy within a season.",
+      "colour": "Dark green leaves with a broad white central stripe and cream spots"
+    },
+    {
+      "name": "Dracaena draco (dragon tree)",
+      "category": "Trees & large plants",
+      "water": 21, "feed": 60, "light": 1, "humidity": 0, "toxic": 1,
+      "tip": "Grow it in gritty compost and water sparingly. Wet roots through a cold winter will kill it.",
+      "colour": "Stiff blue-grey sword leaves in a dense rosette"
+    },
+    {
+      "name": "Dracaena cinnabari (dragon's blood tree)",
+      "category": "Trees & large plants",
+      "water": 21, "feed": 60, "light": 1, "humidity": 0, "toxic": 1,
+      "tip": "Very slow and drought-adapted. Water only once the compost is dry throughout, and less in winter.",
+      "colour": "Stiff blue-green leaves on an umbrella-shaped crown"
+    },
+    {
+      "name": "Dracaena arborea",
+      "category": "Trees & large plants",
+      "water": 14, "feed": 30, "light": 2, "humidity": 1, "toxic": 1,
+      "tip": "It grows tall and top-heavy. A wide, heavy pot keeps it stable better than a deep, narrow one.",
+      "colour": "Thick pale trunk with long, plain green arching leaves"
+    },
+    {
+      "name": "Dracaena aletriformis",
+      "category": "Trees & large plants",
+      "water": 12, "feed": 30, "light": 3, "humidity": 1, "toxic": 1,
+      "tip": "Shade-tolerant and slow. Water when the top half of the pot is dry and feed only through summer.",
+      "colour": "Broad, glossy strap leaves in a low spreading rosette"
+    }
+  ]
+}
