@@ -8898,11 +8898,61 @@ const evLabel=e=>EV_LABEL[e.kind||e.type]||(e.kind||e.type||"log");
    and then goes: same-day slips are a typo, older ones are history, and an
    older entry can still be removed deliberately from the log. */
 const leafUndoable=e=>!!e&&ymd(new Date(e.at))===ymd(Date.now());
+/* Czech counts in three forms, so leaves and every span word go through pl3
+   rather than a bare plural s. */
+const csLeaves=n=>pl3(n,"list","listy","listů");
+const leafWord=n=>L.lang==="cs"?csLeaves(n):(n===1?"leaf":"leaves");
 function foliageLine(evs){
-  if(!evs.length) return "Nothing logged yet. Tap + New leaf on the day you spot one — "
-    +"those dates are what a leaves-per-month figure gets built from.";
+  if(!evs.length) return L.lang==="cs"
+    ? "Zatím nic. Ťukni na + Nový list v den, kdy nějaký uvidíš — z těch dat se počítá tempo níž."
+    : "Nothing logged yet. Tap + New leaf on the day you spot one — "
+      +"those dates are what the rate below is built from.";
   const n=leafTotal(evs);
-  return `${n} ${n===1?"leaf":"leaves"} logged · newest ${ago(evs[0].at)}`;
+  return L.lang==="cs"
+    ? `${n} ${csLeaves(n)} zapsáno · poslední ${ago(evs[0].at)}`
+    : `${n} ${leafWord(n)} logged · newest ${ago(evs[0].at)}`;
+}
+
+/* ---- the rate ----
+   Leaves divided by the window actually watched: first leaf logged on that
+   plant, through to today. Running the window to TODAY rather than to the
+   last leaf is the whole point — it is what makes the figure fall on its own
+   through a quiet spell. One leaf a week in reads as one a week; the same
+   single leaf a fortnight in reads as half of one, without anything being
+   logged in between.
+
+   It is honest from the very first leaf, so it is shown from the very first
+   leaf. A short window does make the number swing, but the answer to that is
+   to print the window next to it — "2 leaves over 9 days" — so it can be read
+   for what it is, never to hold the figure back until the data looks calmer.
+
+   The window is floored at a day so the first leaf of the day has something
+   to divide by. */
+const leafWindowDays=firstAt=>Math.max(1,(Date.now()-new Date(firstAt))/DAY);
+const leafPerMonth=(total,firstAt)=>total/leafWindowDays(firstAt)*30.44;
+const leafPerYear =(total,firstAt)=>total/leafWindowDays(firstAt)*365.25;
+/* one decimal while the number is small enough for it to mean something */
+const leafNum=n=>n<10?(Math.round(n*10)/10).toFixed(1):String(Math.round(n));
+function leafSpanWord(days){
+  const d=Math.round(days), cs=L.lang==="cs";
+  if(d<14) return `${d} ${cs?pl3(d,"den","dny","dní"):(d===1?"day":"days")}`;
+  const w=Math.round(d/7);
+  if(d<60) return `${w} ${cs?pl3(w,"týden","týdny","týdnů"):(w===1?"week":"weeks")}`;
+  if(d<365){ const m=Math.round(d/30.44);
+    return `${m} ${cs?pl3(m,"měsíc","měsíce","měsíců"):(m===1?"month":"months")}`; }
+  /* a decimal never takes the singular form in either language */
+  return `${(d/365.25).toFixed(1)} ${cs?"let":"years"}`;
+}
+/* The plant page's own summary of the rate, phrased like the height line
+   directly above it so the two read as one pair. */
+function foliageRate(evs){
+  if(!evs.length) return "";
+  const n=leafTotal(evs), first=evs[evs.length-1].at;   // evs are newest-first
+  const basis=`${n} ${leafWord(n)} `
+    +`${L.lang==="cs"?"za":"over"} ${leafSpanWord(leafWindowDays(first))}`;
+  return `${L.lang==="cs"?"asi":"about"} ${leafNum(leafPerMonth(n,first))} `
+    +`${L.lang==="cs"?"listů za měsíc":"a month"} · ${leafNum(leafPerYear(n,first))} `
+    +`${L.lang==="cs"?"za rok":"a year"}  —  ${basis}`;
 }
 
 const careRoutines=sid=>routinesFor(sid)
@@ -13852,10 +13902,11 @@ function renderPlant(){
       <div class="pad foliage">
         <div class="lbl-row"><span class="eyebrow">Foliage</span>
           <span class="lbl-acts">
-            ${leafUndoable(leaves[0])?`<button type="button" class="btn mini" data-leafundo="${leaves[0].id}">Undo</button>`:""}
-            <button type="button" class="btn mini" data-leaf="${p.id}">+ New leaf</button>
+            ${leafUndoable(leaves[0])?`<button type="button" class="btn mini" data-leafundo="${leaves[0].id}">${esc(t("Undo"))}</button>`:""}
+            <button type="button" class="btn mini" data-leaf="${p.id}">${esc(t("+ New leaf"))}</button>
           </span></div>
         <p class="hint" style="margin:7px 0 0">${esc(foliageLine(leaves))}</p>
+        ${leaves.length?`<div class="growth" style="margin-top:8px">${esc(foliageRate(leaves))}</div>`:""}
       </div>
     </div>
 
@@ -18272,28 +18323,34 @@ function statsData(){
   D.now={plants:subs.length, over, due, ahead, thirstL,
     pct: (over+due+ahead)?Math.round(ahead/(over+due+ahead)*100):null};
 
-  /* ---- care over time ---- */
+  /* ---- care over time ----
+     Every figure in this section counts work done, so it reads care events
+     only. A leaf is in the same log but is not work: left in, it inflated the
+     entry count and the per-week rate, kept a "day streak" alive on a day
+     nothing was actually cared for, and — having no routine to name it — piled
+     up under "what kind: other". Foliage gets its own card below. */
+  const care=ev.filter(e=>!isLeafEv(e));
   const DAYS=30, days=[];
   for(let i=DAYS-1;i>=0;i--){
     const d=today-i*DAY;
-    days.push({d, n:ev.filter(e=>sod(+new Date(e.at))===d).length});
+    days.push({d, n:care.filter(e=>sod(+new Date(e.at))===d).length});
   }
   const byKind={}, byWho={}, byDow=[0,0,0,0,0,0,0];
-  ev.forEach(e=>{ byKind[e.kind]=(byKind[e.kind]||0)+1;
+  care.forEach(e=>{ byKind[e.kind]=(byKind[e.kind]||0)+1;
     byWho[e.by]=(byWho[e.by]||0)+1;
     byDow[new Date(e.at).getDay()]++; });
   /* an empty today must not end the count — a 100-day streak read 0 every
      morning until the first entry landed */
   let streak=0;
   for(let i=0;;i++){ const d=today-i*DAY;
-    if(ev.some(e=>sod(+new Date(e.at))===d)) streak++;
+    if(care.some(e=>sod(+new Date(e.at))===d)) streak++;
     else if(i>0) break; }
-  const first=ev[0]?sod(+new Date(ev[0].at)):null;
-  D.care={days, byKind, byWho, byDow, streak, total:ev.length,
+  const first=care[0]?sod(+new Date(care[0].at)):null;
+  D.care={days, byKind, byWho, byDow, streak, total:care.length,
     spanDays: first?Math.round((today-first)/DAY)+1:0,
     /* divide by the same inclusive span shown beside it, or 20 entries over
        6 days reads "7 days tracked / 23.3 per week" */
-    perWeek: first?(ev.length/Math.max(1,Math.round((today-first)/DAY)+1)*7):0,
+    perWeek: first?(care.length/Math.max(1,Math.round((today-first)/DAY)+1)*7):0,
     peakDay: days.reduce((m,x)=>Math.max(m,x.n),0)};
 
   /* ---- the collection ---- */
@@ -18313,6 +18370,35 @@ function statsData(){
     species:Object.entries(spec).sort((a,b)=>b[1]-a[1]),
     distinct:Object.keys(spec).length,
     oldest:dated[0]||null, newest:dated[dated.length-1]||null};
+
+  /* ---- foliage ----
+     Per plant, because a rate over the whole collection would say more about
+     how many plants are being watched than about how any of them is growing:
+     adding a plant you never log a leaf against would drag a collection-wide
+     average down for no botanical reason. The headline rate is therefore the
+     sum of the per-plant rates — what the collection puts out in a month if
+     every watched plant carries on at its own pace — and the count of watched
+     plants is printed beside it so that number can be read for what it is. */
+  const leafBy={};
+  ev.filter(isLeafEv).forEach(e=>{           // ev is sorted oldest-first
+    const f=leafBy[e.subjectId]||(leafBy[e.subjectId]={n:0,first:e.at,last:e.at});
+    f.n+=(+e.n>0?+e.n:1); f.last=e.at;       // first stays put; last keeps moving
+  });
+  const folPlants=Object.keys(leafBy).map(id=>{
+    const p=subs.find(x=>x.id===id); if(!p) return null;   // deleted plant, stale log
+    const f=leafBy[id];
+    return {p, n:f.n, first:f.first, last:f.last,
+            perMonth:leafPerMonth(f.n,f.first), perYear:leafPerYear(f.n,f.first)};
+  }).filter(Boolean).sort((a,b)=>b.perMonth-a.perMonth);
+  const folFirst=folPlants.reduce((a,x)=>!a||x.first<a?x.first:a,null);
+  D.fol={plants:folPlants,
+    tracked:folPlants.length,
+    total:folPlants.reduce((a,x)=>a+x.n,0),
+    perMonth:folPlants.reduce((a,x)=>a+x.perMonth,0),
+    perYear:folPlants.reduce((a,x)=>a+x.perYear,0),
+    since:folFirst,
+    /* newest leaf anywhere — answers "am I still doing this?" */
+    last:folPlants.reduce((a,x)=>!a||x.last>a?x.last:a,null)};
 
   /* ---- propagation ---- */
   const cut=S.cuttings||[];
@@ -18567,6 +18653,26 @@ function renderStats(){
     </div>`,
     "A full round is every plant watered once — useful for knowing what to mix.");
 
+  /* --- 3b. foliage --- */
+  const fo=D.fol;
+  const folCard=card("Foliage",
+    fo.tracked?`<div class="statrow q">
+      ${statCell(fo.total,"leaves")}
+      ${statCell(leafNum(fo.perMonth),"a month")}
+      ${statCell(leafNum(fo.perYear),"a year")}
+      ${statCell(fo.tracked,"plants watched")}
+    </div>
+    <div style="margin-top:15px">
+      <span class="eyebrow" style="display:block;margin-bottom:7px">${esc(t("Fastest growing"))}</span>
+      ${barList(fo.plants.slice(0,6).map(x=>
+        [x.p.name, leafNum(x.perMonth), `${x.n} ${L.lang==="cs"?"za":"over"} ${leafSpanWord(leafWindowDays(x.first))}`]),
+        {unit:L.lang==="cs"?" /měs":" /mo"})}
+    </div>`
+    :`<p class="hint" style="margin:0">${esc(t(
+        "No leaves logged yet. Open a plant and tap + New leaf when one opens — a rate appears from the very first one."))}</p>`,
+    fo.tracked?"Each plant's rate runs from its own first logged leaf to today, so a quiet month pulls it down on its own. "
+      +"The month and year figures are those per-plant rates added up — early ones swing about until a few weeks are behind them.":null);
+
   /* --- 4. propagation --- */
   const p=D.prop;
   const propCard=card("Propagation",
@@ -18595,7 +18701,7 @@ function renderStats(){
       `<p class="hint" style="margin:0">${esc(t("Nothing is overdue. Good."))}</p>`}
      ${a.never?`<p class="hint" style="margin:11px 0 0">${a.never} ${esc(t("plants have never been logged at all."))}</p>`:""}`):"";
 
-  host.innerHTML=nowCard+careCard+expertCards(D)+collCard+propCard+attnCard;
+  host.innerHTML=nowCard+careCard+expertCards(D)+collCard+folCard+propCard+attnCard;
 }
 
 function renderAll(){ renderMixSel(); renderDue(); renderHow(); renderMix(); renderShelf(); renderSubjects(); renderCuttings(); renderPlan(); renderLog(); renderTaskBar(); renderTaskBarFull("#gardenTaskBar"); renderTaskBarFull("#planTaskBar"); renderGarden(); renderLibrary(); renderActionDays(); renderPropGuide(); renderStats();
@@ -22202,6 +22308,13 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "Each column is one day, last 30.":"Každý sloupec je jeden den, posledních 30.",
 "The collection":"Sbírka","species":"druhů","substrate":"substrátu","a full round":"celé kolo",
 "By group":"Podle skupiny","Most of":"Nejvíc","Pot sizes":"Velikosti květináčů",
+"Foliage":"Listy","leaves":"listů","a month":"za měsíc","a year":"za rok",
+"plants watched":"sledovaných rostlin","Fastest growing":"Nejrychleji rostou",
+"No leaves logged yet. Open a plant and tap + New leaf when one opens — a rate appears from the very first one.":
+  "Zatím žádné listy. Otevři rostlinu a ťukni na + Nový list, až se nějaký objeví — tempo se ukáže hned od prvního.",
+"+ New leaf":"+ Nový list","Undo":"Zpět",
+"Each plant's rate runs from its own first logged leaf to today, so a quiet month pulls it down on its own. The month and year figures are those per-plant rates added up — early ones swing about until a few weeks are behind them.":
+  "Tempo každé rostliny běží od jejího prvního zapsaného listu do dneška, takže tichý měsíc ho sám stáhne dolů. Měsíční a roční čísla jsou součtem těchto temp — ta čerstvá kolísají, dokud za nimi nejsou aspoň týdny.",
 "Propagation":"Množení","batches":"dávek","cuttings":"řízků","rooted":"zakořeněno","potted":"zasazeno","took":"ujalo se",
 "By method":"Podle metody",
 "Wants attention":"Chce pozornost","Nothing is overdue. Good.":"Nic není po termínu. Dobře.",
