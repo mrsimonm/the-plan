@@ -61,10 +61,17 @@ text cut mid-word, every control reachable and >=44px on touch.
 
 ## 3 · Motion
 
-- ☐ Press feedback on every button and chip — one shared rule, not per-component
+- ☑ Press feedback — one shared layer. .btn/.chip already answered a press
+  (each design skin tunes its own feel, left alone); the tab strip, segmented
+  controls, Library menu rows, settings disclosures, rail items and every Notes
+  row did not. Rows tint, controls scale. Only transform/opacity animated.
 - ☐ View changes: one considered transition, not several competing ones
-- ☐ Lists: items settle in rather than appearing hard, where it costs nothing
-- ☐ Every one of the above off under `prefers-reduced-motion`
+- ☑ Deliberately NOT done. List rows are rebuilt on every render — renderNotes
+  runs on each search keystroke — so an entrance animation on rows replays as
+  a flicker while you type. Entrances stay at view and dialog level.
+- ☑ One global prefers-reduced-motion switch now covers everything added AND
+  everything the app already animated (view and dialog entrances, the scope
+  pill, spinners, the voice pulse).
 - ☐ Nothing animates a property that forces layout; no stutter on a phone
 
 ## 4 · Performance

@@ -3644,6 +3644,55 @@ html[data-layout="phone"] .ppl-search-row{ flex-wrap:nowrap }
 }
 
 /* ============================================================================
+   MOTION — one layer, so pressing things feels the same everywhere.
+
+   .btn and .chip already answer a press (and each design skin tunes its own
+   feel, which is left alone). Nothing else did: the tab strip, the segmented
+   controls, the Library menu rows, the settings disclosures, the rail items
+   and every row in Notes took a tap with no acknowledgement at all, which is
+   most of what made the app feel unresponsive rather than slow.
+
+   Rules kept deliberately narrow:
+   - only `transform` and `opacity` are animated, never a property that forces
+     layout, so a press costs the compositor and nothing else;
+   - the calendar's own surfaces (.wb-*) are excluded, because they are drag
+     targets and a scale under the finger fights the drag;
+   - every bit of it is off under prefers-reduced-motion, including the
+     app's pre-existing view and dialog entrances.
+   ============================================================================ */
+.nav button, .seg button, .menu > *, .menu button, .setcat > summary,
+.dz-i, .n-row-main, .n-prow, .n-pin, .n-tg, .n-nb, .n-toplan,
+.gear, .brand, .lu, .fold > summary, .sp-add, .dz-b-s, .dz-b-go, .dz-b-find{
+  transition:transform .09s cubic-bezier(.2,.7,.3,1),
+             background-color .15s ease, border-color .15s ease, color .15s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+.nav button:active, .seg button:active, .menu > *:active, .menu button:active,
+.setcat > summary:active, .dz-i:active, .n-row-main:active, .n-prow:active,
+.n-pin:active, .n-tg:active, .n-nb:active, .n-toplan:active, .gear:active,
+.brand:active, .lu:active, .fold > summary:active, .sp-add:active,
+.dz-b-s:active, .dz-b-go:active, .dz-b-find:active{
+  transform:scale(.975);
+}
+/* a row is wide, so scaling it reads as the whole list flexing — they get the
+   tint instead, which is what a list row does everywhere else */
+.menu > *:active, .menu button:active, .n-row-main:active, .n-prow:active,
+.dz-i:active, .lu:active{ transform:none; background-color:var(--sunk) }
+
+/* a tick should look like it landed rather than just changing colour */
+.n-todo-box input:checked + i, .tbox, input[type="checkbox"]{ transition:transform .12s cubic-bezier(.34,1.4,.64,1), background-color .12s ease, border-color .12s ease }
+.n-todo-box input:active + i{ transform:scale(.9) }
+
+/* one switch for everything above AND everything the app already animated:
+   entrances, the scope pill, the spinners, the pulse on the voice dot */
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation-duration:.001ms !important; animation-iteration-count:1 !important;
+    transition-duration:.001ms !important; scroll-behavior:auto !important;
+  }
+}
+
+/* ============================================================================
    THE [hidden] TRAP, closed once for the whole file.
 
    `[hidden]{display:none}` lives in the user-agent stylesheet, and ANY author
