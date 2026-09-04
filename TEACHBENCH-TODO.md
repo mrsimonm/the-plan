@@ -154,7 +154,17 @@ line numbers — several sessions edit this file and the numbers move.
 | `.tbs-*` | All portal CSS, one block. |
 | `bootStudentApp` / `studentModeRequested` / `markStudentDevice` | The student-mode boot gate, next to `boot()`. |
 | `FIREBASE_CONFIG` | The project config. Not a secret. |
-| `const TB` | The older teacher-side module (localStorage). |
+| `const TB` | The older teacher-side module (localStorage). Schema 13. |
+| `const DRILL` | The six practice modes. Pure, no DOM, no network. |
+| `tbRun*` / `tbPortal*` / `tbPush*` | Lesson mode and the bridge to the portal. |
+| `tbExportBackup` / `tbParseBulkWords` | Backup, and pasting a whole word list. |
+| `tbRenderAccount` / `tbStatementText` | Attendance, packs and the monthly statement. |
+
+The teacher-side additions live in one block at the **end of the script**,
+and they **wrap** the existing `tbRender*` functions rather than editing
+them. That is on purpose: several sessions edit this file at once, and a
+wrapper at the end of the script cannot collide with someone working in the
+middle of the module.
 
 The Firebase SDK is injected **only when the portal starts**, so Potting
 Bench sessions stay as network-free as they always were.
@@ -261,58 +271,72 @@ unfixed.
 
 ---
 
-# 8. THE BIG ONE — the two halves do not know each other exists
+# 8. THE BRIDGE — decided and built (option a)
 
-**The most valuable outstanding item, and not a polish job.** It is the
-thing most likely to decide whether Margo uses any of this.
+**Status: done.** Previously the most valuable outstanding item, and it was
+left open because it is a product decision with three legitimate answers.
 
-Verified in the code: two entirely separate student lists, no bridge.
-The `TB` module keeps students, words and lessons in `localStorage`; the
-portal keeps its own students and flashcards in Firestore. **Nothing in
-`TB` ever calls `TBS`** — every `TBS.*` call site is inside `TBS_UI`.
+Simon asked for an unattended build and could not be consulted, so option
+**(a) bridge them** was taken, deliberately and not (b):
 
-Consequences today:
+- (b) is an async rewrite of `TB`'s working synchronous storage layer.
+  That is not something to do overnight, unattended, in a file five
+  sessions are editing.
+- (a) leaves both stores intact and is undone by clearing one field, so if
+  Margo's first real use says the answer is (b) or (c), nothing here is in
+  the way.
 
-- She must **add every student twice**, once in each half.
-- Her **vocabulary library cannot become flashcards.** Words already
-  typed into Teachbench must be retyped one at a time in the student
-  panel. The whole system rests on her adding cards after every lesson;
-  making her type everything twice is exactly the friction that stops
-  that happening.
-- **Lessons cannot appear on the student calendar** (§9 item 12),
-  because lesson times only exist on her device.
-- Teachbench is **single-device**: laptop and phone hold different data,
-  and neither is backed up.
+What exists now:
 
-**Three honest ways forward. This needs Simon's decision before anyone
-writes code:**
+- `student.portalId` on the Teachbench record links a student to the same
+  person in the portal roster. Set once from **Student portal → Link**, on
+  the student's detail page.
+- **Send words to flashcards** pushes a student's vocabulary across as
+  cards. The word's `example` sentence travels with it, which turns the
+  same card into a gap-fill for free.
+- **Lesson mode** (§8a below) does the same automatically at the end of a
+  lesson.
 
-- **(a) Bridge them.** Keep both stores; add "push to flashcards"
-  actions — send a word from the library into a student's deck, and
-  match a Teachbench student to a portal student once. Smallest change,
-  but leaves two lists to keep in step.
-- **(b) Move Teachbench onto Firestore too.** One student list, one
-  source of truth, works across her devices, and lesson times become
-  available to the student calendar for free. Much the largest job:
-  migrating `teachbench.data` and rewriting `TB`'s synchronous storage
-  layer as async.
-- **(c) Leave them separate on purpose** and accept the double entry as
-  the price of not touching working code.
+Still true, and still worth knowing:
 
-**Recommendation: do not decide this until Margo has used the thing
-(§9 item 5).** If she says she would rather add cards fresh after a
-lesson anyway, the answer changes completely and (c) becomes right.
+- The two student lists are still two lists. Adding a student still has to
+  happen in both halves; only the *words* stop being typed twice.
+- Lesson times still do not reach the student calendar (§9 item 12).
 
----
+**The Firebase SDK still loads only when the portal is actually used.** The
+first version of the check tested for `window.firebase`, which the main
+app's own sync (PSYNC) also defines — that would have dragged the portal
+open on every student page. It now checks that a member of staff is
+genuinely signed in, and otherwise waits for a button press.
+
+## 8a. Lesson mode — the thing the system actually rests on
+
+New, and the most important part of this work. The app was used before a
+lesson to plan and after it to record; the hour in between had no screen.
+
+**Run** on any lesson opens the plan, a scratch pad for words as they come
+up, notes, and how it went. It ends with **Save and make cards**: the words
+become the student's vocabulary and, when the student is linked, flashcards
+in the portal in the same press.
+
+The load-bearing assumption in §9 item 5 was that adding cards after a
+lesson is fast enough that Margo does it every time. This is the answer to
+that assumption, and it is the thing to watch when she first uses it.
 
 # 9. Everything not done
 
 ## Blocked on Simon — not code
 
-**4. Publish the `progress` rules block.** Streaks are fully implemented
-but every write is silently rejected until this is added in the Firebase
-console under Firestore → Rules, just above the existing
-`match /homework/{itemId}` line:
+**4. Publish the `progress` rules block — VERIFY THIS.** Two sessions
+disagree about whether it is already live: one says it was published on
+4 Sep, the one that wrote the code says it was not. Nobody in a Claude
+session can see the Firebase console, so this has to be checked by hand.
+
+If it is missing, every streak write is silently rejected and the streak
+will read as permanently zero while looking like a code bug. The block goes
+under Firestore → Rules, just above the existing `match /homework/{itemId}`
+line — or simply paste the whole of `firestore.rules`, which is the
+reviewable source of truth and already contains it:
 
 ```
 match /progress/{docId} {
@@ -322,40 +346,60 @@ match /progress/{docId} {
 }
 ```
 
-**5. Nobody has used it for a real lesson.** Everything is verified by
-automated checks and by hand in a browser, but no actual teacher and no
-actual student have been through it end to end. The load-bearing
-assumption is that adding cards after a lesson is fast enough that Margo
-does it every time. If that is false, nothing else matters — and §8 is
-the main threat to it.
+**5. Nobody has used it for a real lesson. STILL THE BIGGEST RISK.**
+Everything is verified by automated checks and by hand in a browser, but no
+actual teacher and no actual student have been through it end to end.
 
-## Loose ends in the student portal (~15 minutes total)
+The load-bearing assumption is that adding cards after a lesson is fast
+enough that Margo does it every time. Lesson mode (§8a) is the answer to
+that assumption, and it is the single thing to watch when she first uses
+it. If she does not reach for it, nothing else here matters.
 
-**1. Dead "Level" line in the planning notes.** `RECAP.forTeacher`
-prints `Level: ${student.level || "not set"}`, but nothing in this
-module sets a level and there is no UI for it, so every export reads
-"not set". Either add a selector beside the student name field or delete
-the line. (The `TB` module *does* have levels — another symptom of §8.)
+**One part of tonight's work could not be tested at all**: the student
+portal's review session needs a Firebase sign-in, and no session has the
+password. The six practice modes are covered by 39 unit checks over the
+pure `DRILL` module and verified live in the browser, and every element and
+handler they need is confirmed present — but no card has been reviewed
+through the real UI. Treat §12 as unproven in the app until someone signs
+in and reviews one card of each shape.
 
-**2. The student's Words tab lies when the connection drops.**
-`renderCardList` shows "Nothing here yet" whether there are no cards or
-the load failed. `state.cardsError` is already populated by the
-`onCards` listener and already handled correctly on the Today screen
-(`renderStudentToday`); the same treatment just needs applying here.
+## Loose ends in the student portal — DONE
 
-**3. The calendar has the same gap** — `renderCalendar`'s footnote
-cannot distinguish "no words yet" from "could not load them".
+Items 1, 2 and 3 were fixed by another session in commit `b548844` and are
+kept here only so nobody re-derives them: the dead `Level:` line is gone
+from `RECAP.forTeacher`, and `renderCardList` / `renderCalendar` both check
+`state.cardsError` before claiming there are no cards.
 
-## Teacher-side Teachbench — known gaps
+## Teacher-side Teachbench — gaps closed
 
-**6. Single-device, no backup, no export.** `teachbench.data` lives in
-one browser's `localStorage`. Losing that profile loses every student,
-material, word and lesson. Even without doing §8(b), an export/import
-would be cheap insurance.
+**6. Single-device, no backup, no export — DONE.** `TB.buildBackup` and
+`TB.parseBackup` already existed with no way to reach them. Teachbench →
+Students → **Backup** now exports a dated JSON file and restores one.
+Restoring replaces everything, so the file is read and described first and
+the destructive press is never the first one. `teachbench.data` is still
+one browser's localStorage; this only means losing it is now recoverable.
 
-**7. No role model.** The portal has real roles enforced by Firestore
-rules; Teachbench is whoever holds the browser. If a second teacher is
-hired, only half the app understands that.
+**7. No role model.** Still true. The portal has real roles enforced by
+Firestore rules; Teachbench is whoever holds the browser.
+
+## Also built in the same run (schema 13)
+
+All localStorage, so none of it waits on the Firebase console:
+
+- **Attendance** on every lesson (attended / no-show / excused), separate
+  from `state` so "moved, then missed" is recordable.
+- **Late cancellations**: `cancelledAt` makes "was it inside 24 hours?" a
+  question the app answers. A late cancellation is charged; one made in
+  good time is not.
+- **Rate, lesson packs and a monthly statement** — plain text to paste into
+  an invoice. Credits left and money owed are *derived*, never stored, so a
+  running total cannot drift from the lessons actually taught.
+- **Bulk paste** of a whole word list, and duplicate detection in the bank.
+- **CEFR can-do checklist** per student, showing their level and one either
+  side.
+- **Rest days** on the student's streak (earned, capped at two, never
+  purchasable) and a **rescue list** of the five most-lapsed words.
+- **Six practice modes** in the review session — see §12.
 
 ## Deferred by design — agreed, never started
 
@@ -376,10 +420,18 @@ sending it back.
 **12. Lesson times on the student calendar.** Shows review due-dates
 only. Blocked on §8.
 
-**13. Speech recognition** for pronunciation cards. Playback only today.
+**13. Speech recognition — DONE.** Pronunciation cards now score what the
+student says, using the browser's own recogniser (no server, no cost). Any
+of the recogniser's alternatives matching counts, because it routinely puts
+the right word second for a non-native accent. On a device with no
+recogniser the card falls back to listen-and-self-grade rather than showing
+a button that does nothing.
 
-**14. Colour-coded dashboard polish.** A basic traffic light exists; the
-richer version in the spec does not.
+**14. Colour-coded dashboard polish.** A basic traffic light exists on the
+portal roster; the richer version in the spec does not. The teacher-side
+Teachbench roster still has no traffic light at all — that one is worth
+doing next and is cheap, since `TB.lessonAccount` already computes what it
+would need.
 
 **15. DeepSeek integration** — no defined use case in the spec.
 
@@ -430,9 +482,75 @@ calendar board `pBoardHtml` / `pWireBoard`, planner dialogs, `.wb-*` and
 
 # 11. Suggested order
 
-1. **Item 4** — publish the rules. Two minutes, unblocks streaks.
-2. **Item 5** — try it with Margo. This tells you how urgent §8 is, and
-   may change the answer entirely.
-3. **§8** — decide (a), (b) or (c), then build it.
-4. **Items 1–3** — quick correctness fixes.
-5. **Item 8** — push notifications, the spec's own stated priority.
+1. **Item 4** — confirm the `progress` rules block really is published.
+   Two sessions disagree and only the console can settle it.
+2. **Item 5** — try it with Margo, and specifically watch whether she uses
+   lesson mode. That answers the only question that matters.
+3. **Item 8 (push notifications)** — the spec's own stated priority, and
+   now the largest thing still missing. Needs FCM keys from the console.
+4. **The teacher-side traffic light** (item 14) — cheap, and
+   `TB.lessonAccount` already computes what it needs.
+5. **Lesson times on the student calendar** (item 12) — now unblocked for
+   any student who is linked, since `portalId` exists.
+
+# 12. The review session: six shapes, one card
+
+Added in the same run. Every card used to be the same interaction — read,
+reveal, grade yourself — which is hard to do honestly and boring inside a
+fortnight. A card is now asked in whichever of these it can support:
+
+| mode | what the student sees | checked? |
+|---|---|---|
+| `reveal` | the word, then its meaning | self-graded |
+| `choice` | the word, and four meanings to pick from | yes |
+| `reverse` | the meaning, recall the word | self-graded |
+| `type` | the meaning, type the word | yes |
+| `cloze` | the example sentence with the word blanked out | yes |
+| `listen` | nothing — it is spoken; type what you heard | yes |
+| `say` | the word; say it, the recogniser scores it | yes |
+
+Nothing extra is stored to make this work. Cards gained one optional field,
+`example`, written only by the teacher, and every other shape is derived
+from what was already there.
+
+**The ramp is deliberate.** A word met once is offered as recognition,
+because being asked to produce a word seen a single time is a wall rather
+than a test. The harder shapes arrive once the SM-2 interval stage says it
+is sticking. Rotation is by review count rather than at random, so the same
+card never asks the same thing twice running and the right answer never
+moves about under a student who is still reading.
+
+The rules live in **`DRILL`**, a new module beside `SRS` and `STREAK` and
+pure for the same reason — no DOM, no network, exercisable from the
+console, which is how it was verified:
+
+```js
+DRILL.checkAnswer("recieve", "receive")            // → "close"
+DRILL.clozeFrom({front:"apple", example:"I ate an apple."})
+DRILL.modesFor({type:"vocab", back:"jablko", intervalStage:3}, deck, {})
+```
+
+Answer checking is **Damerau**, not Levenshtein: swapping two adjacent
+letters is the commonest typo there is, and counting "recieve" as two edits
+would mark a student wrong for a slip of the fingers. Tolerance scales with
+word length and is zero under four letters, where "cat" for "cot" is a real
+mistake. Accents and punctuation are folded away.
+
+A checked answer **highlights** the honest grade but never picks it. The
+student knows things about how well they knew it that a string comparison
+cannot see.
+
+## What was deliberately not taken from Duolingo
+
+Recorded so it is not proposed again as an oversight. Duolingo is optimised
+for a stranger with no teacher and no reason to come back; Margo's students
+have both.
+
+- **Leagues and leaderboards** — there is no cohort. Ranking three
+  one-to-one students against each other loses the one who comes third.
+- **Hearts and lives** — being locked out for wrong answers punishes
+  exactly the moment retrieval practice is working. Getting it wrong is the
+  mechanism, not the failure.
+- **Gems and a shop** — a second game to play instead of a language.
+- **A purchasable streak repair** — a streak you can buy back has stopped
+  meaning anything. Rest days are earned, capped at two, and never sold.

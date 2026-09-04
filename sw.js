@@ -3,7 +3,7 @@
    is fetched fresh when there IS a signal and falls back to the cached copy
    when there is not (see the fetch handler); icons and fonts stay cache-first.
    Bump CACHE when you want to evict everything a device has cached. */
-const CACHE = "potting-bench-v44";
+const CACHE = "potting-bench-v45";
 const SHELL = ["./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {
