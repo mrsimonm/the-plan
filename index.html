@@ -3648,6 +3648,29 @@ html[data-layout="phone"] .ppl-search-row{ flex-wrap:nowrap }
    an empty screen: it takes the width, and the calendar takes it with it. */
 html[data-layout="wide"] main{ max-width:1440px; padding:18px 28px 64px }
 html[data-layout="wide"] .wb-grid{ min-width:0 }
+
+/* Two panes. A list and the thing you opened from it stop being two pages that
+   replace each other and become two columns that coexist: pick a plant on the
+   left, read it on the right, pick the next one without going back. Only the
+   pairs that are genuinely master-and-detail get this (see PANE_OF); anything
+   else keeps the whole width to itself.
+
+   Each pane scrolls on its own, so a long plant page cannot push the list it
+   was chosen from off the top of the screen. */
+html[data-pane="1"] main{
+  display:grid; grid-template-columns:minmax(300px,390px) minmax(0,1fr); gap:22px; align-items:start;
+}
+html[data-pane="1"] main > .view[data-pane-role]{ min-width:0 }
+html[data-pane="1"] main > .view[data-pane-role="list"]{ grid-column:1; grid-row:1 }
+html[data-pane="1"] main > .view[data-pane-role="detail"]{ grid-column:2; grid-row:1 }
+html[data-pane="1"] main > .view[data-pane-role]{
+  max-height:calc(100dvh - 132px); overflow-y:auto; overscroll-behavior:contain; padding-right:2px;
+}
+/* the detail pane already says what it is in its own heading; the "back to the
+   list" button is navigating to something that is on screen */
+html[data-pane="1"] main > .view[data-pane-role="detail"] .pv-back{ display:none }
+html[data-pane="1"] main > .view[data-pane-role="list"] .sec-head h2{ font-size:19px }
+@media (max-width:1179px){ html[data-pane="1"] main{ display:block } }
 </style>
 
 <style id="dz-structural">
@@ -25481,7 +25504,7 @@ function applyLayout(){
   /* twice: once on the next frame, and once after the view transition and
      renderPlanner have settled — the first pass often measures a board that
      has not been drawn yet and bails out. */
-  requestAnimationFrame(layoutFit); setTimeout(layoutFit,140);
+  setTimeout(layoutFit,0); setTimeout(layoutFit,140);
 }
 (function layoutWire(){
   applyLayout();
@@ -25492,7 +25515,7 @@ function applyLayout(){
   /* arriving at the planner from another view is the other moment the board
      first gets a size worth measuring */
   const main=document.querySelector("main");
-  if(main) new MutationObserver(()=>{ requestAnimationFrame(layoutFit); setTimeout(layoutFit,140); })
+  if(main) new MutationObserver(()=>{ setTimeout(layoutFit,0); setTimeout(layoutFit,140); })
     .observe(main,{attributes:true,attributeFilter:["hidden"],subtree:true});
   /* a forced choice is stored per device, like the palette and the design */
   const sel=$("#layoutSelect");
@@ -25502,6 +25525,79 @@ function applyLayout(){
       L.layout=LAYOUTS.includes(sel.value)?sel.value:"auto"; saveLocal(); applyLayout();
     });
   }
+})();
+
+/* ============================================================================
+   TWO PANES — the wide layout earning its width.
+
+   The app navigates by replacing one full-page view with another: show() hides
+   every .view but one. On a laptop that leaves a 1060px column of content in
+   the middle of a 1440px screen and, worse, makes choosing the next plant a
+   round trip back to the list.
+
+   Here, in the wide layout only, a detail view is shown ALONGSIDE the list it
+   belongs to instead of instead of it. Nothing about show() changes: the same
+   MutationObserver that the layout and design modules use watches [hidden] on
+   the views, and when the visible one is a known detail view its list is
+   un-hidden next to it. Navigating anywhere else puts it back, because show()
+   hides everything again and this re-evaluates.
+
+   Only true master-detail pairs qualify. NAV_PARENT is a NAVIGATION map — it
+   sends Settings "back" to Library — and pairing on it would put unrelated
+   screens side by side.
+   ============================================================================ */
+const PANE_OF={ plant:"garden", batch:"cuttings", note:"notes",
+                product:"library", plants:"library", formula:"mix", sched:"plan" };
+let paneBusy=false;
+function paneVisible(){
+  const m=document.querySelector("main"); if(!m) return null;
+  return [...m.querySelectorAll(":scope > .view")].filter(v=>!v.hidden);
+}
+function paneClear(){
+  const m=document.querySelector("main"); if(!m) return;
+  m.querySelectorAll(":scope > .view[data-pane-role]").forEach(v=>v.removeAttribute("data-pane-role"));
+  document.documentElement.removeAttribute("data-pane");
+}
+function paneApply(){
+  if(paneBusy) return;
+  const root=document.documentElement, m=document.querySelector("main");
+  if(!m) return;
+  if(root.getAttribute("data-layout")!=="wide"){ if(root.hasAttribute("data-pane")) { paneBusy=true; paneClear(); paneBusy=false; } return; }
+  const v=(typeof curView==="string")?curView:"";
+  const listName=PANE_OF[v];
+  const list=listName?document.getElementById("view-"+listName):null;
+  paneBusy=true;
+  try{
+    paneClear();
+    if(list){
+      /* the detail view is already the visible one; the list joins it */
+      const detail=document.getElementById("view-"+v);
+      if(detail){
+        list.hidden=false;
+        list.setAttribute("data-pane-role","list");
+        detail.setAttribute("data-pane-role","detail");
+        root.setAttribute("data-pane","1");
+        /* the list was last drawn who knows when — repaint it so the row you
+           just opened is marked and anything added since is there */
+        const paint={garden:"renderGarden", cuttings:"renderCuttings", notes:"renderNotes",
+                     library:"renderLibrary", mix:"renderMix", plan:"renderPlan"}[listName];
+        if(paint&&typeof window[paint]==="function"){ try{ window[paint](); }catch(e){} }
+      }
+    }
+  } finally{ paneBusy=false; }
+}
+(function paneWire(){
+  const m=document.querySelector("main"); if(!m) return;
+  /* setTimeout, not requestAnimationFrame: a backgrounded or hidden tab never
+     runs animation frames, so a view change that happened while the window was
+     not being painted would leave the panes describing the previous screen and
+     stay that way until something else moved. */
+  const soon=()=>setTimeout(paneApply,0);
+  new MutationObserver(()=>{ if(!paneBusy) soon(); })
+    .observe(m,{attributes:true,attributeFilter:["hidden"],subtree:true});
+  new MutationObserver(soon)
+    .observe(document.documentElement,{attributes:true,attributeFilter:["data-layout"]});
+  soon();
 })();
 
 </script>
