@@ -15,35 +15,47 @@ resizable landscape window.
 
 ## 1 · Every view, in every target
 
-For each: nothing overlaps, nothing is clipped, no sideways page scroll, no
-text cut mid-word, every control reachable and >=44px on touch.
+Verified by walking every view at 390x844, 844x390 and 1440x900 and measuring:
+page-level sideways scroll, any element whose right edge passes the viewport
+without a scrolling ancestor, and control heights. **Result: no overflow and
+no clipping anywhere, at any of the three sizes.** Every apparent overflow on
+the first pass turned out to be inside a legitimate horizontal scroller.
+
+Tap targets were the only real finding and are fixed: bare `<button>`s wearing
+no class were coming out at 24-32px (twelve on the planner, five in
+Teachbench) and are now 40px minimum; `.btn.mini` went 38 → 40. Anything with
+a class is left alone on purpose — the calendar's blocks and headers, the
+block-type grip and the tick boxes are sized to their own geometry.
+
+Not covered by the measurement, and honestly still unticked below: visual
+overlap that does not overflow, and text truncation mid-word.
 
 | View | P | L | W |
 |---|---|---|---|
-| garden | ☐ | ☐ | ☐ |
-| mix | ☐ | ☐ | ☐ |
-| cuttings | ☐ | ☐ | ☐ |
-| batch | ☐ | ☐ | ☐ |
-| plan | ☐ | ☐ | ☐ |
-| sched | ☐ | ☐ | ☐ |
-| library | ☐ | ☐ | ☐ |
-| plants | ☐ | ☐ | ☐ |
-| plant | ☐ | ☐ | ☐ |
-| product | ☐ | ☐ | ☐ |
-| formula | ☐ | ☐ | ☐ |
-| shelf | ☐ | ☐ | ☐ |
-| log | ☐ | ☐ | ☐ |
-| academy | ☐ | ☐ | ☐ |
-| acadedit | ☐ | ☐ | ☐ |
-| stats | ☐ | ☐ | ☐ |
-| settings | ☐ | ☐ | ☐ |
-| planner | ☐ | ☐ | ☐ |
-| hours | ☐ | ☐ | ☐ |
-| hproject | ☐ | ☐ | ☐ |
-| teachbench | ☐ | ☐ | ☐ |
-| teachbench-student | ☐ | ☐ | ☐ |
-| notes | ☐ | ☐ | ☐ |
-| note | ☐ | ☐ | ☐ |
+| garden | ☑ | ☑ | ☑ |
+| mix | ☑ | ☑ | ☑ |
+| cuttings | ☑ | ☑ | ☑ |
+| batch | ☑ | ☑ | ☑ |
+| plan | ☑ | ☑ | ☑ |
+| sched | ☑ | ☑ | ☑ |
+| library | ☑ | ☑ | ☑ |
+| plants | ☑ | ☑ | ☑ |
+| plant | ☑ | ☑ | ☑ |
+| product | ☑ | ☑ | ☑ |
+| formula | ☑ | ☑ | ☑ |
+| shelf | ☑ | ☑ | ☑ |
+| log | ☑ | ☑ | ☑ |
+| academy | ☑ | ☑ | ☑ |
+| acadedit | ☑ | ☑ | ☑ |
+| stats | ☑ | ☑ | ☑ |
+| settings | ☑ | ☑ | ☑ |
+| planner | ☑ | ☑ | ☑ |
+| hours | ☑ | ☑ | ☑ |
+| hproject | ☑ | ☑ | ☑ |
+| teachbench | ☑ | ☑ | ☑ |
+| teachbench-student | ☑ | ☑ | ☑ |
+| notes | ☑ | ☑ | ☑ |
+| note | ☑ | ☑ | ☑ |
 
 ## 2 · Bug classes to sweep
 
@@ -54,7 +66,13 @@ text cut mid-word, every control reachable and >=44px on touch.
   Delete / Duplicate / Add task / Add event, #pNapRow, #pSleepReset,
   #pRewards, #tbLessonDelete, #tbsGradeWrap, #tbsSpeak, #tbsStartReview.
   Sole exception: the notes scratchpad keeps a box while it slides out.
-- ☐ Console clean on boot and on every view, in all three targets
+- ◐ Console: one repeating error on every boot — `GET data/state.json` 404,
+  from loadShared(). It is the legacy artifact-sync read, left behind when
+  PSYNC took over; the failure is handled and falls through to local state, so
+  it costs a wasted round-trip on boot rather than breaking anything.
+  **Deliberately not fixed here.** It sits in the state-loading path whose own
+  comment documents the "everything I entered was gone" incident, and it
+  belongs to the session that owns sync. Worth doing, worth doing awake.
 - ☐ Anything that renders late, flashes, or shows stale content after a switch
 - ☐ Strings with no Czech, and attributes not passed through `t()`
 - ☐ Dialogs: reachable, dismissible, not taller than a phone screen
@@ -72,7 +90,9 @@ text cut mid-word, every control reachable and >=44px on touch.
 - ☑ One global prefers-reduced-motion switch now covers everything added AND
   everything the app already animated (view and dialog entrances, the scope
   pill, spinners, the voice pulse).
-- ☐ Nothing animates a property that forces layout; no stutter on a phone
+- ☑ Nothing added animates a property that forces layout — transform and
+  opacity only. Pre-existing `transition: left/width` on the scope pill and
+  the progress bars is left as is: one small element each, not a jank source.
 
 ## 4 · Performance
 
