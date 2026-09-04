@@ -226,6 +226,22 @@ The upload happens **before** the message document is written, because
 the rules deliberately forbid a student editing a message after sending
 it — so the storage path must exist first.
 
+**Czech past tense misgenders students, so it is avoided entirely.** The
+review session's feedback line was written as `napsal jsi` ("you wrote",
+masculine). Czech forces a gender on the past participle — there is no
+neutral form — so that line called every girl using the portal "he". It is
+now `tvoje odpověď:` ("your answer:"), which sidesteps the choice rather
+than picking one.
+
+The same rule shaped the CEFR can-do statements: they are infinitives
+("Objednat si v kavárně jídlo a pití") rather than first person, because a
+literal "I described my weekend" would have forced `dělal` / `dělala`.
+Their ids are unchanged, so stored ticks still line up.
+
+This is not a translation nicety — most of Margo's students are children,
+and about half of them are girls. Any new student-facing Czech string that
+reaches for a past tense needs the same treatment.
+
 **"Learned" means an interval of 21 days or more**, the usual SM-2 line
 between still-learning and long-term memory. `statsFor()` is shared by
 the roster and the detail panel so the traffic light and the numbers
