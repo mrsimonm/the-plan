@@ -48,6 +48,72 @@ CATEGORY_ICON = {
     "Carnivorous":          "pitcher",
 }
 
+# ---- the toxicity gate ----
+# The one field where a wrong answer hurts something with a pulse, and the one
+# the spec cannot enforce by asking nicely: a generator that is confident and
+# wrong looks exactly like a generator that is confident and right. So the
+# settled cases live here as data, and a batch that contradicts them is
+# refused rather than warned about.
+#
+# Keys are matched case-insensitively against the start of `name` and against
+# the whole of it, so "Adiantum" catches "Adiantum raddianum 'Fragrans'" and
+# "maidenhair fern" catches the common name. Values are the ASPCA position for
+# cats and dogs: 0 non-toxic, 1 toxic.
+#
+# Only genera whose status is actually settled belong here. A plant absent
+# from this table is not thereby cleared — it is simply not covered, and the
+# source rule below is what carries it. Add to it as answers get pinned down;
+# never add a guess, because everything here becomes unarguable.
+TOXICITY = {
+    # -- ferns: the classic pet-safe group, and where this gate was earned --
+    "adiantum": 0, "maidenhair fern": 0,
+    "asplenium": 0, "bird's nest fern": 0, "birds nest fern": 0,
+    "nephrolepis": 0, "boston fern": 0,
+    "platycerium": 0, "staghorn fern": 0,
+    "pteris": 0, "davallia": 0, "rabbit's foot fern": 0,
+    "pellaea": 0, "button fern": 0, "blue star fern": 0, "phlebodium": 0,
+    # -- palms --
+    "chamaedorea": 0, "parlour palm": 0, "parlor palm": 0,
+    "howea": 0, "kentia palm": 0,
+    "dypsis": 0, "areca palm": 0, "rhapis": 0, "lady palm": 0,
+    # -- carnivores: none of the houseplant genera are ASPCA-listed --
+    "dionaea": 0, "venus flytrap": 0,
+    "nepenthes": 0, "sarracenia": 0, "drosera": 0, "sundew": 0,
+    "pinguicula": 0, "butterwort": 0,
+    # -- other settled non-toxic --
+    "hoya": 0, "echeveria": 0, "haworthia": 0, "gasteria": 0,
+    "peperomia": 0, "pilea": 0, "fittonia": 0, "tillandsia": 0,
+    "calathea": 0, "goeppertia": 0, "maranta": 0, "ctenanthe": 0,
+    "stromanthe": 0, "saintpaulia": 0, "african violet": 0,
+    "streptocarpus": 0, "phalaenopsis": 0, "chlorophytum": 0,
+    "spider plant": 0, "sempervivum": 0, "lithops": 0,
+    # -- settled toxic: the aroids, and the usual suspects --
+    "aglaonema": 1, "philodendron": 1, "monstera": 1, "epipremnum": 1,
+    "pothos": 1, "scindapsus": 1, "syngonium": 1, "dieffenbachia": 1,
+    "alocasia": 1, "colocasia": 1, "caladium": 1, "anthurium": 1,
+    "spathiphyllum": 1, "peace lily": 1, "zamioculcas": 1, "zz plant": 1,
+    "dracaena": 1, "sansevieria": 1, "snake plant": 1,
+    "ficus": 1, "begonia": 1, "tradescantia": 1,
+    "aloe": 1, "kalanchoe": 1, "crassula": 1, "jade plant": 1,
+    "euphorbia": 1, "cyclamen": 1, "hedera": 1, "schefflera": 1,
+    "yucca": 1, "rhaphidophora": 1, "thaumatophyllum": 1, "homalomena": 1,
+}
+
+
+def known_toxicity(name):
+    """The settled answer for a plant, or None if this one is not covered.
+
+    Longest key wins, so a species-level entry can override its genus without
+    the order of the dict mattering."""
+    n = name.lower().strip()
+    hit = None
+    for key, val in TOXICITY.items():
+        if n == key or n.startswith(key + " ") or n.startswith(key + "'") \
+           or key in n.split("(")[0].strip():
+            if hit is None or len(key) > len(hit[0]):
+                hit = (key, val)
+    return hit
+
 
 def read_html():
     with open(HTML, encoding="utf-8") as f:
@@ -169,6 +235,15 @@ def check(records, vocab):
                 bad(i, name, "%s must be a number, got %r" % (f, v))
             elif not (lo <= v <= hi):
                 bad(i, name, "%s=%d is outside %d–%d" % (f, v, lo, hi))
+
+        # the gate: a settled answer beats whatever the batch says
+        tox = r.get("toxic")
+        hit = known_toxicity(name)
+        if hit and isinstance(tox, int) and not isinstance(tox, bool) and tox != hit[1]:
+            bad(i, name, "toxic=%d contradicts the settled answer for %r "
+                         "(%s per ASPCA). Fix the record or, if you have a "
+                         "source saying otherwise, amend TOXICITY in this script."
+                % (tox, hit[0], "toxic" if hit[1] else "non-toxic"))
 
         tip = r.get("tip")
         if not isinstance(tip, str) or not tip.strip():
