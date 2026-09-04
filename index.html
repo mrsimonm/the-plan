@@ -3643,6 +3643,34 @@ html[data-layout="phone"] .ppl-search-row{ flex-wrap:nowrap }
   html[data-layout="phone"] .ppl-search{ display:none }
 }
 
+/* ============================================================================
+   THE [hidden] TRAP, closed once for the whole file.
+
+   `[hidden]{display:none}` lives in the user-agent stylesheet, and ANY author
+   rule that sets display beats it whatever the source order. So every
+   `el.hidden = true` in this app is silently ignored the moment the element
+   also matches a class that sets display — which .btn, .field, .stack,
+   .pslot-row and a dozen others all do.
+
+   The file already carries three comments explaining this, each next to a
+   hand-written guard for one more selector that got caught. A sweep found
+   thirteen MORE live instances, all of them things the code believes it has
+   hidden and the user can still see:
+
+     #askNo          every "Heads up" box has been showing a Cancel button
+     #pSlotSave #pSlotDelete #pSlotDup #pSlotAddTask #pSlotAddEvent
+                     the planner's slot dialog offers actions for a slot that
+                     does not exist yet
+     #pNapRow #pSleepReset #pRewards
+     #tbLessonDelete #tbsGradeWrap #tbsSpeak #tbsStartReview
+
+   One rule closes the class, and any future one, instead of a fourteenth
+   hand-written guard. The single exception is the notes scratchpad, which
+   keeps a box on purpose while it slides off the edge.
+   ============================================================================ */
+[hidden]{ display:none !important }
+.n-pad[hidden]{ display:flex !important }
+
 /* ---------------- wide ----------------
    1180px and up the content column stops being a 1060px strip in the middle of
    an empty screen: it takes the width, and the calendar takes it with it. */
@@ -3986,6 +4014,63 @@ html[data-design="s3"] #dzBrief.on{ display:block; margin:6px 0 22px }
     <div class="stack">
       <div class="card menu" id="libMenu"></div>
       <p class="hint" style="margin:2px 2px 0" id="libFoot"></p>
+      <!-- Settings is the whole app's now, so the two that are only about the
+           potting bench — how mixing reads out, and which days care lands on —
+           live here with the rest of the bench's own management. -->
+      <details class="setcat" id="libBenchSettings">
+        <summary><span class="setcat-t">Bench settings</span><span class="chev" aria-hidden="true">›</span></summary>
+        <div class="stack setcat-body">
+          <div class="sec-head"><h2 style="font-size:18px">Mixing</h2></div>
+          <div class="card pad" style="margin-bottom:14px">
+            <div class="stack">
+              <label class="lu" style="border:0; padding:0">
+                <span class="sw"><input id="advToggle" type="checkbox"><i></i></span>
+                <span class="lu-name">Advanced readings<small>Shows ppm, EC, TDS and the pH target while mixing</small></span>
+              </label>
+              <div class="field" id="scaleField">
+                <label for="ppmScale">Your meter's TDS scale</label>
+                <select id="ppmScale">
+                  <option value="500">500 (NaCl — most US meters)</option>
+                  <option value="640">640 (KCl — many EU meters)</option>
+                  <option value="700">700 (442 — Truncheon and similar)</option>
+                </select>
+                <p class="hint">Only changes the TDS number, never EC or the doses. If your meter reads a different
+                  ppm than this app for the same water, this is the setting to change.</p>
+              </div>
+              <label class="lu" style="border:0; padding:0">
+                <span class="sw"><input id="expertToggle" type="checkbox"><i></i></span>
+                <span class="lu-name">Expert statistics<small>Adds interval adherence, consistency and water-volume analysis to the Stats tab</small></span>
+              </label>
+              <p class="hint" style="margin:0">Both are per device — you can have them on and the other phone off.</p>
+            </div>
+          </div>
+          <div class="sec-head"><h2 style="font-size:18px">Action days</h2></div>
+          <div class="card pad" style="margin-bottom:14px">
+            <div class="stack">
+              <label class="lu" style="border:0; padding:0">
+                <span class="sw"><input id="actDaysOn" type="checkbox"><i></i></span>
+                <span class="lu-name">Water and feed on set days<small>Everything due nearby moves to the closest of these days</small></span>
+              </label>
+              <div id="actDaysBody">
+                <div class="field">
+                  <label>Which days</label>
+                  <div id="actDayPicker" class="btn-row" style="gap:6px"></div>
+                  <p class="hint" id="actDaysHint" style="margin:8px 0 0"></p>
+                </div>
+                <div class="field" style="margin-top:13px">
+                  <label>How the plants sit</label>
+                  <div id="actDayLoad" class="stack" style="gap:6px"></div>
+                  <div class="btn-row" style="margin-top:9px">
+                    <button class="btn mini" type="button" id="actSpread">Spread plants evenly</button>
+                  </div>
+                  <p class="hint" style="margin:8px 0 0">A plant keeps its day until you move it. Anything that
+                    runs properly late still shows up straight away — action days are the plan, not a cage.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </details>
     </div>
   </section>
 
@@ -4504,33 +4589,9 @@ html[data-design="s3"] #dzBrief.on{ display:block; margin:6px 0 22px }
     <div class="sec-head"><h2>Settings</h2>
       <button class="btn" id="setBack">← Back</button></div>
     <div class="stack">
-      <details class="setcat" id="setCatBench">
-        <summary><span class="setcat-t">Potting Bench</span><span class="chev" aria-hidden="true">›</span></summary>
+      <details class="setcat" id="setCatApp" open>
+        <summary><span class="setcat-t">General</span><span class="chev" aria-hidden="true">›</span></summary>
         <div class="stack setcat-body">
-          <div class="sec-head"><h2 style="font-size:18px">Mixing</h2></div>
-          <div class="card pad" style="margin-bottom:14px">
-            <div class="stack">
-              <label class="lu" style="border:0; padding:0">
-                <span class="sw"><input id="advToggle" type="checkbox"><i></i></span>
-                <span class="lu-name">Advanced readings<small>Shows ppm, EC, TDS and the pH target while mixing</small></span>
-              </label>
-              <div class="field" id="scaleField">
-                <label for="ppmScale">Your meter's TDS scale</label>
-                <select id="ppmScale">
-                  <option value="500">500 (NaCl — most US meters)</option>
-                  <option value="640">640 (KCl — many EU meters)</option>
-                  <option value="700">700 (442 — Truncheon and similar)</option>
-                </select>
-                <p class="hint">Only changes the TDS number, never EC or the doses. If your meter reads a different
-                  ppm than this app for the same water, this is the setting to change.</p>
-              </div>
-              <label class="lu" style="border:0; padding:0">
-                <span class="sw"><input id="expertToggle" type="checkbox"><i></i></span>
-                <span class="lu-name">Expert statistics<small>Adds interval adherence, consistency and water-volume analysis to the Stats tab</small></span>
-              </label>
-              <p class="hint" style="margin:0">Both are per device — you can have them on and the other phone off.</p>
-            </div>
-          </div>
           <div class="sec-head"><h2 style="font-size:18px">Appearance</h2></div>
           <div class="card pad">
             <div class="stack">
@@ -4576,31 +4637,6 @@ html[data-design="s3"] #dzBrief.on{ display:block; margin:6px 0 22px }
                   <option value="s3">Briefing · today first</option>
                 </select>
                 <p class="hint">A/B test skins. Redesigns are built one at a time; Default is the original look. Per device.</p>
-              </div>
-            </div>
-          </div>
-          <div class="sec-head"><h2 style="font-size:18px">Action days</h2></div>
-          <div class="card pad" style="margin-bottom:14px">
-            <div class="stack">
-              <label class="lu" style="border:0; padding:0">
-                <span class="sw"><input id="actDaysOn" type="checkbox"><i></i></span>
-                <span class="lu-name">Water and feed on set days<small>Everything due nearby moves to the closest of these days</small></span>
-              </label>
-              <div id="actDaysBody">
-                <div class="field">
-                  <label>Which days</label>
-                  <div id="actDayPicker" class="btn-row" style="gap:6px"></div>
-                  <p class="hint" id="actDaysHint" style="margin:8px 0 0"></p>
-                </div>
-                <div class="field" style="margin-top:13px">
-                  <label>How the plants sit</label>
-                  <div id="actDayLoad" class="stack" style="gap:6px"></div>
-                  <div class="btn-row" style="margin-top:9px">
-                    <button class="btn mini" type="button" id="actSpread">Spread plants evenly</button>
-                  </div>
-                  <p class="hint" style="margin:8px 0 0">A plant keeps its day until you move it. Anything that
-                    runs properly late still shows up straight away — action days are the plan, not a cage.</p>
-                </div>
               </div>
             </div>
           </div>
@@ -14652,14 +14688,24 @@ function openAcadEdit(){
    Settings itself changes nothing about which app or view was showing
    underneath it, so Back can just return there. */
 let settingsReturnView=null;
+/* Settings opens from the gear in every app, so leaving it has to put you back
+   in the app you came from, not in the potting bench. */
+let settingsReturnApp=null;
 function openSettings(){
-  settingsReturnView=curView;
-  const cat={bench:"setCatBench",planner:"setCatPlanner",hours:"setCatHours"}[L.app]||"setCatBench";
-  ["setCatBench","setCatPlanner","setCatHours"].forEach(id=>{ $("#"+id).open=(id===cat); });
+  settingsReturnView=curView; settingsReturnApp=L.app||"bench";
+  /* General is always open; the app you are in opens too, so its settings are
+     one glance away without hunting */
+  const cat={planner:"setCatPlanner",hours:"setCatHours"}[L.app]||null;
+  ["setCatPlanner","setCatHours"].forEach(id=>{ const e=$("#"+id); if(e) e.open=(id===cat); });
+  const g=$("#setCatApp"); if(g) g.open=true;
   show("settings");
 }
 $("#settingsBtn").addEventListener("click",openSettings);
-$("#setBack").addEventListener("click",()=>show(settingsReturnView||"garden"));
+$("#setBack").addEventListener("click",()=>{
+  const app=settingsReturnApp||"bench", v=settingsReturnView;
+  if(app!==(L.app||"bench")){ setApp(app); if(v&&v!=="settings") show(v); return; }
+  show(v&&v!=="settings"?v:(app==="bench"?"garden":v||"garden"));
+});
 $("#setAcadOpen").addEventListener("click",openAcadEdit);
 $("#acadBack").addEventListener("click",async()=>{ show("settings"); });
 $("#acAddSec").addEventListener("click",async()=>{
@@ -15138,9 +15184,13 @@ const APPS=[{id:"bench",label:"Potting Bench",view:null},
             {id:"teachbench",label:"Teachbench",view:"teachbench"},
             {id:"teachbench-student",label:"Student Bench",view:"teachbench-student"},
             {id:"notes",label:"Notes",view:"notes"}];
-const BENCH_VIEWS=["garden","library","mix","plants","plan","cuttings","batch","shelf","log","academy","acadedit","settings","plant","product","sched","formula","stats"];
+/* "settings" is deliberately NOT here any more: it is the whole app's screen,
+   not one of Potting Bench's, so it must not be remembered as the bench tab
+   you were last on and must not light up Library in the tab strip. It still
+   has to be hidden and shown like any other view — see the list in showNow. */
+const BENCH_VIEWS=["garden","library","mix","plants","plan","cuttings","batch","shelf","log","academy","acadedit","plant","product","sched","formula","stats"];
 const NAV_PARENT={batch:"cuttings", plant:"garden", plants:"library", product:"library",
-  sched:"plan", formula:"mix", acadedit:"library", settings:"library", shelf:"library", log:"library", academy:"library"};
+  sched:"plan", formula:"mix", acadedit:"library", shelf:"library", log:"library", academy:"library"};
 
 /* ============================================================================
    Teachbench UI — built from this app's own global components (.row, .field,
@@ -16436,7 +16486,7 @@ function showNow(v){
      own re-render is a no-op rather than a recursion. */
   if(v!=="planner"&&document.documentElement.classList.contains("pfocus")) pSetFocus(false);
   document.querySelectorAll(".nav button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.view===v)));
-  BENCH_VIEWS.concat(["planner","hours","hproject","teachbench","teachbench-student","notes","note"]).forEach(x=>{ $("#view-"+x).hidden=(x!==v); });
+  BENCH_VIEWS.concat(["planner","hours","hproject","teachbench","teachbench-student","notes","note","settings"]).forEach(x=>{ $("#view-"+x).hidden=(x!==v); });
   /* editor sub-views (product/formula/plant/batch/…) are populated by their
      open* call, not by showNow — relaunching straight into one was a blank
      shell that crashed on the first tap. Remember their parent tab instead. */
@@ -25132,7 +25182,11 @@ var PSYNC = (() => {
      file cannot collide over the same block of HTML. */
   let panel = null;
   function buildPanel(){
-    const host = document.querySelector("#setCatBench .setcat-body .stack")
+    /* Settings was reorganised: the app-wide section is #setCatApp now.
+       #setCatBench is kept as a fallback so this works either way. */
+    const host = document.querySelector("#setCatApp .setcat-body .stack")
+              || document.querySelector("#setCatApp .setcat-body")
+              || document.querySelector("#setCatBench .setcat-body .stack")
               || document.querySelector("#setCatBench .setcat-body");
     if(!host) return null;
     const wrap = document.createElement("div");
