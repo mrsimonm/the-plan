@@ -3891,6 +3891,81 @@ html[data-layout="phone"] .wb-many .wb-head b{
    the same clipping at this width */
 html[data-layout="phone"] .wb-many .wb-adtask,
 html[data-layout="phone"] .wb-many .wb-qchip{ font-size:9.5px; padding:1px 4px }
+
+/* ---------------- dialog footers on a phone ----------------
+   .dlg-foot is one nowrap flex row justified to the right. Four buttons —
+   Cancel, Add project, Add task, Add event on the new-slot dialog, or Cancel,
+   Delete, Duplicate, Save once that dialog is editing something — come to
+   about 430px, so on a 375px screen the row overflowed its START edge and
+   Cancel was laid out at x:-55: entirely outside the box. Nothing could
+   scroll to it either, because a flex row that overflows the start edge does
+   not create scrollback — measured, the footer's scrollWidth equalled its
+   clientWidth. The button was not off-screen, it was gone. Reported from a
+   phone, and he was right that scrolling to reach it would not have been the
+   fix.
+
+   So on a phone the row wraps into a two-up grid. Every .dlg-foot in the app
+   holds nothing but .btn children, which is what makes one rule safe across
+   all twenty-six of them, and it reads correctly at each size they come in:
+   one button fills the width, two sit side by side, three put a pair on top
+   with the last full-width beneath. That last-is-widest behaviour is on
+   purpose rather than a leftover — every one of these footers is authored
+   with its primary action last, so the odd one out is always the one worth
+   being biggest.
+   ============================================================================ */
+/* Wrapping itself is not a phone concern, and scoping it to one was wrong: a
+   phone turned sideways is 844px wide, so the query below does not apply, and
+   pDayDlg's four buttons still overflowed a 500px dialog there — in Czech,
+   whose labels run longer than the English ones this was eyeballed in. A
+   footer should wrap whenever it does not fit, at any width; the query below
+   only decides how it looks once it does. On a desktop nothing changes,
+   because nothing there overflows in the first place. */
+.dlg-foot{ flex-wrap:wrap }
+@media (max-width:640px){
+  /* No min-width:0 here, deliberately. Zeroing it lets a button shrink past
+     its own text, and .btn is white-space:nowrap with no ellipsis, so a long
+     label — "Save and make cards", or any of the Czech strings, which run
+     longer than the English — would silently render clipped instead of
+     wrapping. Left at the flex default of min-content, a button too wide for
+     half the footer simply takes a row of its own. */
+  .dlg-foot > .btn{ flex:1 1 calc(50% - 4px) }
+
+  /* The same screenshot showed "18:45" rendering as "18:4". A time field is
+     pinned to 88px and a date to 132px, widths set when a field was 13px type
+     with 10px of side padding. The skins now give every field 16px a side and
+     the phone rules push it to 16px type (any smaller and iOS zooms the page
+     on focus), which together eat more than the reserved width, so the value
+     itself was being clipped. Raised as a min-width rather than a width so
+     the places that deliberately stretch these to 100% — the sleep settings
+     grid — keep doing that; min-width only sets the floor. */
+  input[type="time"].mono-input{ min-width:116px }
+  input[type="date"].mono-input{ min-width:152px }
+}
+
+/* ---------------- the same footer, pushed off the BOTTOM ----------------
+   The rule further up this file that caps a dialog at 88dvh and lets only its
+   body scroll — so the head and foot are always inside the box — is written as
+   :has(> form > .dlg-foot). It was found by testing a Teachbench dialog, and
+   every dialog there wraps its contents in a <form>.
+
+   Five do not: pSlotDlg, pDayDlg, pSleepDlg, askDlg and batchCareDlg put
+   .dlg-head / .dlg-body / .dlg-foot straight inside the <dialog>. The selector
+   never matched them, so they kept the old behaviour, and at 844x390 (a phone
+   turned sideways) their footers sat below the bottom of the screen —
+   including the very dialog reported here, which is how "Add event" could be
+   missing in landscape as well as in portrait, for a completely different
+   reason.
+
+   Same treatment, one level shallower. Kept as its own block rather than
+   merged into the original selector list because the two describe different
+   markup and either can stop being true on its own. */
+dialog[open]:has(> .dlg-foot){
+  display:flex; flex-direction:column;
+  max-height:88vh; max-height:88dvh}
+dialog:has(> .dlg-foot) > .dlg-body{
+  flex:1 1 auto; min-height:0; max-height:none}
+dialog:has(> .dlg-foot) > .dlg-head,
+dialog:has(> .dlg-foot) > .dlg-foot{flex:0 0 auto}
 </style>
 
 <style id="dz-structural">
@@ -7999,7 +8074,7 @@ const $=s=>document.querySelector(s);
 /* Build stamp. `n` is incremented by bump.py at publish time so two phones can
    be compared at a glance — an installed PWA serving a stale service-worker
    cache is otherwise indistinguishable from an up-to-date one. */
-const BUILD={ver:"1.0",n:55,at:"2026-09-04"};
+const BUILD={ver:"1.0",n:56,at:"2026-09-04"};
 const uid=()=>Math.random().toString(36).slice(2,9);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
