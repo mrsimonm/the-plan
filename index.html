@@ -3222,7 +3222,13 @@ html[data-palette="monolith"],
 html[data-palette="monolith"][data-theme="dark"],
 html[data-palette="monolith"][data-theme="light"]{
   --bg:#0E1114; --surface:#15191E; --surface-2:#1C2127; --sunk:#090B0D;
-  --line:#2A323A; --line-soft:rgba(150,172,192,.10); --line-strong:#3F4A55;
+  /* --line-strong is what draws the edge of a button, and at #3F4A55 that edge
+     sat at 2.09:1 against this palette's near-black page — under the 3:1 WCAG
+     asks of a UI component's boundary. The label was never the problem (the
+     secondary button reads 14.4:1, the primary 9.8:1); it was the outline
+     around it. Lifted along its own hue to 3.02:1, which is the least that
+     clears the bar and keeps the palette's muted steel. */
+  --line:#2A323A; --line-soft:rgba(150,172,192,.10); --line-strong:#536270;
   --ink-strong:#EEF2F5; --ink:#C4CCD3; --ink-3:#6B7680;
   --accent:#8FC3CE; --accent-2:#5E9AA8; --accent-soft:rgba(143,195,206,.14); --on-accent:#0B1113;
   --amber:#C6B18F; --amber-soft:#241F19; --orange:#C78F85;
