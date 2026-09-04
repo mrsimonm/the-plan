@@ -75,7 +75,16 @@ overlap that does not overflow, and text truncation mid-word.
   belongs to the session that owns sync. Worth doing, worth doing awake.
 - ☐ Anything that renders late, flashes, or shows stale content after a switch
 - ☐ Strings with no Czech, and attributes not passed through `t()`
-- ☐ Dialogs: reachable, dismissible, not taller than a phone screen
+- ☑ Dialogs: reachable, dismissible, not taller than a phone screen —
+  every dialog built from `.dlg-head` / `.dlg-body` / `.dlg-foot` is now a
+  column capped at 88dvh, with the body the only part that scrolls. The bug
+  was that `.dlg-body` capped itself at 68dvh while nothing capped the
+  dialog outside the `max-width:640px` query, so in phone LANDSCAPE (844
+  wide, where that query does not apply) head + body + foot exceeded the
+  browser's default dialog height and the footer was pushed outside the
+  box — Save and Cancel unreachable and invisible. Verified at 844x390,
+  375x812 and desktop. Scoped with `:has()` so the projects-timeline and
+  photo dialogs are untouched.
 
 ## 3 · Motion
 
