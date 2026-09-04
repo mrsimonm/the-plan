@@ -3038,356 +3038,15 @@ dialog:has(> form > .dlg-foot) > form > .dlg-foot{flex:0 0 auto}
    it for alignment. */
 .wb-head{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 </style>
-<style id="redesign-1">
-html[data-design="r1"]{
-/* ---- Liquid-glass treatment for the planner calendar board ----
-   Full-glamour edition. Sits after the app's own sheet so equal-specificity
-   rules win by source order. Token-driven (color-mix on --glass-* / --accent /
-   --surface-*) so every palette/theme stays coherent. No backdrop-filter on
-   repeated board elements — reflection is painted with gradients, per the
-   app's own performance rule. */
-
-/* ---- blocks: lit glass slabs ---- */
-.wb-blk{
-  box-shadow:
-    0 10px 24px -10px rgba(0,0,0,.6),
-    0 2px 4px rgba(0,0,0,.32),
-    inset 0 1px 0 rgba(255,255,255,.20),
-    inset 0 -1px 0 rgba(0,0,0,.24),
-    inset 0 0 0 1px rgba(255,255,255,.05);
-}
-.wb-blk::before{
-  content:""; position:absolute; inset:0; z-index:1; pointer-events:none;
-  background:
-    radial-gradient(130% 75% at 50% -14%, rgba(255,255,255,.28), transparent 54%),
-    linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,0) 50%),
-    linear-gradient(90deg, rgba(255,255,255,.06), transparent 26%, transparent 76%, rgba(255,255,255,.05));
-  mix-blend-mode:screen;
-}
-.wb-blk b,.wb-blk span{ position:relative; z-index:2; }
-.wb-blk b{ text-shadow:0 1px 1px rgba(0,0,0,.45); }
-
-/* ---- day columns: frosted glass panes ---- */
-.wb-col{
-  background:linear-gradient(180deg,
-    color-mix(in srgb,var(--glass-fill-2) 78%, var(--surface-2)),
-    color-mix(in srgb,var(--glass-fill) 62%, var(--surface-2)) 88%);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.10),
-    inset -1px 0 0 rgba(255,255,255,.04);
-}
-/* lightly alternate so the board reads as separate plates */
-.wb-col:nth-child(odd){
-  background:linear-gradient(180deg,
-    color-mix(in srgb,var(--glass-fill-2) 86%, var(--surface-2)),
-    color-mix(in srgb,var(--glass-fill) 70%, var(--surface-2)) 88%);
-}
-
-/* ---- day headers: glass pills; today floods with accent ---- */
-.wb-head{
-  border-radius:10px; margin:2px 3px;
-  border:1px solid var(--glass-border);
-  background:color-mix(in srgb,var(--glass-fill-2) 74%,transparent);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.14);
-  transition:background .18s, color .18s, box-shadow .18s;
-}
-.wb-head:hover{ background:color-mix(in srgb,var(--glass-fill-2) 96%,transparent); }
-.wb-col.today .wb-head{
-  background:linear-gradient(180deg,
-    color-mix(in srgb,var(--accent) 46%,var(--glass-fill-2)),
-    color-mix(in srgb,var(--accent) 30%,var(--glass-fill-2)));
-  border-color:color-mix(in srgb,var(--accent) 70%,transparent);
-  color:var(--on-accent);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.26), 0 5px 18px -5px color-mix(in srgb,var(--accent) 70%,transparent);
-  text-shadow:0 1px 1px rgba(0,0,0,.25);
-}
-
-/* ---- today's column: a lit accent pane ---- */
-.wb-col.today{
-  background:linear-gradient(180deg,
-    color-mix(in srgb,var(--accent) 26%,var(--glass-fill)),
-    color-mix(in srgb,var(--accent) 12%,var(--glass-fill)) 60%);
-  box-shadow:
-    inset 0 0 0 1.5px color-mix(in srgb,var(--accent) 70%,transparent),
-    inset 0 1px 0 rgba(255,255,255,.16),
-    0 0 34px -6px color-mix(in srgb,var(--accent) 60%,transparent);
-}
-
-/* ---- hour gutter: frosted strip; brighter, readable numbers ---- */
-.wb-gutter{
-  background:linear-gradient(180deg,var(--glass-fill-2),var(--glass-fill));
-  box-shadow:1px 0 0 rgba(255,255,255,.08), inset -1px 0 0 rgba(0,0,0,.16);
-}
-.wb-gutter-hours span{
-  color:var(--ink);
-  text-shadow:0 0 8px rgba(0,0,0,.55);
-}
-.wb-hl{ border-top-color:color-mix(in srgb,var(--grid-sep) 80%,transparent); }
-
-/* ---- now-line: glowing runner ---- */
-.wb-now.today{ border-top:2px solid var(--crit); box-shadow:0 0 12px color-mix(in srgb,var(--crit) 60%,transparent); }
-.wb-now.today::before{ box-shadow:0 0 8px color-mix(in srgb,var(--crit) 70%,transparent); }
-
-/* ---- the board's coat of glass: a faint top reflection across the grid ---- */
-.wb-scroll{ position:relative; }
-.wb-scroll::after{
-  content:""; position:absolute; inset:0 0 auto 0; height:120px; pointer-events:none; z-index:6;
-  background:linear-gradient(180deg, rgba(255,255,255,.06), transparent);
-  mix-blend-mode:screen;
-}
-
-/* ---- Today panel: glass the day bar and verdict chip ---- */
-.budget-bar{align-self:stretch; height:30px; border-radius:11px; padding:2px; position:relative;
-  background:color-mix(in srgb,var(--sunk) 62%,transparent);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.07), inset 0 0 0 1px rgba(255,255,255,.05);}
-.budget-bar i{display:block; height:100%; border-radius:9px;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.22), inset 0 -1px 0 rgba(0,0,0,.12), 0 6px 16px -7px rgba(0,0,0,.5);}
-.budget-bar[data-free] i{background:linear-gradient(180deg,
-  color-mix(in srgb,var(--glass-fill-2) 88%,var(--accent-soft)), var(--glass-fill));}
-
-/* ---- quarter / year mini-grid & month cells: frosted chips ---- */
-.pcal-mini-cell{border-radius:5px; background:color-mix(in srgb,var(--glass-fill-2) 70%,var(--surface-2));
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.08);}
-.pcal-mini-cell.today{box-shadow:inset 0 0 0 1.5px var(--accent), inset 0 1px 0 rgba(255,255,255,.12);}
-.pcal-cell{border-radius:8px; background:color-mix(in srgb,var(--glass-fill-2) 58%,var(--surface-2));
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.07);}
-.pcal-cell:hover{background:color-mix(in srgb,var(--glass-fill-2) 82%,var(--surface-2));}
-.pcal-cell[data-today="1"] .pcal-day{background:var(--accent); color:var(--on-accent);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.2), 0 3px 10px -3px color-mix(in srgb,var(--accent) 60%,transparent);}
-
-/* ---- week-load list rows ---- */
-.pweek-row{border-radius:9px; background:color-mix(in srgb,var(--glass-fill-2) 64%,var(--surface-2));
-  border-color:var(--glass-border); box-shadow:inset 0 1px 0 rgba(255,255,255,.09);}
-.pweek-row:hover{border-color:var(--line-strong);}
-.pweek-load{background:color-mix(in srgb,var(--sunk) 82%,transparent);
-  box-shadow:inset 0 1px 0 rgba(0,0,0,.18);}
-
-/* ---- a faint vertical sheen so empty hours read as glass, not void ---- */
-.wb-grid{position:relative}
-.wb-grid::before{content:""; position:absolute; inset:0; pointer-events:none; z-index:0;
-  background:linear-gradient(90deg, rgba(255,255,255,.035), transparent 16%, transparent 84%, rgba(255,255,255,.035));}
-
-/* ---- machined glass: one material across every control ---- */
-/* Additive specular/lift rims only (box-shadow), so layouts, radii and the
-   app's own glass fills are untouched. Token-free whites stay faint so they
-   read as catch-light on every palette. */
-
-/* buttons & chips: top specular, underside rim, ambient + lift shadow */
-.btn, .chip{
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.22),
-    inset 0 -1px 0 rgba(0,0,0,.12),
-    0 1px 2px rgba(0,0,0,.16),
-    0 5px 14px -7px rgba(0,0,0,.32);
-  transition:transform .15s cubic-bezier(.2,.8,.2,1), box-shadow .18s, color .18s, filter .18s;
-}
-.btn:hover, .chip:hover{
-  filter:brightness(1.05);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.28),
-    inset 0 -1px 0 rgba(0,0,0,.12),
-    0 2px 4px rgba(0,0,0,.18),
-    0 9px 20px -9px rgba(0,0,0,.4);
-}
-.btn:active:not([disabled]), .chip:active{ transform:translateY(1px) scale(.97); }
-.btn.primary{
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.30),
-    inset 0 -1px 0 rgba(0,0,0,.16),
-    0 2px 4px rgba(0,0,0,.22),
-    0 12px 26px -10px color-mix(in srgb,var(--accent) 60%,transparent);
-}
-.btn.primary:hover{ filter:brightness(1.06); }
-
-/* chips pick up the glass fill like buttons, instead of a flat tint */
-.chip{
-  background-image:var(--glass-sheen);
-  background-color:color-mix(in srgb,var(--surface-2) 70%,transparent);
-}
-.chip[aria-pressed="true"]{
-  background-image:none;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.24),
-    inset 0 -1px 0 rgba(0,0,0,.16),
-    0 4px 12px -4px color-mix(in srgb,var(--accent) 55%,transparent);
-}
-
-/* segmented control rail + lit active thumb */
-.seg{
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.16),
-    inset 0 -1px 0 rgba(0,0,0,.14),
-    0 1px 2px rgba(0,0,0,.16);
-}
-.seg button[aria-pressed="true"]{
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.26),
-    inset 0 -1px 0 rgba(0,0,0,.16),
-    0 3px 10px -3px color-mix(in srgb,var(--accent) 52%,transparent);
-}
-
-/* frosted fields: a specular + soffit rather than a flat rectangle */
-input, select, textarea{
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.13),
-    inset 0 -1px 0 rgba(0,0,0,.05),
-    0 1px 2px rgba(0,0,0,.10);
-}
-/* The whole-app Redesign 1: a "jewel glass" world. Wrapped by CSS nesting so
-   everything below is scoped to html[data-design="r1"] and Default stays the
-   original look. Token-driven; mostly additive surfaces, shadows and light —
-   little to no layout change. */
-
-/* ---- richer, drifting aurora behind everything ---- */
-body{
-  background-image:
-    radial-gradient(min(90vw,900px) min(70vh,760px) at 12% -6%, var(--blob-1), transparent 68%),
-    radial-gradient(min(80vw,760px) min(64vh,640px) at 96% 4%, var(--blob-2), transparent 70%),
-    radial-gradient(min(70vw,680px) min(60vh,560px) at 84% 104%, var(--blob-3), transparent 70%),
-    radial-gradient(min(60vw,560px) min(52vh,500px) at 4% 96%, var(--blob-4), transparent 72%),
-    var(--bg);
-  background-attachment:fixed;
-}
-/* a faint glass vignette + specular drift so edges haze like lit frosted glass */
-body::before{
-  content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
-  background:
-    radial-gradient(120% 90% at 50% -10%, rgba(255,255,255,.05), transparent 60%),
-    radial-gradient(120% 120% at 50% 120%, rgba(0,0,0,.28), transparent 62%);
-}
-body::after{ opacity:.10; }
-
-/* ---- floating, detached glass nav island ---- */
-.navwrap{ padding:10px 12px 2px; }
-.nav{
-  border-radius:999px;
-  padding:6px;
-  border:1px solid var(--glass-border);
-  background:color-mix(in srgb,var(--glass-fill-2) 78%,var(--surface));
-  backdrop-filter:blur(30px) saturate(180%);
-  -webkit-backdrop-filter:blur(30px) saturate(180%);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.24),
-    inset 0 -1px 0 rgba(0,0,0,.14),
-    0 10px 30px -12px rgba(0,0,0,.5),
-    0 0 0 1px rgba(0,0,0,.05);
-  width:max-content; max-width:100%; margin:0 auto;
-  overflow-x:auto;
-}
-.nav button[aria-selected="true"]{
-  background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 92%,#fff),var(--accent));
-  color:var(--on-accent);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.4), 0 6px 16px -6px color-mix(in srgb,var(--accent) 70%,transparent);
-}
-.nav button:hover{ color:var(--accent); }
-
-/* ---- cards: chunkier jewel glass ---- */
-.card{
-  border-radius:22px;
-  border:1px solid var(--glass-border);
-  background-image:var(--glass-sheen);
-  background-color:color-mix(in srgb,var(--glass-fill-2) 78%,var(--surface));
-  backdrop-filter:blur(26px) saturate(170%);
-  -webkit-backdrop-filter:blur(26px) saturate(170%);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.28),
-    inset 0 -1px 0 rgba(0,0,0,.14),
-    inset 0 0 0 1px rgba(255,255,255,.04),
-    0 26px 60px -24px rgba(0,0,0,.55),
-    0 6px 18px -10px color-mix(in srgb,var(--accent) 26%,transparent);
-}
-
-/* ---- headings / eyebrows: an accent glint ---- */
-.eyebrow{
-  letter-spacing:.16em;
-  background:linear-gradient(90deg,var(--accent), var(--accent-2));
-  -webkit-background-clip:text; background-clip:text;
-  -webkit-text-fill-color:transparent; color:var(--accent);
-  text-shadow:none;
-}
-.sec-head h2{
-  letter-spacing:-.01em;
-  font-weight:750;
-  text-shadow:0 2px 18px color-mix(in srgb,var(--accent) 30%,transparent);
-}
-
-/* ---- stat tiles: luminous glass lenses ---- */
-[class*="kpi"],[class*="stat"],[class*="tile"]{
-  border-radius:16px;
-  border:1px solid var(--glass-border);
-  background-color:color-mix(in srgb,var(--glass-fill-2) 74%,var(--surface-2));
-  background-image:var(--glass-sheen);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.24),
-    inset 0 -1px 0 rgba(0,0,0,.12),
-    0 14px 30px -16px rgba(0,0,0,.5);
-}
-
-/* ---- buttons/chips/segments/inputs: machined glass (shared material) ---- */
-.btn, .chip{
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.26),
-    inset 0 -1px 0 rgba(0,0,0,.14),
-    0 1px 2px rgba(0,0,0,.16),
-    0 6px 16px -8px rgba(0,0,0,.36);
-}
-.btn:hover, .chip:hover{ filter:brightness(1.06); }
-.btn:active:not([disabled]), .chip:active{ transform:translateY(1px) scale(.97); }
-.btn.primary{
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.34),
-    inset 0 -1px 0 rgba(0,0,0,.18),
-    0 2px 4px rgba(0,0,0,.24),
-    0 14px 30px -12px color-mix(in srgb,var(--accent) 65%,transparent);
-}
-.chip{
-  background-color:color-mix(in srgb,var(--surface-2) 70%,transparent);
-  background-image:var(--glass-sheen);
-}
-.seg{
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.20),
-    inset 0 -1px 0 rgba(0,0,0,.14),
-    0 1px 2px rgba(0,0,0,.16);
-}
-.seg button[aria-pressed="true"]{
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.30),
-    inset 0 -1px 0 rgba(0,0,0,.16),
-    0 4px 12px -4px color-mix(in srgb,var(--accent) 55%,transparent);
-}
-input, select, textarea{
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.16),
-    inset 0 -1px 0 rgba(0,0,0,.05),
-    0 1px 2px rgba(0,0,0,.10);
-}
-input:focus, select:focus, textarea:focus{
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.20),
-    inset 0 0 0 1.5px color-mix(in srgb,var(--accent) 55%,transparent),
-    0 0 0 4px color-mix(in srgb,var(--accent) 22%,transparent);
-}
-
-/* ---- list rows / library / academy rows: glass plates ---- */
-[class*="row"],[class*="arow"],[class*="prow"]{
-  border-color:var(--glass-border);
-}
-
-}
-</style>
-
-
-
 <style id="redesign-2">
 /* ---- Redesign 2: "Frosted Glass" ----
    A blocky, solid version — rounded-square masses with real weight, a visibly
    speckled frost texture, deeper blur and chunkier shadows. Structural: it
    changes sizes, spacing, control heights and radii, not just colours.
-   Scoped to html[data-design="r2"] via nesting; Default & Redesign 1 are
+   Scoped to html[data-palette="frosted"] via nesting; Default & Redesign 1 are
    untouched. */
 
-html[data-design="r2"]{
+html[data-palette="frosted"]{
   /* shared frost specks (custom property, consumed below) — soft light bloom */
   --spec:
     radial-gradient(circle at 2px 2px, rgba(255,255,255,.05) 0, rgba(255,255,255,0) 2.6px),
@@ -3556,12 +3215,12 @@ html[data-design="r2"]{
    solid surfaces, no backdrop blur), squared new shapes, thin precise
    hairlines, rectilinear buttons, thin reshaped sliders with a notch thumb.
    One muted steel signature accent, used sparingly. Scoped to
-   html[data-design="r3"]; Default / Redesign 1 / Redesign 2 untouched. */
+   html[data-palette="monolith"]; Default / Redesign 1 / Redesign 2 untouched. */
 
 /* ---- gunmetal token override (must beat the palette+theme token blocks) ---- */
-html[data-design="r3"],
-html[data-design="r3"][data-theme="dark"],
-html[data-design="r3"][data-theme="light"]{
+html[data-palette="monolith"],
+html[data-palette="monolith"][data-theme="dark"],
+html[data-palette="monolith"][data-theme="light"]{
   --bg:#0E1114; --surface:#15191E; --surface-2:#1C2127; --sunk:#090B0D;
   --line:#2A323A; --line-soft:rgba(150,172,192,.10); --line-strong:#3F4A55;
   --ink-strong:#EEF2F5; --ink:#C4CCD3; --ink-3:#6B7680;
@@ -3580,7 +3239,7 @@ html[data-design="r3"][data-theme="light"]{
   --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-lift:0 3px 10px rgba(0,0,0,.5);
 }
 
-html[data-design="r3"]{
+html[data-palette="monolith"]{
   /* ---- matte body: subtle technical scanlines, no aurora ---- */
   body{
     background-image:
@@ -3837,7 +3496,7 @@ html[data-layout="phone"] .ppl-search-row{ flex-wrap:nowrap }
    ============================================================================ */
 .nav button, .seg button, .menu > *, .menu button, .setcat > summary,
 .dz-i, .n-row-main, .n-prow, .n-pin, .n-tg, .n-nb, .n-toplan,
-.gear, .brand, .lu, .fold > summary, .sp-add, .dz-b-s, .dz-b-go, .dz-b-find{
+.gear, .brand, .lu, .fold > summary, .sp-add{
   transition:transform .09s cubic-bezier(.2,.7,.3,1),
              background-color .15s ease, border-color .15s ease, color .15s ease;
   -webkit-tap-highlight-color:transparent;
@@ -3846,7 +3505,7 @@ html[data-layout="phone"] .ppl-search-row{ flex-wrap:nowrap }
 .setcat > summary:active, .dz-i:active, .n-row-main:active, .n-prow:active,
 .n-pin:active, .n-tg:active, .n-nb:active, .n-toplan:active, .gear:active,
 .brand:active, .lu:active, .fold > summary:active, .sp-add:active,
-.dz-b-s:active, .dz-b-go:active, .dz-b-find:active{
+.sp-add:active{
   transform:scale(.975);
 }
 /* a row is wide, so scaling it reads as the whole list flexing — they get the
@@ -4038,46 +3697,51 @@ dialog:has(> .dlg-foot) > .dlg-foot{flex:0 0 auto}
 
 <style id="dz-structural">
 /* ============================================================================
-   STRUCTURAL DESIGNS — s1 Rail, s3 Briefing.
+   THE SHELL — the rail.
 
-   These are not skins. Each one moves the skeleton: where navigation lives
-   (s1) and what the app opens on (s3). What they deliberately do NOT touch is
-   the palette: every rule below derives from the six gem palettes' own tokens
-   (--bg, --surface, --accent, --ink…) with color-mix, so all six still work
-   under both, in light and dark. What they DO replace is the treatment — the
-   four-blob aurora and the frosted-glass recipe give way to matte surfaces and
-   hairlines, because the glass is what made the previous three variants read
-   as one design.
+   Navigation lives in one permanent left rail, so all ten modules are one
+   click away instead of two menus deep. The rail is fixed and out of flow —
+   body just gets padding — which keeps dialogs, toasts and the notes
+   scratchpad exactly where they are.
 
-   There was a third, s2 Folio, which abolished the card and typeset the
-   content on the page in a serif. It was removed outright rather than left
-   switched off: it was the largest of the three by some margin and the only
-   one that pulled down a webfont.
+   It only exists at 900px and up. Below that the rail hides itself and the
+   ordinary tab strip comes back, so a phone is navigated exactly as it always
+   was; nothing here should be read as replacing that.
 
-   Scoped entirely to html[data-design="s1"|"s3"]; Default and Redesigns 1-3
-   are untouched. The runtime pieces (the rail, the briefing) are built by the
-   DZ module at the end of the script and removed when you switch away.
+   This was once one of six switchable layouts under Appearance → Design,
+   picked as the only one worth keeping. The four that went with the menu were
+   Folio (typeset, the largest and the only one to fetch a webfont), Briefing
+   (opened on the day rather than a list), Liquid Glass (a treatment for the
+   planner board alone, which is why it looked like nothing happened anywhere
+   else) and Default. Frosted Glass and Monolith survived as palettes, since
+   both replaced the palette's colour tokens outright and so were never really
+   layouts at all.
+
+   Every rule is scoped to html[data-shell="rail"], which applyShell() sets
+   once and nothing ever changes. The attribute is kept rather than unscoped so
+   the rules keep the specificity they were written with, and so a second shell
+   one day is an addition rather than a rewrite.
    ============================================================================ */
 
 /* ---- shared: kill the glass, keep the colour ---- */
-html[data-design="s1"], html[data-design="s3"]{
+html[data-shell="rail"]{
   --glass-blur:none;
   --glass-fill:var(--surface); --glass-fill-2:var(--surface); --glass-sheen:var(--surface);
   --glass-border:var(--line); --glass-shadow:none;
   --blob-1:transparent; --blob-2:transparent; --blob-3:transparent; --blob-4:transparent;
 }
-html[data-design="s1"] body::before, html[data-design="s3"] body::before,
-html[data-design="s1"] body::after,  html[data-design="s3"] body::after{
+html[data-shell="rail"] body::before,
+html[data-shell="rail"] body::after{
   display:none;
 }
-html[data-design="s1"] .card, html[data-design="s3"] .card{
+html[data-shell="rail"] .card{
   backdrop-filter:none; -webkit-backdrop-filter:none;
   background:var(--surface); border:1px solid var(--line); box-shadow:none;
 }
-html[data-design="s1"] .nav, html[data-design="s3"] .nav{
+html[data-shell="rail"] .nav{
   backdrop-filter:none; -webkit-backdrop-filter:none; background:var(--surface-2); box-shadow:none;
 }
-html[data-design="s1"] .top, html[data-design="s3"] .top{
+html[data-shell="rail"] .top{
   backdrop-filter:none; -webkit-backdrop-filter:none; background:var(--surface);
 }
 
@@ -4086,28 +3750,28 @@ html[data-design="s1"] .top, html[data-design="s3"] .top{
    permanent left rail, so all ten modules are one click away instead of two
    menus deep. The rail is fixed and out of flow — body just gets padding —
    which keeps dialogs, toasts and the notes scratchpad exactly where they are. */
-html[data-design="s1"]{
+html[data-shell="rail"]{
   --r:10px; --r-sm:8px; --r-xs:6px; --r-pill:7px;
 }
-html[data-design="s1"] body{
+html[data-shell="rail"] body{
   background-image:linear-gradient(180deg, color-mix(in oklab, var(--accent) 5%, var(--bg)) 0, var(--bg) 420px);
 }
 @media (min-width:900px){
-  html[data-design="s1"] body{ padding-left:238px }
+  html[data-shell="rail"] body{ padding-left:238px }
   /* the header is not removed — the rail takes its NAVIGATION and it keeps
      its controls, which is what lets the whole switch be pure CSS: below the
      breakpoint the rail simply stops being displayed and the header and tab
      strip are already there, intact, with nothing to put back. */
-  html[data-design="s1"] .top{ background:none; border-bottom:1px solid var(--line);
+  html[data-shell="rail"] .top{ background:none; border-bottom:1px solid var(--line);
     padding:9px 34px; justify-content:flex-end; min-height:0 }
-  html[data-design="s1"] .top .brandwrap{ display:none }
-  html[data-design="s1"] .navwrap{ display:none }
-  html[data-design="s1"] main{ max-width:1200px; padding:22px 34px 72px }
-  html[data-design="s1"] .sec-head h2{ font-size:26px; letter-spacing:-.025em }
+  html[data-shell="rail"] .top .brandwrap{ display:none }
+  html[data-shell="rail"] .navwrap{ display:none }
+  html[data-shell="rail"] main{ max-width:1200px; padding:22px 34px 72px }
+  html[data-shell="rail"] .sec-head h2{ font-size:26px; letter-spacing:-.025em }
 }
 .dz-rail{ display:none }
 @media (min-width:900px){
-  html[data-design="s1"] .dz-rail{
+  html[data-shell="rail"] .dz-rail{
     display:flex; flex-direction:column; position:fixed; left:0; top:0; bottom:0; width:238px; z-index:40;
     background:var(--surface-2); border-right:1px solid var(--line);
     padding:16px 12px 10px; overflow-y:auto; scrollbar-width:thin;
@@ -4129,60 +3793,7 @@ html[data-design="s1"] body{
 .dz-rail-foot{ margin-top:auto; padding:12px 8px 2px; border-top:1px solid var(--line);
   font-size:11px; color:var(--ink-3); letter-spacing:.02em }
 
-/* ============================ s3 · BRIEFING ============================
-   The app stops opening on a list and opens on the day: what care is owed,
-   what the planner holds, what you wrote last — gathered from every module
-   into one panel above the garden. The tab strip stays, demoted to a quiet
-   row rather than the first thing you see. */
-html[data-design="s3"]{ --r:14px; --r-sm:10px; --r-xs:7px }
-html[data-design="s3"] body{
-  background-image:radial-gradient(120vw 60vh at 82% -10%, color-mix(in oklab, var(--accent) 9%, transparent), transparent 70%);
-}
-html[data-design="s3"] main{ max-width:760px }
-/* the strip is no longer the first thing you see: it moves below the content
-   and sticks to the bottom, so navigation is available without being the
-   opening statement */
-html[data-design="s3"] .navwrap{ order:3; position:sticky; top:auto; bottom:8px; padding:0 12px 8px }
-html[data-design="s3"] .nav{ background:var(--surface); border:1px solid var(--line); box-shadow:none; padding:3px; gap:6px }
-html[data-design="s3"] .nav button{ font-size:12.5px; opacity:.75 }
-html[data-design="s3"] .nav button[aria-selected="true"]{ opacity:1 }
-#dzBrief{ display:none }
-html[data-design="s3"] #dzBrief.on{ display:block; margin:6px 0 22px }
-.dz-b-day{ font-size:10.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3) }
-.dz-b-h{ font-size:31px; font-weight:700; color:var(--ink-strong); letter-spacing:-.028em; line-height:1.16;
-  margin:6px 0 0; text-wrap:balance }
-.dz-b-find{ display:flex; align-items:center; gap:10px; margin-top:18px; padding:12px 15px;
-  background:var(--surface); border:1px solid var(--line); border-radius:11px; cursor:pointer; width:100%;
-  font:inherit; color:var(--ink-3); text-align:left; min-height:46px }
-.dz-b-find:hover{ border-color:var(--accent) }
-.dz-b-find span{ flex:1 1 auto; font-size:14.5px }
-.dz-b-find kbd{ font-size:10.5px; font-weight:700; border:1px solid var(--line); border-radius:4px;
-  padding:2px 6px; color:var(--ink-3); font-family:inherit }
-.dz-b-list{ margin-top:22px }
-.dz-b-i{ display:flex; align-items:center; gap:13px; padding:13px 0;
-  border-bottom:1px solid var(--line-soft); min-height:46px }
-.dz-b-i:last-child{ border-bottom:0 }
-.dz-b-t{ flex:0 0 54px; font-size:12.5px; color:var(--ink-3); font-variant-numeric:tabular-nums }
-.dz-b-n{ flex:1 1 auto; min-width:0; font-size:15px; color:var(--ink-strong); overflow:hidden;
-  text-overflow:ellipsis; white-space:nowrap }
-.dz-b-k{ flex:0 0 auto; font-size:11px; color:var(--ink-3) }
-.dz-b-go{ flex:0 0 auto; border:1px solid var(--line); background:var(--surface); border-radius:7px;
-  font:inherit; font-size:12px; color:var(--ink); padding:5px 10px; cursor:pointer; min-height:32px }
-.dz-b-go:hover{ border-color:var(--accent); color:var(--accent) }
-.dz-b-clear{ padding:26px 4px; text-align:center; color:var(--ink-3); font-size:14.5px }
-.dz-b-strips{ display:flex; gap:10px; margin-top:18px; flex-wrap:wrap }
-.dz-b-s{ flex:1 1 220px; min-width:0; display:flex; align-items:center; gap:11px; padding:13px 15px;
-  background:var(--surface); border:1px solid var(--line); border-radius:11px; cursor:pointer;
-  font:inherit; text-align:left; color:var(--ink) }
-.dz-b-s:hover{ border-color:var(--accent) }
-.dz-b-s b{ display:block; font-size:13.5px; color:var(--ink-strong); font-weight:600; overflow:hidden;
-  text-overflow:ellipsis; white-space:nowrap }
-.dz-b-s small{ display:block; font-size:12px; color:var(--ink-3); margin-top:1px; overflow:hidden;
-  text-overflow:ellipsis; white-space:nowrap }
-.dz-b-rule{ display:flex; align-items:center; gap:10px; margin:24px 0 2px }
-.dz-b-rule i{ flex:1 1 auto; height:1px; background:var(--line); font-style:normal }
-.dz-b-rule span{ font-size:10.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3) }
-@media (prefers-reduced-motion:reduce){ .dz-i, .dz-b-find, .dz-b-s{ transition:none } }
+@media (prefers-reduced-motion:reduce){ .dz-i{ transition:none } }
 </style>
 
 <header class="top">
@@ -4881,13 +4492,14 @@ html[data-design="s3"] #dzBrief.on{ display:block; margin:6px 0 22px }
                 <label for="paletteSelect">Theme</label>
                 <select id="paletteSelect">
                   <option value="obsidian">Obsidian · black &amp; white</option>
-                  <option value="rose">Rose Quartz · pink &amp; violet</option>
                   <option value="emerald">Emerald · cream &amp; forest</option>
                   <option value="amethyst">Amethyst · violet</option>
                   <option value="sapphire">Sapphire · deep blue</option>
                   <option value="citrine">Citrine · champagne gold</option>
+                  <option value="frosted">Frosted Glass · blurred masses</option>
+                  <option value="monolith">Monolith · gunmetal</option>
                 </select>
-                <p class="hint">Pick a gem palette. The colour scheme below (light / dark) applies on top of any theme.</p>
+                <p class="hint">Pick a look. The gems keep the app's own shapes and change its colours; Frosted Glass and Monolith replace both. The colour scheme below (light / dark) applies on top, except on Monolith, which is dark by design. Per device.</p>
               </div>
               <div class="field">
                 <label for="themeToggle">Colour scheme</label>
@@ -4906,18 +4518,6 @@ html[data-design="s3"] #dzBrief.on{ display:block; margin:6px 0 22px }
                   <option value="desktop">Desktop</option>
                 </select>
                 <p class="hint">Automatic reads the screen. Force Phone on a tablet, or Desktop in a small laptop window.</p>
-              </div>
-              <div class="field">
-                <label for="designSelect">Design</label>
-                <select id="designSelect">
-                  <option value="off">Default</option>
-                  <option value="r1">Redesign 1 · liquid glass</option>
-                  <option value="r2">Frosted Glass</option>
-                  <option value="r3">Monolith · gunmetal</option>
-                  <option value="s1">Rail · side navigation</option>
-                  <option value="s3">Briefing · today first</option>
-                </select>
-                <p class="hint">A/B test skins. Redesigns are built one at a time; Default is the original look. Per device.</p>
               </div>
             </div>
           </div>
@@ -8069,20 +7669,28 @@ let L={me:"u1",vol:5,scope:"day",app:"bench",benchView:"garden",mode:"formula",f
 const adv=()=>L.adv===true;
 const expert=()=>L.expert===true;
 
-const PALETTES=["obsidian","rose","emerald","amethyst","sapphire","citrine"];
-/* A/B design scenarios. "off" is the original look; each redesign is a
-   separate, switchable skin so beta testers can be split across them. */
-const DESIGNS=["off","r1","r2","r3","s1","s3"];
-function applyDesign(){
-  document.documentElement.setAttribute("data-design",DESIGNS.includes(L.design)?L.design:"off");
-}
+/* The gem palettes, plus the two whole-app looks that used to sit in a
+   separate "Design" menu. Both belong here: each replaces the palette's
+   own colour tokens, so offering them alongside a gem let you pick two
+   things that fight — choose Emerald and Monolith and Emerald simply
+   lost. One list makes that impossible. "rose" is gone: it was offered
+   for months without a single rule behind it, so picking it left the app
+   with no palette at all. */
+const PALETTES=["obsidian","emerald","amethyst","sapphire","citrine","frosted","monolith"];
+/* One shell. The rail was the last of six A/B layouts standing, so it is
+   simply how the app is built now rather than something to choose; the
+   attribute stays because every rail rule is scoped to it, and because a
+   second shell one day should not mean unpicking them all. Below 900px
+   the rail hides itself and the tab strip comes back — see the media
+   query in <style id="dz-structural"> — so phones are unaffected. */
+function applyShell(){ document.documentElement.setAttribute("data-shell","rail"); }
 function applyTheme(){
   const root=document.documentElement;
   if(L.theme==="light") root.setAttribute("data-theme","light");
   else if(L.theme==="dark") root.setAttribute("data-theme","dark");
   else root.removeAttribute("data-theme");
   root.setAttribute("data-palette",PALETTES.includes(L.palette)?L.palette:"obsidian");
-  applyDesign();
+  applyShell();
 }
 const $=s=>document.querySelector(s);
 /* Build stamp. `n` is incremented by bump.py at publish time so two phones can
@@ -21513,7 +21121,6 @@ function applyAdvanced(){
   $("#dayStartHour").value=String(Number.isFinite(L.dayStartHour)?L.dayStartHour:4);
   $("#themeToggle").value=String(L.theme||"null");
   const ps=$("#paletteSelect"); if(ps) ps.value=PALETTES.includes(L.palette)?L.palette:"obsidian";
-  const ds=$("#designSelect"); if(ds) ds.value=DESIGNS.includes(L.design)?L.design:"off";
   const ac=$("#analysisCard"); if(ac) ac.style.display=on?"":"none";
   $("#pdForm").dispatchEvent(new Event("change"));
 }
@@ -21527,7 +21134,6 @@ $("#ppmScale").addEventListener("change",async e=>{ L.ppmScale=+e.target.value||
 $("#dayStartHour").addEventListener("change",e=>{ const h=+e.target.value; L.dayStartHour=Number.isFinite(h)?h:4; saveLocal(); renderTaskBar(); renderTaskBarFull("#gardenTaskBar"); renderTaskBarFull("#planTaskBar"); });
 $("#themeToggle").addEventListener("change",e=>{ L.theme=e.target.value==="null"?null:e.target.value; saveLocal(); applyTheme(); });
 $("#paletteSelect").addEventListener("change",e=>{ L.palette=PALETTES.includes(e.target.value)?e.target.value:"obsidian"; saveLocal(); applyTheme(); });
-$("#designSelect").addEventListener("change",e=>{ L.design=DESIGNS.includes(e.target.value)?e.target.value:"off"; saveLocal(); applyDesign(); });
 
 /* ---------------- action days ---------------- */
 function renderActionDays(){
@@ -23703,7 +23309,7 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "Bench settings":"Nastavení ponku","General":"Obecné","Layout":"Rozvržení",
 "Automatic":"Automaticky","Phone":"Telefon","Desktop":"Počítač","Default":"Výchozí",
 "Automatic reads the screen. Force Phone on a tablet, or Desktop in a small laptop window.":"Automaticky se řídí obrazovkou. Na tabletu si vynuť Telefon, v malém okně na notebooku Počítač.",
-"Redesign 1 · liquid glass":"Redesign 1 · tekuté sklo","Frosted Glass":"Matné sklo","Monolith · gunmetal":"Monolit · kalná ocel",
+"Frosted Glass":"Matné sklo","Monolith · gunmetal":"Monolit · kalná ocel","Frosted Glass · blurred masses":"Matné sklo · rozostřené plochy",
 "A/B test skins. Redesigns are built one at a time; Default is the original look. Per device.":"A/B testování vzhledů. Redesigny vznikají po jednom, Výchozí je původní vzhled. Platí pro tohle zařízení.",
 "View":"Zobrazení","Notes canvas":"Plátno poznámek","Voice capture":"Hlasový záznam","Edit product":"Upravit produkt",
 /* ---- teachbench: backup and bulk paste ---- */
@@ -26985,7 +26591,7 @@ Object.assign(CS,{
 "Sections":"Sekce","Bench":"Pěstírna","Plan":"Plán","Write":"Psaní","Teach":"Výuka",
 "Daily Planner":"Denní plánovač","Student Bench":"Studentský stůl","Jump anywhere…":"Skočit kamkoli…",
 "Open":"Otevřít","No care due, nothing scheduled.":"Nic k péči, nic v plánu.","Everything else":"Všechno ostatní",
-"Rail · side navigation":"Lišta · boční navigace","Briefing · today first":"Briefing · nejdřív dnešek",
+
 "List":"Seznam","Canvas":"Plátno","Arrange as graph":"Uspořádat jako graf","Auto-cluster":"Shlukovat","Fit":"Přizpůsobit",
 "Drag cards. Drag the background to pan, pinch or scroll to zoom, double-tap a card to open it.":"Přetahujte karty. Tahem pozadí posouváte, štipnutím nebo kolečkem zoomujete, dvojklepnutím kartu otevřete.",
 });
@@ -29451,7 +29057,6 @@ function dzRailOn(){
   });
   dzMark();
 }
-function dzRailOff(){ const r=$("#dzRail"); if(r) r.remove(); }
 function dzMark(){
   const r=$("#dzRail"); if(!r) return;
   const k=dzCurrentKey();
@@ -29460,94 +29065,6 @@ function dzMark(){
   });
 }
 
-/* ---------------- s3: the briefing ----------------
-   Gathered from the modules that already hold it: plant care from S.tasks,
-   the day's own work from S.planner.tasks, and the last thing written from
-   S.notes. Nothing is stored — it is a view onto what is already there. */
-function dzBriefEl(){
-  let el=$("#dzBrief");
-  if(!el){
-    const main=document.querySelector("main"); if(!main) return null;
-    el=document.createElement("section"); el.id="dzBrief";
-    main.insertBefore(el,main.firstChild);
-    el.addEventListener("click",e=>{
-      const j=e.target.closest("[data-dzjump]");
-      if(j){ let hit=null; DZ_ITEMS.forEach(g=>g.items.forEach(i=>{ if(i.k===j.dataset.dzjump) hit=i; }));
-        if(hit) dzGo(hit); return; }
-      if(e.target.closest("[data-dzfind]")) dzJumpMenu(e.target.closest("[data-dzfind]"));
-    });
-  }
-  return el;
-}
-function dzRenderBrief(){
-  const el=dzBriefEl(); if(!el) return;
-  const on=document.documentElement.getAttribute("data-design")==="s3"
-        && (typeof curView==="string") && curView==="garden";
-  el.classList.toggle("on",on);
-  if(!on) return;
-  const cs=L.lang==="cs", today=ymd(Date.now());
-  /* Plant care counts a day from midnight; the planner counts it from
-     L.dayStartHour. Before 4am those are different dates, and asking both in
-     the same terms silently emptied one of them. Each is asked its own way. */
-  const pday=(typeof pToday==="function")?pToday():today;
-  const care=(S.tasks||[]).filter(x=>!x.done&&x.day<=today);
-  const pt=(S.planner&&S.planner.tasks||[]).filter(x=>!x.done&&!x.untracked&&x.due===pday)
-    .sort((a,b)=>String(a.time||"~").localeCompare(String(b.time||"~")));
-  const plants=(S.subjects||[]).filter(x=>x.module==="plants");
-  const note=(S.notes||[]).filter(n=>!n.trashedAt&&!n.archived)
-    .sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0))[0];
-  const n=care.length+pt.length;
-  const head = n===0 ? (cs?"Máte volno.":"You're clear.")
-    : (cs ? (pl3(n,"Jedna věc,","Dvě věci,","Věcí: "+n+",")+"\n"+(n===1?"a máte hotovo.":"a máte hotovo."))
-          : (n===1?"One thing,\nthen you're done.":n+" things,\nthen you're done."));
-  const rows=[]
-    .concat(pt.map(x=>({t:x.time||"",n:x.title||t("Untitled task"),k:cs?"plán":"planner",go:"planner"})))
-    .concat(care.map(x=>({t:"",n:x.text||"",k:cs?"péče":"care",go:"garden"})))
-    .slice(0,7);
-  el.innerHTML=
-    '<div class="dz-b-day" data-no-i18n>'+esc(new Date().toLocaleDateString(locale(),{weekday:"long",day:"numeric",month:"long"}))+'</div>'
-    +'<h2 class="dz-b-h" style="white-space:pre-line" data-no-i18n>'+esc(head)+'</h2>'
-    +'<button type="button" class="dz-b-find" data-dzfind="1">'
-      +'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>'
-      +'<span>'+esc(t("Jump anywhere…"))+'</span><kbd data-no-i18n>⌘K</kbd></button>'
-    +(rows.length?'<div class="dz-b-list">'+rows.map(r=>
-        '<div class="dz-b-i"><span class="dz-b-t" data-no-i18n>'+esc(r.t||"—")+'</span>'
-        +'<span class="dz-b-n" data-no-i18n>'+esc(r.n)+'</span>'
-        +'<span class="dz-b-k" data-no-i18n>'+esc(r.k)+'</span>'
-        +'<button type="button" class="dz-b-go" data-dzjump="'+esc(r.go)+'">'+esc(t("Open"))+'</button></div>').join("")+'</div>'
-      :'<div class="dz-b-clear">'+esc(t("No care due, nothing scheduled."))+'</div>')
-    +'<div class="dz-b-strips">'
-      +'<button type="button" class="dz-b-s" data-dzjump="garden">'+dzSvg("garden")
-        +'<span style="min-width:0"><b data-no-i18n>'+plants.length+' '+esc(pl3(plants.length,cs?"rostlina":"plant",cs?"rostliny":"plants",cs?"rostlin":"plants"))+'</b>'
-        +'<small data-no-i18n>'+esc(care.length?(care.length+" "+(cs?"čeká":"due")):(cs?"vše v pořádku":"all cared for"))+'</small></span></button>'
-      +(note?'<button type="button" class="dz-b-s" data-dzjump="notes">'+dzSvg("notes")
-        +'<span style="min-width:0"><b data-no-i18n>'+esc(note.title||t("Untitled"))+'</b>'
-        +'<small data-no-i18n>'+esc(nWhen(note.updatedAt||note.createdAt))+'</small></span></button>':"")
-    +'</div>'
-    +'<div class="dz-b-rule"><i></i><span>'+esc(t("Everything else"))+'</span><i></i></div>';
-}
-/* the jump menu: the same item list as the rail, as a command list */
-function dzJumpMenu(anchorEl){
-  const old=$("#dzJump"); if(old){ old.remove(); return; }
-  const m=document.createElement("div");
-  m.id="dzJump"; m.className="n-btype-menu"; m.setAttribute("role","menu");
-  m.innerHTML=DZ_ITEMS.map(g=>'<div class="n-menu-hint">'+esc(t(g.g))+'</div>'
-    +g.items.map(i=>'<button type="button" role="menuitem" data-dzjump="'+esc(i.k)+'">'+esc(t(i.en))+'</button>').join("")).join("");
-  document.body.appendChild(m);
-  const r=anchorEl.getBoundingClientRect();
-  m.style.top=(window.scrollY+r.bottom+6)+"px";
-  m.style.left=Math.max(8,Math.min(window.scrollX+r.left,window.scrollX+window.innerWidth-m.offsetWidth-8))+"px";
-  const f=m.querySelector("button[data-dzjump]"); if(f) f.focus();
-  const close=e=>{
-    const b=e&&e.target&&e.target.closest?e.target.closest("#dzJump [data-dzjump]"):null;
-    if(b){ let hit=null; DZ_ITEMS.forEach(g=>g.items.forEach(i=>{ if(i.k===b.dataset.dzjump) hit=i; })); m.remove(); document.removeEventListener("click",close,true); if(hit) dzGo(hit); return; }
-    if(m.contains(e&&e.target)) return;
-    m.remove(); document.removeEventListener("click",close,true);
-  };
-  setTimeout(()=>document.addEventListener("click",close,true),0);
-}
-
-/* ---------------- keeping it all in step ---------------- */
 /* The rail is built whenever Rail is the chosen design, at any width — which
    width it is actually SHOWN at is left entirely to the media query. An
    earlier version moved the header's controls into the rail and so had to
@@ -29556,26 +29073,16 @@ function dzJumpMenu(anchorEl){
    grows does not reliably deliver the event it was listening for. Nothing is
    moved now, so there is no state to get wrong. */
 function dzApplyNow(){
-  const d=document.documentElement.getAttribute("data-design");
-  if(d==="s1") dzRailOn(); else dzRailOff();
+  dzRailOn();
   dzMark();
-  dzRenderBrief();
 }
 (function dzWire(){
   const main=document.querySelector("main");
   if(main){
     /* show() flips [hidden] on the views — that is the signal, no hook needed */
-    new MutationObserver(()=>{ dzMark(); dzRenderBrief(); })
+    new MutationObserver(dzMark)
       .observe(main,{attributes:true,attributeFilter:["hidden"],subtree:true});
   }
-  new MutationObserver(dzApplyNow)
-    .observe(document.documentElement,{attributes:true,attributeFilter:["data-design"]});
-  document.addEventListener("keydown",e=>{
-    if(document.documentElement.getAttribute("data-design")!=="s3") return;
-    if((e.metaKey||e.ctrlKey)&&(e.key==="k"||e.key==="K")){
-      const b=document.querySelector("[data-dzfind]"); if(b){ e.preventDefault(); dzJumpMenu(b); }
-    }
-  });
   dzApplyNow();
 })();
 
