@@ -2969,6 +2969,24 @@ dialog:has(> form > .dlg-foot) > form > .dlg-foot{flex:0 0 auto}
 }
 :root[data-theme="dark"]{ --sleep-hue:#7FA6C9; }
 :root[data-theme="light"]{ --sleep-hue:#A9CBE6; }
+/* ---- the parking band on a phone ----
+   .wb-parking and .wb-quick each cap at three rows of chips — 132px — which
+   is right on a desktop and much too much on a phone. In a Week both strips
+   are on screen at once, so a busy week spends 264px on chips before the
+   hour grid starts, and the grid is the thing you opened the view for. On a
+   375px-wide phone the header, nav, scope switcher and search have already
+   taken 305px by then; three rows of parking pushes the first hour to 445px,
+   past half the screen.
+   Two rows instead. Nothing is lost: both strips already scroll inside
+   themselves, so the overflow simply begins one row sooner, and every chip is
+   still reachable and still the same size to grab. Turned sideways a phone
+   has only ~375px of height in total, so there it drops to a single row. */
+@media (max-width:640px){
+  .wb-parking, .wb-quick{ max-height:88px }
+}
+@media (max-height:520px){
+  .wb-parking, .wb-quick{ max-height:52px }
+}
 </style>
 <style id="redesign-1">
 html[data-design="r1"]{
