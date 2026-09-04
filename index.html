@@ -2888,6 +2888,41 @@ main > #view-teachbench-student:not([hidden]) ~ .n-quick-pad, html.pfocus .n-qui
 .n-cv-bar{display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:10px 12px; border-bottom:1px solid var(--line-soft)}
 .n-cv-bar .hint{flex:1 1 200px}
 #nCanvas{display:block; width:100%; height:min(72vh,720px); touch-action:none; cursor:grab; background:var(--sunk)}
+
+/* ---- dialogs: the buttons must always be reachable ----------------------
+   Found while testing lesson mode at 844x390 (phone landscape), and it
+   affects every dialog built from .dlg-head / .dlg-body / .dlg-foot, not
+   just the new ones — tbLessonDlg and tbEditDlg had it too.
+
+   .dlg-body caps itself at 68dvh, but nothing capped the dialog as a whole
+   outside the max-width:640px phone query. In landscape the query does not
+   apply (the viewport is 844 wide), so head + body + foot came to more than
+   the browser's own max-height for a dialog, and the footer — Save, and
+   here "Save and make cards" — was pushed outside the box where it could
+   not be reached or seen.
+
+   The fix makes such a dialog a column capped at 88dvh — the same cap the
+   phone query already used, now applied at every width — with the form
+   flexing inside it and the body the only part that scrolls, so the head
+   and foot are always inside the box.
+
+   Capping the FORM by viewport instead was tried first and was wrong: on a
+   375px screen the phone query caps the dialog at 88dvh, so a form allowed
+   calc(100dvh - 44px) simply overflowed it and the footer sat outside the
+   visible box, reachable only by scrolling the dialog itself.
+
+   :has() scopes this to dialogs built from this pattern, leaving the
+   projects-timeline and photo dialogs alone; a browser without :has()
+   keeps today's behaviour rather than breaking. */
+dialog[open]:has(> form > .dlg-foot){
+  display:flex; flex-direction:column;
+  max-height:88vh; max-height:88dvh}
+dialog:has(> form > .dlg-foot) > form{
+  display:flex; flex-direction:column; min-height:0; flex:1 1 auto}
+dialog:has(> form > .dlg-foot) > form > .dlg-body{
+  flex:1 1 auto; min-height:0; max-height:none}
+dialog:has(> form > .dlg-foot) > form > .dlg-head,
+dialog:has(> form > .dlg-foot) > form > .dlg-foot{flex:0 0 auto}
 #nCanvas.n-cv-drag{cursor:grabbing}
 @media (max-width:560px){ #nCanvas{height:70vh} .n-cv-bar .hint{display:none} }
 .n-planpop{position:absolute; z-index:61; width:min(300px,calc(100vw - 16px)); padding:12px; background:var(--surface);
