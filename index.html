@@ -1061,19 +1061,11 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .wb-adtask.quick{cursor:default; touch-action:auto}
 .wb-adtask.done{opacity:.5}
 .wb-adtask.done:not(:hover){text-decoration:line-through; text-decoration-thickness:1px}
-/* An unassigned Project chip: dashed border marks it as not really placed
-   yet (unlike a Task chip's solid one), and it isn't grabbable in this pass
-   — tap opens the day dialog, where a real time can be set on purpose. */
-/* two-class selectors on purpose: .wb-traychip (later in the sheet, same
-   single-class specificity) would otherwise win every property here and
-   draw a project chip as an accent-coloured, grab-cursor Task chip */
-.wb-traychip.wb-adproj{cursor:pointer; touch-action:auto;
-  border-style:dashed; border-color:color-mix(in srgb,var(--pc) 45%,transparent);
-  background:color-mix(in srgb,var(--pc) 14%,var(--surface))}
-.wb-traychip.wb-adproj:hover{border-color:var(--pc)}
-.wb-traychip.wb-adproj small{font-family:var(--font); font-variant-numeric:tabular-nums;
-  color:var(--ink-2)}
-.wb-adprojdot{width:7px; height:7px; flex:0 0 auto; border-radius:50%; background:var(--pc)}
+/* The parking lot's stand-in Project chip (.wb-adproj) is gone: an unplaced
+   Project draws in its own day's all-day lane instead, so it is visible on
+   every day it actually claims rather than on one row for the whole board.
+   Its dashed-edge treatment lives on in .wb-pchip.unplaced, at the end of
+   this sheet. */
 /* Plachta: columns are a fixed width so the canvas scrolls rather than
    squeezing, and so the scroll maths can trust a known column pitch */
 /* max-content, not 0: a sticky box is clamped to its containing block, so a
@@ -2987,6 +2979,43 @@ dialog:has(> form > .dlg-foot) > form > .dlg-foot{flex:0 0 auto}
 @media (max-height:520px){
   .wb-parking, .wb-quick{ max-height:52px }
 }
+/* ---- an unplaced Project, drawn in its own day's all-day lane ----
+   .wb-pchip already describes a project on the board (its colour, its grab
+   cursor, its drag gestures); this is the same chip in the state of having no
+   hour chosen yet. The dashed edge and the amber "!" are the signals the
+   parking-lot chip used to carry alone, back when one chip stood in for every
+   day of a project at once.
+   Height is pinned to 15px so a lane sized at --adrows × 17px holds exactly
+   that many chips once the lane's own 2px gaps are counted (15n + 2(n-1) =
+   17n - 2). Without it a chip sized by its text would overflow the reserved
+   height and the columns below would stop lining up. */
+.wb-allday .wb-pchip{height:15px; flex:0 0 auto; box-sizing:border-box; padding:0 5px 0 5px;
+  gap:3px; border-radius:4px}
+.wb-allday .wb-pchip b{font-size:9px}
+.wb-allday .wb-pchip small{font-size:8px}
+.wb-pchip.unplaced{cursor:pointer;
+  background:color-mix(in srgb,var(--pc) 13%,var(--surface));
+  border-left:3px dashed var(--pc)}
+.wb-pchip.unplaced:hover{background:color-mix(in srgb,var(--pc) 24%,var(--surface))}
+.wb-pchip .miss{color:var(--amber); font-weight:700; font-style:normal;
+  font-size:9.5px; line-height:1; flex:0 0 auto}
+/* ---- a day header is ONE line, on every board width ----
+   Pre-existing and unrelated to Projects — it reproduces on an empty board —
+   but it lands in the same columns, so it would read as their fault.
+   Between roughly 340px and 600px, "Mon 31" wrapped to two lines in some
+   columns and stayed on one in others (today's header is bolder, a weekday
+   abbreviation is a different width in each language, and a two-digit date is
+   wider than a one-digit one). Every column stacks .wb-head above .wb-allday
+   above .wb-track, so a header one line taller pushes that column's hour grid
+   15px down while its neighbours' stay put: the rows stop lining up across
+   the board and the whole grid reads as crooked — exactly the failure the
+   gutter's hidden .wb-head/.wb-allday spacers exist to prevent, arriving from
+   the other side.
+   Clipping instead of wrapping makes every column the same height by
+   construction, whatever the label says. Plachta already did this for its own
+   reasons (its scroll maths needs a known pitch); the rest of the board wants
+   it for alignment. */
+.wb-head{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 </style>
 <style id="redesign-1">
 html[data-design="r1"]{
@@ -10641,10 +10670,26 @@ function pBoardHtml(days,opts){
     kept.forEach(k=>{ k.it.clash=kept.some(o=>o!==k&&o.s<k.e&&k.s<o.e); });
     return {kept,parked};
   });
-  /* must match what the lane actually draws. Quick Tasks left it for the
-     .wb-quick strip above the board, so all that is left in a column's
-     all-day lane is the plant-care marker — one row, at most. */
-  const adCount=days.map((d,di)=>(byDay[di].some(it=>it.kind==="care")?1:0));
+  /* must match what the lane actually draws: this day's unplaced Projects,
+     then the plant-care marker.
+
+     A Project holds a budget of HOURS for a day and no time within it, so it
+     has no block on the hour grid until somebody gives it one. It is still
+     work that day owes, though, and it belongs on that day. It used to be
+     collapsed into a SINGLE parking-lot chip for the whole board ("Thesis ·
+     today +19"), which meant a project running 2h a day for twenty days drew
+     on none of those twenty days — the "projects don't show graphically in
+     the calendar" report, exactly.
+
+     Per-day again, but in each column's OWN all-day lane — the one place on
+     the board that already means "this day, no particular hour". That is what
+     makes it affordable: one 17px row inside a column, rather than days ×
+     projects chips crowded into the single shared parking row, which is what
+     drove them out of the columns in the first place. */
+  const adProjs=days.map((d,di)=>
+    byDay[di].filter(it=>it.kind==="proj"&&it.unassigned&&it.hours>0));
+  const adCount=days.map((d,di)=>
+    adProjs[di].length+(byDay[di].some(it=>it.kind==="care")?1:0));
   const adRows=Math.min(3,Math.max(1,...adCount));
   /* ---- the quick row ----
      A Quick Task belongs to a DAY and to nothing smaller, so it is drawn in
@@ -10792,9 +10837,19 @@ function pBoardHtml(days,opts){
        pack in packedByDay) lives in the parking lot row above the grid, so
        it's in one place whatever width the board is instead of scattered
        across seven or thirty little lanes. */
-    const allday=care?`<div class="wb-allday"><span class="wb-adcare" title="${
-      esc(care.name)} · ${pFmtH(care.hours)}h">🌿</span></div>`
-      :'<div class="wb-allday"></div>';
+    /* An unplaced Project, drawn on its own day. It carries data-wbp, so it
+       rides the same gesture engine its grid-block form does: drag it
+       sideways to move that day's hours to another day, drag it down onto an
+       hour to give it a real slot (which promotes it to a grid block), or tap
+       it to open the day dialog. The dashed "!" marks it as work with no time
+       yet — the same signal the parking-lot chip used to carry alone. */
+    const adProjHtml=adProjs[di].map(it=>
+      `<span class="wb-pchip unplaced" data-wbp="${esc(it.id)}" data-day="${d}" tabindex="0"
+        style="--pc:${ppSafeColor(it.color)}"
+        title="${esc(it.name)} · ${pFmtH(it.hours)}h — ${esc(t("unassigned — tap to set a time"))}"
+        ><i class="miss">!</i><b>${esc(it.name)}</b><small>${pFmtH(it.hours)}h</small></span>`).join("");
+    const allday=`<div class="wb-allday">${adProjHtml}${care?`<span class="wb-adcare" title="${
+      esc(care.name)} · ${pFmtH(care.hours)}h">🌿</span>`:""}</div>`;
     /* drawn before the real blocks, so it sits underneath them in stacking
        order — anything genuinely scheduled during the night stays reachable,
        and only the empty stretch of the block answers a click */
@@ -10864,8 +10919,8 @@ function pBoardHtml(days,opts){
          to thirty little lanes to scan instead of one row.
        · Overdue Tasks whose day has gone off the left of the board — still to
          be done, and the only place left for them.
-       · Projects with no time set for a day (pPlaceProjects marks them) —
-         tap opens the day dialog to place them.
+       · NOT Projects: one with no time set for a day draws in that day's own
+         all-day lane, so it is visible on every day it actually claims.
        · Anything double-booked: a timed Task/Event overlapping another block
          is shown again here with a warning so it can be dragged to a clear
          hour; an overlapping recurring Block or Project opens its day dialog.
@@ -10920,25 +10975,13 @@ function pBoardHtml(days,opts){
      grid block would, so dragging it onto a clear hour commits through the
      exact same gesture path (time taken from where it lands — see the
      time0 rule in pWireBoard's pointerdown). */
-  /* ONE chip per project, not one per project per day: a project is
-     unassigned on every day nobody has placed it yet, which is every day
-     until someone drags it — so per-day chips scaled with days × projects
-     (five a week, thirty a month, 121 on Plachta) and buried the grid on a
-     phone. The chip names the first unplaced day on screen and how many
-     more there are; tapping opens that day's dialog. */
-  const projDays=new Map();
-  days.forEach((d,di)=>byDay[di].forEach(it=>{
-    if(it.kind!=="proj"||!it.unassigned) return;
-    const e=projDays.get(it.id)||{it,days:[]}; e.days.push(d); projDays.set(it.id,e);
-  }));
-  projDays.forEach(({it,days:ds})=>{
-    const more=ds.length-1;
-    lot.push(`<span class="wb-traychip wb-adproj unplaced" data-wbaproj="${it.id}" data-day="${ds[0]}"
-      style="--pc:${ppSafeColor(it.color)}"
-      title="${esc(it.name)} · ${pFmtH(it.hours)}h — ${esc(t("unassigned — tap to set a time"))}">
-      <i class="wb-adprojdot"></i><i class="miss">!</i><span class="wb-tc">${esc(it.name)}</span><small>${esc(dayTag(ds[0]))}${
-      more>0?` +${more}`:""} · ${pFmtH(it.hours)}h</small></span>`);
-  });
+  /* Unplaced Projects are NOT parked here any more — they draw in their own
+     day's all-day lane (see adProjs above). Collapsing them into one chip for
+     the whole board was what made a twenty-day project invisible on all
+     twenty of its days; putting one chip per project per day back into this
+     single shared row is the crowding that caused that collapse. The column's
+     own lane is the answer to both: per-day again, but paid for out of the
+     column rather than out of this row. */
   days.forEach((d,di)=>{
     packedByDay[di].parked.forEach(x=>{
       const it=x.it; if(!it.ref) return;
@@ -11144,8 +11187,13 @@ function pWireBoard(){
           day0:(ph||pchip).dataset.day,
           /* projday only resizes hours across the day-width, never a clock
              slot — no time0 there. projmove doubles as a vertical drag now,
-             so it needs the same origin-time bookkeeping a Task's move does. */
-          time0:kind==="projday"?null:startH+(parseFloat(el.style.top)||0)/WB_PXH};
+             so it needs the same origin-time bookkeeping a Task's move does.
+             An all-day chip has no origin to move relative to — it IS the
+             absence of a time — so it takes null, exactly as a tray chip
+             does, and the drop decides. Reading style.top off one would have
+             measured 0 and pinned every sideways drag to midnight. */
+          time0:kind==="projday"?null
+               :(el.closest(".wb-track")?startH+(parseFloat(el.style.top)||0)/WB_PXH:null)};
       pBoardBusy=true;
       try{ board.setPointerCapture(e.pointerId); }catch(err){}
       if(kind==="projday") e.preventDefault();
@@ -11502,10 +11550,24 @@ function pWireBoard(){
       if(targetDay&&targetDay!==g.day0&&window.ppMoveDay&&ppMoveDay(g.id,g.day0,targetDay)) changed=true;
       /* the vertical half of the same drag: where in the day it sits. Applies
          to whichever day it landed on, whether or not the day itself moved,
-         so a purely vertical drag (still on g.day0) is not silently dropped. */
-      if(g.time0!=null&&targetDay){
-        const t2=Math.max(0,Math.min(23.75,snap(g.time0+(e.clientY-g.y0)/WB_PXH)));
-        if(window.ppSetDayTime&&ppSetDayTime(g.id,targetDay,fmtT(t2))) changed=true;
+         so a purely vertical drag (still on g.day0) is not silently dropped.
+
+         A block that started on the hour grid moves relative to its own top.
+         An all-day chip has no time to move relative to, so it only GAINS one
+         if the drop actually lands inside an hour track — dragging it along
+         the all-day lane to another day moves the day and leaves it unplaced,
+         rather than quietly deciding it happens at 00:00. */
+      if(targetDay){
+        let t2=null;
+        if(g.time0!=null) t2=Math.max(0,Math.min(23.75,snap(g.time0+(e.clientY-g.y0)/WB_PXH)));
+        else{
+          const col=board.querySelector(`.wb-col[data-wbday="${targetDay}"]`);
+          const trk=col&&col.querySelector(".wb-track");
+          const r=trk&&trk.getBoundingClientRect();
+          if(r&&e.clientY>=r.top&&e.clientY<=r.bottom)
+            t2=Math.max(0,Math.min(23.75,snap(startH+(e.clientY-r.top)/WB_PXH)));
+        }
+        if(t2!=null&&window.ppSetDayTime&&ppSetDayTime(g.id,targetDay,fmtT(t2))) changed=true;
       }
       if(changed) done(); else renderSchedule();
       return;
@@ -11723,8 +11785,10 @@ function pWireBoard(){
   board.addEventListener("click",e=>{
     const h=e.target.closest("[data-wbgo]");
     if(h){ pSelISO=h.dataset.wbgo; pScope="day"; pWinShift=0; pDayPanel(); renderSchedule(); return; }
-    const ap=e.target.closest("[data-wbaproj]");
-    if(ap){ pOpenDayDialog("proj",ap.dataset.wbaproj,ap.dataset.day); return; }
+    /* data-wbaproj is gone with the parking lot's stand-in project chip. An
+       unplaced Project now draws in its own day's all-day lane as a .wb-pchip,
+       so a tap on one goes through the gesture engine's own tap branch — the
+       same pOpenDayDialog("proj", …) a placed project's block already used. */
     /* Clicking the empty part of the parking row makes something there, the
        way clicking an empty hour makes something on the grid — asked for on
        the beta call ("kliknout do parkoviště a rovnou tam něco založit").
@@ -25121,7 +25185,38 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
   function clampN(v, lo, hi, dflt) { v = Number(v); if (!isFinite(v)) return dflt; return Math.min(hi, Math.max(lo, v)); }
 
   /* ---------- state ---------- */
-  var PS = null, bootWarning = null;
+  /* PS is a LIVE VIEW of S.projplan, never a snapshot of it.
+
+     It used to be a plain reference, re-grabbed by hand at the top of about a
+     dozen entry points. migrate() BUILDS A NEW OBJECT every time it runs — on
+     boot, on import, and on every sync merge — so every handler that had not
+     been given a re-grab was reading, and writing, a detached copy of the
+     plan. The timeline's own "+ New project" button was one of them: once a
+     sync had landed, a project created there was pushed into an orphaned
+     array and vanished without a word — not on the canvas, not in the
+     overview, not in the saved state. Deleting a project, "Start fresh",
+     undo/redo and the day editor all had the same hole, which is why projects
+     appeared to work "only sometimes": whether they did depended entirely on
+     whether a sync had landed since the Timeline was last opened.
+
+     Reading through a getter closes it for good — there is no re-grab left to
+     remember, so no future handler can forget one. PSref carries the identity
+     the schedule cache actually wants to watch, so a state that really was
+     replaced still invalidates the cached cells exactly once. */
+  var PSref = null;
+  var PSfallback = { projects: [], limit: 8, weekendsOff: false, imported: false };
+  function SP() {
+    var o = (typeof S !== "undefined" && S && S.projplan) ? S.projplan : PSfallback;
+    if (o !== PSref) { PSref = o; invalAll(); }
+    return o;
+  }
+  var PS = {
+    get projects() { return SP().projects; },       set projects(v) { SP().projects = v; },
+    get limit() { return SP().limit; },             set limit(v) { SP().limit = v; },
+    get weekendsOff() { return SP().weekendsOff; }, set weekendsOff(v) { SP().weekendsOff = v; },
+    get imported() { return SP().imported; },       set imported(v) { SP().imported = v; }
+  };
+  var bootWarning = null;
   var mode = "move", brush = "auto";
   var liftId = null, kbSel = null;
 
@@ -26077,12 +26172,12 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
   /* ---------- module entry: called by renderSchedule for the Timeline scope ---------- */
   var ppInited = false, ppScrolled = false, ppLastPS = null;
   window.ppEnter = function () {
-    PS = S.projplan;                       // re-grab: imports can replace S wholesale
-    if (ppLastPS && ppLastPS !== PS) {     // S was replaced (import/reset) — old undo
+    var nowPS = SP();                      // resolve S.projplan; invalidates if replaced
+    if (ppLastPS && ppLastPS !== nowPS) {  // S was replaced (import/reset) — old undo
       undoStack = []; redoStack = [];      // snapshots describe data that no longer
       if (ppInited) undoUI();              // exists and must not be restorable into it
     }
-    ppLastPS = PS;
+    ppLastPS = nowPS;
     if (!ZOOM[L.ppZoom]) L.ppZoom = "quarter";
     if (!ISODATE.test(String(L.ppView || ""))) L.ppView = mStart(today());
     if (!ppInited) {
@@ -26117,7 +26212,7 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
      calendar as well as the timeline. Both go through the same snapshot/undo
      and persistence the timeline's own gestures use — one history, one truth. */
   window.ppShiftProject = function (id, deltaDays) {
-    PS = S.projplan; var p = byId(id);
+    var p = byId(id);
     if (!p || !deltaDays) return false;
     snap(tr("moving") + " " + p.name);
     p.start = add(p.start, deltaDays);
@@ -26126,7 +26221,7 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
     return true;
   };
   window.ppSetDayHours = function (id, iso, hours) {
-    PS = S.projplan; var p = byId(id);
+    var p = byId(id);
     if (!p) return false;
     if (dif(p.start, iso) < 0) return false;          // before it starts
     var v = Math.max(0, Math.min(24, hours));
@@ -26154,7 +26249,7 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
     return sc.cells[i].u;
   }
   window.ppClearDay = function (id, iso) {
-    PS = S.projplan; var p = byId(id); if (!p) return false;
+    var p = byId(id); if (!p) return false;
     if (!(dayUse(p, iso) > 0)) return false;         // nothing there to remove
     snap(tr("day change on") + " " + p.name);
     p.days[iso] = 0;
@@ -26164,7 +26259,7 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
   /* Move one day's work to another day, leaving the rest of the project where
      it is — the per-day equivalent of dragging one Event out of a run. */
   window.ppMoveDay = function (id, fromIso, toIso) {
-    PS = S.projplan; var p = byId(id); if (!p || fromIso === toIso) return false;
+    var p = byId(id); if (!p || fromIso === toIso) return false;
     /* a project cannot hold work before it starts; moving its first day
        earlier is a change of start date, which is a series edit */
     if (dif(p.start, toIso) < 0) return false;
@@ -26176,10 +26271,10 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
     touchP(p); persist(); invalAll();
     return true;
   };
-  window.ppOpenProject = function (id) { PS = S.projplan; var p = byId(id); if (p) openP(p); };
+  window.ppOpenProject = function (id) { var p = byId(id); if (p) openP(p); };
   /* Lets the planner's Add row create a Project without leaving the planner.
      The dialog is body-level, so it opens fine while this view is hidden. */
-  window.ppNewProject = function () { PS = S.projplan; openP(null); };
+  window.ppNewProject = function () { openP(null); };
   window.ppUndo = undo;
   /* Read-only feed for the Daily Planner's linked time: which projects want
      hours on a given day, per the same schedule engine that draws the bars.
@@ -26188,7 +26283,7 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
      actually spend — the board's edge-drag must adjust the target or the last
      day of a project silently refuses to change */
   window.ppDayTarget = function (id, iso) {
-    PS = S.projplan; var p = byId(id);
+    var p = byId(id);
     if (!p || dif(p.start, iso) < 0) return null;
     return want(p, iso);
   };
@@ -26202,7 +26297,7 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
      else. It carries no weight in the schedule maths (want/build never read
      it) — it is purely where today's chunk happens to sit on the clock. */
   window.ppDayTimeOf = function (id, iso) {
-    PS = S.projplan; var p = byId(id);
+    var p = byId(id);
     if (!p) return null;
     /* a slot set for THIS day wins; otherwise the project's usual hour, if it
        has one. Falling back to the usual time is not the app inventing a slot
@@ -26212,7 +26307,7 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
     return (p.dayTime && p.dayTime[iso]) || p.usualTime || null;
   };
   window.ppSetDayTime = function (id, iso, time) {
-    PS = S.projplan; var p = byId(id); if (!p) return false;
+    var p = byId(id); if (!p) return false;
     if (!(dayUse(p, iso) > 0)) return false;         // nothing that day to place
     p.dayTime = p.dayTime || {};
     if (!time) delete p.dayTime[iso]; else p.dayTime[iso] = time;
@@ -26223,8 +26318,6 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
      today quota and how much of the whole budget is still ahead */
   window.ppProjectStatus = function (iso) {
     if (typeof S === "undefined" || !S || !S.projplan) return [];
-    if (PS !== S.projplan) invalAll();
-    PS = S.projplan;
     var out = [];
     PS.projects.forEach(function (p) {
       var i = dif(p.start, iso);
@@ -26237,9 +26330,8 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
   };
   window.ppProjectsOn = function (iso) {
     if (typeof S === "undefined" || !S || !S.projplan) return [];
-    if (PS !== S.projplan) invalAll();   // S was replaced (import/sync) — cells are stale
-    PS = S.projplan;
-    var out = [];
+    var out = [];                        // PS resolves S.projplan live; a replaced
+                                         // state invalidates the cells on read
     PS.projects.forEach(function (p) {
       var i = dif(p.start, iso);
       if (i < 0) return;
