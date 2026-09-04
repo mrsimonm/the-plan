@@ -3573,7 +3573,23 @@ html[data-design="r3"]{
    data-orient so every design and palette keeps working underneath.
    ============================================================================ */
 
-/* ---------------- phone ---------------- */
+/* ---------------- phone ----------------
+   Glass off. `backdrop-filter` appears on 39 rules, which lands on ~400
+   elements in the document — every .btn wears one — and each is a separate
+   compositing layer that has to re-sample what is behind it on every frame
+   that moves. On a phone that is the single most expensive thing the app
+   does, for an effect nobody can see at that size on that hardware.
+
+   The tokens go opaque so nothing turns washed out with the blur gone, and
+   the wildcard catches the rules that hard-code blur() instead of using the
+   token (.nav, and a handful in the design skins). */
+html[data-layout="phone"]{
+  --glass-blur:none;
+  --glass-fill:var(--surface); --glass-fill-2:var(--surface); --glass-sheen:var(--surface);
+}
+html[data-layout="phone"] *{
+  backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+}
 html[data-layout="phone"] main{ padding:10px 10px 84px; max-width:none }
 html[data-layout="phone"] .pad{ padding:13px 13px }
 html[data-layout="phone"] .card-sec{ padding:11px 12px }
@@ -3581,7 +3597,13 @@ html[data-layout="phone"] .sec-head h2{ font-size:20px }
 html[data-layout="phone"] .stack{ gap:9px }
 /* a finger needs a target: nothing interactive under 44px */
 html[data-layout="phone"] .btn{ min-height:44px; padding:10px 15px }
-html[data-layout="phone"] .btn.mini{ min-height:38px; padding:8px 13px; font-size:13.5px }
+html[data-layout="phone"] .btn.mini{ min-height:40px; padding:8px 13px; font-size:13.5px }
+/* Bare <button>s — ones wearing no class at all — were missed by the rules
+   above and came out at 24-32px on a phone: twelve of them on the planner,
+   five in Teachbench. Anything with a class is left alone on purpose: the
+   calendar's blocks and headers, the block-type grip and the tick boxes are
+   sized to their own geometry and growing them would break the board. */
+html[data-layout="phone"] button:not([class]){ min-height:40px; min-width:40px }
 html[data-layout="phone"] .chip{ min-height:40px }
 html[data-layout="phone"] select, html[data-layout="phone"] input[type="text"],
 html[data-layout="phone"] input[type="search"], html[data-layout="phone"] input[type="number"],
@@ -3641,6 +3663,55 @@ html[data-layout="phone"] .ppl-search-row{ flex-wrap:nowrap }
      no height to spare — the day is what you turned the phone sideways for */
   html[data-layout="phone"] .pcal-head{ margin-bottom:5px }
   html[data-layout="phone"] .ppl-search{ display:none }
+}
+
+/* ============================================================================
+   MOTION — one layer, so pressing things feels the same everywhere.
+
+   .btn and .chip already answer a press (and each design skin tunes its own
+   feel, which is left alone). Nothing else did: the tab strip, the segmented
+   controls, the Library menu rows, the settings disclosures, the rail items
+   and every row in Notes took a tap with no acknowledgement at all, which is
+   most of what made the app feel unresponsive rather than slow.
+
+   Rules kept deliberately narrow:
+   - only `transform` and `opacity` are animated, never a property that forces
+     layout, so a press costs the compositor and nothing else;
+   - the calendar's own surfaces (.wb-*) are excluded, because they are drag
+     targets and a scale under the finger fights the drag;
+   - every bit of it is off under prefers-reduced-motion, including the
+     app's pre-existing view and dialog entrances.
+   ============================================================================ */
+.nav button, .seg button, .menu > *, .menu button, .setcat > summary,
+.dz-i, .n-row-main, .n-prow, .n-pin, .n-tg, .n-nb, .n-toplan,
+.gear, .brand, .lu, .fold > summary, .sp-add, .dz-b-s, .dz-b-go, .dz-b-find{
+  transition:transform .09s cubic-bezier(.2,.7,.3,1),
+             background-color .15s ease, border-color .15s ease, color .15s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+.nav button:active, .seg button:active, .menu > *:active, .menu button:active,
+.setcat > summary:active, .dz-i:active, .n-row-main:active, .n-prow:active,
+.n-pin:active, .n-tg:active, .n-nb:active, .n-toplan:active, .gear:active,
+.brand:active, .lu:active, .fold > summary:active, .sp-add:active,
+.dz-b-s:active, .dz-b-go:active, .dz-b-find:active{
+  transform:scale(.975);
+}
+/* a row is wide, so scaling it reads as the whole list flexing — they get the
+   tint instead, which is what a list row does everywhere else */
+.menu > *:active, .menu button:active, .n-row-main:active, .n-prow:active,
+.dz-i:active, .lu:active{ transform:none; background-color:var(--sunk) }
+
+/* a tick should look like it landed rather than just changing colour */
+.n-todo-box input:checked + i, .tbox, input[type="checkbox"]{ transition:transform .12s cubic-bezier(.34,1.4,.64,1), background-color .12s ease, border-color .12s ease }
+.n-todo-box input:active + i{ transform:scale(.9) }
+
+/* one switch for everything above AND everything the app already animated:
+   entrances, the scope pill, the spinners, the pulse on the voice dot */
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation-duration:.001ms !important; animation-iteration-count:1 !important;
+    transition-duration:.001ms !important; scroll-behavior:auto !important;
+  }
 }
 
 /* ============================================================================
