@@ -2794,7 +2794,16 @@ html{overscroll-behavior-y:none}
   align-items:center; padding:9px 10px 9px 16px; background:var(--surface); color:var(--ink);
   border:1px solid var(--line); border-radius:14px; box-shadow:0 14px 38px -10px rgba(0,0,0,.28);
   font-size:14px; max-width:calc(100vw - 32px)}
-.n-quick{position:fixed; right:18px; bottom:20px; z-index:65; width:52px; height:52px; border-radius:50%;
+/* The floating buttons are ONE column, and every offset below is derived from
+   these numbers rather than written out twice. The scratchpad button used to
+   carry its own hard-coded bottom, which the narrow-screen rule further down
+   then overrode — same specificity, later in the file, and the scratchpad
+   carries .n-quick too — so under 420px both landed on the same spot and sat
+   directly on top of one another. Deriving the stack means moving the column
+   is only ever a change to --fab-b or --fab-r. */
+.n-quick{--fab-r:18px; --fab-b:20px; --fab-size:52px; --fab-pad:44px; --fab-gap:10px;
+  position:fixed; right:var(--fab-r); bottom:var(--fab-b); z-index:65;
+  width:var(--fab-size); height:var(--fab-size); border-radius:50%;
   border:0; background:var(--accent); color:var(--on-accent); font-size:22px; line-height:1; cursor:pointer;
   box-shadow:0 10px 26px -8px rgba(0,0,0,.4)}
 .n-quick:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
@@ -2835,7 +2844,13 @@ main > #view-teachbench-student:not([hidden]) ~ .n-quick, html.npad-open .n-quic
 .n-undo[data-busy="1"] #nUndoBtn{display:none}
 
 /* ---- notes, part four: scratchpad, voice, clipper ---- */
-.n-quick-pad{bottom:82px; width:44px; height:44px; font-size:18px; background:var(--surface); color:var(--ink);
+/* Sits directly above the note button, and centred on it: the two are
+   different diameters, so sharing one `right` would right-align them and leave
+   the column looking 4px out of true. */
+.n-quick-pad{
+  bottom:calc(var(--fab-b) + var(--fab-size) + var(--fab-gap));
+  right:calc(var(--fab-r) + (var(--fab-size) - var(--fab-pad)) / 2);
+  width:var(--fab-pad); height:var(--fab-pad); font-size:18px; background:var(--surface); color:var(--ink);
   border:1px solid var(--line)}
 .n-quick-pad[aria-expanded="true"]{background:var(--accent); color:var(--on-accent); border-color:var(--accent)}
 main > #view-teachbench:not([hidden]) ~ .n-quick-pad, main > #view-teachbench-student:not([hidden]) ~ .n-quick-pad, html.pfocus .n-quick-pad{display:none}
@@ -2949,7 +2964,9 @@ dialog:has(> form > .dlg-foot) > form > .dlg-foot{flex:0 0 auto}
 .n-prow:hover{background:var(--surface-2)}
 @media (max-width:420px){
   .n-file-item select{max-width:150px}
-  .n-quick{right:14px; bottom:16px}
+  /* moves the whole column; the scratchpad's offsets derive from these two,
+     so it follows instead of being stranded on top of the note button */
+  .n-quick{--fab-r:14px; --fab-b:16px}
 }
 
 
