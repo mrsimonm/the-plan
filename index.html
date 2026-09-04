@@ -8121,7 +8121,7 @@ const $=s=>document.querySelector(s);
 /* Build stamp. `n` is incremented by bump.py at publish time so two phones can
    be compared at a glance — an installed PWA serving a stale service-worker
    cache is otherwise indistinguishable from an up-to-date one. */
-const BUILD={ver:"1.0",n:56,at:"2026-09-04"};
+const BUILD={ver:"1.0",n:57,at:"2026-09-04"};
 const uid=()=>Math.random().toString(36).slice(2,9);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
@@ -8272,33 +8272,23 @@ function setSync(s,msg){ $("#syncTag").dataset.s=s; $("#syncText").textContent=m
 async function initSync(){ setSync("local","this device"); }
 async function loadShared(){
   /* Did we FAIL to read stored state, as opposed to finding none? The two must
-     never be confused — the photo fetch below already says so in its own
-     comment, but state.json itself had no such guard, and it is the more
-     dangerous of the two. Every failure path here was a bare catch that fell
+     never be confused. Every failure path here was once a bare catch that fell
      through to seed(), so any error inside migrate() produced a blank app that
      push() would then publish straight over the real state. That is almost
      certainly the "everything I entered was gone" report, and it was live for
-     every user during the window when migrate() threw on a missing
-     normaliser. */
+     every user during the window when migrate() threw on a missing normaliser.
+     readFailed is what holds that shut.
+
+     This function used to open by fetching data/state.json, and data/photos.json
+     inside it — the artifact host's copy, from when publishing to that host WAS
+     the sync. PSYNC (Firestore) replaced it and nothing has written either file
+     since, so on every boot, for every user, that was a guaranteed 404 standing
+     between the app and the state it actually reads. Both fetches are gone:
+     localStorage is the only source at boot, and the account's copy arrives
+     through PSYNC afterwards. push() still labels its payload
+     "data/state.json" — that string is the key in the ART publish protocol, not
+     a path; makeArt() down in PSYNC is what reads it. */
   let readFailed=false;
-  try{
-    const r=await fetch("data/state.json",{cache:"no-store"});
-    if(r.ok){
-      const d=await r.json();
-      if(d&&d.products){
-        /* Photos live in their own file so a normal save stays small — which
-           means state.json carries no copy of them. If this fetch fails we do
-           NOT know the library is empty, we know we failed to read it, and the
-           two must never be confused: publishing on a failed read would wipe
-           it. photosLoaded gates every later write. */
-        try{
-          const pr=await fetch("data/photos.json",{cache:"no-store"});
-          if(pr.ok){ const ph=await pr.json(); if(Array.isArray(ph)){ d.photos=ph; photosLoaded=true; } }
-        }catch(e){}
-        const m=migrate(d); stateLoaded=true; return m;
-      }
-    }
-  }catch(e){ readFailed=true; console.error("loadShared: shared state unreadable",e); }
   try{ const raw=localStorage.getItem(KEY); if(raw){ const d=JSON.parse(raw);
     if(d&&d.products){ photosLoaded=true; const m=migrate(d); stateLoaded=true; return m; } } }
   catch(e){ readFailed=true; console.error("loadShared: local state unreadable",e); }
