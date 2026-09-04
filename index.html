@@ -2601,6 +2601,38 @@ html{overscroll-behavior-y:none}
 .tbs-stat small{color:var(--ink-3); font-size:10.5px; letter-spacing:.04em; text-transform:uppercase}
 .tbs-stat.warn b{color:var(--crit)}
 .tbs-stat.good b{color:var(--accent)}
+/* ---- Teachbench: lesson mode, the account, the can-do list ---- */
+/* the account: small figures, read at a glance, not big-number tiles */
+.tb-acct{display:flex; flex-wrap:wrap; gap:6px}
+.tb-acct-cell{flex:1 1 78px; text-align:center; padding:8px 6px;
+  border-radius:var(--r-sm); background:var(--surface-2)}
+.tb-acct-cell b{display:block; font-size:17px; line-height:1.2; font-weight:600}
+.tb-acct-cell small{color:var(--ink-3); font-size:10px; letter-spacing:.04em; text-transform:uppercase}
+.tb-acct-cell.good b{color:var(--accent)}
+.tb-acct-cell.warn b{color:var(--amber)}
+.tb-acct-cell.bad b{color:var(--crit)}
+.tb-pay-row{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-2)}
+.tb-pay-row span{flex:1; min-width:0}
+/* a lesson row and its Run button side by side; the button is a sibling
+   because a <button> inside a <button> never gets its own clicks */
+.tb-lesson-line{display:flex; align-items:stretch; gap:6px}
+.tb-lesson-line > .row{flex:1; min-width:0}
+.tb-run-btn{flex:0 0 auto; align-self:center; min-height:36px}
+.tb-run-plan{margin:0; padding:9px 11px; border-radius:var(--r-sm);
+  background:var(--surface-2); font-size:14px; line-height:1.5; white-space:pre-wrap}
+.tb-push-row{display:flex; align-items:center; gap:9px; padding:7px 2px;
+  border-bottom:1px solid var(--line-soft); cursor:pointer}
+.tb-push-row:last-child{border-bottom:0}
+.tb-push-row .grow{flex:1; min-width:0}
+.tb-push-row .grow b{display:block; font-weight:500; font-size:14px}
+.tb-push-row .grow small{color:var(--ink-3); font-size:11.5px; display:block;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.tb-cando{display:flex; align-items:flex-start; gap:9px; padding:7px 9px;
+  border-radius:var(--r-sm); cursor:pointer; font-size:14px; line-height:1.45}
+.tb-cando:hover{background:var(--surface-2)}
+.tb-cando.on{color:var(--ink-2)}
+.tb-cando.on span{text-decoration:line-through; text-decoration-color:var(--line)}
+.tb-cando input{margin-top:2px; flex:0 0 auto}
 /* the roster's traffic light — colour first, text second */
 .tbs-dot{width:9px; height:9px; border-radius:50%; flex:0 0 auto; background:var(--ink-3)}
 .tbs-dot.ok{background:var(--accent)}
@@ -4904,6 +4936,26 @@ html[data-design="s3"] #dzBrief.on{ display:block; margin:6px 0 22px }
         <div id="tbList" class="stack" style="gap:2px"></div>
         <p id="tbEmpty" class="pday-sub" hidden>No students yet.</p>
       </div>
+
+      <!-- Teachbench lives in one browser's localStorage. Losing that profile
+           loses every student, material, word and lesson, so an export is the
+           cheapest insurance there is. -->
+      <div class="card pad">
+        <div class="sec-head" style="margin-bottom:4px"><h2 style="font-size:15px">Backup</h2></div>
+        <p class="hint" style="margin-top:0" id="tbBackupHint">
+          Teachbench is stored in this browser only, and nowhere else. Export a copy
+          somewhere safe now and then.</p>
+        <div class="qadd-row2" style="gap:6px; flex-wrap:wrap">
+          <button type="button" class="btn mini" id="tbExportBtn">Export a backup</button>
+          <label class="btn mini" for="tbImportFile">Restore from a file…</label>
+          <input type="file" id="tbImportFile" accept="application/json,.json" hidden>
+          <!-- Only appears once a file has been read and described, so the
+               press that destroys the current data is never the first one. -->
+          <button type="button" class="btn mini danger" id="tbImportConfirm" hidden>Replace everything</button>
+        </div>
+        <p class="pwarn" id="tbBackupWarn" hidden></p>
+        <p class="pday-sub" id="tbBackupNote" hidden></p>
+      </div>
     </div>
 
     <!-- ---- Tasks (materials library) ---- -->
@@ -4988,6 +5040,22 @@ html[data-design="s3"] #dzBrief.on{ display:block; margin:6px 0 22px }
           </div>
         </form>
 
+        <!-- Ten seconds instead of ten separate form submissions. -->
+        <form class="card pad qadd" id="tbBulkForm">
+          <label class="field-label" for="tbBulkText">Paste a whole list</label>
+          <p class="hint" style="margin:0">One per line, as <code>word = meaning</code>.
+            A tab, a semicolon or a dash works too. A third part is taken as an example sentence.</p>
+          <textarea id="tbBulkText" rows="4"
+            placeholder="reluctant = zdráhavý = She was reluctant to answer.&#10;to put off = odložit&#10;deadline = termín"></textarea>
+          <div class="qadd-row2">
+            <span class="field-label">list</span>
+            <select id="tbBulkList" class="mono-input"></select>
+            <button class="btn primary mini" type="submit">Add them all</button>
+          </div>
+          <p class="pwarn" id="tbBulkWarn" hidden></p>
+          <p class="pday-sub" id="tbBulkNote" hidden></p>
+        </form>
+
         <div id="tbWordGroups" class="stack" style="gap:14px"></div>
       </div>
 
@@ -5068,6 +5136,41 @@ html[data-design="s3"] #dzBrief.on{ display:block; margin:6px 0 22px }
         <div class="sec-head"><h2 style="font-size:15px">Tasks</h2>
           <button type="button" class="btn primary mini" id="tbDetailAddTasks">Add tasks</button></div>
         <div id="tbDetailTasks" class="stack" style="gap:10px"></div>
+      </div>
+
+      <!-- The one thread between the two halves of the teaching side.
+           Teachbench keeps students here; the portal keeps its own in
+           Firestore. Linking them once is what lets a word already typed
+           into the library become a flashcard without retyping it. -->
+      <div class="card pad">
+        <div class="sec-head" style="margin-bottom:4px"><h2 style="font-size:15px">Student portal</h2></div>
+        <p class="hint" style="margin-top:0" id="tbPortalHint">Checking…</p>
+        <div class="qadd-row2" id="tbPortalActions" style="flex-wrap:wrap; gap:6px"></div>
+      </div>
+
+      <div class="card pad">
+        <div class="sec-head"><h2 style="font-size:15px">Lessons and payment</h2>
+          <button type="button" class="btn primary mini" id="tbAddPayment">Record payment</button></div>
+        <div class="qadd-row2" style="gap:6px; flex-wrap:wrap; margin-bottom:10px">
+          <span class="field-label">rate</span>
+          <input type="number" id="tbDetailRate" class="mono-input" min="0" step="1"
+                 style="width:110px" placeholder="per lesson" aria-label="Rate per lesson">
+          <button type="button" class="btn mini" id="tbDetailRateSave">Save rate</button>
+          <span class="pday-sub" id="tbDetailRateSaved" hidden>Saved</span>
+        </div>
+        <div id="tbDetailAccount" class="tb-acct"></div>
+        <div class="qadd-row2" style="margin-top:10px; gap:6px; flex-wrap:wrap">
+          <button type="button" class="btn mini" id="tbCopyStatement">Copy this month's statement</button>
+          <span class="pday-sub" id="tbStatementCopied" hidden>Copied</span>
+        </div>
+        <div id="tbDetailPayments" class="stack" style="gap:6px; margin-top:10px"></div>
+      </div>
+
+      <div class="card pad">
+        <div class="sec-head" style="margin-bottom:4px"><h2 style="font-size:15px">Can do</h2></div>
+        <p class="hint" style="margin-top:0">What this student can actually do, in the CEFR's own words —
+          the kind of progress a student or a parent recognises. Tick one when you have seen it.</p>
+        <div id="tbDetailCanDo" class="stack" style="gap:14px"></div>
       </div>
     </div>
   </section>
@@ -5230,6 +5333,103 @@ html[data-design="s3"] #dzBrief.on{ display:block; margin:6px 0 22px }
     <div class="dlg-foot" id="tbOccRescheduleActions" hidden>
       <button class="btn mini" type="button" id="tbOccRescheduleCancel">Back</button>
       <button class="btn primary mini" type="button" id="tbOccRescheduleConfirm">Move it</button>
+    </div>
+  </form></dialog>
+
+  <!-- Lesson mode: the screen for during the hour itself. The app was only
+       ever used before a lesson to plan and after it to record; the hour in
+       the middle is when everything worth capturing actually happens. -->
+  <dialog id="tbRunDlg"><form id="tbRunForm">
+    <h3 class="dlg-head" id="tbRunTitle">Lesson</h3>
+    <div class="dlg-body">
+      <p class="pday-sub" id="tbRunMeta"></p>
+
+      <div class="field" id="tbRunPlanField">
+        <label>What was planned</label>
+        <p class="tb-run-plan" id="tbRunPlan" data-no-i18n></p>
+      </div>
+
+      <div class="field">
+        <label for="tbRunCatch">Words as they come up</label>
+        <p class="hint" style="margin:0 0 6px">One per line. <code>word = meaning</code> if you have the
+          meaning to hand; a plain word is fine. These become flashcards at the end.</p>
+        <textarea id="tbRunCatch" rows="6" placeholder="reluctant = zdráhavý&#10;to put off&#10;I put off the meeting."></textarea>
+      </div>
+
+      <div class="field">
+        <label for="tbRunNotes">Notes from the lesson</label>
+        <textarea id="tbRunNotes" rows="3"></textarea>
+      </div>
+
+      <div class="field">
+        <label>How did it go</label>
+        <div class="seg segsm" id="tbRunAttend">
+          <button type="button" data-attend="attended" aria-pressed="false">Attended</button>
+          <button type="button" data-attend="noshow" aria-pressed="false">No-show</button>
+          <button type="button" data-attend="excused" aria-pressed="false">Excused</button>
+        </div>
+      </div>
+
+      <p class="pwarn" id="tbRunWarn" hidden></p>
+      <p class="pday-sub" id="tbRunSaved" hidden>Saved</p>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn mini" type="button" id="tbRunClose">Close</button>
+      <button class="btn mini" type="button" id="tbRunSaveOnly">Save</button>
+      <button class="btn primary mini" type="submit" id="tbRunMakeCards">Save and make cards</button>
+    </div>
+  </form></dialog>
+
+  <!-- Linking a Teachbench student to the same person in the portal. -->
+  <dialog id="tbPortalDlg"><form id="tbPortalForm">
+    <h3 class="dlg-head">Link to the portal</h3>
+    <div class="dlg-body">
+      <p class="hint" style="margin-top:0">Pick the same person in the student portal's roster.
+        This is remembered, so you only do it once.</p>
+      <div id="tbPortalList" class="stack" style="gap:4px"></div>
+      <p class="pwarn" id="tbPortalWarn" hidden></p>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn mini" type="button" id="tbPortalCancel">Cancel</button>
+    </div>
+  </form></dialog>
+
+  <!-- Choosing which of a student's words to send across as flashcards. -->
+  <dialog id="tbPushDlg"><form id="tbPushForm">
+    <h3 class="dlg-head">Send words to flashcards</h3>
+    <div class="dlg-body">
+      <p class="hint" style="margin-top:0" id="tbPushHint"></p>
+      <div class="qadd-row2" style="gap:6px; margin-bottom:8px">
+        <button class="btn mini" type="button" id="tbPushAll">Select all</button>
+        <button class="btn mini" type="button" id="tbPushNone">Select none</button>
+      </div>
+      <div id="tbPushList" class="stack" style="gap:4px"></div>
+      <p class="pwarn" id="tbPushWarn" hidden></p>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn mini" type="button" id="tbPushCancel">Cancel</button>
+      <button class="btn primary mini" type="submit" id="tbPushGo">Send</button>
+    </div>
+  </form></dialog>
+
+  <dialog id="tbPayDlg"><form id="tbPayForm">
+    <h3 class="dlg-head">Record a payment</h3>
+    <div class="dlg-body">
+      <div class="qadd-row2">
+        <div class="field" style="flex:1"><label for="tbPayDate">Date</label>
+          <input type="date" id="tbPayDate" required></div>
+        <div class="field" style="flex:1"><label for="tbPayLessons">Lessons paid for</label>
+          <input type="number" id="tbPayLessons" min="1" step="1" value="10" required></div>
+      </div>
+      <div class="field"><label for="tbPayAmount">Amount</label>
+        <input type="number" id="tbPayAmount" min="0" step="1" placeholder="total paid"></div>
+      <div class="field"><label for="tbPayNote">Note (optional)</label>
+        <input type="text" id="tbPayNote" placeholder="e.g. bank transfer"></div>
+      <p class="pwarn" id="tbPayWarn" hidden></p>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn mini" type="button" id="tbPayCancel">Cancel</button>
+      <button class="btn primary mini" type="submit">Save</button>
     </div>
   </form></dialog>
 
@@ -6577,9 +6777,13 @@ const TB = (() => {
       // this field existed still behaves sensibly.
       active: entry.active !== false,
       portalId: typeof entry.portalId === 'string' && entry.portalId ? entry.portalId : null,
-      // A rate of zero is a real answer (a favour, a trial lesson), so only a
-      // non-finite or negative value counts as "not set".
-      rate: Number.isFinite(Number(entry.rate)) && Number(entry.rate) >= 0 ? Number(entry.rate) : null,
+      // A rate of zero is a real answer (a favour, a trial lesson), so zero
+      // has to survive — but "not set" must not become zero, which is what
+      // Number(null) === 0 would quietly do to every student on first read.
+      // Absence is checked before the number is.
+      rate: (entry.rate === null || entry.rate === undefined || entry.rate === '')
+        ? null
+        : (Number.isFinite(Number(entry.rate)) && Number(entry.rate) >= 0 ? Number(entry.rate) : null),
     };
   }
 
@@ -26345,6 +26549,916 @@ function paneApply(){
   new MutationObserver(soon)
     .observe(document.documentElement,{attributes:true,attributeFilter:["data-layout"]});
   soon();
+})();
+
+
+/* ======================================================================
+   Teachbench, part two: the bridge to the student portal, lesson mode,
+   backup, and the business half.
+
+   Appended as one block rather than threaded through the TB module above.
+   Several sessions edit this file at once, and the end of the script is
+   the one place an append cannot collide with someone working mid-file.
+
+   The render hooks below wrap the existing tbRender* functions instead of
+   editing them, for the same reason: a wrapper is a one-line change at a
+   point nobody else is touching, where an inline edit is a merge conflict
+   waiting to happen.
+   ====================================================================== */
+
+/* ---------------------------------------------------------------- backup --
+   TB.buildBackup / TB.parseBackup already existed with no way to reach
+   them. This is that way. */
+
+function tbBackupSay(msg, bad){
+  const warn = $("#tbBackupWarn"), note = $("#tbBackupNote");
+  if(!warn || !note) return;
+  warn.hidden = !bad; note.hidden = !!bad;
+  (bad ? warn : note).textContent = msg || "";
+}
+
+function tbExportBackup(){
+  const data = TB.loadData();
+  const backup = TB.buildBackup(data, new Date().toISOString());
+  const stamp = new Date().toISOString().slice(0, 10);
+  try{
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type:"application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "teachbench-" + stamp + ".json";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    tbBackupSay(`Saved ${data.students.length} students, ${data.words.length} words, ${data.lessons.length} lessons.`, false);
+  }catch(err){
+    console.error("[Teachbench] export failed:", err);
+    tbBackupSay("Could not build the backup file.", true);
+  }
+}
+
+/* Held between choosing a file and confirming the replace, so the second
+   press acts on exactly the data the first press described. */
+let tbPendingImport = null;
+
+function tbShowImportConfirm(on){
+  const btn = $("#tbImportConfirm");
+  if(btn) btn.hidden = !on;
+}
+
+async function tbChooseImport(file){
+  tbPendingImport = null;
+  tbShowImportConfirm(false);
+  if(!file) return;
+  let text;
+  try{ text = await file.text(); }
+  catch(err){ return tbBackupSay("That file could not be read.", true); }
+
+  const parsed = TB.parseBackup(text);
+  if(!parsed.ok) return tbBackupSay(parsed.reason, true);
+
+  tbPendingImport = parsed;
+  const c = parsed.counts;
+  const when = parsed.exportedAt ? new Date(parsed.exportedAt).toLocaleDateString() : "an unknown date";
+  const now = TB.loadData();
+  tbBackupSay(
+    `That backup is from ${when}: ${c.students} students, ${c.words} words, ` +
+    `${c.lessons} lessons, ${c.materials} tasks. Restoring REPLACES what is here now ` +
+    `(${now.students.length} students, ${now.words.length} words). This cannot be undone.`, true);
+  tbShowImportConfirm(true);
+}
+
+function tbConfirmImport(){
+  if(!tbPendingImport) return;
+  const saved = TB.saveData(tbPendingImport.data);
+  if(!saved) return tbBackupSay("Could not write the restored data to this browser.", true);
+  tbPendingImport = null;
+  tbShowImportConfirm(false);
+  const f = $("#tbImportFile"); if(f) f.value = "";
+  tbBackupSay(`Restored ${saved.students.length} students and ${saved.words.length} words.`, false);
+  renderTeachbench();
+}
+
+/* ------------------------------------------------------- bulk word paste --
+   Ten seconds instead of ten separate form submissions. */
+
+/* A separator has to be unambiguous: "=", a tab or a semicolon anywhere,
+   but a hyphen or dash only with spaces around it, so "well-known" and
+   "e-mail" survive intact. */
+function tbParseBulkWords(text){
+  const words = [], seen = new Set();
+  let blank = 0;
+  String(text == null ? "" : text).split(/\r?\n/).forEach(line => {
+    const raw = line.trim();
+    if(!raw) return;
+    const parts = raw.split(/\s*(?:=|\t|;|\s+[—–-]\s+)\s*/);
+    const term = (parts[0] || "").trim();
+    if(!term){ blank++; return; }
+    const key = term.toLowerCase();
+    if(seen.has(key)) return;            // repeated inside the paste itself
+    seen.add(key);
+    words.push({
+      term,
+      definition: (parts[1] || "").trim(),
+      example:    (parts[2] || "").trim()
+    });
+  });
+  return { words, blank };
+}
+
+/* A word already in the bank under the same owner. Case- and
+   whitespace-insensitive, because "Fork " and "fork" are the same word and
+   two of them is how a vocabulary library stops being trusted. */
+function tbFindDuplicateWord(data, term, ownerId){
+  const key = String(term == null ? "" : term).trim().toLowerCase();
+  if(!key) return null;
+  const owner = ownerId || null;
+  return data.words.find(w =>
+    (w.ownerId || null) === owner &&
+    String(w.term || "").trim().toLowerCase() === key) || null;
+}
+
+function tbBulkSay(msg, bad){
+  const warn = $("#tbBulkWarn"), note = $("#tbBulkNote");
+  if(!warn || !note) return;
+  warn.hidden = !bad; note.hidden = !!bad;
+  (bad ? warn : note).textContent = msg || "";
+}
+
+function tbFillBulkListSelect(){
+  const sel = $("#tbBulkList");
+  if(!sel) return;
+  const data = TB.loadData();
+  const keep = sel.value;
+  sel.innerHTML = '<option value="">Unsorted</option>' +
+    data.vocabLists.map(l => `<option value="${esc(l.id)}">${esc(l.name)}</option>`).join("");
+  if(keep) sel.value = keep;
+}
+
+function tbAddBulkWords(){
+  const text = $("#tbBulkText").value;
+  const { words, blank } = tbParseBulkWords(text);
+  if(!words.length) return tbBulkSay("Nothing to add — put one word on each line.", true);
+
+  const data = TB.loadData();
+  const listId = $("#tbBulkList").value || null;
+  let added = 0;
+  const skipped = [];
+
+  for(const w of words){
+    const dupe = tbFindDuplicateWord(data, w.term, null);
+    if(dupe){ skipped.push(w.term); continue; }
+    data.words.push(TB.createWord({
+      term: w.term, definition: w.definition, example: w.example, listId
+    }));
+    added++;
+  }
+
+  if(!TB.saveData(data)) return tbBulkSay("Could not save — this browser's storage refused the write.", true);
+
+  $("#tbBulkText").value = "";
+  let msg = `Added ${added} ${added === 1 ? "word" : "words"}.`;
+  if(skipped.length) msg += ` Skipped ${skipped.length} already in the bank: ${skipped.slice(0, 6).join(", ")}${skipped.length > 6 ? "…" : ""}.`;
+  if(blank) msg += ` ${blank} ${blank === 1 ? "line" : "lines"} had no word and were ignored.`;
+  tbBulkSay(msg, false);
+  tbRenderWordBank();
+}
+
+/* ------------------------------------------------------------- the bridge --
+   Teachbench is localStorage and synchronous; the portal is Firestore and
+   async. They are not being merged — this is one thread between them, so a
+   word already typed here can become a flashcard there without retyping.
+
+   The Firebase SDK is loaded only when the portal is actually used, and
+   that stays true here: nothing below touches TBS until Margo presses a
+   button, so opening Teachbench remains as network-free as it has always
+   been. */
+
+let tbPortalStaff = null;      // resolved staff record, once connected
+let tbPortalRoster = [];       // the portal's students, once fetched
+let tbPortalUnsub = null;
+
+/* True only when a member of staff is already signed in on this device, so
+   connecting is instant and free. The mere presence of window.firebase is
+   not enough: the main app's own sync (PSYNC) loads the same compat SDK, so
+   testing for it would drag the portal open on every student page and
+   undo the rule that Teachbench stays network-free until asked. */
+function tbPortalAlreadyLoaded(){
+  try{
+    return typeof window.firebase !== "undefined"
+      && typeof firebase.auth === "function"
+      && !!(firebase.apps && firebase.apps.length)
+      && !!firebase.auth().currentUser
+      && !firebase.auth().currentUser.isAnonymous;
+  }catch(err){ return false; }
+}
+
+function tbPortalSay(msg){
+  const h = $("#tbPortalHint");
+  if(h) h.textContent = msg || "";
+}
+
+async function tbPortalConnect(){
+  tbPortalSay("Connecting to the portal…");
+  try{
+    tbPortalStaff = await TBS.currentStaff();
+  }catch(err){
+    console.warn("[Teachbench] portal connect:", err);
+    tbPortalStaff = null;
+  }
+  if(!tbPortalStaff){
+    tbPortalSay("Not signed in to the portal. Open Student Bench from the menu, sign in there, then come back.");
+    tbRenderPortalActions([{ id:"tbPortalRetry", label:"Try again" }]);
+    return;
+  }
+  await tbPortalLoadRoster();
+  tbRenderPortalCard();
+}
+
+function tbPortalLoadRoster(){
+  return new Promise(resolve => {
+    if(!tbPortalStaff) return resolve();
+    let settled = false;
+    try{
+      if(tbPortalUnsub){ tbPortalUnsub(); tbPortalUnsub = null; }
+      tbPortalUnsub = TBS.onRoster(tbPortalStaff, list => {
+        tbPortalRoster = Array.isArray(list) ? list : [];
+        /* The listener is live, so a later change re-renders the card in
+           place rather than going stale until the view is reopened. */
+        if(settled) tbRenderPortalCard();
+        else { settled = true; resolve(); }
+      });
+    }catch(err){
+      console.warn("[Teachbench] portal roster:", err);
+      if(!settled){ settled = true; resolve(); }
+    }
+    /* Never leave the card saying "Connecting…" for ever if the snapshot
+       never arrives. */
+    setTimeout(() => { if(!settled){ settled = true; resolve(); } }, 6000);
+  });
+}
+
+function tbRenderPortalActions(buttons){
+  const host = $("#tbPortalActions");
+  if(!host) return;
+  host.innerHTML = buttons.map(b =>
+    `<button type="button" class="btn mini${b.primary ? " primary" : ""}" id="${b.id}">${esc(b.label)}</button>`
+  ).join("");
+}
+
+function tbRenderPortalCard(){
+  const host = $("#tbPortalActions");
+  if(!host) return;
+  const student = tbDetailStudentId ? tbStudentById(tbDetailStudentId) : null;
+  if(!student){ tbPortalSay(""); host.innerHTML = ""; return; }
+
+  if(!tbPortalStaff){
+    if(tbPortalAlreadyLoaded()){
+      /* Already open in this session — connect quietly rather than making
+         her press a button for something that costs nothing. */
+      tbPortalConnect();
+      return;
+    }
+    tbPortalSay("Connect once to send words from the library straight to this student's flashcards.");
+    tbRenderPortalActions([{ id:"tbPortalConnectBtn", label:"Connect to the portal", primary:true }]);
+    return;
+  }
+
+  const linked = student.portalId
+    ? tbPortalRoster.find(p => p.id === student.portalId) || null
+    : null;
+
+  if(!student.portalId){
+    tbPortalSay("Not linked yet. Link this student to the same person in the portal and their words can become flashcards.");
+    tbRenderPortalActions([{ id:"tbPortalLinkBtn", label:"Link to a portal student", primary:true }]);
+    return;
+  }
+
+  if(!linked){
+    /* The link points at a student who is no longer in the roster —
+       deleted, or reassigned to another teacher. Say so plainly rather
+       than silently failing on the next push. */
+    tbPortalSay("Linked to a portal student that is no longer in your roster. Re-link to fix it.");
+    tbRenderPortalActions([
+      { id:"tbPortalLinkBtn", label:"Re-link", primary:true },
+      { id:"tbPortalUnlinkBtn", label:"Unlink" }
+    ]);
+    return;
+  }
+
+  tbPortalSay('Linked to "' + linked.name + '" in the portal.');
+  tbRenderPortalActions([
+    { id:"tbPortalPushBtn", label:"Send words to flashcards", primary:true },
+    { id:"tbPortalUnlinkBtn", label:"Unlink" }
+  ]);
+}
+
+function tbOpenPortalLinkDialog(){
+  const list = $("#tbPortalList");
+  if(!list) return;
+  $("#tbPortalWarn").hidden = true;
+  if(!tbPortalRoster.length){
+    list.innerHTML = `<p class="pday-sub">No students in the portal roster yet. Add them in Student Bench first.</p>`;
+  }else{
+    const taken = new Map(
+      TB.loadData().students.filter(s => s.portalId).map(s => [s.portalId, s.name]));
+    list.innerHTML = tbPortalRoster.map(p => {
+      const by = taken.get(p.id);
+      const mine = by && tbDetailStudentId && tbStudentById(tbDetailStudentId) &&
+                   tbStudentById(tbDetailStudentId).portalId === p.id;
+      const note = by && !mine ? ` <span class="tag check">already ${esc(by)}</span>` : "";
+      return `<button type="button" class="row" data-tb-portal-pick="${esc(p.id)}">
+        <span class="row-main"><span class="row-title" data-no-i18n>${esc(p.name)}</span>${note}</span>
+      </button>`;
+    }).join("");
+  }
+  $("#tbPortalDlg").showModal();
+}
+
+/* Every word this student has, in the shape the portal wants. Their own
+   private words come too — they are theirs. */
+function tbWordsForPush(data, studentId){
+  const links = data.studentWords.filter(sw => sw.studentId === studentId);
+  const byId = new Map(data.words.map(w => [w.id, w]));
+  const out = [];
+  for(const link of links){
+    const w = byId.get(link.wordId);
+    if(w) out.push({ word:w, status:link.status });
+  }
+  for(const w of data.words){
+    if(w.ownerId === studentId && !out.some(x => x.word.id === w.id)) out.push({ word:w, status:"not_started" });
+  }
+  return out.sort((a, b) => a.word.term.localeCompare(b.word.term));
+}
+
+let tbPushRows = [];
+
+function tbOpenPushDialog(){
+  const student = tbDetailStudentId ? tbStudentById(tbDetailStudentId) : null;
+  if(!student || !student.portalId) return;
+  const data = TB.loadData();
+  tbPushRows = tbWordsForPush(data, student.id);
+  $("#tbPushWarn").hidden = true;
+
+  const linked = tbPortalRoster.find(p => p.id === student.portalId);
+  $("#tbPushHint").textContent = tbPushRows.length
+    ? `These become flashcards for ${linked ? linked.name : "this student"}. An example sentence comes across too, which turns the same card into a gap-fill.`
+    : "This student has no words yet.";
+
+  $("#tbPushList").innerHTML = tbPushRows.map((r, i) => `
+    <label class="tb-push-row">
+      <input type="checkbox" data-tb-push="${i}" ${r.status === "learned" ? "" : "checked"}>
+      <span class="grow"><b data-no-i18n>${esc(r.word.term)}</b>
+        <small data-no-i18n>${esc(r.word.definition || "no meaning yet")}${r.word.example ? " · " + esc(r.word.example) : ""}</small></span>
+      ${r.status === "learned" ? '<span class="tag check">learned</span>' : ""}
+    </label>`).join("");
+  $("#tbPushDlg").showModal();
+}
+
+async function tbPushWords(){
+  const student = tbDetailStudentId ? tbStudentById(tbDetailStudentId) : null;
+  if(!student || !student.portalId) return;
+  const picked = Array.from(document.querySelectorAll("[data-tb-push]"))
+    .filter(cb => cb.checked)
+    .map(cb => tbPushRows[Number(cb.dataset.tbPush)])
+    .filter(Boolean);
+
+  if(!picked.length){
+    $("#tbPushWarn").hidden = false;
+    $("#tbPushWarn").textContent = "Nothing selected.";
+    return;
+  }
+
+  const go = $("#tbPushGo");
+  go.disabled = true;
+  $("#tbPushWarn").hidden = false;
+  $("#tbPushWarn").textContent = `Sending 0 of ${picked.length}…`;
+
+  let sent = 0;
+  const failed = [];
+  for(const r of picked){
+    try{
+      await TBS.addCard(student.portalId, {
+        type: "vocab",
+        front: r.word.term,
+        back: r.word.definition || r.word.term,
+        explanation: null,
+        example: r.word.example || null
+      });
+      sent++;
+      $("#tbPushWarn").textContent = `Sending ${sent} of ${picked.length}…`;
+    }catch(err){
+      console.warn("[Teachbench] push word:", err);
+      failed.push(r.word.term);
+    }
+  }
+
+  if(failed.length){
+    $("#tbPushWarn").textContent =
+      `Sent ${sent}. ${failed.length} could not be sent: ${failed.slice(0, 5).join(", ")}${failed.length > 5 ? "…" : ""}.`;
+    go.disabled = false;
+    return;
+  }
+  $("#tbPushDlg").close();
+  go.disabled = false;
+  tbPortalSay(`Sent ${sent} ${sent === 1 ? "word" : "words"} to the portal.`);
+}
+
+/* -------------------------------------------------------- lesson mode -----
+   The app was only ever used before a lesson to plan and after it to
+   record. The hour in between is when everything worth capturing actually
+   happens, and it is the hour with no screen for it.
+
+   The load-bearing part is the last button: words jotted here become
+   flashcards without being retyped. If adding cards after a lesson takes
+   five minutes it happens for three weeks and then stops. */
+
+let tbRunLessonId = null;
+let tbRunAttendVal = "";
+
+function tbOpenRunDialog(lessonId){
+  const data = TB.loadData();
+  const l = data.lessons.find(x => x.id === lessonId);
+  if(!l) return;
+  const student = data.students.find(s => s.id === l.studentId);
+  tbRunLessonId = lessonId;
+  tbRunAttendVal = l.attendance || "";
+
+  $("#tbRunTitle").textContent = student ? student.name : "Lesson";
+  $("#tbRunMeta").textContent =
+    (l.date ? tbFormatLessonDate(l.date) : "No date") + (l.time ? " · " + l.time : "");
+  $("#tbRunPlan").textContent = l.plan || "Nothing planned.";
+  $("#tbRunPlanField").hidden = false;
+  $("#tbRunCatch").value = (l.caught || []).join("\n");
+  $("#tbRunNotes").value = l.notes || "";
+  $("#tbRunWarn").hidden = true;
+  $("#tbRunSaved").hidden = true;
+  tbSyncRunAttend();
+  $("#tbRunDlg").showModal();
+  setTimeout(() => $("#tbRunCatch").focus(), 80);
+}
+
+function tbSyncRunAttend(){
+  document.querySelectorAll("#tbRunAttend [data-attend]").forEach(b =>
+    b.setAttribute("aria-pressed", String(b.dataset.attend === tbRunAttendVal)));
+}
+
+/* Saves the scratch pad, the notes and the attendance. Returns the parsed
+   words so the caller can decide whether to make cards from them. */
+function tbSaveRunLesson(){
+  if(!tbRunLessonId) return null;
+  const data = TB.loadData();
+  const idx = data.lessons.findIndex(x => x.id === tbRunLessonId);
+  if(idx < 0) return null;
+
+  const parsed = tbParseBulkWords($("#tbRunCatch").value);
+  data.lessons[idx] = {
+    ...data.lessons[idx],
+    notes: $("#tbRunNotes").value,
+    attendance: tbRunAttendVal,
+    caught: parsed.words.map(w =>
+      [w.term, w.definition, w.example].filter(Boolean).join(" = "))
+  };
+
+  if(!TB.saveData(data)){
+    $("#tbRunWarn").hidden = false;
+    $("#tbRunWarn").textContent = "Could not save — this browser's storage refused the write.";
+    return null;
+  }
+  $("#tbRunSaved").hidden = false;
+  setTimeout(() => { const el = $("#tbRunSaved"); if(el) el.hidden = true; }, 1600);
+  return { lesson:data.lessons[idx], words:parsed.words };
+}
+
+/* The one button the whole system rests on. Words caught during the lesson
+   go into the student's vocabulary, and — if the student is linked — on to
+   the portal as flashcards in the same press. */
+async function tbRunMakeCards(){
+  const saved = tbSaveRunLesson();
+  if(!saved) return;
+  const words = saved.words;
+  if(!words.length){
+    $("#tbRunWarn").hidden = false;
+    $("#tbRunWarn").textContent = "No words caught, so there is nothing to make cards from.";
+    return;
+  }
+
+  const data = TB.loadData();
+  const studentId = saved.lesson.studentId;
+  const now = new Date().toISOString();
+  const made = [];
+  let reused = 0;
+
+  for(const w of words){
+    let word = tbFindDuplicateWord(data, w.term, null) || tbFindDuplicateWord(data, w.term, studentId);
+    if(word){
+      reused++;
+      /* Fill in a meaning or an example the teacher has now supplied for a
+         word that was previously bare. */
+      if(!word.definition && w.definition) word.definition = w.definition;
+      if(!word.example && w.example) word.example = w.example;
+    }else{
+      word = TB.createWord({ term:w.term, definition:w.definition, example:w.example, listId:null });
+      data.words.push(word);
+    }
+    if(!data.studentWords.some(sw => sw.studentId === studentId && sw.wordId === word.id)){
+      data.studentWords.push(TB.createStudentWord(studentId, word.id, "learning", now));
+    }
+    made.push(word);
+  }
+
+  if(!TB.saveData(data)){
+    $("#tbRunWarn").hidden = false;
+    $("#tbRunWarn").textContent = "Could not save the words.";
+    return;
+  }
+
+  const student = data.students.find(s => s.id === studentId);
+  let msg = `${made.length} ${made.length === 1 ? "word" : "words"} added to ${student ? student.name : "the student"}`;
+  if(reused) msg += ` (${reused} already existed and were reused)`;
+
+  /* Push to the portal too, when there is a portal to push to. Silence
+     here would be the worst outcome: she would think the cards existed. */
+  if(student && student.portalId && tbPortalStaff){
+    let sent = 0, failed = 0;
+    for(const word of made){
+      try{
+        await TBS.addCard(student.portalId, {
+          type:"vocab", front:word.term,
+          back:word.definition || word.term,
+          explanation:null, example:word.example || null
+        });
+        sent++;
+      }catch(err){ console.warn("[Teachbench] lesson push:", err); failed++; }
+    }
+    msg += failed ? `. ${sent} sent to the portal, ${failed} failed.` : `, and all ${sent} sent to the portal as flashcards.`;
+  }else if(student && student.portalId && !tbPortalStaff){
+    msg += ". Not sent to the portal — connect to it on this student's page first.";
+  }else{
+    msg += ". Link this student to the portal to send them as flashcards too.";
+  }
+
+  $("#tbRunWarn").hidden = false;
+  $("#tbRunWarn").textContent = msg;
+  tbRenderStudentDetail();
+}
+
+/* ------------------------------------------------- attendance and money ---- */
+
+function tbAttendLabel(v){
+  return v === "attended" ? "attended"
+       : v === "noshow"   ? "no-show"
+       : v === "excused"  ? "excused" : "";
+}
+
+function tbMoney(n){
+  if(n == null || !Number.isFinite(n)) return "—";
+  return new Intl.NumberFormat(L.lang === "cs" ? "cs-CZ" : "en-GB",
+    { maximumFractionDigits:0 }).format(n);
+}
+
+function tbRenderAccount(){
+  const host = $("#tbDetailAccount");
+  if(!host) return;
+  const student = tbDetailStudentId ? tbStudentById(tbDetailStudentId) : null;
+  if(!student){ host.innerHTML = ""; return; }
+
+  const data = TB.loadData();
+  const a = TB.lessonAccount(data, student.id);
+
+  const rateInput = $("#tbDetailRate");
+  if(rateInput && document.activeElement !== rateInput){
+    rateInput.value = student.rate == null ? "" : String(student.rate);
+  }
+
+  const cell = (n, label, cls) =>
+    `<div class="tb-acct-cell${cls ? " " + cls : ""}"><b>${esc(String(n))}</b><small>${esc(label)}</small></div>`;
+
+  const leftCls = a.purchased === 0 ? "" : a.left <= 0 ? "bad" : a.left <= 2 ? "warn" : "good";
+  host.innerHTML =
+    cell(a.attended, "attended") +
+    cell(a.noshow, "no-shows", a.noshow ? "bad" : "") +
+    cell(a.lateCancelled, "late cancels", a.lateCancelled ? "warn" : "") +
+    (a.purchased ? cell(a.left, "lessons left", leftCls) : "") +
+    (a.owed == null ? "" : cell(tbMoney(a.owed), "charged so far")) +
+    (a.paidTotal ? cell(tbMoney(a.paidTotal), "paid") : "") +
+    (a.unmarked ? cell(a.unmarked, "not marked", "warn") : "");
+
+  const pays = data.payments.filter(p => p.studentId === student.id)
+    .sort((x, y) => (y.date || "").localeCompare(x.date || ""));
+  $("#tbDetailPayments").innerHTML = pays.length
+    ? `<div class="field-label">Payments</div>` + pays.map(p =>
+        `<div class="tb-pay-row"><span data-no-i18n>${esc(p.date || "no date")} · ${esc(String(p.lessons))} lessons${p.amount ? " · " + esc(tbMoney(p.amount)) : ""}${p.note ? " · " + esc(p.note) : ""}</span>
+         <button type="button" class="btn mini" data-tb-pay-del="${esc(p.id)}">Remove</button></div>`).join("")
+    : "";
+}
+
+/* A month as plain text she can paste into an invoice, an email or a
+   message. Not payment processing — just the paperwork that currently
+   happens in a notebook. */
+function tbStatementText(data, student, year, month){
+  const pad = n => String(n).padStart(2, "0");
+  const from = `${year}-${pad(month + 1)}-01`;
+  const last = new Date(year, month + 1, 0).getDate();
+  const to   = `${year}-${pad(month + 1)}-${pad(last)}`;
+  const monthName = new Date(year, month, 1)
+    .toLocaleDateString(L.lang === "cs" ? "cs-CZ" : "en-GB", { month:"long", year:"numeric" });
+
+  const mine = data.lessons
+    .filter(l => l.studentId === student.id && l.date >= from && l.date <= to)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const lines = [];
+  lines.push(`${student.name} — ${monthName}`);
+  lines.push("");
+
+  let charged = 0;
+  for(const l of mine){
+    const bill = TB.isChargeable(l);
+    if(bill) charged++;
+    const what = l.state === "cancelled"
+      ? (TB.isLateCancel(l) ? "cancelled late" : "cancelled")
+      : (tbAttendLabel(l.attendance) || "not marked");
+    lines.push(`${l.date}${l.time ? " " + l.time : ""}  ${what}${bill ? "  [charged]" : ""}`);
+  }
+  if(!mine.length) lines.push("No lessons this month.");
+
+  lines.push("");
+  lines.push(`Lessons charged: ${charged}`);
+  if(student.rate != null){
+    lines.push(`Rate per lesson: ${tbMoney(student.rate)}`);
+    lines.push(`Total: ${tbMoney(charged * student.rate)}`);
+  }else{
+    lines.push("Rate per lesson: not set");
+  }
+
+  const account = TB.lessonAccount(data, student.id);
+  if(account.purchased){
+    lines.push("");
+    lines.push(`Lessons paid for in total: ${account.purchased}`);
+    lines.push(`Used: ${account.used}`);
+    lines.push(`Remaining: ${account.left}`);
+  }
+  return lines.join("\n");
+}
+
+async function tbCopyStatement(){
+  const student = tbDetailStudentId ? tbStudentById(tbDetailStudentId) : null;
+  if(!student) return;
+  const now = new Date();
+  const text = tbStatementText(TB.loadData(), student, now.getFullYear(), now.getMonth());
+  try{
+    await navigator.clipboard.writeText(text);
+    const el = $("#tbStatementCopied");
+    if(el){ el.hidden = false; setTimeout(() => { el.hidden = true; }, 1600); }
+  }catch(err){
+    /* Clipboard access can be refused; showing the text is better than
+       silently doing nothing. */
+    console.warn("[Teachbench] clipboard:", err);
+    window.prompt("Copy this month's statement:", text);
+  }
+}
+
+/* ------------------------------------------------------------- can-do ----- */
+
+function tbRenderCanDo(){
+  const host = $("#tbDetailCanDo");
+  if(!host) return;
+  const student = tbDetailStudentId ? tbStudentById(tbDetailStudentId) : null;
+  if(!student){ host.innerHTML = ""; return; }
+
+  const data = TB.loadData();
+  const ticked = new Set(data.canDo.filter(c => c.studentId === student.id).map(c => c.itemId));
+
+  /* Show the student's own level and the one below and above it: the ones
+     below are what they should already have, the one above is what to aim
+     at. Showing all of A1 to C1 at once would be a wall. */
+  const order = ["a1", "a2", "b1", "b2", "c1"];
+  const base = String(student.level || "a1").replace("p", "");
+  const at = Math.max(0, order.indexOf(base));
+  const show = order.slice(Math.max(0, at - 1), at + 2);
+
+  host.innerHTML = show.map(lvl => {
+    const items = TB.CANDO.filter(c => c.level === lvl);
+    if(!items.length) return "";
+    const done = items.filter(c => ticked.has(c.id)).length;
+    return `<div>
+      <div class="sec-head" style="margin-bottom:6px">
+        <span class="field-label">${esc(lvl.toUpperCase())}</span>
+        <span class="pday-sub">${done} of ${items.length}</span>
+      </div>
+      <div class="stack" style="gap:2px">${items.map(c => `
+        <label class="tb-cando${ticked.has(c.id) ? " on" : ""}">
+          <input type="checkbox" data-tb-cando="${esc(c.id)}"${ticked.has(c.id) ? " checked" : ""}>
+          <span>${esc(c.text)}</span>
+        </label>`).join("")}</div>
+    </div>`;
+  }).join("");
+}
+
+function tbToggleCanDo(itemId, on){
+  const student = tbDetailStudentId ? tbStudentById(tbDetailStudentId) : null;
+  if(!student) return;
+  const data = TB.loadData();
+  data.canDo = data.canDo.filter(c => !(c.studentId === student.id && c.itemId === itemId));
+  if(on) data.canDo.push({ studentId:student.id, itemId, doneOn:tbTodayPlain() });
+  TB.saveData(data);
+  tbRenderCanDo();
+}
+
+/* ------------------------------------------------------- render hooks -----
+   The existing render functions are wrapped rather than edited. Several
+   sessions work in this file at once, and a wrapper at the end of the
+   script cannot collide with someone editing the middle of the module. */
+
+const tbBaseRenderStudentDetail = tbRenderStudentDetail;
+tbRenderStudentDetail = function(){
+  tbBaseRenderStudentDetail.apply(this, arguments);
+  tbRenderPortalCard();
+  tbRenderAccount();
+  tbRenderCanDo();
+};
+
+const tbBaseRenderWordBank = tbRenderWordBank;
+tbRenderWordBank = function(){
+  tbBaseRenderWordBank.apply(this, arguments);
+  tbFillBulkListSelect();
+};
+
+/* Lesson rows gain an attendance badge and a way into lesson mode. Wrapping
+   the renderer and rewriting its output would be fragile, so this walks the
+   rows it produced and annotates them — the row markup stays owned by the
+   function that built it. */
+const tbBaseRenderDetailLessons = tbRenderDetailLessons;
+tbRenderDetailLessons = function(host, data, studentId){
+  tbBaseRenderDetailLessons.call(this, host, data, studentId);
+  if(!host) return;
+  const byId = new Map(data.lessons.map(l => [l.id, l]));
+  host.querySelectorAll("[data-tb-lesson-open]").forEach(row => {
+    const l = byId.get(row.dataset.tbLessonOpen);
+    if(!l) return;
+
+    const sub = row.querySelector(".row-sub");
+    const mark = tbAttendLabel(l.attendance);
+    if(sub && mark){
+      const tag = document.createElement("span");
+      tag.className = "tag " + (l.attendance === "noshow" ? "warn" : "check");
+      tag.textContent = mark;
+      tag.style.marginLeft = "6px";
+      sub.appendChild(tag);
+    }
+    if(sub && l.state === "cancelled" && TB.isLateCancel(l)){
+      const tag = document.createElement("span");
+      tag.className = "tag warn";
+      tag.textContent = "late";
+      tag.style.marginLeft = "6px";
+      sub.appendChild(tag);
+    }
+
+    /* The button is a sibling, not a child: a <button> inside a <button>
+       is invalid and the inner one never receives its own clicks. */
+    const run = document.createElement("button");
+    run.type = "button";
+    run.className = "btn mini tb-run-btn";
+    run.dataset.tbRun = l.id;
+    run.textContent = "Run";
+    run.setAttribute("aria-label", t("Run this lesson"));
+    const wrap = document.createElement("div");
+    wrap.className = "tb-lesson-line";
+    row.parentNode.insertBefore(wrap, row);
+    wrap.appendChild(row);
+    wrap.appendChild(run);
+  });
+};
+
+/* ------------------------------------------------------------- wiring ----- */
+
+(function tbWireExtras(){
+  const on = (sel, ev, fn) => { const el = $(sel); if(el) el.addEventListener(ev, fn); };
+
+  on("#tbExportBtn", "click", tbExportBackup);
+  on("#tbImportFile", "change", e => tbChooseImport(e.target.files && e.target.files[0]));
+
+  on("#tbBulkForm", "submit", e => { e.preventDefault(); tbAddBulkWords(); });
+
+  on("#tbDetailRateSave", "click", () => {
+    const student = tbDetailStudentId ? tbStudentById(tbDetailStudentId) : null;
+    if(!student) return;
+    const raw = $("#tbDetailRate").value.trim();
+    const val = raw === "" ? null : Number(raw);
+    const data = TB.loadData();
+    const s = data.students.find(x => x.id === student.id);
+    if(!s) return;
+    s.rate = raw === "" ? null : (Number.isFinite(val) && val >= 0 ? val : null);
+    TB.saveData(data);
+    const el = $("#tbDetailRateSaved");
+    if(el){ el.hidden = false; setTimeout(() => { el.hidden = true; }, 1600); }
+    tbRenderAccount();
+  });
+
+  on("#tbCopyStatement", "click", tbCopyStatement);
+
+  on("#tbAddPayment", "click", () => {
+    if(!tbDetailStudentId) return;
+    $("#tbPayDate").value = tbTodayPlain();
+    $("#tbPayLessons").value = "10";
+    $("#tbPayAmount").value = "";
+    $("#tbPayNote").value = "";
+    $("#tbPayWarn").hidden = true;
+    $("#tbPayDlg").showModal();
+  });
+  on("#tbPayCancel", "click", () => $("#tbPayDlg").close());
+  on("#tbPayForm", "submit", e => {
+    e.preventDefault();
+    const student = tbDetailStudentId ? tbStudentById(tbDetailStudentId) : null;
+    if(!student) return;
+    const lessons = Number($("#tbPayLessons").value);
+    if(!Number.isFinite(lessons) || lessons < 1){
+      $("#tbPayWarn").hidden = false;
+      $("#tbPayWarn").textContent = "How many lessons does this pay for?";
+      return;
+    }
+    const data = TB.loadData();
+    data.payments.push(TB.createPayment({
+      studentId: student.id,
+      date: $("#tbPayDate").value,
+      lessons,
+      amount: Number($("#tbPayAmount").value) || 0,
+      note: $("#tbPayNote").value
+    }));
+    TB.saveData(data);
+    $("#tbPayDlg").close();
+    tbRenderAccount();
+  });
+
+  /* Lesson mode */
+  on("#tbRunClose", "click", () => $("#tbRunDlg").close());
+  on("#tbRunSaveOnly", "click", () => { tbSaveRunLesson(); tbRenderStudentDetail(); });
+  on("#tbRunForm", "submit", e => { e.preventDefault(); tbRunMakeCards(); });
+  on("#tbRunAttend", "click", e => {
+    const b = e.target.closest("[data-attend]");
+    if(!b) return;
+    /* Pressing the marked one again clears it, so a mis-tap is undoable
+       without having to guess which button means "not marked". */
+    tbRunAttendVal = tbRunAttendVal === b.dataset.attend ? "" : b.dataset.attend;
+    tbSyncRunAttend();
+  });
+
+  /* Portal */
+  on("#tbPortalCancel", "click", () => $("#tbPortalDlg").close());
+  on("#tbPushCancel", "click", () => $("#tbPushDlg").close());
+  on("#tbPushForm", "submit", e => { e.preventDefault(); tbPushWords(); });
+  on("#tbPushAll", "click", () =>
+    document.querySelectorAll("[data-tb-push]").forEach(cb => { cb.checked = true; }));
+  on("#tbPushNone", "click", () =>
+    document.querySelectorAll("[data-tb-push]").forEach(cb => { cb.checked = false; }));
+
+  /* Delegated, because these are rendered and re-rendered rather than
+     existing once in the markup. */
+  document.addEventListener("click", e => {
+    const run = e.target.closest("[data-tb-run]");
+    if(run){ e.preventDefault(); e.stopPropagation(); return tbOpenRunDialog(run.dataset.tbRun); }
+
+    if(e.target.closest("#tbPortalConnectBtn") || e.target.closest("#tbPortalRetry")) return tbPortalConnect();
+    if(e.target.closest("#tbPortalLinkBtn")) return tbOpenPortalLinkDialog();
+    if(e.target.closest("#tbPortalPushBtn")) return tbOpenPushDialog();
+    if(e.target.closest("#tbImportConfirm")) return tbConfirmImport();
+
+    if(e.target.closest("#tbPortalUnlinkBtn")){
+      const data = TB.loadData();
+      const s = data.students.find(x => x.id === tbDetailStudentId);
+      if(s){ s.portalId = null; TB.saveData(data); tbRenderPortalCard(); }
+      return;
+    }
+
+    const pick = e.target.closest("[data-tb-portal-pick]");
+    if(pick){
+      const data = TB.loadData();
+      const s = data.students.find(x => x.id === tbDetailStudentId);
+      if(s){
+        /* One portal student belongs to one Teachbench student. Claiming
+           a link steals it rather than silently creating two owners. */
+        data.students.forEach(x => { if(x.portalId === pick.dataset.tbPortalPick) x.portalId = null; });
+        s.portalId = pick.dataset.tbPortalPick;
+        TB.saveData(data);
+      }
+      $("#tbPortalDlg").close();
+      tbRenderPortalCard();
+      return;
+    }
+
+    const payDel = e.target.closest("[data-tb-pay-del]");
+    if(payDel){
+      const data = TB.loadData();
+      data.payments = data.payments.filter(p => p.id !== payDel.dataset.tbPayDel);
+      TB.saveData(data);
+      tbRenderAccount();
+      return;
+    }
+  });
+
+  document.addEventListener("change", e => {
+    const cd = e.target.closest("[data-tb-cando]");
+    if(cd) tbToggleCanDo(cd.dataset.tbCando, cd.checked);
+  });
 })();
 
 </script>
