@@ -3573,7 +3573,23 @@ html[data-design="r3"]{
    data-orient so every design and palette keeps working underneath.
    ============================================================================ */
 
-/* ---------------- phone ---------------- */
+/* ---------------- phone ----------------
+   Glass off. `backdrop-filter` appears on 39 rules, which lands on ~400
+   elements in the document — every .btn wears one — and each is a separate
+   compositing layer that has to re-sample what is behind it on every frame
+   that moves. On a phone that is the single most expensive thing the app
+   does, for an effect nobody can see at that size on that hardware.
+
+   The tokens go opaque so nothing turns washed out with the blur gone, and
+   the wildcard catches the rules that hard-code blur() instead of using the
+   token (.nav, and a handful in the design skins). */
+html[data-layout="phone"]{
+  --glass-blur:none;
+  --glass-fill:var(--surface); --glass-fill-2:var(--surface); --glass-sheen:var(--surface);
+}
+html[data-layout="phone"] *{
+  backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+}
 html[data-layout="phone"] main{ padding:10px 10px 84px; max-width:none }
 html[data-layout="phone"] .pad{ padding:13px 13px }
 html[data-layout="phone"] .card-sec{ padding:11px 12px }

@@ -76,8 +76,11 @@ text cut mid-word, every control reachable and >=44px on touch.
 
 ## 4 · Performance
 
-- ☐ `backdrop-filter` audit — it is the most expensive thing in the file and
-  the prime suspect for jerk
+- ☑ `backdrop-filter` audit — 39 rules landing on ~400 elements in the
+  document, every .btn included; each is a compositing layer that re-samples
+  what is behind it on every moving frame. Phone: 402 → 0, tokens made opaque
+  so nothing washes out, look unchanged in side-by-side. Desktop keeps its
+  glass (393) — it is visible there and the hardware affords it.
 - ☐ Planner render cost (the board redraws in full on every change)
 - ☐ Long lists: garden, plants, log, notes
 - ☐ Boot: time to first meaningful paint
