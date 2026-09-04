@@ -8,6 +8,13 @@ still outstanding.
 Last updated at the end of the build session that created the student
 portal.
 
+**The original brief is preserved alongside this file** at
+`docs/teachbench-student-spec.md` — Margo's own requirements, gathered in
+a voice interview before any code existed. Where this handover says "the
+spec", that is the document it means. Read it if you are deciding what to
+build next; it carries her priorities and her reasoning, which this file
+only summarises.
+
 ---
 
 # 1. What this is
