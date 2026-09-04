@@ -3855,6 +3855,42 @@ html[data-pane="1"] main > .view[data-pane-role]{
 html[data-pane="1"] main > .view[data-pane-role="detail"] .pv-back{ display:none }
 html[data-pane="1"] main > .view[data-pane-role="list"] .sec-head h2{ font-size:19px }
 @media (max-width:1179px){ html[data-pane="1"] main{ display:block } }
+
+/* ---------------- a phone board with more days than fit ----------------
+   The phone rules above drop .wb-grid's min-width and .wb-col's min-width so a
+   Day fills the screen instead of overflowing it by 300px. Applied to every
+   scope, which is what they did, that is also exactly what scrambled Month:
+   thirty flex:1 1 0 columns dividing the 341px left of a 375px phone gave each
+   day 9.7px, so every weekday name printed straight over its neighbours and
+   every block was a sliver too thin to read, tap or drag.
+
+   A board may only shrink to the viewport when the viewport can hold it. Past
+   that it keeps a column you can actually read and scrolls sideways, which is
+   what the desktop has always done and what Plachta does by design. Eight days
+   is the line: a week still divides a phone into legible 41px columns (the
+   header wraps to WED / 2 and stays inside its column), a month does not.
+
+   pBoardShowToday() then does the rest for free — it bails out early while the
+   whole range fits, and starts centring today the moment the board overflows.
+   Plachta is untouched: its scroll maths reads position off a known column
+   pitch, so its width must stay exactly --plachta-colw. */
+html[data-layout="phone"] .wb-many .wb-grid{ min-width:max-content }
+html[data-layout="phone"] .wb-many .wb-col{ flex:0 0 52px; min-width:0 }
+/* 52px is enough for an uppercase three-letter weekday but not for it plus a
+   date on one line, so the date is put on its own line deliberately rather
+   than left to wrap wherever it lands — and the button clips, so no future
+   label can ever spill over the column next door again. */
+html[data-layout="phone"] .wb-many .wb-head{
+  padding:4px 1px 3px; margin:2px 1px; font-size:11px; line-height:1.25;
+  overflow:hidden; white-space:nowrap;
+}
+html[data-layout="phone"] .wb-many .wb-head b{
+  display:block; margin-right:0; font-size:9px; letter-spacing:.02em;
+}
+/* the all-day lane and the parked-chip row hold text, not blocks, so they need
+   the same clipping at this width */
+html[data-layout="phone"] .wb-many .wb-adtask,
+html[data-layout="phone"] .wb-many .wb-qchip{ font-size:9.5px; padding:1px 4px }
 </style>
 
 <style id="dz-structural">
@@ -7963,7 +7999,7 @@ const $=s=>document.querySelector(s);
 /* Build stamp. `n` is incremented by bump.py at publish time so two phones can
    be compared at a glance — an installed PWA serving a stale service-worker
    cache is otherwise indistinguishable from an up-to-date one. */
-const BUILD={ver:"1.0",n:54,at:"2026-09-04"};
+const BUILD={ver:"1.0",n:55,at:"2026-09-04"};
 const uid=()=>Math.random().toString(36).slice(2,9);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
@@ -10830,7 +10866,13 @@ function pBoardHtml(days,opts){
     ${lot.length?lot.join(""):`<small class="hint" style="margin:0">${esc(t("Nothing parked — everything has a time."))}</small>`}
   </div>`;
 
-  return `<div class="wb${opts&&opts.plachta?" wb-plachta":""}" id="pWeekBoard" data-starth="${startH}" data-maxshift="${maxShift}" style="--adrows:${adRows}; --qrows:${qRows}">
+  /* How many days are on the board is a fact the stylesheet needs and cannot
+     work out for itself: a phone can share its width between one day or seven,
+     but not between thirty. Marked as a class rather than a count so CSS can
+     branch on it — .wb-many and .wb-plachta are mutually exclusive by
+     construction, because Plachta already owns its own column pitch. */
+  const spread=opts&&opts.plachta?" wb-plachta":days.length===1?" wb-one":days.length>8?" wb-many":"";
+  return `<div class="wb${spread}" id="pWeekBoard" data-starth="${startH}" data-maxshift="${maxShift}" style="--adrows:${adRows}; --qrows:${qRows}">
     ${parking}
     <div class="wb-scroll"><div class="wb-grid">${gutter}${cols}</div></div></div>`;
 }
