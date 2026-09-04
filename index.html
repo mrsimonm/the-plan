@@ -2116,6 +2116,10 @@ textarea.desc{min-height:66px; font-family:var(--font); font-size:15px}
 .ev-type.chore{color:var(--ink-2)}
 .ev-type.cut{color:var(--accent)}
 .ev-type.spray{color:var(--ok)}
+.ev-type.leaf{color:var(--ok)}
+/* the foliage block shares the Growth card with the photo strip, so it needs a
+   rule off the top rather than a gap that collapses when there are no photos */
+.foliage{padding-top:12px; border-top:1px solid var(--line)}
 .mdots i.x{background:var(--ink); opacity:.55; border-radius:1px; width:5px; height:5px}
 .ev-type.feed{color:var(--amber)}
 /* was clipped to one line — "Monstera delic…" on any plant with a real
@@ -8867,6 +8871,40 @@ const taskProgress=()=>{
 const routineOf=(sid,kind)=>S.routines.find(r=>r.subjectId===sid&&r.kind===kind);
 const CARE_ORDER=["water","feed","spray"];
 const DID={water:"Watered",feed:"Fed",spray:"Sprayed"};
+
+/* ---- foliage ----
+   A new leaf is logged as an ordinary event so it lands in the same log as
+   everything else, but it is an OBSERVATION, not a chore: it has no routine,
+   it never falls due, and nobody performed it. That distinction is why leaf
+   events are filtered back out of pRewardCount (noticing a leaf is not the
+   same as having watered something), out of the calendar's history rows, and
+   out of the library footer's "logged" count. Each of those three means care
+   done, and quietly inflating them with leaves would make all three lie.
+
+   `n` is how many leaves appeared at once. Nothing writes anything but 1 yet
+   — one tap is one leaf, and several leaves are several taps — but the field
+   exists so a leaf entry always answers "how many" in one place, and reading
+   it back tolerates its absence. */
+const isLeafEv=e=>e&&(e.kind||e.type)==="leaf";
+const leafEventsFor=sid=>S.events.filter(e=>isLeafEv(e)&&e.subjectId===sid)
+  .sort((a,b)=>b.at.localeCompare(a.at));          // newest first
+const leafTotal=evs=>evs.reduce((sum,e)=>sum+(+e.n>0?+e.n:1),0);
+/* Labels for events with no routine behind them to take a name from. */
+const EV_LABEL={leaf:"New leaf"};
+const evLabel=e=>EV_LABEL[e.kind||e.type]||(e.kind||e.type||"log");
+
+/* One tap is one leaf, so a mistap is a wrong date in the record the rate
+   will eventually be built from. Undo stays offered for the rest of the day
+   and then goes: same-day slips are a typo, older ones are history, and an
+   older entry can still be removed deliberately from the log. */
+const leafUndoable=e=>!!e&&ymd(new Date(e.at))===ymd(Date.now());
+function foliageLine(evs){
+  if(!evs.length) return "Nothing logged yet. Tap + New leaf on the day you spot one — "
+    +"those dates are what a leaves-per-month figure gets built from.";
+  const n=leafTotal(evs);
+  return `${n} ${n===1?"leaf":"leaves"} logged · newest ${ago(evs[0].at)}`;
+}
+
 const careRoutines=sid=>routinesFor(sid)
   .slice().sort((a,b)=>CARE_ORDER.indexOf(a.kind)-CARE_ORDER.indexOf(b.kind));
 function renderSubjects(){
@@ -9547,7 +9585,9 @@ function pEnsureView(){
 function pRewardCount(iso){
   const tasks=(S.planner.tasks||[]).filter(tk=>tk.done&&(
     (tk.doneAt&&ymd(new Date(tk.doneAt))===iso)||(!tk.doneAt&&tk.due===iso))).length;
-  const care=((S.events)||[]).filter(e=>e&&e.at&&ymd(new Date(e.at))===iso).length;
+  /* leaves excluded: a new leaf is something the plant did, not something you
+     did, so it must not earn a flower here */
+  const care=((S.events)||[]).filter(e=>e&&e.at&&!isLeafEv(e)&&ymd(new Date(e.at))===iso).length;
   return tasks+care;
 }
 function pRewards(){
@@ -9579,7 +9619,9 @@ function pRewards(){
 function pRewardCount(iso){
   const tasks=(S.planner.tasks||[]).filter(tk=>tk.done&&(
     (tk.doneAt&&ymd(new Date(tk.doneAt))===iso)||(!tk.doneAt&&tk.due===iso))).length;
-  const care=((S.events)||[]).filter(e=>e&&e.at&&ymd(new Date(e.at))===iso).length;
+  /* leaves excluded: a new leaf is something the plant did, not something you
+     did, so it must not earn a flower here */
+  const care=((S.events)||[]).filter(e=>e&&e.at&&!isLeafEv(e)&&ymd(new Date(e.at))===iso).length;
   return tasks+care;
 }
 function pRewards(){
@@ -13680,7 +13722,7 @@ function renderLibrary(){
     <span class="chev" aria-hidden="true">›</span></button>`).join("");
   const n=subjectsIn("plants").length;
   $("#libFoot").textContent=`${plural(n,"plant")} · ${plural(S.formulas.length,"formula")} · ${
-    plural(S.products.length,"product")} · ${S.events.length} logged`;
+    plural(S.products.length,"product")} · ${S.events.filter(e=>!isLeafEv(e)).length} logged`;
 }
 $("#libMenu").addEventListener("click",e=>{
   const b=e.target.closest("[data-go]"); if(b) show(b.dataset.go);
@@ -13739,6 +13781,7 @@ function renderPlant(){
   const sc=p.schedId?schedById(p.schedId):null, pf=plantFormula(p);
   const sp=speciesFind(p.species);
 
+  const leaves=leafEventsFor(p.id);
   const heights=shots.filter(x=>x.h);
   const span=(a,b)=>{ const d=Math.round((new Date(b)-new Date(a))/DAY);
     if(d<14) return `${d} day${d===1?"":"s"}`;
@@ -13806,6 +13849,14 @@ function renderPlant(){
         </button>`).join("")}</div>
         ${curve}${growth?`<div class="growth">${esc(growth)}</div>`:""}`
         :`<p class="empty">Take one now and another in a month — that's the whole point.</p>`}
+      <div class="pad foliage">
+        <div class="lbl-row"><span class="eyebrow">Foliage</span>
+          <span class="lbl-acts">
+            ${leafUndoable(leaves[0])?`<button type="button" class="btn mini" data-leafundo="${leaves[0].id}">Undo</button>`:""}
+            <button type="button" class="btn mini" data-leaf="${p.id}">+ New leaf</button>
+          </span></div>
+        <p class="hint" style="margin:7px 0 0">${esc(foliageLine(leaves))}</p>
+      </div>
     </div>
 
     <div class="card">
@@ -13879,7 +13930,7 @@ function renderPlant(){
       ${(()=>{const ev=S.events.filter(e=>e.subjectId===p.id)
           .sort((a,b)=>b.at.localeCompare(a.at)).slice(0,8);
         return ev.length?ev.map(e=>{const r=S.routines.find(x=>x.id===e.routineId);
-          return `<div class="ev"><span class="ev-type ${e.kind}">${esc(r?r.name:e.kind)}</span>
+          return `<div class="ev"><span class="ev-type ${e.kind}">${esc(r?r.name:evLabel(e))}</span>
             <span class="ev-main">${esc(ago(e.at))}</span>
             <span class="ev-who">${esc(userName(e.by))}</span></div>`;}).join("")
           :'<p class="empty">Nothing logged yet.</p>';})()}
@@ -13897,6 +13948,15 @@ $("#pvBody").addEventListener("click",async e=>{
   const did=q("did"),ed=q("edit-plant"),mx=q("mix"),add=q("addphoto"),sh=q("shot"),del=q("del-plant");
   const tg=q("tag");
   if(tg){ explainTag(tg.dataset.tag); return; }
+  const lf=q("leaf"), lu=q("leafundo");
+  /* Logging a leaf touches no routine and nothing falls due because of it, so
+     only the plant's own page and the log need redrawing — the agenda and the
+     task bars are about care owed, and a leaf never owes anything. */
+  if(lf){ logEvent(lf.dataset.leaf,"leaf",{n:1}); renderPlant(); renderLog(); return; }
+  if(lu){
+    S.events=S.events.filter(x=>x.id!==lu.dataset.leafundo);
+    touch(); renderPlant(); renderLog(); return;
+  }
   if(q("seecuts")){ show("cuttings"); return; }
   const tc=q("takecut");
   if(tc){ openCutDlg(); $("#cutFrom").value=tc.dataset.takecut;
@@ -18147,7 +18207,7 @@ function renderLog(){
     const detail=[fm?fm.name:(pr?pr.name:null), wk, e.strength&&e.strength!==100?e.strength+"%":null,
                   e.volL?e.volL.toFixed(1)+" L":null, e.note||null].filter(Boolean).join(" · ");
     html+=`<div class="ev">
-      <span class="ev-type ${esc(e.kind||e.type||"log")}">${esc(rt?rt.name:(e.kind||e.type||"log"))}</span>
+      <span class="ev-type ${esc(e.kind||e.type||"log")}">${esc(rt?rt.name:evLabel(e))}</span>
       <span class="ev-main">${pl?esc(pl.name):"—"}</span>
       <span class="ev-who">${esc(userName(e.by))} · ${new Date(e.at).toLocaleTimeString(locale(),{hour:"2-digit",minute:"2-digit"})}
         <button class="ev-del" data-del-ev="${e.id}" aria-label="Delete this entry" title="Delete this entry">×</button></span>
@@ -20237,7 +20297,10 @@ function historyItems(from,to){
     if(t<from||t>to) return;
     const p=subject(e.subjectId);
     const r=e.routineId?S.routines.find(x=>x.id===e.routineId):null;
-    if(p) out.push({at:t,p,r,type:e.kind||e.type,ev:e,past:true});
+    /* leaves stay off the calendar: these rows are care done on a day, and a
+       leaf has no routine to take a name from — it would land as a bare,
+       tickless "leaf" among the waterings */
+    if(p&&!isLeafEv(e)) out.push({at:t,p,r,type:e.kind||e.type,ev:e,past:true});
   });
   return out;
 }
