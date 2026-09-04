@@ -2794,8 +2794,8 @@ html{overscroll-behavior-y:none}
   border:0; background:var(--accent); color:var(--on-accent); font-size:22px; line-height:1; cursor:pointer;
   box-shadow:0 10px 26px -8px rgba(0,0,0,.4)}
 .n-quick:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
-main > #view-note:not([hidden]) ~ .n-quick, main > #view-teachbench-student:not([hidden]) ~ .n-quick,
-html.pfocus .n-quick{display:none}
+main > #view-note:not([hidden]) ~ .n-quick, main > #view-teachbench:not([hidden]) ~ .n-quick,
+main > #view-teachbench-student:not([hidden]) ~ .n-quick, html.npad-open .n-quick, html.pfocus .n-quick{display:none}
 /* display:flex above would otherwise beat the hidden attribute */
 .n-undo[hidden], .n-tagrow[hidden], .n-trashbar[hidden], .n-nb-tools[hidden]{display:none}
 
@@ -2834,7 +2834,7 @@ html.pfocus .n-quick{display:none}
 .n-quick-pad{bottom:82px; width:44px; height:44px; font-size:18px; background:var(--surface); color:var(--ink);
   border:1px solid var(--line)}
 .n-quick-pad[aria-expanded="true"]{background:var(--accent); color:var(--on-accent); border-color:var(--accent)}
-main > #view-teachbench-student:not([hidden]) ~ .n-quick-pad, html.pfocus .n-quick-pad{display:none}
+main > #view-teachbench:not([hidden]) ~ .n-quick-pad, main > #view-teachbench-student:not([hidden]) ~ .n-quick-pad, html.pfocus .n-quick-pad{display:none}
 .n-pad{position:fixed; right:0; top:0; bottom:0; width:min(420px,100vw); z-index:64; display:flex; flex-direction:column;
   background:var(--surface); border-left:1px solid var(--line); box-shadow:-18px 0 48px -20px rgba(0,0,0,.45);
   transform:translateX(0); transition:transform .22s cubic-bezier(.2,.8,.2,1)}
@@ -28583,7 +28583,7 @@ function nScore(n,q){
    and the clipper (paste text or a link, or read the text off an image on the
    device). Sharing to the app from another app lands in the clipper too.
    ============================================================================ */
-var nRec=null, nVoiceSegs=[], nVoiceT0=0, nVoiceTimer=null, nVoiceOpts=null, nVoiceFinal="", nVoiceInterim="";
+var nRec=null, nVoiceSegs=[], nVoiceT0=0, nVoiceTimer=null, nVoiceOpts=null, nVoiceFinal="", nVoiceInterim="", nVoiceErr=0, nVoiceLang="en-US", nVoiceRestartTimer=null;
 
 /* ---------------- daily note ---------------- */
 function nDailyNb(){
@@ -28630,6 +28630,7 @@ function nRenderPad(){
 function nPadOpen(on){
   const pad=$("#nPad"), btn=$("#nPadBtn"); if(!pad) return;
   pad.hidden=!on; btn.setAttribute("aria-expanded",String(on));
+  document.documentElement.classList.toggle("npad-open",!!on);
   if(on){ nRenderPad(); setTimeout(()=>{ const ta=$("#nPadTa"); if(ta) ta.focus(); },230); }
 }
 
@@ -28641,10 +28642,19 @@ function nVoiceSupported(){ return !!(window.SpeechRecognition||window.webkitSpe
 function nVoiceStart(opts){
   if(!nVoiceSupported()){ nToast(L.lang==="cs"?"Hlasový zápis potřebuje Chrome, Safari nebo Edge.":"Voice capture needs Chrome, Safari or Edge."); return; }
   if(nRec) return;
+  nVoiceOpts=opts||{}; nVoiceSegs=[]; nVoiceFinal=""; nVoiceInterim=""; nVoiceErr=0;
+  nVoiceLang=L.lang==="cs"?"cs-CZ":"en-US";
+  $("#nVoice").hidden=false; $("#nVoiceState").textContent=t("Listening…"); nVoiceRender();
+  clearInterval(nVoiceTimer); nVoiceTimer=setInterval(()=>{ const s=Math.round((Date.now()-nVoiceT0)/1000); $("#nVoiceTime").textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); },500);
+  nVoiceBegin();
+}
+/* One recogniser per language attempt, built fresh each time: an engine that
+   has errored cannot be trusted to start again cleanly, and changing .lang on
+   a live recogniser is unreliable across browsers. */
+function nVoiceBegin(){
   const R=window.SpeechRecognition||window.webkitSpeechRecognition;
-  nVoiceOpts=opts||{}; nVoiceSegs=[]; nVoiceFinal=""; nVoiceInterim=""; nVoiceT0=Date.now();
-  const r=new R(); nRec=r;
-  r.lang=L.lang==="cs"?"cs-CZ":"en-US"; r.continuous=true; r.interimResults=true; r.maxAlternatives=1;
+  const r=new R(); nRec=r; nVoiceT0=Date.now();
+  r.lang=nVoiceLang; r.continuous=true; r.interimResults=true; r.maxAlternatives=1;
   r.onresult=e=>{
     let interim="";
     for(let i=e.resultIndex;i<e.results.length;i++){
@@ -28656,14 +28666,36 @@ function nVoiceStart(opts){
   };
   r.onerror=e=>{
     const k=e.error;
-    if(k==="not-allowed"||k==="service-not-allowed") nToast(L.lang==="cs"?"Mikrofon je zakázaný — povolte ho v prohlížeči.":"Microphone blocked — allow it in the browser.");
-    else if(k!=="no-speech"&&k!=="aborted") nToast((L.lang==="cs"?"Hlas: ":"Voice: ")+k);
+    if(k==="not-allowed"||k==="service-not-allowed"){ nVoiceStop(false); nToast(L.lang==="cs"?"Mikrofon je zakázaný — povolte ho v prohlížeči.":"Microphone blocked — allow it in the browser."); return; }
+    /* Some engines (iOS Safari) have no Czech recogniser — fall back to
+       English once instead of erroring on every attempt. */
+    if(k==="language-not-supported"&&nVoiceLang!=="en-US"){
+      nVoiceHalt(r); if(nRec===r) nRec=null;
+      nVoiceLang="en-US"; nVoiceErr=0;
+      nToast(L.lang==="cs"?"Češtinu tento prohlížeč nezvládne — přepínám na angličtinu.":"This browser can't do Czech — switched to English.");
+      nVoiceRestartTimer=setTimeout(()=>{ nVoiceRestartTimer=null; if(!$("#nVoice").hidden&&!nRec) nVoiceBegin(); },200);
+      return;
+    }
+    if(k==="no-speech"||k==="aborted") return;   /* not fatal; onend picks the session back up */
+    /* Repeating non-fatal errors (e.g. network) must not loop forever. */
+    nVoiceErr++;
+    if(nVoiceErr>=4){ nVoiceStop(false); nToast(L.lang==="cs"?("Hlas selhal ("+k+"). Zkuste to znovu."):("Voice failed ("+k+"). Try again.")); }
   };
-  /* Chrome ends a continuous session after a silence; restart while the panel is up */
-  r.onend=()=>{ if(nRec===r&&!$("#nVoice").hidden){ try{ r.start(); }catch(e){} } };
-  $("#nVoice").hidden=false; $("#nVoiceState").textContent=t("Listening…"); nVoiceRender();
-  clearInterval(nVoiceTimer); nVoiceTimer=setInterval(()=>{ const s=Math.round((Date.now()-nVoiceT0)/1000); $("#nVoiceTime").textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); },500);
-  try{ r.start(); }catch(e){ nVoiceStop(false); nToast(String(e.message||e)); }
+  /* Chrome ends a continuous session after a silence; restart while the panel
+     is up, but slowly and never after a fatal error already stopped us. */
+  r.onend=()=>{
+    if(nVoiceRestartTimer){ clearTimeout(nVoiceRestartTimer); nVoiceRestartTimer=null; }
+    if(nRec===r&&!$("#nVoice").hidden) nVoiceRestartTimer=setTimeout(()=>{ nVoiceRestartTimer=null; if(nRec===r&&!$("#nVoice").hidden) nVoiceBegin(); },300);
+  };
+  try{ r.start(); }
+  catch(e){ nVoiceHalt(r); if(nRec===r) nRec=null; nVoiceErr++;
+    if(nVoiceErr>=4){ nVoiceStop(false); nToast(String(e&&e.message||e)); return; }
+    nVoiceRestartTimer=setTimeout(()=>{ nVoiceRestartTimer=null; if(!$("#nVoice").hidden&&!nRec) nVoiceBegin(); },300);
+  }
+}
+function nVoiceHalt(r){
+  if(!r) return;
+  try{ r.onend=null; r.onerror=null; r.onresult=null; if(r.abort) r.abort(); else if(r.stop) r.stop(); }catch(e){}
 }
 function nVoiceRender(){
   const el=$("#nVoiceText"); if(!el) return;
@@ -28671,9 +28703,10 @@ function nVoiceRender(){
   el.scrollTop=el.scrollHeight;
 }
 function nVoiceStop(keep){
-  const r=nRec; nRec=null; clearInterval(nVoiceTimer);
+  clearInterval(nVoiceTimer); nVoiceTimer=null;
+  if(nVoiceRestartTimer){ clearTimeout(nVoiceRestartTimer); nVoiceRestartTimer=null; }
+  nVoiceHalt(nRec); nRec=null;
   $("#nVoice").hidden=true;
-  if(r){ try{ r.onend=null; r.stop(); }catch(e){} }
   if(!keep) return;
   const text=(nVoiceFinal+" "+nVoiceInterim).trim();
   if(!text){ nToast(L.lang==="cs"?"Nic jsem neslyšel.":"Nothing was heard."); return; }
