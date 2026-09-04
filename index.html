@@ -6173,7 +6173,11 @@ const TB = (() => {
   /* Version 1 stored only students, under its own key. loadData() upgrades that
      old shape automatically the first time it runs. */
   const LEGACY_STUDENTS_KEY = 'teachbench.students';
-  const SCHEMA_VERSION = 12;
+  /* 13 adds, all of them additive and all defaulting to empty so a version 12
+     record upgrades itself simply by being read: a student's portal id and
+     rate, a lesson's attendance / cancelledAt / caught-words, and two new
+     lists (payments, canDo). */
+  const SCHEMA_VERSION = 13;
 
   const WEEKDAYS = [
     { value: 'mon', label: 'Monday' },
@@ -6339,6 +6343,14 @@ const TB = (() => {
       // vocabulary or lesson record.
       notes: '',
       active: true,
+      // The same human's id in the student portal's Firestore roster. The two
+      // halves of the teaching side keep separate student lists; this is the
+      // one thread between them, set once from "Link to portal", and it is
+      // what lets a word in the library become a flashcard.
+      portalId: null,
+      // What one lesson with this student costs. Only ever used for the
+      // teacher's own arithmetic — nothing bills anyone.
+      rate: null,
     };
   }
 
@@ -6459,6 +6471,19 @@ const TB = (() => {
 
   const LESSON_STATES = ['normal', 'rescheduled', 'cancelled'];
 
+  /* Whether the lesson actually happened. Deliberately a separate field from
+     `state`, not more values on it: a rescheduled lesson still has to be
+     attended or missed, so the two answer different questions and collapsing
+     them would make "moved, then missed" impossible to record.
+
+     '' means nobody has said yet, which is the honest state for a lesson in
+     the future and the reason the roster can tell "not marked" from "missed". */
+  const ATTENDANCE = ['', 'attended', 'noshow', 'excused'];
+
+  /* A lesson cancelled with less notice than this could not realistically be
+     sold to anyone else, which is the whole reason tutors have a policy. */
+  const LATE_CANCEL_HOURS = 24;
+
   /* One lesson for one student. `date` is a plain YYYY-MM-DD day, not a moment
      in time — a lesson belongs to a date on the teacher's calendar, and storing
      it as a timestamp would make it drift across timezones. `time` is HH:MM
@@ -6486,6 +6511,13 @@ const TB = (() => {
       plan: String(fields.plan == null ? '' : fields.plan).trim(),
       notes: String(fields.notes == null ? '' : fields.notes),
       link: String(fields.link == null ? '' : fields.link).trim(),
+      attendance: ATTENDANCE.includes(fields.attendance) ? fields.attendance : '',
+      // When the cancellation was made, so "was it inside 24 hours?" is a
+      // question the app can answer instead of an awkward conversation.
+      cancelledAt: typeof fields.cancelledAt === 'string' ? fields.cancelledAt : null,
+      // Words jotted down while the lesson was actually happening, before
+      // anyone has decided which of them deserve to become flashcards.
+      caught: Array.isArray(fields.caught) ? fields.caught.slice(0, 200) : [],
     };
   }
 
@@ -6502,6 +6534,8 @@ const TB = (() => {
       words: [],
       studentWords: [],
       lessons: [],
+      payments: [],
+      canDo: [],
     };
   }
 
@@ -6542,6 +6576,10 @@ const TB = (() => {
       // Anything not explicitly false counts as active, so data written before
       // this field existed still behaves sensibly.
       active: entry.active !== false,
+      portalId: typeof entry.portalId === 'string' && entry.portalId ? entry.portalId : null,
+      // A rate of zero is a real answer (a favour, a trial lesson), so only a
+      // non-finite or negative value counts as "not set".
+      rate: Number.isFinite(Number(entry.rate)) && Number(entry.rate) >= 0 ? Number(entry.rate) : null,
     };
   }
 
@@ -6617,6 +6655,57 @@ const TB = (() => {
       plan: typeof entry.plan === 'string' ? entry.plan.trim() : '',
       notes: typeof entry.notes === 'string' ? entry.notes : '',
       link: typeof entry.link === 'string' ? entry.link.trim() : '',
+      attendance: ATTENDANCE.includes(entry.attendance) ? entry.attendance : '',
+      // Only meaningful on a cancellation; carrying it otherwise would be
+      // stale data confusing a later read, exactly as with originalDate.
+      cancelledAt: state === 'cancelled' && typeof entry.cancelledAt === 'string' ? entry.cancelledAt : null,
+      caught: asArray(entry.caught)
+        .map((w) => (typeof w === 'string' ? w.trim() : ''))
+        .filter(Boolean)
+        .slice(0, 200),
+    };
+  }
+
+  /* A payment is a number of lessons bought up front, which is how private
+     lessons are actually sold. Credits left is this total minus the lessons
+     that have since been used — derived, never stored, so the two can never
+     drift apart. */
+  function createPayment(fields) {
+    return {
+      id: createId(),
+      studentId: fields.studentId,
+      date: isPlainDate(fields.date) ? fields.date : '',
+      lessons: Math.max(0, Math.round(Number(fields.lessons) || 0)),
+      amount: Number.isFinite(Number(fields.amount)) ? Number(fields.amount) : 0,
+      note: String(fields.note == null ? '' : fields.note).trim(),
+    };
+  }
+
+  function normalisePayment(entry, studentIds) {
+    if (!entry || typeof entry !== 'object') return null;
+    if (!studentIds.has(entry.studentId)) return null;
+    return {
+      id: typeof entry.id === 'string' && entry.id ? entry.id : createId(),
+      studentId: entry.studentId,
+      date: isPlainDate(entry.date) ? entry.date : '',
+      lessons: Math.max(0, Math.round(Number(entry.lessons) || 0)),
+      amount: Number.isFinite(Number(entry.amount)) ? Number(entry.amount) : 0,
+      note: typeof entry.note === 'string' ? entry.note.trim() : '',
+    };
+  }
+
+  /* One tick against one can-do statement. The statements themselves are a
+     constant below rather than stored data — they are the CEFR's, not the
+     teacher's, and storing them would mean migrating them. */
+  function normaliseCanDo(entry, studentIds) {
+    if (!entry || typeof entry !== 'object') return null;
+    if (!studentIds.has(entry.studentId)) return null;
+    const itemId = typeof entry.itemId === 'string' ? entry.itemId.trim() : '';
+    if (!itemId) return null;
+    return {
+      studentId: entry.studentId,
+      itemId,
+      doneOn: isPlainDate(entry.doneOn) ? entry.doneOn : '',
     };
   }
 
@@ -6838,6 +6927,23 @@ const TB = (() => {
       .map((entry) => normaliseLesson(entry, studentIds))
       .filter(Boolean);
 
+    const payments = asArray(source.payments)
+      .map((entry) => normalisePayment(entry, studentIds))
+      .filter(Boolean);
+
+    // One tick per student per statement, the same dedup every other pairing
+    // in this file gets.
+    const seenCanDo = new Set();
+    const canDo = [];
+    for (const entry of asArray(source.canDo)) {
+      const tick = normaliseCanDo(entry, studentIds);
+      if (!tick) continue;
+      const key = tick.studentId + '|' + tick.itemId;
+      if (seenCanDo.has(key)) continue;
+      seenCanDo.add(key);
+      canDo.push(tick);
+    }
+
     return {
       students,
       materials,
@@ -6846,6 +6952,8 @@ const TB = (() => {
       words,
       studentWords,
       lessons,
+      payments,
+      canDo,
     };
   }
 
@@ -7115,9 +7223,119 @@ const TB = (() => {
         ) || null
     );
   }
+  /* ---- can-do statements ------------------------------------------------
+     The CEFR's own way of describing progress, which is the one a student or
+     a parent recognises: not "412 words learned" but "can order a meal".
+     A constant rather than stored data — these belong to the framework, not
+     to the teacher, so there is nothing here to migrate.
+
+     Ids are stable and must never be reused for a different statement: a tick
+     is stored against the id, so renaming an id would silently move a
+     student's progress to another skill. */
+  const CANDO = [
+    { id: 'a1-01', level: 'a1', text: 'Introduce myself and say where I am from' },
+    { id: 'a1-02', level: 'a1', text: 'Ask and tell the time and the date' },
+    { id: 'a1-03', level: 'a1', text: 'Order food and drink in a café' },
+    { id: 'a1-04', level: 'a1', text: 'Fill in a form with my personal details' },
+    { id: 'a1-05', level: 'a1', text: 'Describe where I live in simple sentences' },
+    { id: 'a1-06', level: 'a1', text: 'Understand slow, clear directions to a place' },
+
+    { id: 'a2-01', level: 'a2', text: 'Talk about my daily routine and my job' },
+    { id: 'a2-02', level: 'a2', text: 'Describe what I did last weekend' },
+    { id: 'a2-03', level: 'a2', text: 'Make plans and arrange to meet someone' },
+    { id: 'a2-04', level: 'a2', text: 'Shop for clothes, ask about size and price' },
+    { id: 'a2-05', level: 'a2', text: 'Write a short personal email or message' },
+    { id: 'a2-06', level: 'a2', text: 'Explain a simple problem to a doctor' },
+
+    { id: 'b1-01', level: 'b1', text: 'Describe a film or a book and say what I thought' },
+    { id: 'b1-02', level: 'b1', text: 'Handle most situations while travelling' },
+    { id: 'b1-03', level: 'b1', text: 'Give reasons and explain my opinion' },
+    { id: 'b1-04', level: 'b1', text: 'Take part in a phone call about something familiar' },
+    { id: 'b1-05', level: 'b1', text: 'Write a straightforward text about my interests' },
+    { id: 'b1-06', level: 'b1', text: 'Complain politely and ask for something to be put right' },
+
+    { id: 'b2-01', level: 'b2', text: 'Take an active part in a discussion with native speakers' },
+    { id: 'b2-02', level: 'b2', text: 'Follow a talk or a documentary in my own field' },
+    { id: 'b2-03', level: 'b2', text: 'Argue a point of view and weigh the alternatives' },
+    { id: 'b2-04', level: 'b2', text: 'Write a clear, detailed email on a work matter' },
+    { id: 'b2-05', level: 'b2', text: 'Give a prepared presentation and answer questions' },
+    { id: 'b2-06', level: 'b2', text: 'Understand most news and current-affairs programmes' },
+
+    { id: 'c1-01', level: 'c1', text: 'Express myself fluently without obviously searching for words' },
+    { id: 'c1-02', level: 'c1', text: 'Use language flexibly for social and professional purposes' },
+    { id: 'c1-03', level: 'c1', text: 'Understand implicit meaning and humour' },
+    { id: 'c1-04', level: 'c1', text: 'Write clear, well-structured text on complex subjects' },
+  ];
+
+  /* ---- the money and attendance arithmetic ------------------------------
+     All derived from the lessons and payments already stored, so a stored
+     "credits left" can never drift away from the lessons actually taught. */
+
+  /* A cancellation counts as late when it arrived less than LATE_CANCEL_HOURS
+     before the lesson was due to start. A lesson with no time recorded is
+     treated as starting at midday rather than midnight, so an all-day entry
+     does not read as cancelled a suspicious twelve hours early. */
+  function isLateCancel(lesson) {
+    if (!lesson || lesson.state !== 'cancelled' || !lesson.cancelledAt) return false;
+    if (!isPlainDate(lesson.date)) return false;
+    const [y, m, d] = lesson.date.split('-').map(Number);
+    const [hh, mm] = isPlainTime(lesson.time) ? lesson.time.split(':').map(Number) : [12, 0];
+    const starts = new Date(y, m - 1, d, hh, mm).getTime();
+    const told = Date.parse(lesson.cancelledAt);
+    if (!Number.isFinite(told)) return false;
+    return starts - told < LATE_CANCEL_HOURS * 3600000;
+  }
+
+  /* Which lessons the student is actually charged for: the ones that
+     happened, the ones they did not turn up to, and the ones cancelled too
+     late to refill. An excused absence and a cancellation made in good time
+     are free. */
+  function isChargeable(lesson) {
+    if (!lesson) return false;
+    if (lesson.attendance === 'excused') return false;
+    if (lesson.attendance === 'attended' || lesson.attendance === 'noshow') return true;
+    return isLateCancel(lesson);
+  }
+
+  /* `upTo` bounds the count to a date, so a statement for last month does not
+     move every time another lesson is taught. */
+  function lessonAccount(data, studentId, upTo) {
+    const limit = isPlainDate(upTo) ? upTo : null;
+    const mine = asArray(data && data.lessons).filter((l) =>
+      l.studentId === studentId && (!limit || l.date <= limit));
+    const used = mine.filter(isChargeable);
+    const paid = asArray(data && data.payments).filter((p) =>
+      p.studentId === studentId && (!limit || !p.date || p.date <= limit));
+
+    const purchased = paid.reduce((n, p) => n + p.lessons, 0);
+    const student = asArray(data && data.students).find((s) => s.id === studentId) || null;
+    const rate = student && Number.isFinite(student.rate) ? student.rate : null;
+
+    return {
+      used: used.length,
+      attended: mine.filter((l) => l.attendance === 'attended').length,
+      noshow: mine.filter((l) => l.attendance === 'noshow').length,
+      lateCancelled: mine.filter(isLateCancel).length,
+      unmarked: mine.filter((l) => !l.attendance && l.state !== 'cancelled').length,
+      purchased,
+      left: purchased - used.length,
+      paidTotal: paid.reduce((n, p) => n + p.amount, 0),
+      owed: rate == null ? null : used.length * rate,
+      rate,
+      lessons: mine,
+    };
+  }
+
   return {
     WEEKDAYS,
     MATERIAL_CATEGORIES,
+    ATTENDANCE,
+    LATE_CANCEL_HOURS,
+    CANDO,
+    createPayment,
+    isLateCancel,
+    isChargeable,
+    lessonAccount,
     WORD_STATUSES,
     REVIEW_AFTER_DAYS,
     STUDENT_COLORS,
