@@ -2541,6 +2541,18 @@ html{overscroll-behavior-y:none}
 .tbs-acts{display:flex; gap:8px; flex-wrap:wrap; justify-content:center}
 .tbs-acts .btn{flex:1 1 0; min-width:78px}
 .tbs-acts .btn.wide{flex:1 1 100%}
+/* practice modes: the same card asked several different ways */
+.tbs-prompt{font-size:12.5px; color:var(--ink-3); letter-spacing:.04em;
+  margin:0; text-transform:uppercase}
+.tbs-choices{display:flex; flex-direction:column; gap:8px; width:100%; max-width:340px}
+.tbs-choice{width:100%; justify-content:center; text-align:center; font-size:16px;
+  padding:11px 12px; min-height:44px}
+.tbs-say{display:flex; gap:8px; flex-wrap:wrap; justify-content:center}
+.tbs-say .btn{min-height:44px}
+.tbs-heard{margin:0; font-size:14px; color:var(--ink-2); font-style:italic}
+.tbs-listening{border-color:var(--accent); color:var(--accent)}
+/* the grade the check thinks is honest — a hint, never a lock */
+.tbs-suggest{outline:2px solid var(--accent); outline-offset:2px}
 /* one row per student / card / homework item */
 .tbs-row{display:flex; align-items:center; gap:10px; padding:11px 14px;
   border-bottom:1px solid var(--line-soft); cursor:pointer}
@@ -5412,16 +5424,27 @@ html[data-design="s3"] #dzBrief.on{ display:block; margin:6px 0 22px }
       </div>
       <div class="card pad tbs-card" id="tbsReviewCard">
         <span class="eyebrow" id="tbsCardType">Word</span>
+        <!-- What this card is asking for. The same word comes back in
+             several shapes, so the student is told which one this is. -->
+        <p class="tbs-prompt" id="tbsCardPrompt" hidden></p>
         <div class="tbs-front" id="tbsCardFront" data-no-i18n></div>
 
-        <!-- grammar: typed answer -->
+        <!-- first sight of a word: recognise it before recalling it -->
+        <div class="tbs-choices" id="tbsChoices" hidden></div>
+
+        <!-- grammar, typed recall and cloze all type their answer -->
         <div id="tbsAnswerWrap" hidden>
           <input id="tbsAnswerInput" class="tbs-answer" autocomplete="off"
                  autocapitalize="off" spellcheck="false" placeholder="your answer" aria-label="Your answer">
         </div>
 
-        <!-- pronunciation: hear it -->
-        <button class="btn" id="tbsSpeak" hidden>🔊 Hear it</button>
+        <!-- pronunciation: hear it, slow it down, say it back -->
+        <div class="tbs-say" id="tbsSayWrap" hidden>
+          <button class="btn" type="button" id="tbsSpeak">🔊 Hear it</button>
+          <button class="btn" type="button" id="tbsSlow">🐢 Slower</button>
+          <button class="btn" type="button" id="tbsListen" hidden>🎤 Say it</button>
+        </div>
+        <p class="tbs-heard" id="tbsHeard" hidden data-no-i18n></p>
 
         <div class="tbs-back" id="tbsCardBack" hidden data-no-i18n></div>
         <p class="tbs-expl" id="tbsCardExpl" hidden data-no-i18n></p>
@@ -5513,6 +5536,9 @@ html[data-design="s3"] #dzBrief.on{ display:block; margin:6px 0 22px }
         <input id="tbsNewFront" placeholder="Front — the word, or the sentence with ___" aria-label="Card front">
         <input id="tbsNewBack" placeholder="Back — meaning or the missing word" aria-label="Card back">
         <input id="tbsNewExpl" placeholder="Explanation (optional)" aria-label="Explanation">
+        <!-- An example sentence containing the word turns this one card
+             into a gap-fill as well, at no extra typing. -->
+        <input id="tbsNewExample" placeholder="Example sentence using the word (optional)" aria-label="Example sentence">
         <button class="btn primary" id="tbsAddCard">Add card</button>
       </div>
       <div class="card pad stack">
@@ -20592,6 +20618,206 @@ const RECAP = (() => {
    Firestore, loaded on demand. The compat SDK is injected only when this
    module actually starts, so the teacher's Potting Bench sessions stay
    as network-free as they have always been. */
+/* -------------------------------------------------------------- DRILL ----
+   One card, several shapes. A word the student is learning comes back as
+   recognition, as recall, as a gap in a sentence, as something heard, or
+   as something said — and which of those a given card takes is decided
+   here, from what the card can support and how well it is already known.
+
+   Nothing extra is stored to make this work: every shape is derived from
+   fields the card already has, so the whole existing deck gets the
+   variety for free.
+
+   Pure functions over plain data, no DOM and no network, for the same
+   reason SRS and STREAK are — so the rules can be exercised straight from
+   the browser console:
+
+     DRILL.checkAnswer("recieve", "receive")        // → "close"
+     DRILL.clozeFrom({front:"apple", example:"I ate an apple."})
+     DRILL.modesFor({type:"vocab", back:"jablko", intervalStage:3}, deck)  */
+const DRILL = (() => {
+
+  /* The shapes a card can be asked in. "reveal" is the original
+     behaviour — show the front, turn it over, grade yourself. */
+  const TYPED_MODES = ["grammar", "type", "cloze", "listen"];
+  const SELF_GRADED = ["reveal", "reverse"];
+
+  /* Accent- and punctuation-insensitive, so a missing diacritic or a
+     stray full stop is never counted as a wrong answer. */
+  function normAnswer(s){
+    return String(s == null ? "" : s).trim().toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^0-9a-z\s']/g, " ")
+      .replace(/\s+/g, " ").trim();
+  }
+
+  /* Damerau rather than plain Levenshtein, because swapping two adjacent
+     letters is the commonest typo there is — "recieve" for "receive" —
+     and counting that as two edits would mark a student wrong for a
+     slip of the fingers rather than a gap in memory. */
+  function editDistance(a, b){
+    if(a === b) return 0;
+    if(!a.length) return b.length;
+    if(!b.length) return a.length;
+    const m = a.length, n = b.length;
+    let prev2 = null;
+    let prev = Array.from({ length: n + 1 }, (_, i) => i);
+    for(let i = 1; i <= m; i++){
+      const row = new Array(n + 1);
+      row[0] = i;
+      for(let j = 1; j <= n; j++){
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        row[j] = Math.min(prev[j] + 1, row[j - 1] + 1, prev[j - 1] + cost);
+        if(i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]){
+          row[j] = Math.min(row[j], prev2[j - 2] + 1);
+        }
+      }
+      prev2 = prev; prev = row;
+    }
+    return prev[n];
+  }
+
+  /* "close" exists so a one-letter slip reads as a near miss rather than
+     a failure — the student did know the word, and telling them they did
+     not is both untrue and discouraging.
+
+     The tolerance scales with length: no forgiveness on a three-letter
+     word, where one letter is most of it and "cat" for "cot" is a real
+     mistake; two edits on a long word, where a typo is likelier than
+     genuinely not knowing it. */
+  function checkAnswer(said, want){
+    const s = normAnswer(said), w = normAnswer(want);
+    if(!s) return "empty";
+    if(!w) return "unknown";
+    if(s === w) return "right";
+    const tolerance = w.length >= 8 ? 2 : w.length >= 4 ? 1 : 0;
+    if(tolerance && editDistance(s, w) <= tolerance) return "close";
+    return "wrong";
+  }
+
+  /* A gap-fill built out of the example sentence the teacher already
+     wrote. Returns null when there is no sentence, or when the word does
+     not actually occur in it — then there is nothing to blank out, and
+     inventing a gap would produce a card with no answer. */
+  function clozeFrom(card){
+    const ex   = String((card && card.example) || "").trim();
+    const term = String((card && card.front) || "").trim();
+    if(!ex || !term) return null;
+    const re = new RegExp("\\b" + term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "i");
+    if(!re.test(ex)) return null;
+    return { sentence: ex.replace(re, "_____"), answer: term };
+  }
+
+  /* Which shapes this card can take today.
+
+     The ramp is deliberate. A word met once is offered as recognition —
+     pick it out of four — because being asked to produce a word you have
+     seen a single time is a wall rather than a test. The harder shapes
+     arrive only once it is starting to stick, which is what the SM-2
+     interval stage already tells us.
+
+     `opts.speech` says whether the device can hear; a pronunciation card
+     with no recogniser falls back to listen-and-self-grade rather than
+     offering a button that does nothing. */
+  function modesFor(card, deck, opts){
+    const c = card || {};
+    if(c.type === "grammar") return ["grammar"];
+    if(c.type === "pron")    return (opts && opts.speech) ? ["say"] : ["reveal"];
+
+    const stage   = Number(c.intervalStage) || 0;
+    const hasBack = !!String(c.back || "").trim();
+    const size    = (deck || []).length;
+
+    const modes = ["reveal"];
+    if(hasBack && stage <= 1 && size >= 4) modes.push("choice");
+    if(hasBack && stage >= 1) modes.push("reverse");
+    if(hasBack && stage >= 2) modes.push("type");
+    if(clozeFrom(c)) modes.push("cloze");
+    if(stage >= 2) modes.push("listen");
+    return modes;
+  }
+
+  /* Rotation by review count rather than at random: the same card never
+     asks the same thing twice running, the sequence can be reasoned
+     about, and a card cannot happen to draw the hardest shape three
+     times in a row on a bad evening. */
+  function pickMode(card, deck, opts){
+    const modes = modesFor(card, deck, opts);
+    return modes[(Number((card || {}).reviewCount) || 0) % modes.length];
+  }
+
+  /* A number derived from the card's own id, so every "random" decision
+     about this card is the same every time it is shown. Without this the
+     right answer would visibly jump about between options while the
+     student was still reading them. */
+  function seedOf(id, mult){
+    let seed = 0;
+    const s = String(id || "");
+    for(let i = 0; i < s.length; i++) seed = (seed * mult + s.charCodeAt(i)) >>> 0;
+    return seed;
+  }
+
+  /* Three wrong answers taken from the student's own deck, so the options
+     are words they are actually learning rather than nonsense — which
+     makes the choice a real test instead of a spot-the-odd-one-out. */
+  function distractorsFor(card, deck){
+    const c = card || {};
+    const want = normAnswer(c.back);
+    const pool = (deck || []).filter(x => x && x.id !== c.id && x.type === "vocab"
+                                       && String(x.back || "").trim()
+                                       && normAnswer(x.back) !== want);
+    if(!pool.length) return [];
+    const seed = seedOf(c.id, 31);
+    const out = [];
+    for(let i = 0; i < pool.length && out.length < 3; i++){
+      const pick = pool[(seed + i * 7) % pool.length];
+      if(pick && out.indexOf(pick) === -1) out.push(pick);
+    }
+    return out.map(x => x.back);
+  }
+
+  /* The four options in a fixed order for this card. */
+  function orderedChoices(card, deck){
+    const c = card || {};
+    const opts = [c.back].concat(distractorsFor(c, deck));
+    if(opts.length < 2) return opts;
+    const ordered = opts.slice();
+    ordered.splice(seedOf(c.id, 17) % ordered.length, 0, ordered.shift());
+    return ordered;
+  }
+
+  /* What counts as the right answer for the shape being asked. `cloze` is
+     passed in rather than recomputed so the answer can never disagree
+     with the sentence actually on screen. */
+  function wantedFor(card, mode, cloze){
+    const c = card || {};
+    if(mode === "cloze") return cloze ? cloze.answer : (c.front || "");
+    if(mode === "type" || mode === "listen" || mode === "say") return c.front || "";
+    return c.back || "";
+  }
+
+  /* What to print on the back when the card turns over. */
+  function backTextFor(card, mode, cloze){
+    const c = card || {};
+    if(mode === "reverse" || mode === "type" || mode === "listen" || mode === "say") return c.front || "";
+    if(mode === "cloze") return cloze ? cloze.answer : (c.front || "");
+    return c.back || "";
+  }
+
+  /* The grade an honest student would give themselves after a checked
+     answer. Only ever a suggestion — they know things about how well they
+     knew it that a string comparison cannot see. */
+  function suggestedGrade(verdict){
+    return verdict === "right" ? "good"
+         : verdict === "close" ? "hard"
+         : verdict === "wrong" ? "again" : null;
+  }
+
+  return { TYPED_MODES, SELF_GRADED, normAnswer, editDistance, checkAnswer,
+           clozeFrom, modesFor, pickMode, distractorsFor, orderedChoices,
+           wantedFor, backTextFor, suggestedGrade };
+})();
+
 const TBS = (() => {
   const SDK = "https://www.gstatic.com/firebasejs/10.12.2/";
   const PARTS = ["firebase-app-compat.js","firebase-auth-compat.js",
@@ -20814,6 +21040,11 @@ const TBS = (() => {
     return cardsOf(studentId).add({
       type: card.type, front: card.front, back: card.back,
       explanation: card.explanation || null,
+      /* An example sentence is what a gap-fill is made out of, so it is
+         worth carrying even though nothing else reads it. Written only
+         by the teacher — the rules let a student touch the scheduling
+         fields and nothing else. */
+      example: card.example || null,
       studentId, createdAt: new Date().toISOString(),
       createdBy: "teacher", ...SRS.fresh()
     });
@@ -21229,6 +21460,144 @@ const TBS_UI = (() => {
   }
 
   /* ---------- review session ---------- */
+  /* ---- practice modes: the UI half -----------------------------------
+     All the rules live in DRILL, which is pure and console-testable. What
+     is left here is the part that genuinely needs a browser: whether this
+     device can hear, what each shape is called on screen, and how to draw
+     it. */
+
+  const SPEECH_REC = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+
+  const MODE_PROMPT = {
+    reveal:  "",
+    choice:  "Which one is it?",
+    reverse: "Say the English word, then check yourself",
+    type:    "Type the English word",
+    cloze:   "Type the missing word",
+    listen:  "Listen, then type what you heard",
+    say:     "Say it out loud",
+    grammar: "Fill in the blank"
+  };
+
+  function drillOpts(){ return { speech: !!SPEECH_REC }; }
+
+  function renderMode(c, mode, deck){
+    const front   = $$("tbsCardFront");
+    const prompt  = $$("tbsCardPrompt");
+    const choices = $$("tbsChoices");
+    const answer  = $$("tbsAnswerWrap");
+    const sayWrap = $$("tbsSayWrap");
+
+    const label = MODE_PROMPT[mode] || "";
+    prompt.textContent = label;
+    prompt.hidden = !label;
+
+    choices.hidden = true; choices.innerHTML = "";
+    answer.hidden = true;
+    sayWrap.hidden = true;
+    $$("tbsListen").hidden = true;
+    $$("tbsHeard").hidden = true;
+    $$("tbsHeard").textContent = "";
+    state.cloze = null;
+    state.spoken = "";
+    state.chosen = "";
+
+    if(mode === "choice"){
+      front.textContent = c.front || "";
+      choices.hidden = false;
+      choices.innerHTML = DRILL.orderedChoices(c, deck).map(o =>
+        `<button type="button" class="btn tbs-choice" data-choice="${esc(o)}" data-no-i18n>${esc(o)}</button>`
+      ).join("");
+      return;
+    }
+
+    if(mode === "type" || mode === "reverse"){
+      front.textContent = c.back || "";
+      answer.hidden = mode !== "type";
+      return;
+    }
+
+    if(mode === "cloze"){
+      state.cloze = DRILL.clozeFrom(c);
+      front.textContent = state.cloze ? state.cloze.sentence : (c.front || "");
+      answer.hidden = false;
+      return;
+    }
+
+    if(mode === "listen"){
+      /* The word itself is the answer, so it must not be on screen. */
+      front.textContent = "\u{1F50A}";
+      answer.hidden = false;
+      sayWrap.hidden = false;
+      setTimeout(() => speak(), 250);
+      return;
+    }
+
+    if(mode === "say"){
+      front.textContent = c.front || "";
+      sayWrap.hidden = false;
+      $$("tbsListen").hidden = !SPEECH_REC;
+      return;
+    }
+
+    if(mode === "grammar"){
+      front.textContent = c.front || "";
+      answer.hidden = false;
+      return;
+    }
+
+    front.textContent = c.front || "";
+  }
+
+  /* Points the student at the honest grade after a checked answer. It only
+     highlights — the choice stays theirs. */
+  function suggestGrade(){
+    const want = DRILL.suggestedGrade(state.verdict);
+    $$("tbsGradeWrap").querySelectorAll("[data-grade]").forEach(b => {
+      b.classList.toggle("tbs-suggest", !!want && b.dataset.grade === want);
+    });
+  }
+
+  /* Speech recognition is Chrome- and Safari-only and needs microphone
+     permission, so every failure path has to end with the student still
+     able to answer: the button goes quiet and the card is self-graded. */
+  function listenOnce(){
+    if(!SPEECH_REC) return;
+    const c = state.current; if(!c) return;
+    const heard = $$("tbsHeard");
+    const btn = $$("tbsListen");
+    let rec;
+    try{ rec = new SPEECH_REC(); }catch(e){ return; }
+    rec.lang = "en-GB"; rec.interimResults = false; rec.maxAlternatives = 3;
+
+    const stop = () => { btn.classList.remove("tbs-listening"); btn.textContent = "\u{1F3A4} Say it"; };
+    btn.classList.add("tbs-listening");
+    btn.textContent = "\u{1F3A4} Listening\u2026";
+    heard.hidden = false;
+    heard.textContent = t("Listening\u2026");
+
+    rec.onresult = (ev) => {
+      const alts = [];
+      for(let i = 0; i < ev.results.length; i++){
+        const r = ev.results[i];
+        for(let j = 0; j < r.length; j++) alts.push(r[j].transcript);
+      }
+      /* Any alternative matching counts. A recogniser routinely puts the
+         right word second for a non-native accent, and marking that wrong
+         would punish exactly the students this is for. */
+      const want = c.front || "";
+      const best = alts.find(a => DRILL.checkAnswer(a, want) === "right")
+                || alts.find(a => DRILL.checkAnswer(a, want) === "close")
+                || alts[0] || "";
+      state.spoken = best;
+      heard.textContent = best ? `\u201C${best}\u201D` : t("Nothing heard.");
+      stop();
+    };
+    rec.onerror = () => { heard.textContent = t("Could not hear that \u2014 tap Show answer."); stop(); };
+    rec.onend = stop;
+    try{ rec.start(); }catch(e){ stop(); }
+  }
+
   function startReview(){
     /* Snapshot the queue now: cards rescheduled mid-session must not
        reshuffle the list under the student's feet. */
@@ -21249,40 +21618,60 @@ const TBS_UI = (() => {
       return show("tbsDone");
     }
     const c = state.current;
+    const deck = state.cards || [];
     state.revealed = false;
+    state.verdict = null;
+    state.mode = DRILL.pickMode(c, deck, drillOpts());
     $$("tbsReviewProgress").textContent = `${state.doneCount+1} of ${state.doneCount+1+state.queue.length}`;
     $$("tbsCardType").textContent = TYPE_LABEL[c.type] || "Card";
-    $$("tbsCardFront").textContent = c.front || "";
-    $$("tbsCardBack").textContent = c.back || "";
+    $$("tbsCardBack").textContent = "";
     $$("tbsCardBack").hidden = true;
     $$("tbsCardExpl").textContent = c.explanation || "";
     $$("tbsCardExpl").hidden = true;
-    $$("tbsAnswerWrap").hidden = c.type !== "grammar";
     $$("tbsAnswerInput").value = "";
-    $$("tbsSpeak").hidden = c.type !== "pron";
     $$("tbsRevealWrap").hidden = false;
     $$("tbsGradeWrap").hidden = true;
-    if(c.type === "grammar") setTimeout(() => $$("tbsAnswerInput").focus(), 60);
+    /* A typed answer is checked, so the button says so. */
+    $$("tbsReveal").textContent = DRILL.TYPED_MODES.includes(state.mode) ? t("Check") : t("Show answer");
+    renderMode(c, state.mode, deck);
+    suggestGrade();
+    if(!$$("tbsAnswerWrap").hidden) setTimeout(() => $$("tbsAnswerInput").focus(), 60);
   }
 
   function reveal(){
     const c = state.current; if(!c) return;
+    const mode = state.mode || "reveal";
+    const back = $$("tbsCardBack");
     state.revealed = true;
-    $$("tbsCardBack").hidden = false;
+    back.textContent = DRILL.backTextFor(c, mode, state.cloze);
+    back.hidden = false;
     if(c.explanation) $$("tbsCardExpl").hidden = false;
     $$("tbsRevealWrap").hidden = true;
-    $$("tbsGradeWrap").hidden = false;
+    $$("tbsChoices").hidden = true;
 
-    /* A typed grammar answer grades itself, so the student gets an
-       honest verdict instead of marking their own homework. */
-    if(c.type === "grammar"){
-      const said = $$("tbsAnswerInput").value.trim().toLowerCase();
-      const want = String(c.back||"").trim().toLowerCase();
-      if(said && want){
-        $$("tbsCardBack").textContent = said === want ? `✓ ${c.back}`
-          : `${c.back}  (${L.lang==="cs"?"napsal jsi":"you wrote"}: ${said})`;
-      }
+    /* Anything typed, spoken or picked grades itself, so the student
+       gets an honest verdict instead of marking their own homework.
+       The self-graded shapes (reveal, reverse) fall through with no
+       verdict and no suggestion, exactly as this did before. */
+    const said = mode === "choice" ? state.chosen
+               : mode === "say"    ? state.spoken
+               : DRILL.TYPED_MODES.includes(mode) ? $$("tbsAnswerInput").value
+               : null;
+
+    if(said !== null){
+      const want = DRILL.wantedFor(c, mode, state.cloze);
+      state.verdict = DRILL.checkAnswer(said, want);
+      const typed = String(said).trim();
+      if(state.verdict === "right")      back.textContent = `✓ ${want}`;
+      else if(state.verdict === "close") back.textContent = `${want}  (${L.lang==="cs"?"skoro":"almost"}: ${typed})`;
+      else if(state.verdict === "wrong") back.textContent = `${want}  (${L.lang==="cs"?"napsal jsi":"you wrote"}: ${typed})`;
+      else                               back.textContent = want;
+    }else{
+      state.verdict = null;
     }
+
+    $$("tbsGradeWrap").hidden = false;
+    suggestGrade();
   }
 
   function grade(g){
@@ -21324,12 +21713,14 @@ const TBS_UI = (() => {
     nextCard();
   }
 
-  function speak(){
+  /* `rate` lets the Slower button replay the same word without the
+     student having to find a settings screen. */
+  function speak(rate){
     const c = state.current; if(!c) return;
     try{
       speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(c.front || "");
-      u.lang = "en-GB"; u.rate = 0.9;
+      u.lang = "en-GB"; u.rate = rate || 0.9;
       speechSynthesis.speak(u);
     }catch(e){}
   }
@@ -21594,7 +21985,18 @@ const TBS_UI = (() => {
     $$("tbsStartReview").onclick = startReview;
     $$("tbsReveal").onclick = reveal;
     $$("tbsAnswerInput").onkeydown = e => { if(e.key === "Enter" && !state.revealed) reveal(); };
-    $$("tbsSpeak").onclick = speak;
+    /* Wrapped, not passed by reference: speak() now takes a rate, and a
+       click handler would hand it the MouseEvent as one. */
+    $$("tbsSpeak").onclick = () => speak();
+    $$("tbsSlow").onclick  = () => speak(0.55);
+    $$("tbsListen").onclick = listenOnce;
+    /* Picking an option is the answer, so it turns the card over too. */
+    $$("tbsChoices").onclick = e => {
+      const b = e.target.closest("[data-choice]");
+      if(!b || state.revealed) return;
+      state.chosen = b.dataset.choice || "";
+      reveal();
+    };
     $$("tbsGradeWrap").onclick = e => {
       const b = e.target.closest("[data-grade]"); if(b) grade(b.dataset.grade);
     };
@@ -21693,9 +22095,11 @@ const TBS_UI = (() => {
       try{
         await TBS.addCard(state.openStudent, {
           type: state.newType, front, back,
-          explanation: $$("tbsNewExpl").value.trim() || null
+          explanation: $$("tbsNewExpl").value.trim() || null,
+          example: $$("tbsNewExample").value.trim() || null
         });
-        $$("tbsNewFront").value = ""; $$("tbsNewBack").value = ""; $$("tbsNewExpl").value = "";
+        $$("tbsNewFront").value = ""; $$("tbsNewBack").value = "";
+        $$("tbsNewExpl").value = ""; $$("tbsNewExample").value = "";
       }catch(e){ console.warn("addCard", e); }
       finally{ $$("tbsAddCard").disabled = false; }
     };
