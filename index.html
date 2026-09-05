@@ -7792,6 +7792,9 @@ function migrate(d){
      should cost that one module's tidy-up, not the user's entire app. */
   if(typeof nNormalise==="function") nNormalise(d);
   d.v=6;
+  /* Every id here is about to become DOM/attribute data — squeeze anything an
+     import (or a remote sync) may have smuggled in to id-safe characters. */
+  pSanitizeState(d);
   return d;
 }
 
@@ -7836,7 +7839,34 @@ const $=s=>document.querySelector(s);
    cache is otherwise indistinguishable from an up-to-date one. */
 const BUILD={ver:"1.0",n:58,at:"2026-09-05"};
 const uid=()=>Math.random().toString(36).slice(2,9);
-const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+/* Single quote and backtick matter the moment anything is written into a
+   single-quoted attribute or a nested template — cheap now, unfindable later. */
+const ESC_MAP={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;","`":"&#96;"};
+const esc=s=>String(s??"").replace(/[&<>"'`]/g,c=>ESC_MAP[c]);
+/* Photos must be genuine base64 image data URLs before they are allowed into
+   a src — an imported value like x" onerror=… must render as nothing at all. */
+const safeImg=d=>/^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(d||"")?d:"";
+/* Record ids become DOM/attribute data, so anything imported is squeezed to
+   id-safe characters at the trust boundary, not at 118 render sites. */
+const cleanId=v=>String(v??"").replace(/[^\w:-]/g,"");
+function pSanitizeState(d){
+  if(!d||typeof d!=="object") return d;
+  const cleanOne=o=>{ if(!o||typeof o!=="object") return;
+    ["id","subjectId","studentId"].forEach(k=>{ if(o[k]!==undefined) o[k]=cleanId(o[k]); }); };
+  const lists=["subjects","products","formulas","schedules","cuttings","photos",
+    "routines","events","tasks","notes","users","hours"];
+  for(const name of lists){
+    const arr=d[name];
+    if(!Array.isArray(arr)) continue;
+    arr.forEach(x=>{ if(x&&typeof x==="object") cleanOne(x); });
+  }
+  const plan=d.planner;
+  if(plan&&Array.isArray(plan.tasks)) plan.tasks.forEach(x=>{ if(x&&typeof x==="object") cleanOne(x); });
+  if(plan&&Array.isArray(plan.blocks)) plan.blocks.forEach(x=>{ if(x&&typeof x==="object") cleanOne(x); });
+  const pp=d.projplan;
+  if(pp&&Array.isArray(pp.projects)) pp.projects.forEach(x=>{ if(x&&typeof x==="object") cleanOne(x); });
+  return d;
+}
 
 /* ---------------- diagnostics ring (B1) ----------------
    Nothing is telemetry: entries stay on this device, in pottingbench.local,
@@ -8752,12 +8782,12 @@ function renderSubjects(){
     const sub=[p.species&&p.species!==p.name?p.species:null,p.spot||null].filter(Boolean).join(" · ");
     const line=(k,ev,st)=>`<div class="pline">
       <span class="pill ${st.cls}">${st.text}</span>
-      <span class="pline-k">${k}</span>
+      <span class="pline-k">${esc(k)}</span>
       <span class="pline-v">${ev?"last "+esc(ago(ev.at))+" · "+esc(userName(ev.by)):"never done"}</span>
     </div>`;
     return `<div class="pcard">
       <button type="button" class="pcard-top" data-open-plant="${p.id}">
-        ${ph?`<img class="pcard-thumb" src="${ph.data}" alt="">`
+        ${ph?`<img class="pcard-thumb" src="${safeImg(ph.data)}" alt="">`
             :'<span class="pcard-thumb none">🌿</span>'}
         <span class="pcard-head" style="flex:1">
           <span class="pcard-name">${esc(p.name)}</span>
@@ -9028,7 +9058,7 @@ function renderBatch(){
       </div>
       ${shots.length?`<div class="strip">${shots.slice().reverse().map(x=>`
         <button type="button" class="shot" data-shot="${x.id}">
-          <img src="${x.data}" alt="">
+          <img src="${safeImg(x.data)}" alt="">
           <small>${esc(new Date(x.at).toLocaleDateString(locale(),{day:"numeric",month:"short"}))}</small>
         </button>`).join("")}</div>
       `:""}
@@ -13451,7 +13481,7 @@ function renderGarden(){
           ${sw?`<span class="swipe-act" aria-hidden="true">${swipeVerb(it.r)}</span>`:""}
           <div class="duerow-in">
             <span class="pill ${it.overdue?"over":"due"}">${it.overdue?"late":"today"}</span>
-            ${ph?`<img class="lu-thumb" src="${ph.data}" alt="">`:'<span class="lu-thumb none">🌿</span>'}
+            ${ph?`<img class="lu-thumb" src="${safeImg(ph.data)}" alt="">`:'<span class="lu-thumb none">🌿</span>'}
             <span class="duerow-t">${esc(it.p.name)}
               <small>${esc(it.cut?"check the cuttings":routineName(it))}</small></span>
             ${it.cut?`<button class="btn mini" data-gocut="${it.cut.id}">Open</button>`
@@ -13465,7 +13495,7 @@ function renderGarden(){
           <span class="swipe-act" aria-hidden="true">${esc(t("Done"))}</span>
           <div class="duerow-in">
             <span class="pill due">task</span>
-            ${tsub?(ph?`<img class="lu-thumb" src="${ph.data}" alt="">`:'<span class="lu-thumb none">🌿</span>'):""}
+            ${tsub?(ph?`<img class="lu-thumb" src="${safeImg(ph.data)}" alt="">`:'<span class="lu-thumb none">🌿</span>'):""}
             <span class="duerow-t">${esc(tk.text)}<small>${
               esc(tsub?tsub.name:"anytime")}</small></span>
             <button class="btn mini" data-gtask="${tk.id}">Done</button>
@@ -13486,7 +13516,7 @@ function renderGarden(){
         const ph=latestPhoto(p.id), w=worstState(p.id);
         const sub=[p.species&&p.species!==p.name?p.species:null,p.spot||null].filter(Boolean).join(" · ");
         return `<button type="button" class="tile" data-open-plant="${p.id}">
-          ${ph?`<img class="tile-img" src="${ph.data}" alt="">`
+          ${ph?`<img class="tile-img" src="${safeImg(ph.data)}" alt="">`
             :`<span class="tile-ph">${p.species&&speciesFind(p.species)?picto(p.species):"🌿"}</span>`}
           <span class="tile-b">
             <b>${esc(p.name)}</b>
@@ -13694,7 +13724,7 @@ function renderPlant(){
 
   $("#pvBody").innerHTML=`
     <div class="card" style="overflow:hidden">
-      ${hero?`<img class="pv-hero" src="${hero.data}" alt="${esc(p.name)}">`
+      ${hero?`<img class="pv-hero" src="${safeImg(hero.data)}" alt="${esc(p.name)}">`
             :`<div class="pv-hero-empty"><span>No photos yet</span>
                <span class="photo-row" style="width:100%; max-width:320px">${photoButtons("btn mini")}</span></div>`}
       <div class="pad">
@@ -13737,7 +13767,7 @@ function renderPlant(){
       </div>
       ${shots.length?`<div class="strip">${shots.slice().reverse().map(x=>`
         <button type="button" class="shot" data-shot="${x.id}">
-          <img src="${x.data}" alt="">
+          <img src="${safeImg(x.data)}" alt="">
           <small>${esc(new Date(x.at).toLocaleDateString(locale(),{day:"numeric",month:"short"}))}</small>
           ${x.h?`<b>${x.h} cm</b>`:""}
         </button>`).join("")}</div>
@@ -21321,7 +21351,7 @@ function pickerPlantRowHtml(p,checked){
   return `<label class="lu">
     <span class="sw"><input type="checkbox" data-lp="${p.id}"${checked?" checked":""}><i></i></span>
     <span class="lu-name">${esc(p.name)}<small>${p.spot?esc(p.spot):""}</small></span>
-    ${ph?`<img class="lu-thumb" src="${ph.data}" alt="">`:'<span class="lu-thumb none">🌿</span>'}</label>`;
+    ${ph?`<img class="lu-thumb" src="${safeImg(ph.data)}" alt="">`:'<span class="lu-thumb none">🌿</span>'}</label>`;
 }
 /* log the whole mix against several plants at once */
 $("#logMix").addEventListener("click",async()=>{
@@ -21720,6 +21750,7 @@ function readImportPlants(file){
       S.subjects.push(...newSubjects);
       S.products.push(...newProducts);
       S.routines.push(...newRoutines);
+      pSanitizeState(S);
       touch(); saveLocal(); renderWho(); renderAll();
       xferSayPlants(`${t("Imported.")} ${detail}`);
     }catch(e){ xferSayPlants(t("Import failed — the file parsed but the data wouldn't load."),true); }
@@ -27339,7 +27370,7 @@ function nBlockHtml(b,ord){
     const ph=(S.photos||[]).find(p=>p.id===b.photoId);
     return `<div class="n-block" data-b="${id}" data-type="img">
       <button type="button" class="n-btype" data-menu="${id}" aria-label="Change block type">⋯</button>
-      ${ph?`<img class="n-img" src="${ph.data}" alt="">`
+      ${ph?`<img class="n-img" src="${safeImg(ph.data)}" alt="">`
           :`<div class="n-img-missing">${esc(t("This photo is on another device."))}</div>`}</div>`;
   }
   /* photos never sync between devices (see PSYNC), so a note opened on the
