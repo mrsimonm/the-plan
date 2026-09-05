@@ -2190,6 +2190,10 @@ textarea.desc{min-height:66px; font-family:var(--font); font-size:15px}
 /* the foliage block shares the Growth card with the photo strip, so it needs a
    rule off the top rather than a gap that collapses when there are no photos */
 .foliage{padding-top:12px; border-top:1px solid var(--line)}
+/* narrow on purpose: it is a qualifier on the button beside it, not a field in
+   its own right, and it must not read as the main action of the row */
+.vg-pick{min-width:0; width:auto; padding:3px 6px; font-size:12px; height:auto; min-height:0}
+.vg-line{opacity:.9}
 .mdots i.x{background:var(--ink); opacity:.55; border-radius:1px; width:5px; height:5px}
 .ev-type.feed{color:var(--amber)}
 /* was clipped to one line — "Monstera delic…" on any plant with a real
@@ -8765,6 +8769,48 @@ function leafSpanWord(days){
   /* a decimal never takes the singular form in either language */
   return `${(d/365.25).toFixed(1)} ${cs?"let":"years"}`;
 }
+/* ---- variegation ----
+   Recorded per leaf, because variegation is a property of the leaf and not of
+   the plant: the whole question with an albo or a marble is whether the NEW
+   growth is still carrying it, and a single number on the plant cannot answer
+   that. Each leaf may carry `vg`, the share of that leaf that came out
+   variegated, in five steps that match how it actually gets judged by eye —
+   plain, a quarter, half, three quarters, nearly all. Leaves logged without a
+   reading simply have no `vg` and are skipped by everything here, so the
+   plants that are not variegated cost nothing.
+
+   The reading that matters is the direction, not the average: a plant can sit
+   at 40% for a year and be perfectly stable, while one falling from 60 to 20
+   is reverting and wants moving into better light before it goes green for
+   good. So the trend compares the newest three readings against the three
+   before them, and only speaks once there are enough of both — with fewer it
+   reports the latest reading and says nothing about direction it cannot see.
+   Ten points of difference is the threshold, which is about the smallest
+   change an eye can call reliably on a leaf. */
+const VG_STEPS=[0,25,50,75,100];
+const leafVg=e=>{ const v=+(e&&e.vg); return Number.isFinite(v)&&v>=0&&v<=100?v:null; };
+const vgReadings=evs=>evs.map(leafVg).filter(v=>v!==null);   // newest first
+const vgMean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+function vgSummary(evs){
+  const cs=L.lang==="cs";
+  const r=vgReadings(evs);
+  if(!r.length) return "";
+  const latest=r[0];
+  const label=`${cs?"Panašování":"Variegation"}: ${cs?"poslední list":"newest leaf"} ${Math.round(latest)}%`;
+  if(r.length<6){
+    const mean=vgMean(r);
+    return r.length===1 ? label
+      : `${label} · ${cs?"průměr":"average"} ${Math.round(mean)}% ${cs?"z":"of"} ${r.length}`;
+  }
+  const recent=vgMean(r.slice(0,3)), before=vgMean(r.slice(3,6));
+  const d=recent-before;
+  const dir = d>10 ? (cs?"nabírá":"gaining")
+            : d<-10 ? (cs?"ustupuje":"reverting")
+            : (cs?"drží se":"holding");
+  return `${label} · ${cs?"posledn\u00ed t\u0159i":"last three"} ${Math.round(recent)}% `
+    +`${cs?"proti":"against"} ${Math.round(before)}% — ${dir}`;
+}
+
 /* The plant page's own summary of the rate, phrased like the height line
    directly above it so the two read as one pair. */
 function foliageRate(evs){
@@ -13830,10 +13876,15 @@ function renderPlant(){
         <div class="lbl-row"><span class="eyebrow">Foliage</span>
           <span class="lbl-acts">
             ${leafUndoable(leaves[0])?`<button type="button" class="btn mini" data-leafundo="${leaves[0].id}">${esc(t("Undo"))}</button>`:""}
+            <select class="vg-pick mono-input" id="vgPick" aria-label="${esc(t("Variegation of this leaf"))}">
+              <option value="">${esc(t("plain"))}</option>
+              ${VG_STEPS.filter(v=>v>0).map(v=>`<option value="${v}">${v}%</option>`).join("")}
+            </select>
             <button type="button" class="btn mini" data-leaf="${p.id}">${esc(t("+ New leaf"))}</button>
           </span></div>
         <p class="hint" style="margin:7px 0 0">${esc(foliageLine(leaves))}</p>
         ${leaves.length?`<div class="growth" style="margin-top:8px">${esc(foliageRate(leaves))}</div>`:""}
+        ${vgSummary(leaves)?`<div class="growth vg-line" style="margin-top:4px">${esc(vgSummary(leaves))}</div>`:""}
       </div>
     </div>
 
@@ -13930,7 +13981,13 @@ $("#pvBody").addEventListener("click",async e=>{
   /* Logging a leaf touches no routine and nothing falls due because of it, so
      only the plant's own page and the log need redrawing — the agenda and the
      task bars are about care owed, and a leaf never owes anything. */
-  if(lf){ logEvent(lf.dataset.leaf,"leaf",{n:1}); renderPlant(); renderLog(); return; }
+  if(lf){
+    /* the picker sits beside the button and resets to plain on every redraw,
+       so a reading is only ever attached to the leaf it was chosen for */
+    const pick=$("#vgPick"), vg=pick?+pick.value:0;
+    logEvent(lf.dataset.leaf,"leaf", vg>0?{n:1,vg}:{n:1});
+    renderPlant(); renderLog(); return;
+  }
   if(lu){
     S.events=S.events.filter(x=>x.id!==lu.dataset.leafundo);
     touch(); renderPlant(); renderLog(); return;
@@ -22257,7 +22314,7 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "Each column is one day, last 30.":"Každý sloupec je jeden den, posledních 30.",
 "The collection":"Sbírka","species":"druhů","substrate":"substrátu","a full round":"celé kolo",
 "By group":"Podle skupiny","Most of":"Nejvíc","Pot sizes":"Velikosti květináčů",
-"Foliage":"Listy","leaves":"listů","a month":"za měsíc","a year":"za rok",
+"Foliage":"Listy","plain":"bez panašování","Variegation of this leaf":"Panašování tohoto listu","leaves":"listů","a month":"za měsíc","a year":"za rok",
 "plants watched":"sledovaných rostlin","Fastest growing":"Nejrychleji rostou",
 "No leaves logged yet. Open a plant and tap + New leaf when one opens — a rate appears from the very first one.":
   "Zatím žádné listy. Otevři rostlinu a ťukni na + Nový list, až se nějaký objeví — tempo se ukáže hned od prvního.",
