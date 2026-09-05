@@ -4847,6 +4847,8 @@ html[data-shell="rail"] body{
         <p class="hint" style="margin-top:0" id="tbBackupHint">
           Teachbench is stored in this browser only, and nowhere else. Export a copy
           somewhere safe now and then.</p>
+        <p class="pwarn" id="tbNudge" hidden></p>
+        <p class="pday-sub" id="tbLastBackup" hidden></p>
         <div class="qadd-row2" style="gap:6px; flex-wrap:wrap">
           <button type="button" class="btn mini" id="tbExportBtn">Export a backup</button>
           <label class="btn mini" for="tbImportFile">Restore from a file…</label>
@@ -21576,12 +21578,13 @@ function xferPayload(){
 async function exportToFile(){
   const json=xferPayload();
   const name=`potting-bench-${ymd(Date.now())}.json`;
+  const markDone=()=>{ try{ localStorage.setItem("pottingbench.lastExportAt", new Date().toISOString()); }catch(e){} };
   /* 1. the viewer's own save dialog — the only route that works in the sandbox */
   try{
     if(window.claude && typeof window.claude.use==="function"){
       const d=await window.claude.use("downloads");
       if(d){ await d.save({filename:name, data:json});
-        xferSay(t("Exported.")+" "+name); return; }
+        markDone(); xferSay(t("Exported.")+" "+name); return; }
     }
   }catch(e){ /* declined or unavailable — fall through */ }
   /* 2. standalone PWA: an ordinary object-URL download */
@@ -21591,7 +21594,7 @@ async function exportToFile(){
     a.href=url; a.download=name; a.style.display="none";
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(()=>URL.revokeObjectURL(url),1500);
-    xferSay(t("Exported.")+" "+name); return;
+    markDone(); xferSay(t("Exported.")+" "+name); return;
   }catch(e){ /* fall through */ }
   /* 3. neither worked: the text box below still moves data by hand */
   $("#dataBox").value=json;
@@ -25628,6 +25631,7 @@ async function boot(){
   applyLang(); watchLang();
   /* one-time hint on the quick-capture button until the first tap */
   if(!L.nqHint) document.documentElement.classList.add("nq-hint");
+  try{ tbRenderBackupMeta(); }catch(e){}   /* teacher Backup card: last export + first-student nudge */
   /* Sync starts last, deliberately. initSync() runs before loadShared(),
      so starting it there would let a remote state land in S moments before
      boot overwrote it with the local one. By here S is loaded and rendered,
@@ -26905,7 +26909,9 @@ Object.assign(CS,{ "About this build":"O této verzi","Version":"Verze","Built":
 "Copy diagnostics":"Zkopírovat diagnostiku","Export/back up data":"Exportovat / zazálohovat data","Copied":"Zkopírováno",
 "A new version is ready.":"Je připravená nová verze.","Reload":"Načíst znovu",
 "Storage is getting full — export a backup or delete a few photos to be safe.":"Úložiště se plní — pro jistotu si exportujte zálohu nebo smažte pár fotek.",
-"Export":"Exportovat","Dismiss":"Zavřít" });
+"Export":"Exportovat","Dismiss":"Zavřít",
+"Last backup":"Poslední záloha","Backed up":"Záloha z","Never":"Nikdy",
+"You haven't backed up yet — one tap above and every student, lesson and word is safe.":"Ještě jste si neudělali zálohu — jedno klepnutí výše a každý student, lekce i slovíčko jsou v bezpečí." });
 /* Built in script rather than markup: this file ships as an Artifact fragment
    with no <body> tag of its own to anchor to. Tapping opens an About sheet —
    the stamp plus where this copy stores its data — which is what tells you
@@ -26920,6 +26926,13 @@ Object.assign(CS,{ "About this build":"O této verzi","Version":"Verze","Built":
     if(s&&s.textContent.trim()) return s.textContent.trim();
     return (typeof ART!=="undefined"&&ART)?t("shared"):t("this device");
   };
+  const abLastExport=()=>{
+    try{
+      const at=localStorage.getItem("pottingbench.lastExportAt");
+      if(!at) return t("Never");
+      try{ return new Date(at).toLocaleDateString(); }catch(e){ return at; }
+    }catch(e){ return "—"; }
+  };
   const dlg=document.createElement("dialog");
   dlg.id="aboutDlg";
   const buildAbout=()=>{
@@ -26928,6 +26941,7 @@ Object.assign(CS,{ "About this build":"O této verzi","Version":"Verze","Built":
         <div class="about-row"><span>${esc(t("Version"))}</span><b>${esc(label())}</b></div>
         <div class="about-row"><span>${esc(t("Built"))}</span><b>${esc(BUILD.at)}</b></div>
         <div class="about-row"><span>${esc(t("Sync"))}</span><b>${esc(modeNow())}</b></div>
+        <div class="about-row"><span>${esc(t("Backed up"))}</span><b>${esc(abLastExport())}</b></div>
         <p class="hint" style="margin:2px 0 0">${esc(t("Stored on this device. Export a copy to keep it safe."))}</p>
       </div>
       <div class="dlg-foot">
@@ -29692,11 +29706,57 @@ function tbExportBackup(){
     tbBackupSay(L.lang==="cs"
       ? `Uloženo: ${data.students.length} ${pl3(data.students.length,"student","studenti","studentů")}, ${data.words.length} ${pl3(data.words.length,"slovo","slova","slov")}, ${data.lessons.length} ${pl3(data.lessons.length,"lekce","lekce","lekcí")}.`
       : `Saved ${data.students.length} students, ${data.words.length} words, ${data.lessons.length} lessons.`, false);
+    try{ localStorage.setItem("teachbench.lastBackupAt", new Date().toISOString()); }catch(e){}
+    tbRenderBackupMeta();
   }catch(err){
     console.error("[Teachbench] export failed:", err);
     tbBackupSay("Could not build the backup file.", true);
   }
 }
+
+/* ---- backup meta: when you last exported, and the first-student nudge ----
+   Both read cheap state and paint into the Backup card; TB.saveData is wrapped
+   below so the moment a first student exists the nudge appears without hunting
+   down every add-student call site. */
+function tbLastBackupAt(){
+  try{ return localStorage.getItem("teachbench.lastBackupAt") || ""; }catch(e){ return ""; }
+}
+function tbRenderBackupMeta(){
+  const el = document.querySelector("#tbLastBackup"), nud = document.querySelector("#tbNudge");
+  if(!el || !nud) return;
+  const at = tbLastBackupAt();
+  if(at){
+    let d = at;
+    try{ d = new Date(at).toLocaleDateString(); }catch(e){}
+    el.textContent = t("Last backup") + ": " + d;
+    el.hidden = false;
+  }else{
+    el.hidden = true;
+  }
+  /* One-time nudge the moment they hold real data and have never exported. */
+  let n = 0;
+  try{ const data = TB.loadData(); n = (data && data.students) ? data.students.length : 0; }catch(e){}
+  let seen = false;
+  try{ seen = localStorage.getItem("teachbench.backupNudge") === "1"; }catch(e){}
+  if(n > 0 && !at && !seen){
+    nud.textContent = t("You haven't backed up yet — one tap above and every student, lesson and word is safe.");
+    nud.hidden = false;
+    nud.onclick = () => {
+      try{ localStorage.setItem("teachbench.backupNudge", "1"); }catch(e){}
+      nud.hidden = true;
+    };
+  }else{
+    nud.hidden = true;
+  }
+}
+(function(){
+  const _tbSave = TB.saveData;
+  TB.saveData = function(d){
+    const r = _tbSave(d);
+    try{ tbRenderBackupMeta(); }catch(e){}
+    return r;
+  };
+})();
 
 /* Held between choosing a file and confirming the replace, so the second
    press acts on exactly the data the first press described. */
