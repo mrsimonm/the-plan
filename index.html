@@ -7822,6 +7822,48 @@ const BUILD={ver:"1.0",n:57,at:"2026-09-04"};
 const uid=()=>Math.random().toString(36).slice(2,9);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
+/* ---------------- diagnostics ring (B1) ----------------
+   Nothing is telemetry: entries stay on this device, in pottingbench.local,
+   so a support message can carry the last things that went wrong. The digest
+   is counts only — never photos, never full S. */
+const DIAG_KEY="pottingbench.diag", DIAG_MAX=50;
+function diagDigest(){
+  try{
+    const n=x=>(x&&x.length)||0;
+    return { app:(L&&L.app)||null, view:(typeof curView==="string")?curView:null,
+      lang:(L&&L.lang)||null,
+      counts:{ subjects:n(S&&S.subjects), products:n(S&&S.products),
+        formulas:n(S&&S.formulas), events:n(S&&S.events),
+        tasks:n(S&&S.planner&&S.planner.tasks), notes:n(S&&S.notes),
+        photos:n(S&&S.photos), sessions:n(S&&S.hours&&S.hours.sessions) } };
+  }catch(e){ return null; }
+}
+function diagAll(){
+  try{ const r=localStorage.getItem(DIAG_KEY); const p=r?JSON.parse(r):[]; return Array.isArray(p)?p:[]; }
+  catch(e){ return []; }
+}
+function diagRecord(type,msg,err){
+  try{
+    const arr=diagAll();
+    arr.push({ at:new Date().toISOString(), b:BUILD.ver+"."+BUILD.n, t:type,
+      m:String(msg==null?"":msg).slice(0,300),
+      s:(err&&err.stack)?String(err.stack).slice(0,600):undefined,
+      d:diagDigest() });
+    while(arr.length>DIAG_MAX) arr.shift();
+    try{ localStorage.setItem(DIAG_KEY,JSON.stringify(arr)); }catch(e){}
+    /* surface, don't hide: a captured failure shows on the sync badge */
+    if(typeof setSync==="function"){ try{ setSync("error","something went wrong"); }catch(e){} }
+  }catch(e){}
+}
+window.addEventListener("error",ev=>diagRecord("error",(ev&&ev.message)||"window error",ev&&ev.error));
+window.addEventListener("unhandledrejection",ev=>{
+  const r=ev&&ev.reason;
+  const msg=(r&&(r&&r.message?r.message:r))||"unhandled rejection";
+  diagRecord("rejection",typeof msg==="string"?msg.slice(0,300):String(msg).slice(0,300), r instanceof Error?r:null);
+});
+/* console / support escape hatch: paste the whole ring as JSON */
+window.pbDiag={ all:diagAll, digest:diagDigest, record:diagRecord };
+
 /* ---------------- language ---------------- */
 /* The English text is its own key. Anything with no Czech entry stays English,
    so a hole in the dictionary costs one line rather than a blank screen. Only
@@ -26854,7 +26896,9 @@ Object.assign(CS,{ "About this build":"O této verzi","Version":"Verze","Built":
       </div></form>`;
     const copy=dlg.querySelector("#abCopy");
     copy.onclick=()=>{
-      const text=`${label()} · ${BUILD.at} · ${modeNow()}`;
+      const payload={ app:"potting-bench", build:label(), at:BUILD.at, mode:modeNow(),
+        diag:(typeof diagAll==="function")?diagAll():[], digest:(typeof diagDigest==="function")?diagDigest():null };
+      const text=JSON.stringify(payload,null,1);
       const done=()=>{ const old=copy.textContent; copy.textContent=t("Copied");
         setTimeout(()=>{ copy.textContent=old; },1500); };
       if(navigator.clipboard&&navigator.clipboard.writeText)
