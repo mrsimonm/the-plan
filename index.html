@@ -3186,6 +3186,54 @@ dialog:has(> form > .dlg-foot) > form > .dlg-foot{flex:0 0 auto}
 .pline-v .pin-days{color:var(--ink-3); font-size:11.5px}
 .pline-v .pin-days::before{content:" · "}
 
+/* ---- pests, diseases and disorders ---------------------------------------
+   The register's row is a card rather than a .pline because a problem carries
+   more than a value: a status, an age, what kind of thing it is, and the last
+   thing anyone did about it. Cramming that into one clipped line was how the
+   first attempt hid the only part worth reading. */
+.hx-card{padding:11px 13px; cursor:pointer}
+.hx-card:hover{border-color:var(--line-strong)}
+.hx-top{display:flex; align-items:center; gap:9px; min-width:0}
+.hx-head{flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:1px}
+.hx-head b{font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.hx-head small{font-size:11.5px; color:var(--ink-3);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.hx-age{flex:0 0 auto; font-size:11.5px; color:var(--ink-3); font-variant-numeric:tabular-nums}
+.hx-meta{display:flex; flex-wrap:wrap; gap:5px; margin-top:8px}
+.hx-meta .chipinfo.warn{color:var(--amber); border-color:var(--amber)}
+.hx-note{margin:8px 0 0; font-size:12px; color:var(--ink-2); white-space:normal}
+
+/* the timeline: a fixed-width kind column so the dates line up down the page
+   and the sequence can be read as a sequence rather than as a heap of notes */
+.istep{display:flex; align-items:flex-start; gap:10px; padding:7px 0;
+  border-top:1px solid var(--line-soft)}
+.istep:first-child{border-top:0}
+.istep-k{flex:0 0 62px; font-size:10.5px; letter-spacing:.04em; text-transform:uppercase;
+  color:var(--ink-3); padding-top:2px}
+.istep-k.treated{color:var(--accent)}
+.istep-k.worse{color:var(--crit)}
+.istep-k.better,.istep-k.resolved{color:var(--ok)}
+.istep-b{flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:2px}
+.istep-b span{font-size:12.5px; color:var(--ink); white-space:normal}
+.istep-b small{font-size:11px; color:var(--ink-3)}
+.istep .btn.mini{flex:0 0 auto; opacity:.5; padding:2px 8px}
+.istep .btn.mini:hover{opacity:1}
+
+/* a plant with something wrong with it says so on its garden tile — the garden
+   is the screen actually looked at, and a pest two taps in is one nobody
+   revisits. Top-right, over the photo, so it reads before the name does. */
+.tile{position:relative}
+.tile-ill{position:absolute; top:7px; right:7px; z-index:2;
+  display:inline-flex; align-items:center; gap:2px;
+  padding:2px 6px; border-radius:999px; font-size:11px; line-height:1.5;
+  font-variant-numeric:tabular-nums;
+  background:var(--amber); color:var(--on-accent); box-shadow:0 1px 3px rgba(0,0,0,.35)}
+.tile-ill.bad{background:var(--crit)}
+
+/* a plant name inside running text that is also a link to it */
+.linkish{background:none; border:0; padding:0; font:inherit; color:var(--accent);
+  cursor:pointer; text-decoration:underline; text-underline-offset:2px}
+
 .pindays{margin:0 0 11px}
 .pinrow{display:flex; align-items:center; gap:10px; margin-bottom:6px}
 .pinrow .pin-k{flex:0 0 52px; font-size:12px; color:var(--ink-2)}
@@ -5572,6 +5620,37 @@ html[data-shell="rail"] body{
     <div class="card" id="logList"></div>
   </section>
 
+  <!-- ============ HEALTH ============
+       Every pest, disease and disorder the collection has had, open ones first.
+       A problem is a record with a life of its own — spotted, treated, treated
+       again, resolved — which is why it is not just another entry in the log. -->
+  <section class="view" id="view-health" hidden>
+    <div class="sec-head"><h2>Health</h2>
+      <div style="display:flex; gap:8px">
+        <button class="btn primary" id="hxReport">+ Report</button>
+        <button class="btn" id="hxBack">← Library</button>
+      </div></div>
+    <div class="stack">
+      <div id="hxSummary"></div>
+      <div class="seg" id="hxFilter">
+        <button type="button" data-hxf="open" aria-pressed="true">Open</button>
+        <button type="button" data-hxf="resolved" aria-pressed="false">Cleared</button>
+        <button type="button" data-hxf="all" aria-pressed="false">Everything</button>
+      </div>
+      <div class="stack" id="hxList" style="gap:10px"></div>
+      <p class="hint" style="margin:2px 2px 22px">Report a problem the day you notice it, even if you are not
+        sure what it is. The date it started is the thing you cannot reconstruct later, and it is what tells you
+        whether a treatment worked.</p>
+    </div>
+  </section>
+
+  <!-- ============ ONE PROBLEM ============ -->
+  <section class="view" id="view-issue" hidden>
+    <div class="sec-head"><h2 id="isTitle">Problem</h2>
+      <button class="btn" id="isBack">← Health</button></div>
+    <div class="stack" id="isBody"></div>
+  </section>
+
   <!-- ============ CARE DAYS ============
        The whole collection laid out as jobs against weekdays, so the week can
        be arranged by hand instead of being derived. Every row is one routine;
@@ -6221,6 +6300,71 @@ html[data-shell="rail"] body{
 </form></dialog>
 
 <!-- plant editor -->
+<!-- Report a pest, disease or disorder. The catalogue is a shortcut, never a
+     gate: you can always name the thing yourself, because a problem you cannot
+     identify yet is exactly the one worth writing the date on. -->
+<dialog id="issueDlg"><form id="issueForm">
+  <h3 class="dlg-head" id="issueDlgTitle">Report a problem</h3>
+  <div class="dlg-body">
+    <div class="field"><label for="isPlant">Which plant</label>
+      <select id="isPlant"></select></div>
+    <div class="field"><label>What sort of thing</label>
+      <div class="seg" id="isCat">
+        <button type="button" data-iscat="pest" aria-pressed="true">Pest</button>
+        <button type="button" data-iscat="disease" aria-pressed="false">Disease</button>
+        <button type="button" data-iscat="disorder" aria-pressed="false">Disorder</button>
+      </div>
+      <p class="hint" id="isCatHint" style="margin:7px 0 0"></p></div>
+    <div class="field"><label for="isType">Which one</label>
+      <select id="isType"></select>
+      <p class="hint" id="isTypeHint" style="margin:7px 0 0"></p></div>
+    <div class="field" id="isOwnWrap" hidden><label for="isOwn">Call it</label>
+      <input id="isOwn" placeholder="Brown patches on the new leaves" autocomplete="off"></div>
+    <div class="grid2">
+      <div class="field"><label for="isWhen">First noticed</label>
+        <input id="isWhen" type="date"></div>
+      <div class="field"><label for="isSev">How bad</label>
+        <select id="isSev">
+          <option value="1">A few — caught early</option>
+          <option value="2" selected>Spreading</option>
+          <option value="3">All over it</option>
+        </select></div>
+    </div>
+    <div class="field"><label for="isNotes">What you can see</label>
+      <input id="isNotes" placeholder="Webbing under the lower leaves" autocomplete="off">
+      <p class="hint">Write what you actually see, not what you think it is. In three weeks
+        that is the sentence that tells you whether it got better.</p></div>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn danger" type="button" id="issueDelete" style="margin-right:auto">Delete</button>
+    <button class="btn" type="button" data-close>Cancel</button>
+    <button class="btn primary" type="submit">Save</button>
+  </div>
+</form></dialog>
+
+<!-- Adding one line to a problem's timeline: a treatment, or just an observation. -->
+<dialog id="isLogDlg"><form id="isLogForm">
+  <h3 class="dlg-head" id="isLogTitle">Add to the timeline</h3>
+  <div class="dlg-body">
+    <div class="field"><label for="ilKind">What happened</label>
+      <select id="ilKind">
+        <option value="treated">Treated it</option>
+        <option value="better">Looking better</option>
+        <option value="worse">Got worse</option>
+        <option value="note">Just a note</option>
+      </select></div>
+    <div class="field"><label for="ilText">Details</label>
+      <input id="ilText" placeholder="Soap spray, undersides too" autocomplete="off">
+      <p class="hint" id="ilHint" style="margin:7px 0 0"></p></div>
+    <div class="field"><label for="ilWhen">When</label>
+      <input id="ilWhen" type="date"></div>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn" type="button" data-close>Cancel</button>
+    <button class="btn primary" type="submit">Add</button>
+  </div>
+</form></dialog>
+
 <dialog id="plantDlg"><form id="plantForm">
   <h3 class="dlg-head" id="plantDlgTitle">Plant</h3>
   <div class="dlg-body">
@@ -8489,6 +8633,7 @@ function seed(){return{
   v:6, users:[{id:"u1",name:"Me"}],
   actionDaysOn:true, actionDays:[3,0],          // Wednesday & Sunday
   cuttings:[], photos:[], products:[], formulas:[], schedules:[], subjects:[], routines:[], events:[], tasks:[],
+  issues:[],
   notes:[], notebooks:[],
   cabinets:[], cabItems:[],
   planner:{sleepOff:false, sleepWeekday:{from:"23:00",hours:8}, sleepWeekend:{from:"23:00",hours:8}, sleepEx:{}, tasks:[], blocks:[], linkCare:true, linkHours:true, linkProjects:true, carePace:3},
@@ -8595,6 +8740,24 @@ function migrate(d){
     .map(r=>Object.assign({kind:"chore",name:"Care",every:7},r));
   /* v7: a routine may be pinned to weekdays instead of running on its interval. */
   d.routines.forEach(r=>{ r.days=normDays(r.days); });
+  /* v8: pests, diseases and disorders. An issue whose plant has gone is dropped
+     — it describes something that happened TO a plant, so without the plant it
+     is not a record of anything. Status is closed to the three the UI can draw:
+     an unknown one would render as a blank pill nothing could ever clear. */
+  d.issues=(d.issues||[]).filter(i=>i&&i.subjectId&&d.subjects.some(x=>x.id===i.subjectId))
+    .map(i=>Object.assign({cat:"pest",type:"",name:"Problem",severity:2,status:"open",
+      notes:"",at:new Date().toISOString(),by:null,resolvedAt:null,log:[]},i))
+    .map(i=>{
+      i.severity=[1,2,3].indexOf(+i.severity)>=0?+i.severity:2;
+      i.status=["open","treating","resolved"].indexOf(i.status)>=0?i.status:"open";
+      i.cat=["pest","disease","disorder"].indexOf(i.cat)>=0?i.cat:"pest";
+      i.log=Array.isArray(i.log)?i.log.filter(x=>x&&x.at):[];
+      /* a resolved issue with no resolved date sorts as if it never ended and
+         would sit at the top of the history forever */
+      if(i.status==="resolved"&&!i.resolvedAt) i.resolvedAt=i.at;
+      if(i.status!=="resolved") i.resolvedAt=null;
+      return i;
+    });
   d.events=(d.events||[]).map(e=>Object.assign({},e,
     {subjectId:e.subjectId||e.plantId||null, kind:e.kind||e.type||"water"}));
   d.planner=d.planner||{sleepWeekday:{from:"23:00",hours:8}, sleepWeekend:{from:"23:00",hours:8}, tasks:[], blocks:[]};
@@ -8837,7 +9000,7 @@ function pSanitizeState(d){
   const cleanOne=o=>{ if(!o||typeof o!=="object") return;
     ["id","subjectId","studentId"].forEach(k=>{ if(o[k]!==undefined) o[k]=cleanId(o[k]); }); };
   const lists=["subjects","products","formulas","schedules","cuttings","photos",
-    "routines","events","tasks","notes","users","hours","cabinets","cabItems"];
+    "routines","events","tasks","notes","users","hours","cabinets","cabItems","issues"];
   for(const name of lists){
     const arr=d[name];
     if(!Array.isArray(arr)) continue;
@@ -9773,6 +9936,9 @@ function leafSpanWord(days){
    Ten points of difference is the threshold, which is about the smallest
    change an eye can call reliably on a leaf. */
 const VG_STEPS=[0,25,50,75,100];
+/* the three things a variegation trend can be saying, named once so the plant
+   page and the statistics page cannot word the same reading differently */
+const VG_DIR={gaining:"gaining", holding:"holding", reverting:"reverting"};
 const leafVg=e=>{ const v=+(e&&e.vg); return Number.isFinite(v)&&v>=0&&v<=100?v:null; };
 const vgReadings=evs=>evs.map(leafVg).filter(v=>v!==null);   // newest first
 const vgMean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
@@ -14609,7 +14775,16 @@ function renderGarden(){
             <b>${esc(p.name)}</b>
             ${sub?`<small>${esc(sub)}</small>`:""}
             ${w?`<span class="pill ${w.st.cls}">${esc(t(rName(w.r)).toLowerCase())} ${w.st.text}</span>`:""}
-          </span></button>`;
+          </span>
+          ${(()=>{const io=openIssuesFor(p.id);
+            /* a plant with something wrong with it has to say so on the tile
+               itself — the garden is the screen you actually look at, and an
+               open pest that only shows two taps in is one nobody revisits */
+            if(!io.length) return "";
+            const worst=io.reduce((a,b)=>(+b.severity>+a.severity?b:a));
+            return `<span class="tile-ill ${+worst.severity>=3?"bad":""}" title="${
+              esc(io.map(issueName).join(" · "))}">${io.length>1?io.length+" ":""}⚠</span>`;
+          })()}</button>`;
       }).join("")
     : all.length
       ? `<div class="card pad" style="grid-column:1/-1"><p class="hint" style="margin:0">
@@ -14724,6 +14899,7 @@ const LIB_ITEMS=[
   {v:"plants", ic:"🌿", t:"All plants",  d:"The full list, with what's due on each"},
   {v:"shelf",  ic:"🧴", t:"Shelf",       d:"Your bottles, and the order they go in"},
   {v:"academy",ic:"📖", t:"Academy",     d:"Watering, feeding, spraying, propagation"},
+  {v:"health", ic:"🩺", t:"Health",      d:"Pests, diseases and what you did about them"},
   {v:"log",    ic:"📋", t:"History",     d:"Everything either of you has done"}
 ];
 function renderLibrary(){
@@ -14732,8 +14908,10 @@ function renderLibrary(){
     <span class="mrow-t"><b>${esc(m.t)}</b><small>${esc(m.d)}</small></span>
     <span class="chev" aria-hidden="true">›</span></button>`).join("");
   const n=subjectsIn("plants").length;
+  const ho=(S.issues||[]).filter(i=>i.status!=="resolved").length;
   $("#libFoot").textContent=`${plural(n,"plant")} · ${plural(S.formulas.length,"formula")} · ${
-    plural(S.products.length,"product")} · ${S.events.filter(e=>!isLeafEv(e)).length} logged`;
+    plural(S.products.length,"product")} · ${S.events.filter(e=>!isLeafEv(e)).length} logged${
+    ho?` · ${ho} ${L.lang==="cs"?"otevřených problémů":"open problem"+(ho===1?"":"s")}`:""}`;
 }
 $("#libMenu").addEventListener("click",e=>{
   const b=e.target.closest("[data-go]"); if(b) show(b.dataset.go);
@@ -14944,6 +15122,36 @@ function renderPlant(){
           <button class="btn mini" data-takecut="${p.id}">Start more</button></div>
       </div>`;})()}
 
+    ${(()=>{
+      /* The plant's own health record. Reporting starts here because this is
+         where you are standing when you notice — the register is for reading
+         back, not for the moment something goes wrong. */
+      const mine=issuesFor(p.id), io=mine.filter(issueOpen);
+      const past=mine.filter(i=>!issueOpen(i));
+      return `<div class="card">
+        <div class="pad" style="padding-bottom:6px"><span class="eyebrow">Health</span></div>
+        <div class="pad" style="padding-top:0">
+          ${io.length?io.map(i=>`<div class="pline">
+              <span class="pill ${issueCls(i)}">${esc(t(IST_LABEL[i.status]))}</span>
+              <span class="pline-k">${esc(issueName(i))}</span>
+              <span class="pline-v">${issueDays(i)}${L.lang==="cs"?" dní":"d"} · ${esc(sevText(i.severity))}${
+                issueSpreads(i)?`<span class="pin-days">${esc(t("spreads"))}</span>`:""}</span>
+            </div>`).join("")
+          :`<p class="hint" style="margin:0">${esc(past.length
+              ? t("Nothing wrong with it right now.")
+              : t("Nothing has ever gone wrong with this one."))}</p>`}
+          ${past.length?`<p class="hint" style="margin:9px 0 0">${past.length} ${
+            L.lang==="cs"?"vyřešeno dřív":"cleared before now"} · ${
+            L.lang==="cs"?"nejdéle":"longest"} ${Math.max(...past.map(issueDays))}${
+            L.lang==="cs"?" dní":"d"}.</p>`:""}
+        </div>
+        <div class="pad" style="padding-top:0"><div class="btn-row">
+          <button class="btn mini" data-reportill="${p.id}">${esc(t("Report a problem"))}</button>
+          ${mine.length?`<button class="btn mini" data-seeill="${p.id}">${esc(t("See all"))}</button>`:""}
+          ${io.map(i=>`<button class="btn mini" data-openill="${i.id}">${esc(issueName(i))} →</button>`).join("")}
+        </div></div>
+      </div>`;})()}
+
     <div class="card">
       <div class="pad" style="padding-bottom:6px"><span class="eyebrow">Recent</span></div>
       ${(()=>{const ev=S.events.filter(e=>e.subjectId===p.id)
@@ -14983,6 +15191,12 @@ $("#pvBody").addEventListener("click",async e=>{
     touch(); renderPlant(); renderLog(); return;
   }
   if(q("seecuts")){ show("cuttings"); return; }
+  const ri=q("reportill"), si=q("seeill"), oi=q("openill");
+  if(ri){ openIssueDlg(null,ri.dataset.reportill); return; }
+  /* "See all" on a plant with only cleared problems must not land on a filter
+     that hides every one of them */
+  if(si){ hxFilter=openIssuesFor(si.dataset.seeill).length?"open":"all"; show("health"); return; }
+  if(oi){ openIssuePage(oi.dataset.openill); return; }
   const tc=q("takecut");
   if(tc){ openCutDlg(); $("#cutFrom").value=tc.dataset.takecut;
     $("#cutSpWrap").hidden=true; syncCutMethod(); return; }
@@ -19445,6 +19659,43 @@ function statsData(){
      and it still appears in the list — it just does not get a vote on the
      rate until it has been watched for one. */
   const ripe=folPlants.filter(x=>x.ripe), ripeY=folPlants.filter(x=>x.ripeYear);
+
+  /* Leaves are not the only record of growth, and they were the only one that
+     reached this page. A height on a photo and a variegation reading on a leaf
+     were both being collected faithfully and then shown on one plant's page and
+     nowhere else — so the collection-wide question ("what is actually growing")
+     could not be asked. Both are added here.
+
+     Height needs two readings and three weeks between them before it means
+     anything: measured twice in a fortnight, the difference is mostly where you
+     held the tape. Below that the plant still appears with its total gain and
+     no rate, the same rule the leaf figures already follow. */
+  const HEIGHT_MIN_DAYS=21;
+  const heightPlants=subs.map(p=>{
+    const hs=(S.photos||[]).filter(x=>x.subjectId===p.id&&x.h)
+      .slice().sort((a,b)=>String(a.at).localeCompare(String(b.at)));
+    if(hs.length<2) return null;
+    const a=hs[0], b=hs[hs.length-1];
+    const days=Math.max(1,Math.round((+new Date(b.at)-+new Date(a.at))/DAY));
+    return {p, from:+a.h, to:+b.h, gain:+b.h-+a.h, days, n:hs.length,
+            ripe:days>=HEIGHT_MIN_DAYS, perMonth:((+b.h-+a.h)/days)*30.44};
+  }).filter(Boolean).sort((a,b)=>(b.ripe-a.ripe)||(b.perMonth-a.perMonth));
+  const hRipe=heightPlants.filter(x=>x.ripe);
+
+  /* Variegation: the useful reading is direction, not level — a plant steady at
+     40% is fine and one falling from 60 to 20 is reverting and wants more light.
+     Same three-against-three comparison the plant page already uses, so the two
+     screens can never call the same plant stable and reverting at once. */
+  const vgPlants=subs.map(p=>{
+    const r=vgReadings(leafEventsFor(p.id));      // newest first, already filtered
+    if(!r.length) return null;
+    const latest=r[0];
+    if(r.length<6) return {p, latest, n:r.length, dir:null};
+    const recent=vgMean(r.slice(0,3)), before=vgMean(r.slice(3,6));
+    const d=recent-before;
+    return {p, latest, n:r.length, recent, before,
+            dir: d>10?"gaining" : d<-10?"reverting" : "holding"};
+  }).filter(Boolean).sort((a,b)=>b.latest-a.latest);
   D.fol={plants:folPlants,
     tracked:folPlants.length,
     rated:ripe.length, ratedYear:ripeY.length,
@@ -19453,7 +19704,59 @@ function statsData(){
     perYear:ripeY.reduce((a,x)=>a+x.perYear,0),
     since:folFirst,
     /* newest leaf anywhere — answers "am I still doing this?" */
-    last:folPlants.reduce((a,x)=>!a||x.last>a?x.last:a,null)};
+    last:folPlants.reduce((a,x)=>!a||x.last>a?x.last:a,null),
+    height:{plants:heightPlants, tracked:heightPlants.length, rated:hRipe.length,
+      gain:heightPlants.reduce((a,x)=>a+x.gain,0),
+      perMonth:hRipe.reduce((a,x)=>a+x.perMonth,0)},
+    vg:{plants:vgPlants, tracked:vgPlants.length,
+      reverting:vgPlants.filter(x=>x.dir==="reverting").length,
+      gaining:vgPlants.filter(x=>x.dir==="gaining").length}};
+
+  /* ---- health ----
+     Two questions worth answering with numbers rather than a list: what is
+     wrong right now, and how long these things take you to beat. Only cleared
+     problems can answer the second, because an open one's length is still
+     changing — averaging them in would make a bad month look like a fast one
+     simply because nothing had finished yet. */
+  const iss=(S.issues||[]).filter(i=>subs.some(x=>x.id===i.subjectId));
+  const issOpen=iss.filter(i=>i.status!=="resolved");
+  const issDone=iss.filter(i=>i.status==="resolved");
+  const issDur=issDone.map(i=>Math.max(0,Math.round(
+    (+new Date(i.resolvedAt||i.at)-+new Date(i.at))/DAY)));
+  const byCat={}, byName={}, byPlant={};
+  iss.forEach(i=>{
+    const cl=(ISSUE_CATS[i.cat]||ISSUE_CATS.pest).label;
+    byCat[cl]=(byCat[cl]||0)+1;
+    const nm=(issueDef(i.type)||{}).name||i.name||"Unidentified";
+    byName[nm]=(byName[nm]||0)+1;
+    const p=subs.find(x=>x.id===i.subjectId);
+    if(p) byPlant[p.name]=(byPlant[p.name]||0)+1;
+  });
+  const treatments=iss.reduce((a,i)=>a+(i.log||[]).filter(x=>x.kind==="treated").length,0);
+  /* a year is the honest window for "how often does this happen to me" — a
+     collection-lifetime total only ever grows and so never reads as a rate */
+  const yearAgo=now-365*DAY;
+  D.health={
+    total:iss.length, open:issOpen.length, cleared:issDone.length,
+    plantsHit:new Set(issOpen.map(i=>i.subjectId)).size,
+    everHit:new Set(iss.map(i=>i.subjectId)).size,
+    spreading:issOpen.filter(i=>(issueDef(i.type)||{}).spreads).length,
+    treatments,
+    avgDays:issDur.length?Math.round(issDur.reduce((a,b)=>a+b,0)/issDur.length):null,
+    worstDays:issDur.length?Math.max(...issDur):null,
+    thisYear:iss.filter(i=>+new Date(i.at)>=yearAgo).length,
+    byCat, byName, byPlant,
+    /* The ones still going, worst and oldest first — the actual to-do list.
+       Flattened to what the card draws (name, plant, age) rather than handed
+       over as raw issues: renderStats has neither `subs` nor `now` in scope,
+       and reaching for them there threw the moment the first issue existed. */
+    live:issOpen.slice().sort((a,b)=>(b.severity-a.severity)||
+      (+new Date(a.at)-+new Date(b.at))).slice(0,6).map(i=>{
+        const p=subs.find(x=>x.id===i.subjectId);
+        return {plant:p?p.name:"—", what:issueName(i), severity:+i.severity,
+                days:Math.max(0,Math.round((now-+new Date(i.at))/DAY))};
+      })
+  };
 
   /* ---- propagation ---- */
   const cut=S.cuttings||[];
@@ -19723,12 +20026,34 @@ function renderStats(){
         [x.p.name, x.ripe?leafNum(x.perMonth):"—",
          `${x.n} ${L.lang==="cs"?"za":"over"} ${leafSpanWord(leafWindowDays(x.first))}`]),
         {unit:L.lang==="cs"?" /měs":" /mo"})}
-    </div>`
+    </div>
+    ${fo.height.tracked?`<div style="margin-top:15px">
+      <span class="eyebrow" style="display:block;margin-bottom:7px">${esc(t("Putting on height"))}</span>
+      ${barList(fo.height.plants.slice(0,6).map(x=>
+        [x.p.name, x.ripe?oneDp(x.perMonth):"—",
+         `${x.from}→${x.to} cm ${L.lang==="cs"?"za":"in"} ${leafSpanWord(x.days)}`]),
+        {unit:L.lang==="cs"?" cm/měs":" cm/mo"})}
+      <p class="hint" style="margin:9px 0 0">${
+        L.lang==="cs"?`${fo.height.tracked} ${pl3(fo.height.tracked,"rostlina má","rostliny mají","rostlin má")} aspoň dvě měření výšky · celkem +${oneDp(fo.height.gain)} cm.`
+                     :`${plural(fo.height.tracked,"plant")} measured more than once · ${oneDp(fo.height.gain)} cm gained between them.`}</p>
+    </div>`:""}
+    ${fo.vg.tracked?`<div style="margin-top:15px">
+      <span class="eyebrow" style="display:block;margin-bottom:7px">${esc(t("Variegation"))}</span>
+      ${barList(fo.vg.plants.slice(0,6).map(x=>
+        [x.p.name, Math.round(x.latest),
+         x.dir?t(VG_DIR[x.dir]):`${x.n} ${L.lang==="cs"?"čtení":x.n===1?"reading":"readings"}`]),
+        {unit:"%"})}
+      ${fo.vg.reverting?`<p class="hint" style="margin:9px 0 0">${
+        L.lang==="cs"?`${fo.vg.reverting} ${pl3(fo.vg.reverting,"rostlina ustupuje","rostliny ustupují","rostlin ustupuje")} — dej je do světlejšího místa, než zezelenají nadobro.`
+                     :`${plural(fo.vg.reverting,"plant")} reverting — more light, before it goes green for good.`}</p>`:""}
+    </div>`:""}`
     :`<p class="hint" style="margin:0">${esc(t(
         "No leaves logged yet. Open a plant and tap + New leaf when one opens."))}</p>`,
     fo.tracked?"Each plant's rate runs from its own first logged leaf to today, so a quiet month pulls it down on its own. "
       +"A plant needs a fortnight behind it before it counts towards the monthly figure and a quarter before the yearly one — "
-      +"until then it shows a dash, because a leaf logged this morning is a data point, not a rate.":null);
+      +"until then it shows a dash, because a leaf logged this morning is a data point, not a rate. "
+      +"Height works the same way and wants three weeks between two measurements: closer than that and the difference "
+      +"is mostly where you held the tape.":null);
 
   /* --- 4. propagation --- */
   const p=D.prop;
@@ -19746,6 +20071,43 @@ function renderStats(){
     </div>`:""}`,
     p.rate==null?"No batch has finished yet, so there's no success rate to show.":null);
 
+  /* --- 4b. health --- */
+  const h=D.health;
+  const healthCard=card("Pests & diseases",
+    h.total?`<div class="statrow q">
+      ${statCell(h.open,"open now",h.open?"bad":"good")}
+      ${statCell(h.plantsHit,"plants affected",h.plantsHit?"":"none")}
+      ${statCell(h.cleared,"cleared",h.cleared?"good":"none")}
+      ${statCell(h.avgDays==null?"—":h.avgDays+"d","to clear",h.avgDays==null?"none":"")}
+    </div>
+    ${h.live.length?`<div style="margin-top:15px">
+      <span class="eyebrow" style="display:block;margin-bottom:7px">${esc(t("Still going"))}</span>
+      <div class="sbars">${h.live.map(x=>`<div class="sbar">
+          <span class="sbar-l">${esc(x.plant)} · ${esc(x.what)}</span>
+          <span class="sbar-t"><i style="width:${Math.min(100,x.days*2)}%;background:var(--${
+            x.severity>=3?"crit":"amber"})"></i></span>
+          <span class="sbar-n">${x.days}d</span>
+        </div>`).join("")}</div>
+    </div>`:""}
+    ${Object.keys(h.byCat).length?`<div style="margin-top:15px">
+      <span class="eyebrow" style="display:block;margin-bottom:7px">${esc(t("What kind"))}</span>
+      ${barList(Object.entries(h.byCat).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[t(k),v]))}
+    </div>`:""}
+    ${Object.keys(h.byName).length>1?`<div style="margin-top:15px">
+      <span class="eyebrow" style="display:block;margin-bottom:7px">${esc(t("Most often"))}</span>
+      ${barList(Object.entries(h.byName).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k,v])=>[t(k),v]))}
+    </div>`:""}
+    ${Object.keys(h.byPlant).length>1?`<div style="margin-top:15px">
+      <span class="eyebrow" style="display:block;margin-bottom:7px">${esc(t("Worst affected"))}</span>
+      ${barList(Object.entries(h.byPlant).sort((a,b)=>b[1]-a[1]).slice(0,6))}
+    </div>`:""}
+    <p class="hint" style="margin:13px 0 0">${esc(t("Reported in the last year"))}: ${h.thisYear}. ${
+      h.treatments?`${h.treatments} ${esc(t("treatments logged"))}. `:""}${
+      h.worstDays!=null?`${esc(t("The longest took"))} ${h.worstDays} ${esc(t("days"))}.`:""}</p>`
+    :`<p class="hint" style="margin:0">${esc(t(
+        "Nothing reported yet. Open a plant and tap Report a problem the day you notice something."))}</p>`,
+    h.cleared?"Time-to-clear only counts problems you have actually closed — an open one is still getting longer, so averaging it in would flatter the figure.":null);
+
   /* --- 5. attention --- */
   const a=D.attn;
   const attnCard=a.thirstiest.length||a.never?card("Wants attention",
@@ -19758,10 +20120,11 @@ function renderStats(){
       `<p class="hint" style="margin:0">${esc(t("Nothing is overdue. Good."))}</p>`}
      ${a.never?`<p class="hint" style="margin:11px 0 0">${a.never} ${esc(t("plants have never been logged at all."))}</p>`:""}`):"";
 
-  host.innerHTML=nowCard+careCard+expertCards(D)+collCard+folCard+propCard+attnCard;
+  host.innerHTML=nowCard+careCard+expertCards(D)+collCard+folCard+propCard+healthCard+attnCard;
 }
 
 function renderAll(){ renderMixSel(); renderDue(); renderHow(); renderMix(); renderShelf(); renderSubjects(); renderCuttings(); renderPlan(); renderLog(); renderTaskBar(); renderTaskBarFull("#gardenTaskBar"); renderTaskBarFull("#planTaskBar"); renderGarden(); renderLibrary(); renderActionDays(); renderPropGuide(); renderStats();
+  if(typeof renderHealth==="function") try{ renderHealth(); }catch(e){}
   /* the planner sat outside this list historically — after an import or reset
      its DOM stayed stale until you navigated to it. Caches cleared too, since
      the underlying data may be wholly different now. */
@@ -19800,8 +20163,9 @@ const APPS=[{id:"bench",label:"Potting Bench",view:null},
    not one of Potting Bench's, so it must not be remembered as the bench tab
    you were last on and must not light up Library in the tab strip. It still
    has to be hidden and shown like any other view — see the list in showNow. */
-const BENCH_VIEWS=["garden","library","mix","plants","plan","careplan","cuttings","batch","shelf","log","academy","acadedit","plant","product","sched","formula","stats"];
+const BENCH_VIEWS=["garden","library","mix","plants","plan","careplan","cuttings","batch","shelf","log","health","issue","academy","acadedit","plant","product","sched","formula","stats"];
 const NAV_PARENT={batch:"cuttings", plant:"garden", plants:"library", product:"library", careplan:"plan",
+  health:"library", issue:"library",
   sched:"plan", formula:"mix", acadedit:"library", shelf:"library", log:"library", academy:"library"};
 
 /* ============================================================================
@@ -21263,6 +21627,8 @@ function showNow(v){
   if(v==="shelf") renderShelf(); if(v==="plants") renderSubjects(); if(v==="academy") renderAcademy();
   if(v==="log") renderLog(); if(v==="plan") renderPlan();
   if(v==="careplan") renderCareDays();
+  if(v==="health") renderHealth();
+  if(v==="issue"&&isvId) renderIssue();
   if(v==="garden") renderGarden(); if(v==="library") renderLibrary();
   if(v==="cuttings") renderCuttings();     // day counts go stale overnight otherwise
   if(v==="plant"&&pvId) renderPlant();
@@ -22755,6 +23121,7 @@ function deletePlant(gone){
   S.routines=S.routines.filter(r=>r.subjectId!==gone);
   S.events=S.events.filter(e=>e.subjectId!==gone);
   S.photos=(S.photos||[]).filter(x=>x.subjectId!==gone); photosTouched();
+  S.issues=(S.issues||[]).filter(x=>x.subjectId!==gone);
   S.tasks=(S.tasks||[]).filter(t=>t.subjectId!==gone);
   if(pvId===gone) pvId=null;             // never leave a page id pointing at a ghost
   touch(); renderSubjects(); renderLog(); renderAgenda();
@@ -23118,10 +23485,14 @@ function xferPlantsPayload(){
   const subjects=S.subjects.filter(x=>x.module==="plants");
   const ids=new Set(subjects.map(x=>x.id));
   const routines=S.routines.filter(r=>ids.has(r.subjectId));
+  /* a plant's health history travels with the plant: moving it to another
+     device and silently leaving behind every pest it has ever had would make
+     the receiving copy claim a clean record it has not got */
+  const issues=(S.issues||[]).filter(i=>ids.has(i.subjectId));
   return JSON.stringify({
     app:XFER_PLANTS_TAG, ver:BUILD.ver, build:BUILD.n,
     exported:new Date().toISOString(), by:userName(L.me),
-    data:{products:S.products, subjects, routines}
+    data:{products:S.products, subjects, routines, issues}
   },null,1);
 }
 async function exportPlantsToFile(){
@@ -23158,6 +23529,7 @@ function readImportPlants(file){
     const products=Array.isArray(d&&d.products)?d.products:[];
     const subjects=Array.isArray(d&&d.subjects)?d.subjects.filter(x=>x&&x.module==="plants"):[];
     const routines=Array.isArray(d&&d.routines)?d.routines:[];
+    const issues=Array.isArray(d&&d.issues)?d.issues:[];
     if(!products.length&&!subjects.length) return xferSayPlants(t("That doesn't look like Potting Bench data."),true);
     const detail=`${subjects.length} ${t("plants")}, ${products.length} fertiliser`;
     if(!await ask(`${t("Add this to what's already here?")}\n\n${detail}\n\n${t("Nothing existing will be changed or removed.")}`,
@@ -23177,6 +23549,14 @@ function readImportPlants(file){
       S.subjects.push(...newSubjects);
       S.products.push(...newProducts);
       S.routines.push(...newRoutines);
+      /* same trust boundary as the routines above — this path never goes
+         through migrate(), so the imported records are normalised here */
+      S.issues.push(...issues.filter(i=>i&&idMap[i.subjectId]).map(i=>Object.assign({},i,{
+        id:uid(), subjectId:idMap[i.subjectId],
+        severity:[1,2,3].indexOf(+i.severity)>=0?+i.severity:2,
+        status:["open","treating","resolved"].indexOf(i.status)>=0?i.status:"open",
+        cat:["pest","disease","disorder"].indexOf(i.cat)>=0?i.cat:"pest",
+        log:Array.isArray(i.log)?i.log.filter(x=>x&&x.at):[]})));
       pSanitizeState(S);
       touch(); saveLocal(); renderWho(); renderAll();
       xferSayPlants(`${t("Imported.")} ${detail}`);
@@ -35399,6 +35779,11 @@ Object.assign(CS,{
   "mm, g, ct…":"mm, g, ct…",
   "Move up":"Nahoru", "Move down":"Dolů"
 });
+Object.assign(CS,{
+  "Brown patches on the new leaves":"Hnědé skvrny na nových listech",
+  "Webbing under the lower leaves":"Pavučinky pod spodními listy",
+  "Soap spray, undersides too":"Mýdlový postřik, i spodní strany"
+});
 
 
 /* ============================================================================
@@ -35516,6 +35901,836 @@ Object.assign(CS,{
     "Zatím žádné rostliny. Přidej jednu a její dny se objeví tady.",
   "A job with no days picked keeps running on its interval and lands on the household's action days. Pick days and it stops drifting: it comes due on exactly those days, whatever the interval says. Tap the last lit day again to hand it back to the interval.":
     "Úkon bez vybraných dnů běží dál podle intervalu a padá na akční dny domácnosti. Vyber dny a přestane se posouvat: bude na řadě přesně v ty dny, ať interval říká cokoli. Klepnutím na poslední svítící den ho vrátíš zpátky intervalu."
+});
+
+
+/* ============================================================================
+   PESTS, DISEASES AND DISORDERS
+
+   Everything else the app records is something you DID — a watering, a feed, a
+   cutting taken. A problem is something that happened to a plant, and unlike a
+   watering it has a length: spotted on a Tuesday, treated three times, gone six
+   weeks later. That shape is why an issue is its own record rather than another
+   row in the log, and why the timeline underneath it matters more than the
+   headline. Whether a treatment worked is a question about two dates.
+
+   The catalogue below is a shortcut for naming the common ones, never a gate:
+   you can always type your own, because the problem you cannot yet identify is
+   precisely the one worth putting a date on.
+
+   `spreads` is the only field that changes behaviour rather than wording — it
+   is what lets the app say "this one moves; check its neighbours".
+   ========================================================================== */
+const ISSUE_CATS={
+  pest:    {label:"Pest",     hint:"Something living on it — insects, mites, anything that arrived."},
+  disease: {label:"Disease",  hint:"A fungus, a bacterium, a rot. Something that infects rather than feeds."},
+  disorder:{label:"Disorder", hint:"Nothing has infected it: the conditions are wrong. Water, light, cold, salt."}
+};
+
+const ISSUES=[
+  /* ---- pests ---- */
+  {id:"spider-mite", cat:"pest", name:"Spider mite", spreads:true,
+   sci:"Tetranychus urticae",
+   signs:"Pale stippling across the leaf, as if it were sanded. Fine webbing in the axils and at the leaf tips, and a gritty feel to the undersides. Hold a sheet of paper under a leaf and tap: the specks that fall will walk.",
+   why:"Hot, dry, still air. It is the classic radiator-in-winter pest, and a plant that is already dry at the root goes down fastest.",
+   fix:"Shower the whole plant, undersides especially, and raise the humidity around it. Then treat on a five-day cycle for at least three rounds — eggs hatch after the first spray, so a single treatment always looks like a cure and never is. Phytoseiulus persimilis works well indoors if you would rather not spray."},
+
+  {id:"mealybug", cat:"pest", name:"Mealybug", spreads:true,
+   sci:"Pseudococcus / Planococcus spp.",
+   signs:"White cottony blobs wedged into leaf axils, along stems and under the pot rim. Sticky honeydew below, often with black sooty mould growing on it.",
+   why:"Arrives on a new plant almost every time. Soft, well-fed growth suits it, so a heavily fertilised plant is more attractive than a lean one.",
+   fix:"Dab each one with 70% isopropyl on a cotton bud — it kills on contact and shows you which you have already done. Then repeat weekly for a month: crawlers hide in the compost and under the rim, and re-emerge long after the visible ones are gone."},
+
+  {id:"root-mealybug", cat:"pest", name:"Root mealybug", spreads:true,
+   sci:"Rhizoecus spp.",
+   signs:"Nothing on the leaves at all. The plant sulks, wilts between waterings and will not grow. Knock it out of the pot and you find white waxy deposits on the rootball and a bluish-white bloom on the inside of the pot.",
+   why:"Spreads pot to pot in shared trays and standing water, so a shelf of plants gets it together.",
+   fix:"Bare-root it, wash the roots clean, and repot in fresh compost in a different pot — the old one carries them. Treat the neighbours that shared the tray at the same time or it comes straight back."},
+
+  {id:"scale", cat:"pest", name:"Scale", spreads:true,
+   sci:"Coccidae / Diaspididae",
+   signs:"Immobile brown or tan limpets along stems and the midribs of leaves. They do not look like an animal, which is why they are usually found late. Sticky leaves below them are the giveaway.",
+   why:"Another one that comes in on a new plant. Adults are armoured and barely move, so it builds slowly and invisibly.",
+   fix:"Scrape the adults off with a thumbnail — the armour makes sprays nearly useless against them. The mobile crawler stage is the vulnerable one, so follow with oil or soap every ten days for six weeks. Expect a long campaign."},
+
+  {id:"thrips", cat:"pest", name:"Thrips", spreads:true,
+   sci:"Frankliniella / Echinothrips",
+   signs:"Silvery scarring in patches, with tiny black specks of frass in it. New leaves come out distorted and never straighten. The adults are slim dark slivers that run rather than fly.",
+   why:"Arrives on cut flowers and new plants, and moves through a collection quickly.",
+   fix:"The hardest of the common ones. Take off the worst leaves, use blue sticky traps, and treat repeatedly — part of the life cycle happens in the compost, so surface sprays alone never finish it. Amblyseius cucumeris is worth the money on a bad one."},
+
+  {id:"fungus-gnat", cat:"pest", name:"Fungus gnat", spreads:true,
+   sci:"Bradysia spp.",
+   signs:"Small dark flies running across the compost surface and drifting up when you water. The larvae are in the top few centimetres, translucent with a black head.",
+   why:"Permanently damp compost, and peat-heavy mixes especially. The larvae eat fungus and fine root hairs.",
+   fix:"Let the top two or three centimetres dry properly between waterings — that alone breaks the cycle. Yellow sticky traps for the adults, and Bacillus thuringiensis israelensis or Steinernema feltiae nematodes for the larvae. A nuisance on an established plant; genuinely dangerous to seedlings and cuttings."},
+
+  {id:"aphid", cat:"pest", name:"Aphid", spreads:true,
+   sci:"Aphidoidea",
+   signs:"Clusters of soft green, black or pink insects on the newest growth and flower buds. Sticky leaves underneath, and shed white skins that look like a second infestation.",
+   why:"Soft nitrogen-rich new growth, usually in spring. Often walks in from an open window.",
+   fix:"The easiest of them. Rinse them off under the tap or squash them between finger and thumb, and check again in three days. Soap spray if it is on a plant you cannot get to the sink."},
+
+  {id:"whitefly", cat:"pest", name:"Whitefly", spreads:true,
+   sci:"Trialeurodes vaporariorum",
+   signs:"Tiny white moth-like insects that fly up in a cloud when the plant is disturbed, then settle again. Scale-like nymphs fixed to the undersides.",
+   why:"Warm rooms and dense growth. Common on anything that has spent summer in a greenhouse.",
+   fix:"Yellow sticky traps catch the adults; the nymphs need repeated spraying since nothing touches the egg stage. Encarsia formosa is the usual biological answer under glass."},
+
+  {id:"springtail", cat:"pest", name:"Springtails", spreads:false,
+   sci:"Collembola",
+   signs:"Tiny white specks in wet compost that jump when disturbed.",
+   why:"Wet compost with plenty of decaying matter in it.",
+   fix:"Nothing. They eat decaying matter, not your plant, and are food for nothing you mind. Take them as a reading rather than a problem: they are telling you the pot is staying wetter than it should."},
+
+  /* ---- diseases ---- */
+  {id:"root-rot", cat:"disease", name:"Root rot", spreads:false,
+   sci:"Pythium / Phytophthora, after waterlogging",
+   signs:"Wilting in wet compost — the contradiction is the diagnosis. Lower leaves yellow and drop, the stem base darkens and softens, and the pot smells sour. Healthy roots are white and firm; rotted ones are brown and slide out of their own skins.",
+   why:"Airless, waterlogged compost. The pathogens are almost always already present and only take hold once the roots have drowned and stopped defending themselves. A pot with no drainage hole, a saucer left full, or a plant in far too large a pot.",
+   fix:"Unpot immediately. Cut back to white, firm root, repot into fresh open mix in a pot barely bigger than what is left, and water sparingly until it is growing again. Sterilise the blade — it will carry to the next plant you cut."},
+
+  {id:"powdery-mildew", cat:"disease", name:"Powdery mildew", spreads:true,
+   sci:"Erysiphales",
+   signs:"White floury patches on the UPPER leaf surface, wiping off with a finger and returning. Later the leaf yellows and distorts underneath it.",
+   why:"Still air and wide swings between day and night humidity. Unlike most fungi it does not need the leaf to be wet, which is why it turns up on plants nobody has misted.",
+   fix:"Move air across the plant — that does more than any spray. Remove the worst leaves, and treat with potassium bicarbonate or sulphur if it keeps coming. Thin dense growth so the middle of the plant dries."},
+
+  {id:"botrytis", cat:"disease", name:"Grey mould", spreads:true,
+   sci:"Botrytis cinerea",
+   signs:"Fuzzy grey-brown mould on dying tissue, spent flowers and cutting stumps, spreading from there into healthy tissue.",
+   why:"Cool, damp, still air, and something already dead for it to start on. Winter windowsills and propagators are where it appears.",
+   fix:"Take off every dead flower and leaf as it goes over, cut well into clean tissue, and get air moving. It is a poor competitor on healthy tissue and only ever starts on something already dying."},
+
+  {id:"leaf-spot-fungal", cat:"disease", name:"Fungal leaf spot", spreads:true,
+   sci:"Colletotrichum, Cercospora and others",
+   signs:"Brown or black spots with a defined edge, often with faint concentric rings, sometimes a yellow halo. Spots stay roughly circular and keep their margin.",
+   why:"Water sitting on leaves, crowding, and poor air movement.",
+   fix:"Take off the marked leaves and bin them rather than compost them. Water at the compost, never over the foliage, and give the plant room. Most houseplant leaf spots stop there without any spray."},
+
+  {id:"leaf-spot-bacterial", cat:"disease", name:"Bacterial leaf spot", spreads:true,
+   sci:"Pseudomonas / Xanthomonas",
+   signs:"Water-soaked spots that look translucent held up to the light, with a yellow halo and an irregular edge, often running along veins. Moves much faster than the fungal kind and can smell.",
+   why:"Warm, wet foliage. It enters through wounds and stomata, so overhead watering and handling spread it directly.",
+   fix:"Isolate the plant now — this is the one that genuinely runs through a shelf. Remove affected leaves, stop wetting the foliage entirely, and wash your hands between plants. Copper is only marginally useful; separation and dry leaves do the work."},
+
+  {id:"sooty-mould", cat:"disease", name:"Sooty mould", spreads:false,
+   sci:"Capnodiales, growing on honeydew",
+   signs:"A black soot-like film over the upper leaf surfaces, wiping off to leave the leaf unmarked.",
+   why:"It is not attacking the plant at all. It grows on honeydew, which means something sap-sucking is above it — scale, mealybug, aphid or whitefly. It only shades the leaf.",
+   fix:"Find the insect. Treat that, and wash the leaves with soapy water. Treating the mould alone achieves nothing, because the mould was never the problem."},
+
+  /* ---- disorders ---- */
+  {id:"overwatering", cat:"disorder", name:"Overwatering", spreads:false,
+   signs:"Yellowing lower leaves, soft limp growth, and compost that never dries. Often mistaken for thirst, and watering again is what finishes the plant off.",
+   why:"Watering to a schedule rather than to the pot, an oversized pot, or a saucer left standing full.",
+   fix:"Let it dry properly, check the roots are still white, and water by weight rather than by day. If the pot has no drainage hole, that is the actual problem."},
+
+  {id:"underwatering", cat:"disorder", name:"Underwatering", spreads:false,
+   signs:"Wilting that recovers within hours of watering, crisp brown leaf edges, and compost shrunk away from the side of the pot so water runs straight down the gap.",
+   why:"A pot that has become root-bound, or peat compost that has dried past the point where it will take water again.",
+   fix:"Stand the pot in water for half an hour so the compost rewets all through — pouring from the top only wets the gap. Repot if the roots are circling."},
+
+  {id:"scorch", cat:"disorder", name:"Sun scorch", spreads:false,
+   signs:"Bleached or brown patches on the leaves facing the light, sharply bounded, on the exposed side only. Older leaves that were already there take it worst.",
+   why:"A sudden move into direct sun, or spring light through glass on leaves grown over winter. Leaves cannot re-acclimatise once they have hardened.",
+   fix:"Move it back and let new growth come in adapted. The damaged tissue will not recover — it is dead — so judge the move by what grows next, not by what is marked."},
+
+  {id:"cold-damage", cat:"disorder", name:"Cold damage", spreads:false,
+   signs:"Translucent, water-soaked patches that go brown and papery in a day or two, often on the side that was touching a window. Sudden leaf drop after a cold night.",
+   why:"A leaf pressed against winter glass, a draught from a door, or a trip home from the shop in the cold.",
+   fix:"Move it off the glass. Do not cut the damage away until the plant is growing again in spring — the marked leaf is still feeding it."},
+
+  {id:"salt-burn", cat:"disorder", name:"Fertiliser burn", spreads:false,
+   signs:"Crisp brown leaf margins on an otherwise well-watered plant, and a white or yellow crust on the compost surface and around the pot rim.",
+   why:"Feeding too strong, feeding a dry rootball, or hard tap water building up salts over years without a flush.",
+   fix:"Flush the pot: water it through with four or five pot volumes of clean water and let it all drain. Then feed at half strength and only onto damp compost."},
+
+  {id:"low-humidity", cat:"disorder", name:"Dry air", spreads:false,
+   signs:"Crisp brown tips with a narrow yellow band behind them, on new and old leaves alike. Leaf edges rolling inward.",
+   why:"Indoor heating. Calatheas, ferns and marantas show it first; anything with a thin leaf will eventually.",
+   fix:"Group plants, use a pebble tray or a humidifier. Misting raises humidity for about ten minutes and mostly spreads leaf spot, so it is not the answer."},
+
+  {id:"deficiency", cat:"disorder", name:"Nutrient deficiency", spreads:false,
+   signs:"Which leaves go first tells you which nutrient: uniform pale yellowing of the OLDEST leaves is nitrogen, and yellowing between green veins on the oldest leaves is magnesium — both are mobile, so the plant strips old growth to feed new. The same interveinal pattern on the NEWEST leaves is iron, which is not mobile and so shows where it cannot be moved to.",
+   why:"An unfed plant in old compost, or, for iron, compost too alkaline for the plant to take it up even though it is there.",
+   fix:"Nitrogen and magnesium: feed, and repot into fresh compost. Iron: correct the pH rather than adding more iron — chelated iron is a patch, not a fix."},
+
+  {id:"oedema", cat:"disorder", name:"Oedema", spreads:false,
+   signs:"Corky raised blisters on leaf undersides and stems, often in lines. Not a fungus and it does not spread.",
+   why:"Roots taking up water faster than the leaves can lose it, so cells burst — cool dull days after a heavy watering are the classic setup.",
+   fix:"Water less on dull days and improve air movement and light. The blistered tissue stays as it is; only new growth will be clean."}
+];
+const issueDef=id=>ISSUES.find(x=>x.id===id)||null;
+const issuesIn=cat=>ISSUES.filter(x=>x.cat===cat);
+
+
+/* ---------------- issue helpers ---------------- */
+const SEV_LABEL={1:"caught early",2:"spreading",3:"all over it"};
+const SEV_CS={1:"zachyceno včas",2:"šíří se",3:"po celé rostlině"};
+const IST_LABEL={open:"Open",treating:"Treating",resolved:"Cleared"};
+const ILOG_LABEL={spotted:"Spotted",treated:"Treated",better:"Better",worse:"Worse",
+  note:"Note",resolved:"Cleared",reopened:"Back again"};
+
+const issuesAll=()=>S.issues||[];
+const issue=id=>issuesAll().find(x=>x.id===id)||null;
+const issuesFor=sid=>issuesAll().filter(i=>i.subjectId===sid);
+const issueOpen=i=>i&&i.status!=="resolved";
+const openIssues=()=>issuesAll().filter(issueOpen);
+const openIssuesFor=sid=>issuesFor(sid).filter(issueOpen);
+/* how long it has been going, or how long it ran — the number that makes a
+   treatment answerable. An open one is measured to today, a cleared one to the
+   day it cleared, so the figure never keeps growing after it is over. */
+const issueDays=i=>Math.max(0,Math.round(
+  ((issueOpen(i)?Date.now():+new Date(i.resolvedAt||i.at))-+new Date(i.at))/DAY));
+const issueName=i=>{ const d=issueDef(i.type); return d?t(d.name):(i.name||t("Problem")); };
+const sevText=n=>L.lang==="cs"?SEV_CS[n]||SEV_CS[2]:SEV_LABEL[n]||SEV_LABEL[2];
+/* the pill colour is the app's existing due/overdue vocabulary, reused rather
+   than invented: red means act, amber means it is live, plain means it is over */
+const issueCls=i=>i.status==="resolved"?"ok":(+i.severity>=3?"over":"due");
+const issueSpreads=i=>{ const d=issueDef(i.type); return !!(d&&d.spreads); };
+
+function issueLogAdd(i,kind,text,atIso){
+  i.log=Array.isArray(i.log)?i.log:[];
+  i.log.push({id:uid(),at:atIso||new Date().toISOString(),kind,text:text||"",by:L.me});
+  i.log.sort((a,b)=>String(a.at).localeCompare(String(b.at)));
+}
+/* one place decides what a status change means, so the timeline can never
+   disagree with the pill above it */
+function issueSetStatus(i,status){
+  if(i.status===status) return;
+  const was=i.status;
+  i.status=status;
+  if(status==="resolved"){ i.resolvedAt=new Date().toISOString(); issueLogAdd(i,"resolved",""); }
+  else { i.resolvedAt=null; if(was==="resolved") issueLogAdd(i,"reopened",""); }
+  touch();
+}
+
+/* ---------------- the report dialog ---------------- */
+let editingIssue=null, isCat="pest";
+function isFillPlants(sel){
+  const list=subjectsIn("plants").slice().sort((a,b)=>a.name.localeCompare(b.name));
+  $("#isPlant").innerHTML=list.length
+    ? list.map(p=>`<option value="${p.id}"${p.id===sel?" selected":""}>${esc(p.name)}${
+        p.spot?` — ${esc(p.spot)}`:""}</option>`).join("")
+    : `<option value="">${esc(t("No plants yet"))}</option>`;
+}
+function isFillTypes(sel){
+  const list=issuesIn(isCat);
+  $("#isType").innerHTML=list.map(d=>
+    `<option value="${d.id}"${d.id===sel?" selected":""}>${esc(t(d.name))}</option>`).join("")
+    +`<option value="__own"${sel==="__own"||sel===""?" selected":""}>${esc(t("Something else"))}</option>`;
+  isTypeChanged();
+}
+function isTypeChanged(){
+  const v=$("#isType").value, own=v==="__own";
+  $("#isOwnWrap").hidden=!own;
+  const d=own?null:issueDef(v);
+  /* the signs, not the cure: at the moment of reporting the useful question is
+     "is this actually that", and the treatment can wait for the problem's page */
+  $("#isTypeHint").textContent=d?t(d.signs):
+    (L.lang==="cs"?"Popiš to vlastními slovy — určit to můžeš později."
+                  :"Describe it in your own words — you can identify it later.");
+}
+function openIssueDlg(existing,plantId){
+  editingIssue=existing||null;
+  if(!subjectsIn("plants").length){
+    say(L.lang==="cs"?"Nejdřív přidej rostlinu — problém patří k nějaké."
+                     :"Add a plant first — a problem belongs to one.");
+    return;
+  }
+  $("#issueDlgTitle").textContent=t(existing?"Edit problem":"Report a problem");
+  isCat=existing?existing.cat:"pest";
+  document.querySelectorAll("#isCat [data-iscat]").forEach(b=>
+    b.setAttribute("aria-pressed",String(b.dataset.iscat===isCat)));
+  $("#isCatHint").textContent=t(ISSUE_CATS[isCat].hint);
+  isFillPlants(existing?existing.subjectId:(plantId||null));
+  isFillTypes(existing?(existing.type||"__own"):null);
+  $("#isOwn").value=existing&&!existing.type?(existing.name||""):"";
+  $("#isWhen").value=ymd(existing?+new Date(existing.at):Date.now());
+  $("#isSev").value=String(existing?existing.severity:2);
+  $("#isNotes").value=existing?(existing.notes||""):"";
+  $("#issueDelete").style.display=existing?"":"none";
+  $("#issueDlg").showModal();
+  setTimeout(()=>$("#isPlant").focus(),40);
+}
+$("#isCat").addEventListener("click",e=>{
+  const b=e.target.closest("[data-iscat]"); if(!b) return;
+  isCat=b.dataset.iscat;
+  document.querySelectorAll("#isCat [data-iscat]").forEach(x=>
+    x.setAttribute("aria-pressed",String(x.dataset.iscat===isCat)));
+  $("#isCatHint").textContent=t(ISSUE_CATS[isCat].hint);
+  isFillTypes(null);
+});
+$("#isType").addEventListener("change",isTypeChanged);
+$("#issueForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const sid=$("#isPlant").value; if(!sid) return;
+  const type=$("#isType").value==="__own"?"":$("#isType").value;
+  const own=$("#isOwn").value.trim();
+  const d=type?issueDef(type):null;
+  /* an unnamed problem is still a real one — date and plant are the fields that
+     actually have to be there, so the name falls back rather than blocking */
+  const name=d?d.name:(own||t("Unidentified problem"));
+  const at=new Date(fromYmd($("#isWhen").value||ymd(Date.now()))).toISOString();
+  if(editingIssue){
+    Object.assign(editingIssue,{subjectId:sid,cat:isCat,type,name,
+      severity:+$("#isSev").value||2, notes:$("#isNotes").value.trim(), at});
+  }else{
+    const rec={id:uid(),subjectId:sid,cat:isCat,type,name,at,
+      severity:+$("#isSev").value||2, status:"open", notes:$("#isNotes").value.trim(),
+      by:L.me, resolvedAt:null, log:[]};
+    issueLogAdd(rec,"spotted",rec.notes,at);
+    S.issues.push(rec);
+  }
+  touch();
+  $("#issueDlg").close();
+  renderHealth(); renderGarden(); renderStats();
+  if(pvId) renderPlant();
+  if(isvId) renderIssue();
+});
+$("#issueDelete").addEventListener("click",async()=>{
+  if(!editingIssue) return;
+  if(!await ask(L.lang==="cs"
+    ? "Smazat tenhle záznam i s celou jeho historií?"
+    : "Delete this problem and everything recorded against it?","Delete")) return;
+  const gone=editingIssue.id;
+  S.issues=issuesAll().filter(x=>x.id!==gone);
+  touch();
+  $("#issueDlg").close();
+  if(isvId===gone){ isvId=null; show("health"); }
+  renderHealth(); renderGarden(); renderStats();
+  if(pvId) renderPlant();
+});
+
+/* ---------------- the timeline dialog ---------------- */
+let logIssueId=null;
+const IL_HINT={
+  treated:"What you actually used, and where you put it. In a month this is the only record of it.",
+  better:"What is better — fewer of them, no new damage, new growth clean?",
+  worse:"Worse how? More of it, or somewhere new on the plant?",
+  note:"Anything worth knowing later."
+};
+function openIssueLog(id){
+  const i=issue(id); if(!i) return;
+  logIssueId=id;
+  $("#isLogTitle").textContent=`${issueName(i)} — ${t("add to the timeline")}`;
+  $("#ilKind").value="treated";
+  $("#ilText").value="";
+  $("#ilWhen").value=ymd(Date.now());
+  $("#ilHint").textContent=t(IL_HINT.treated);
+  $("#isLogDlg").showModal();
+  setTimeout(()=>$("#ilText").focus(),40);
+}
+$("#ilKind").addEventListener("change",e=>{
+  $("#ilHint").textContent=t(IL_HINT[e.target.value]||IL_HINT.note);
+});
+$("#isLogForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const i=issue(logIssueId); if(!i) return;
+  const kind=$("#ilKind").value;
+  issueLogAdd(i,kind,$("#ilText").value.trim(),
+    new Date(fromYmd($("#ilWhen").value||ymd(Date.now()))).toISOString());
+  /* treating something is a statement about it: a problem you are treating is
+     not merely open any more, and saying so saves a second tap every time */
+  if(kind==="treated"&&i.status==="open") i.status="treating";
+  touch();
+  $("#isLogDlg").close();
+  renderHealth(); renderStats();
+  if(isvId) renderIssue();
+  if(pvId) renderPlant();
+});
+
+
+/* ---------------- the health register ---------------- */
+let hxFilter="open", isvId=null;
+
+/* A problem that spreads, on a plant that has neighbours, is the one fact the
+   register can give you that a list of rows cannot: go and look at the shelf. */
+function hxNeighbours(i){
+  const p=subject(i.subjectId);
+  if(!p||!p.spot||!issueSpreads(i)) return [];
+  return subjectsIn("plants").filter(x=>x.id!==p.id&&x.spot&&
+    x.spot.trim().toLowerCase()===p.spot.trim().toLowerCase());
+}
+
+function renderHealth(){
+  const host=$("#hxList"); if(!host) return;
+  const all=issuesAll(), open=all.filter(issueOpen);
+  const cleared=all.filter(i=>!issueOpen(i));
+  const plantsHit=new Set(open.map(i=>i.subjectId)).size;
+  /* only cleared ones have a length that has stopped changing, so they are the
+     only honest basis for "how long these take" */
+  const durations=cleared.map(issueDays);
+  const avg=durations.length?Math.round(durations.reduce((a,b)=>a+b,0)/durations.length):null;
+  const spreading=open.filter(issueSpreads).length;
+
+  $("#hxSummary").innerHTML=all.length?`<div class="card pad">
+    <div class="statrow q">
+      ${statCell(open.length,"open now",open.length?"bad":"good")}
+      ${statCell(plantsHit,"plants affected",plantsHit?"":"none")}
+      ${statCell(cleared.length,"cleared",cleared.length?"good":"none")}
+      ${statCell(avg==null?"—":avg+"d","took to clear",avg==null?"none":"")}
+    </div>
+    ${spreading?`<p class="hint" style="margin:11px 0 0">${
+      L.lang==="cs"?`${spreading} z nich se šíří — zkontroluj i sousedy na stejném místě.`
+                   :`${spreading} of the open ones spread — check whatever shares their spot.`}</p>`:""}
+  </div>`:"";
+
+  document.querySelectorAll("#hxFilter [data-hxf]").forEach(b=>
+    b.setAttribute("aria-pressed",String(b.dataset.hxf===hxFilter)));
+
+  const list=(hxFilter==="open"?open:hxFilter==="resolved"?cleared:all)
+    .slice().sort((a,b)=>{
+      /* open first, worst first, then most recent — the order you would want to
+         walk the shelf in */
+      if(issueOpen(a)!==issueOpen(b)) return issueOpen(a)?-1:1;
+      if(issueOpen(a)&&b.severity!==a.severity) return b.severity-a.severity;
+      return String(b.at).localeCompare(String(a.at));
+    });
+
+  if(!list.length){
+    host.innerHTML=`<p class="empty">${esc(
+      !all.length ? t("Nothing has gone wrong yet. When it does, report it here and the date sticks.")
+      : hxFilter==="open" ? t("Nothing open. Everything you have reported has been cleared.")
+      : t("Nothing cleared yet."))}</p>`;
+    return;
+  }
+
+  host.innerHTML=list.map(i=>{
+    const p=subject(i.subjectId), d=issueDef(i.type);
+    const days=issueDays(i), nb=hxNeighbours(i);
+    const last=(i.log||[])[ (i.log||[]).length-1 ];
+    return `<div class="card hx-card" data-openissue="${i.id}">
+      <div class="hx-top">
+        <span class="pill ${issueCls(i)}">${esc(t(IST_LABEL[i.status]))}</span>
+        <span class="hx-head">
+          <b>${esc(issueName(i))}</b>
+          <small>${esc(p?p.name:t("a plant that has gone"))}${p&&p.spot?` · ${esc(p.spot)}`:""}</small>
+        </span>
+        <span class="hx-age">${issueOpen(i)
+          ? (L.lang==="cs"?`${days} ${pl3(days,"den","dny","dní")}`:`${days}d`)
+          : (L.lang==="cs"?`za ${days} d`:`${days}d`)}</span>
+        <span class="chev" aria-hidden="true">›</span>
+      </div>
+      <div class="hx-meta">
+        <span class="chipinfo">${esc(t(ISSUE_CATS[i.cat].label))}</span>
+        ${issueOpen(i)?`<span class="chipinfo">${esc(sevText(i.severity))}</span>`:""}
+        ${issueSpreads(i)&&issueOpen(i)?`<span class="chipinfo warn">${esc(t("spreads"))}</span>`:""}
+        ${(i.log||[]).filter(x=>x.kind==="treated").length
+          ? `<span class="chipinfo">${(i.log||[]).filter(x=>x.kind==="treated").length} ${esc(t("treatments"))}</span>`:""}
+      </div>
+      ${last&&last.text?`<p class="hx-note">${esc(t(ILOG_LABEL[last.kind]||"Note"))}: ${esc(last.text)}</p>`:""}
+      ${nb.length&&issueOpen(i)?`<p class="hint" style="margin:7px 0 0">${
+        L.lang==="cs"?`Sdílí místo s ${plural(nb.length,"plant")} — mrkni na ně.`
+                     :`Shares a spot with ${plural(nb.length,"plant")} — worth a look at those.`}</p>`:""}
+      <div class="btn-row" style="margin-top:9px">
+        ${issueOpen(i)?`<button class="btn mini" data-istreat="${i.id}">${esc(t("Treated"))}</button>
+          <button class="btn mini" data-isclear="${i.id}">${esc(t("Cleared"))}</button>`
+        :`<button class="btn mini" data-isopen="${i.id}">${esc(t("It's back"))}</button>`}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+$("#hxFilter").addEventListener("click",e=>{
+  const b=e.target.closest("[data-hxf]"); if(!b) return;
+  hxFilter=b.dataset.hxf; renderHealth();
+});
+$("#hxReport").addEventListener("click",()=>openIssueDlg(null,null));
+$("#hxBack").addEventListener("click",()=>show("library"));
+$("#hxList").addEventListener("click",async e=>{
+  const q=k=>e.target.closest("[data-"+k+"]");
+  const tr=q("istreat"), cl=q("isclear"), rp=q("isopen"), op=q("openissue");
+  if(tr){ openIssueLog(tr.dataset.istreat); return; }
+  if(cl){ const i=issue(cl.dataset.isclear); if(!i) return;
+    issueSetStatus(i,"resolved"); renderHealth(); renderGarden(); renderStats();
+    if(pvId) renderPlant(); return; }
+  if(rp){ const i=issue(rp.dataset.isopen); if(!i) return;
+    issueSetStatus(i,"open"); renderHealth(); renderGarden(); renderStats();
+    if(pvId) renderPlant(); return; }
+  if(op){ openIssuePage(op.dataset.openissue); return; }
+});
+
+/* ---------------- one problem, in full ---------------- */
+function openIssuePage(id){ isvId=id; renderIssue(); show("issue"); }
+function renderIssue(){
+  const i=issue(isvId), host=$("#isBody"); if(!host) return;
+  if(!i){ host.innerHTML='<p class="empty">That problem is no longer here.</p>'; return; }
+  const p=subject(i.subjectId), d=issueDef(i.type), days=issueDays(i), nb=hxNeighbours(i);
+  $("#isTitle").textContent=issueName(i);
+  const treatments=(i.log||[]).filter(x=>x.kind==="treated").length;
+
+  host.innerHTML=`
+    <div class="card pad">
+      <div class="hx-top" style="margin-bottom:9px">
+        <span class="pill ${issueCls(i)}">${esc(t(IST_LABEL[i.status]))}</span>
+        <span class="hx-head">
+          <b>${esc(issueName(i))}</b>
+          ${d&&d.sci?`<small><i>${esc(d.sci)}</i></small>`:""}
+        </span>
+      </div>
+      <div class="statrow q">
+        ${statCell(issueOpen(i)?days:days,issueOpen(i)?"days so far":"days it ran")}
+        ${statCell(treatments,"treatments",treatments?"":"none")}
+        ${statCell(t(sevText(i.severity)),"severity")}
+        ${statCell(t(ISSUE_CATS[i.cat].label),"kind")}
+      </div>
+      <div class="pline" style="margin-top:13px"><span class="pline-k" style="width:74px">${esc(t("On"))}</span>
+        <span class="pline-v">${p?`<button type="button" class="linkish" data-toplant="${p.id}">${esc(p.name)}</button>${
+          p.spot?` · ${esc(p.spot)}`:""}`:esc(t("a plant that has gone"))}</span></div>
+      <div class="pline"><span class="pline-k" style="width:74px">${esc(t("Spotted"))}</span>
+        <span class="pline-v">${esc(new Date(i.at).toLocaleDateString(locale(),{day:"numeric",month:"short",year:"numeric"}))}</span></div>
+      ${i.resolvedAt?`<div class="pline"><span class="pline-k" style="width:74px">${esc(t("Cleared"))}</span>
+        <span class="pline-v">${esc(new Date(i.resolvedAt).toLocaleDateString(locale(),{day:"numeric",month:"short",year:"numeric"}))}</span></div>`:""}
+      ${i.notes?`<div class="pline" style="align-items:flex-start"><span class="pline-k" style="width:74px">${esc(t("Saw"))}</span>
+        <span class="pline-v" style="white-space:normal">${esc(i.notes)}</span></div>`:""}
+      <div class="btn-row" style="margin-top:12px">
+        <button class="btn mini primary" data-islog="${i.id}">${esc(t("Add to timeline"))}</button>
+        ${issueOpen(i)
+          ? `<button class="btn mini" data-isclear2="${i.id}">${esc(t("Mark cleared"))}</button>`
+          : `<button class="btn mini" data-isopen2="${i.id}">${esc(t("It's back"))}</button>`}
+        <button class="btn mini edit" data-isedit="${i.id}">${esc(t("Edit"))}</button>
+      </div>
+    </div>
+
+    ${nb.length&&issueOpen(i)?`<div class="card pad">
+      <span class="eyebrow" style="display:block; margin-bottom:7px">${esc(t("This one spreads"))}</span>
+      <p class="hint" style="margin:0 0 9px">${L.lang==="cs"
+        ? `Tyhle rostliny stojí na stejném místě (${esc(p.spot)}). Prohlídni je, i když vypadají v pořádku — u většiny škůdců je vidět až druhá generace.`
+        : `These share ${esc(p.spot)}. Look them over even if they seem fine — with most of these it is the second generation you notice, not the first.`}</p>
+      <div class="btn-row">${nb.map(x=>
+        `<button class="btn mini" data-toplant="${x.id}">${esc(x.name)}</button>`).join("")}</div>
+    </div>`:""}
+
+    ${d?`<div class="card">
+      <div class="pad" style="padding-bottom:6px"><span class="eyebrow">${esc(t("What it is"))}</span></div>
+      <div class="pad" style="padding-top:0">
+        <div class="pline" style="align-items:flex-start"><span class="pline-k" style="width:74px">${esc(t("Signs"))}</span>
+          <span class="pline-v" style="white-space:normal">${esc(t(d.signs))}</span></div>
+        ${d.why?`<div class="pline" style="align-items:flex-start"><span class="pline-k" style="width:74px">${esc(t("Why"))}</span>
+          <span class="pline-v" style="white-space:normal">${esc(t(d.why))}</span></div>`:""}
+        <div class="pline" style="align-items:flex-start"><span class="pline-k" style="width:74px">${esc(t("What to do"))}</span>
+          <span class="pline-v" style="white-space:normal">${esc(t(d.fix))}</span></div>
+      </div>
+      <div class="pad" style="padding-top:0"><p class="hint" style="margin:0; opacity:.75">${esc(t(
+        "General guidance for the commonest form of this. Your plant, your light and the season all matter — treat what you can see."))}</p></div>
+    </div>`:""}
+
+    <div class="card">
+      <div class="pad" style="padding-bottom:6px"><span class="eyebrow">${esc(t("Timeline"))}</span></div>
+      <div class="pad" style="padding-top:0">
+        ${(i.log||[]).length?(i.log||[]).slice().reverse().map(x=>`
+          <div class="istep">
+            <span class="istep-k ${esc(x.kind)}">${esc(t(ILOG_LABEL[x.kind]||"Note"))}</span>
+            <span class="istep-b">
+              ${x.text?`<span>${esc(x.text)}</span>`:""}
+              <small>${esc(new Date(x.at).toLocaleDateString(locale(),{day:"numeric",month:"short"}))}
+                · ${esc(userName(x.by))}</small>
+            </span>
+            <button class="btn mini" data-isdel="${x.id}" aria-label="${esc(t("Remove"))}">×</button>
+          </div>`).join("")
+          :`<p class="empty" style="margin:0">${esc(t("Nothing added yet."))}</p>`}
+      </div>
+    </div>`;
+}
+$("#isBack").addEventListener("click",()=>show("health"));
+$("#isBody").addEventListener("click",async e=>{
+  const q=k=>e.target.closest("[data-"+k+"]");
+  const i=issue(isvId);
+  const lg=q("islog"), cl=q("isclear2"), rp=q("isopen2"), ed=q("isedit"),
+        tp=q("toplant"), dl=q("isdel");
+  if(tp){ openPlantPage(tp.dataset.toplant); return; }
+  if(lg){ openIssueLog(lg.dataset.islog); return; }
+  if(!i) return;
+  if(cl){ issueSetStatus(i,"resolved"); renderIssue(); renderHealth(); renderGarden(); renderStats();
+    if(pvId) renderPlant(); return; }
+  if(rp){ issueSetStatus(i,"open"); renderIssue(); renderHealth(); renderGarden(); renderStats();
+    if(pvId) renderPlant(); return; }
+  if(ed){ openIssueDlg(i,null); return; }
+  if(dl){
+    if(!await ask(L.lang==="cs"?"Smazat tenhle řádek z historie?":"Remove this line from the timeline?","Remove")) return;
+    i.log=(i.log||[]).filter(x=>x.id!==dl.dataset.isdel);
+    touch(); renderIssue(); renderHealth(); return;
+  }
+});
+
+
+/* ---- pests, diseases and disorders, in Czech ---------------------------
+   The catalogue prose is translated in full rather than left English. A Czech
+   UI that switches to English the moment you ask what is actually wrong with
+   the plant is worse than no guidance at all: it fails exactly where someone
+   is worried and reading carefully. */
+Object.assign(CS,{
+  /* screens and controls */
+  "Health":"Zdraví", "← Library":"← Knihovna", "← Health":"← Zdraví",
+  "+ Report":"+ Nahlásit", "Problem":"Problém",
+  "Pests, diseases and what you did about them":"Škůdci, choroby a co jsi s tím dělal",
+  "Report a problem":"Nahlásit problém", "Edit problem":"Upravit problém",
+  "Which plant":"Která rostlina", "What sort of thing":"O co jde",
+  "Pest":"Škůdce", "Disease":"Choroba", "Disorder":"Porucha",
+  "Which one":"Který", "Call it":"Pojmenuj to",
+  "First noticed":"Poprvé zpozorováno", "How bad":"Jak zlé to je",
+  "A few — caught early":"Pár kusů — zachyceno včas", "Spreading":"Šíří se",
+  "All over it":"Po celé rostlině", "What you can see":"Co vidíš",
+  "Something else":"Něco jiného", "No plants yet":"Zatím žádné rostliny",
+  "Unidentified problem":"Neurčený problém",
+  "Something living on it — insects, mites, anything that arrived.":
+    "Něco živého, co na ní sedí — hmyz, roztoči, cokoli, co přilezlo.",
+  "A fungus, a bacterium, a rot. Something that infects rather than feeds.":
+    "Houba, bakterie, hniloba. Něco, co infikuje, ne co se přiživuje.",
+  "Nothing has infected it: the conditions are wrong. Water, light, cold, salt.":
+    "Nic ji nenapadlo — jsou špatné podmínky. Voda, světlo, chlad, soli.",
+  "Describe it in your own words — you can identify it later.":
+    "Popiš to vlastními slovy — určit to můžeš později.",
+  "Write what you actually see, not what you think it is. In three weeks that is the sentence that tells you whether it got better.":
+    "Napiš, co doopravdy vidíš, ne co si myslíš, že to je. Za tři týdny je právě tahle věta to, podle čeho poznáš, jestli se to lepší.",
+
+  /* the timeline */
+  "Add to the timeline":"Přidat do historie", "add to the timeline":"přidat do historie",
+  "What happened":"Co se stalo", "Treated it":"Ošetřeno",
+  "Looking better":"Vypadá to líp", "Got worse":"Zhoršilo se", "Just a note":"Jen poznámka",
+  "Details":"Podrobnosti", "Timeline":"Historie", "Nothing added yet.":"Zatím nic přidáno.",
+  "Remove":"Odebrat", "Add to timeline":"Přidat do historie",
+  "What you actually used, and where you put it. In a month this is the only record of it.":
+    "Co jsi přesně použil a kam jsi to dal. Za měsíc je tohle jediný záznam, který o tom bude.",
+  "What is better — fewer of them, no new damage, new growth clean?":
+    "Co je lepší — je jich míň, nepřibývá poškození, roste čistý nový list?",
+  "Worse how? More of it, or somewhere new on the plant?":
+    "Jak zhoršilo? Je toho víc, nebo je to na novém místě?",
+  "Anything worth knowing later.":"Cokoli, co se bude hodit vědět později.",
+
+  /* statuses and timeline kinds */
+  "Open":"Otevřené", "Treating":"Léčí se", "Cleared":"Vyřešeno",
+  "Everything":"Vše", "Spotted":"Zpozorováno", "Treated":"Ošetřeno",
+  "Better":"Lepší", "Worse":"Horší", "Note":"Poznámka", "Back again":"Je to zpátky",
+  "It's back":"Je to zpátky", "Mark cleared":"Označit za vyřešené",
+  "spreads":"šíří se", "treatments":"ošetření",
+
+  /* the problem's own page */
+  "On":"Na", "Saw":"Vidím", "This one spreads":"Tenhle se šíří",
+  "What it is":"Co to je", "Signs":"Příznaky", "Why":"Proč",
+  "What to do":"Co s tím", "days so far":"dní zatím", "days it ran":"dní to trvalo",
+  "severity":"závažnost", "kind":"druh",
+  "a plant that has gone":"rostlina, která už tu není",
+  "General guidance for the commonest form of this. Your plant, your light and the season all matter — treat what you can see.":
+    "Obecné vodítko pro nejběžnější podobu tohohle. Tvoje rostlina, tvoje světlo i roční doba hrají roli — leč to, co vidíš.",
+
+  /* the register */
+  "See all":"Zobrazit vše",
+  "Nothing wrong with it right now.":"Teď na ní nic není.",
+  "Nothing has ever gone wrong with this one.":"S touhle nikdy nic nebylo.",
+  "Nothing has gone wrong yet. When it does, report it here and the date sticks.":
+    "Zatím se nic nepokazilo. Až se pokazí, nahlas to tady — datum už pak zůstane.",
+  "Nothing open. Everything you have reported has been cleared.":
+    "Nic otevřeného. Všechno, cos nahlásil, je vyřešené.",
+  "Nothing cleared yet.":"Zatím nic vyřešeného.",
+  "Report a problem the day you notice it, even if you are not sure what it is. The date it started is the thing you cannot reconstruct later, and it is what tells you whether a treatment worked.":
+    "Nahlas problém ten den, kdy si ho všimneš, i když nevíš, co to je. Datum začátku je to jediné, co se zpětně nedá dohledat — a přitom je to ono, co ti řekne, jestli ošetření zabralo.",
+
+  /* statistics */
+  "Pests & diseases":"Škůdci a choroby",
+  "open now":"otevřených", "plants affected":"zasažených rostlin",
+  "cleared":"vyřešeno", "to clear":"do vyřešení", "took to clear":"do vyřešení",
+  "Still going":"Ještě běží", "Most often":"Nejčastěji", "Worst affected":"Nejvíc zasažené",
+  "Reported in the last year":"Nahlášeno za poslední rok",
+  "treatments logged":"zaznamenaných ošetření", "The longest took":"Nejdéle to trvalo",
+  "days":"dní",
+  "Nothing reported yet. Open a plant and tap Report a problem the day you notice something.":
+    "Zatím nic nahlášeno. Otevři rostlinu a klepni na Nahlásit problém ten den, kdy si něčeho všimneš.",
+  "Time-to-clear only counts problems you have actually closed — an open one is still getting longer, so averaging it in would flatter the figure.":
+    "Doba do vyřešení počítá jen problémy, které jsi opravdu uzavřel — otevřený se pořád prodlužuje, a kdyby se počítal, číslo by lhalo ve tvůj prospěch.",
+  "Putting on height":"Přirůstá na výšku", "Variegation":"Panašování",
+  "gaining":"nabírá", "holding":"drží se", "reverting":"ustupuje",
+  "Each plant's rate runs from its own first logged leaf to today, so a quiet month pulls it down on its own. A plant needs a fortnight behind it before it counts towards the monthly figure and a quarter before the yearly one — until then it shows a dash, because a leaf logged this morning is a data point, not a rate. Height works the same way and wants three weeks between two measurements: closer than that and the difference is mostly where you held the tape.":
+    "Tempo každé rostliny se počítá od jejího prvního zapsaného listu do dneška, takže tichý měsíc ho stáhne sám od sebe. Rostlina potřebuje čtrnáct dní, než začne mluvit do měsíčního čísla, a čtvrt roku, než do ročního — do té doby ukazuje pomlčku, protože list zapsaný dnes ráno je údaj, ne tempo. Výška funguje stejně a chce tři týdny mezi dvěma měřeními: blíž u sebe je rozdíl hlavně v tom, kde jsi držel metr.",
+
+  /* ---- the catalogue: pests ---- */
+  "Spider mite":"Sviluška",
+  "Pale stippling across the leaf, as if it were sanded. Fine webbing in the axils and at the leaf tips, and a gritty feel to the undersides. Hold a sheet of paper under a leaf and tap: the specks that fall will walk.":
+    "Světlé tečkování po celém listu, jako by ho někdo přebrousil. Jemné pavučinky v paždí listů a na špičkách, spodní strana je na omak drsná. Podrž pod listem papír a poklepej: tečky, co spadnou, se rozejdou.",
+  "Hot, dry, still air. It is the classic radiator-in-winter pest, and a plant that is already dry at the root goes down fastest.":
+    "Horký, suchý, stojatý vzduch. Klasický zimní škůdce od radiátoru — a rostlina, která je už tak suchá u kořene, jde dolů nejrychleji.",
+  "Shower the whole plant, undersides especially, and raise the humidity around it. Then treat on a five-day cycle for at least three rounds — eggs hatch after the first spray, so a single treatment always looks like a cure and never is. Phytoseiulus persimilis works well indoors if you would rather not spray.":
+    "Osprchuj celou rostlinu, hlavně spodní strany listů, a zvedni kolem ní vlhkost. Pak ošetřuj po pěti dnech aspoň třikrát — vajíčka se líhnou až po prvním postřiku, takže jedno ošetření vždycky vypadá jako vyléčení a nikdy jím není. Když nechceš stříkat, uvnitř dobře funguje Phytoseiulus persimilis.",
+
+  "Mealybug":"Červec",
+  "White cottony blobs wedged into leaf axils, along stems and under the pot rim. Sticky honeydew below, often with black sooty mould growing on it.":
+    "Bílé vatovité chomáčky zaklíněné v paždí listů, podél stonků a pod okrajem květináče. Pod nimi lepkavá medovice, na které často roste černá saze.",
+  "Arrives on a new plant almost every time. Soft, well-fed growth suits it, so a heavily fertilised plant is more attractive than a lean one.":
+    "Skoro vždycky přijde na nové rostlině. Vyhovuje mu měkký, dobře živený přírůstek, takže přehnojená rostlina je pro něj lákavější než hubená.",
+  "Dab each one with 70% isopropyl on a cotton bud — it kills on contact and shows you which you have already done. Then repeat weekly for a month: crawlers hide in the compost and under the rim, and re-emerge long after the visible ones are gone.":
+    "Každého potři vatovou tyčinkou se 70% isopropylalkoholem — zabíjí na dotek a zároveň je vidět, kterého už jsi měl. Pak opakuj týden co týden celý měsíc: larvy se schovávají v substrátu a pod okrajem květináče a vylezou dlouho potom, co ti viditelní zmizeli.",
+
+  "Root mealybug":"Kořenový červec",
+  "Nothing on the leaves at all. The plant sulks, wilts between waterings and will not grow. Knock it out of the pot and you find white waxy deposits on the rootball and a bluish-white bloom on the inside of the pot.":
+    "Na listech vůbec nic. Rostlina se trucuje, mezi zálivkami vadne a neroste. Vyklop ji z květináče a najdeš bílé voskové povlaky na kořenovém balu a modrobílý nádech na vnitřní stěně květináče.",
+  "Spreads pot to pot in shared trays and standing water, so a shelf of plants gets it together.":
+    "Šíří se z květináče do květináče ve společných miskách a stojaté vodě, takže celá police to chytne najednou.",
+  "Bare-root it, wash the roots clean, and repot in fresh compost in a different pot — the old one carries them. Treat the neighbours that shared the tray at the same time or it comes straight back.":
+    "Vyklep kořeny do čista, omyj je a přesaď do čerstvého substrátu v jiném květináči — ten starý je přenáší. Zároveň ošetři sousedy ze stejné misky, jinak se to hned vrátí.",
+
+  "Scale":"Štítenka",
+  "Immobile brown or tan limpets along stems and the midribs of leaves. They do not look like an animal, which is why they are usually found late. Sticky leaves below them are the giveaway.":
+    "Nehybné hnědé nebo béžové štítky podél stonků a středních žeber listů. Nevypadají jako zvíře, proto se obvykle najdou pozdě. Prozradí je lepkavé listy pod nimi.",
+  "Another one that comes in on a new plant. Adults are armoured and barely move, so it builds slowly and invisibly.":
+    "Další, co přijede na nové rostlině. Dospělci mají štít a skoro se nehýbou, takže to narůstá pomalu a neviditelně.",
+  "Scrape the adults off with a thumbnail — the armour makes sprays nearly useless against them. The mobile crawler stage is the vulnerable one, so follow with oil or soap every ten days for six weeks. Expect a long campaign.":
+    "Dospělce seškrábej nehtem — proti štítu jsou postřiky skoro k ničemu. Zranitelné jsou pohyblivé larvy, takže po deseti dnech opakuj olejem nebo mýdlem, a to šest týdnů. Počítej s dlouhým tažením.",
+
+  "Thrips":"Třásněnka",
+  "Silvery scarring in patches, with tiny black specks of frass in it. New leaves come out distorted and never straighten. The adults are slim dark slivers that run rather than fly.":
+    "Stříbřité odřeniny v plochách a v nich drobné černé tečky trusu. Nové listy vyrážejí zdeformované a už se nenarovnají. Dospělci jsou tenké tmavé třísky, které spíš běhají než létají.",
+  "Arrives on cut flowers and new plants, and moves through a collection quickly.":
+    "Přijede na řezaných květinách a nových rostlinách a sbírkou se pohybuje rychle.",
+  "The hardest of the common ones. Take off the worst leaves, use blue sticky traps, and treat repeatedly — part of the life cycle happens in the compost, so surface sprays alone never finish it. Amblyseius cucumeris is worth the money on a bad one.":
+    "Nejtěžší z těch běžných. Otrhej nejhorší listy, dej modré lepové desky a ošetřuj opakovaně — část vývoje probíhá v substrátu, takže povrchový postřik to sám nikdy nedodělá. Při silném napadení stojí Amblyseius cucumeris za ty peníze.",
+
+  "Fungus gnat":"Smutnice",
+  "Small dark flies running across the compost surface and drifting up when you water. The larvae are in the top few centimetres, translucent with a black head.":
+    "Malé tmavé mušky pobíhající po povrchu substrátu, které se při zálivce zvednou. Larvy jsou v horních pár centimetrech, průsvitné s černou hlavou.",
+  "Permanently damp compost, and peat-heavy mixes especially. The larvae eat fungus and fine root hairs.":
+    "Trvale vlhký substrát, obzvlášť rašelinové směsi. Larvy žerou houbové vlákno a jemné kořenové vlásky.",
+  "Let the top two or three centimetres dry properly between waterings — that alone breaks the cycle. Yellow sticky traps for the adults, and Bacillus thuringiensis israelensis or Steinernema feltiae nematodes for the larvae. A nuisance on an established plant; genuinely dangerous to seedlings and cuttings.":
+    "Nech horní dva tři centimetry mezi zálivkami pořádně proschnout — samo to přeruší cyklus. Na dospělce žluté lepové desky, na larvy Bacillus thuringiensis israelensis nebo hlístice Steinernema feltiae. Na zavedené rostlině je to otrava; na semenáčcích a řízcích doopravdy nebezpečné.",
+
+  "Aphid":"Mšice",
+  "Clusters of soft green, black or pink insects on the newest growth and flower buds. Sticky leaves underneath, and shed white skins that look like a second infestation.":
+    "Shluky měkkého zeleného, černého nebo růžového hmyzu na nejmladším přírůstku a poupatech. Pod nimi lepkavé listy a svlečené bílé kůžičky, které vypadají jako druhé napadení.",
+  "Soft nitrogen-rich new growth, usually in spring. Often walks in from an open window.":
+    "Měkký, dusíkem nabitý nový přírůstek, obvykle na jaře. Často přileze otevřeným oknem.",
+  "The easiest of them. Rinse them off under the tap or squash them between finger and thumb, and check again in three days. Soap spray if it is on a plant you cannot get to the sink.":
+    "Nejsnazší z nich. Spláchni je pod kohoutkem nebo je rozmáčkni mezi prsty a za tři dny zkontroluj znovu. Mýdlový postřik, pokud jde o rostlinu, se kterou se k dřezu nedostaneš.",
+
+  "Whitefly":"Molice",
+  "Tiny white moth-like insects that fly up in a cloud when the plant is disturbed, then settle again. Scale-like nymphs fixed to the undersides.":
+    "Drobní bílí motýlkovití tvorové, kteří při zavadění o rostlinu vzlétnou v obláčku a zase se usadí. Na spodní straně listů přisedlé nymfy podobné štítenkám.",
+  "Warm rooms and dense growth. Common on anything that has spent summer in a greenhouse.":
+    "Teplé místnosti a hustý porost. Běžná na všem, co strávilo léto ve skleníku.",
+  "Yellow sticky traps catch the adults; the nymphs need repeated spraying since nothing touches the egg stage. Encarsia formosa is the usual biological answer under glass.":
+    "Žluté lepové desky chytí dospělce; na nymfy je potřeba opakovaný postřik, protože na stadium vajíčka nezabírá nic. Ve skleníku je obvyklou biologickou odpovědí Encarsia formosa.",
+
+  "Springtails":"Chvostoskoci",
+  "Tiny white specks in wet compost that jump when disturbed.":
+    "Drobné bílé tečky ve vlhkém substrátu, které při vyrušení odskočí.",
+  "Wet compost with plenty of decaying matter in it.":
+    "Mokrý substrát s dostatkem rozkládající se hmoty.",
+  "Nothing. They eat decaying matter, not your plant, and are food for nothing you mind. Take them as a reading rather than a problem: they are telling you the pot is staying wetter than it should.":
+    "Nic. Živí se rozkládající se hmotou, ne tvojí rostlinou, a nikomu neškodí. Ber je spíš jako údaj než jako problém: říkají ti, že květináč zůstává vlhčí, než by měl.",
+
+  /* ---- the catalogue: diseases ---- */
+  "Root rot":"Hniloba kořenů",
+  "Wilting in wet compost — the contradiction is the diagnosis. Lower leaves yellow and drop, the stem base darkens and softens, and the pot smells sour. Healthy roots are white and firm; rotted ones are brown and slide out of their own skins.":
+    "Vadnutí v mokrém substrátu — ten rozpor je právě ta diagnóza. Spodní listy žloutnou a opadávají, báze stonku tmavne a měkne, z květináče je cítit kyselý pach. Zdravé kořeny jsou bílé a pevné; shnilé jsou hnědé a vyklouznou z vlastní slupky.",
+  "Airless, waterlogged compost. The pathogens are almost always already present and only take hold once the roots have drowned and stopped defending themselves. A pot with no drainage hole, a saucer left full, or a plant in far too large a pot.":
+    "Zamokřený substrát bez vzduchu. Patogeny tam skoro vždycky už jsou a uchytí se, teprve až se kořeny utopí a přestanou se bránit. Květináč bez odtoku, plná miska, nebo rostlina v mnohem větším květináči, než potřebuje.",
+  "Unpot immediately. Cut back to white, firm root, repot into fresh open mix in a pot barely bigger than what is left, and water sparingly until it is growing again. Sterilise the blade — it will carry to the next plant you cut.":
+    "Okamžitě vyndej z květináče. Ořež až na bílý pevný kořen, přesaď do čerstvé propustné směsi v květináči sotva větším, než co zbylo, a zalévej střídmě, dokud zase neroste. Vydezinfikuj nůž — jinak to přenese na další rostlinu, kterou ostříháš.",
+
+  "Powdery mildew":"Padlí",
+  "White floury patches on the UPPER leaf surface, wiping off with a finger and returning. Later the leaf yellows and distorts underneath it.":
+    "Bílé moučnaté skvrny na HORNÍ straně listu, prstem se setřou a vrátí se. Později list pod nimi žloutne a deformuje se.",
+  "Still air and wide swings between day and night humidity. Unlike most fungi it does not need the leaf to be wet, which is why it turns up on plants nobody has misted.":
+    "Stojatý vzduch a velké výkyvy vlhkosti mezi dnem a nocí. Na rozdíl od většiny hub nepotřebuje mokrý list, proto se objeví i na rostlinách, které nikdo nerosil.",
+  "Move air across the plant — that does more than any spray. Remove the worst leaves, and treat with potassium bicarbonate or sulphur if it keeps coming. Thin dense growth so the middle of the plant dries.":
+    "Rozproudi kolem rostliny vzduch — udělá to víc než jakýkoli postřik. Odstraň nejhorší listy a když se to vrací, ošetři hydrogenuhličitanem draselným nebo sírou. Prořeď hustý porost, ať střed rostliny prosychá.",
+
+  "Grey mould":"Plíseň šedá",
+  "Fuzzy grey-brown mould on dying tissue, spent flowers and cutting stumps, spreading from there into healthy tissue.":
+    "Chlupatá šedohnědá plíseň na odumírajícím pletivu, odkvetlých květech a pahýlech po řezu, odkud se šíří do zdravého pletiva.",
+  "Cool, damp, still air, and something already dead for it to start on. Winter windowsills and propagators are where it appears.":
+    "Chladný, vlhký, stojatý vzduch a něco už odumřelého, na čem může začít. Objevuje se na zimních parapetech a v množárnách.",
+  "Take off every dead flower and leaf as it goes over, cut well into clean tissue, and get air moving. It is a poor competitor on healthy tissue and only ever starts on something already dying.":
+    "Odstraňuj každý odkvetlý květ a odumřelý list hned, jak dojde, řež hluboko do čistého pletiva a rozproudi vzduch. Ve zdravém pletivu je slabý konkurent a vždycky začíná na něčem, co už umírá.",
+
+  "Fungal leaf spot":"Houbová skvrnitost listů",
+  "Brown or black spots with a defined edge, often with faint concentric rings, sometimes a yellow halo. Spots stay roughly circular and keep their margin.":
+    "Hnědé nebo černé skvrny s ostrým okrajem, často se slabými soustřednými kruhy, někdy se žlutým lemem. Skvrny zůstávají zhruba kulaté a drží si hranici.",
+  "Water sitting on leaves, crowding, and poor air movement.":
+    "Voda stojící na listech, natěsnané rostliny a špatné proudění vzduchu.",
+  "Take off the marked leaves and bin them rather than compost them. Water at the compost, never over the foliage, and give the plant room. Most houseplant leaf spots stop there without any spray.":
+    "Poškozené listy otrhej a vyhoď je do koše, ne na kompost. Zalévej na substrát, nikdy přes listy, a dej rostlině prostor. Většina pokojových skvrnitostí se tím zastaví i bez postřiku.",
+
+  "Bacterial leaf spot":"Bakteriální skvrnitost listů",
+  "Water-soaked spots that look translucent held up to the light, with a yellow halo and an irregular edge, often running along veins. Moves much faster than the fungal kind and can smell.":
+    "Vodnaté skvrny, které jsou proti světlu průsvitné, se žlutým lemem a nepravidelným okrajem, často se táhnou podél žilek. Postupuje mnohem rychleji než houbová a může být cítit.",
+  "Warm, wet foliage. It enters through wounds and stomata, so overhead watering and handling spread it directly.":
+    "Teplé mokré listy. Vstupuje ranami a průduchy, takže zálivka přes listy a manipulace ji přenášejí přímo.",
+  "Isolate the plant now — this is the one that genuinely runs through a shelf. Remove affected leaves, stop wetting the foliage entirely, and wash your hands between plants. Copper is only marginally useful; separation and dry leaves do the work.":
+    "Rostlinu hned izoluj — tahle policí opravdu proletí. Odstraň napadené listy, úplně přestaň smáčet listy a mezi rostlinami si umyj ruce. Měď pomůže jen okrajově; práci odvede oddělení a suché listy.",
+
+  "Sooty mould":"Černě (saze)",
+  "A black soot-like film over the upper leaf surfaces, wiping off to leave the leaf unmarked.":
+    "Černý sazovitý povlak na horní straně listů, který se setře a pod ním je list bez poškození.",
+  "It is not attacking the plant at all. It grows on honeydew, which means something sap-sucking is above it — scale, mealybug, aphid or whitefly. It only shades the leaf.":
+    "Rostlinu vůbec nenapadá. Roste na medovici, což znamená, že nad ní sedí něco savého — štítenka, červec, mšice nebo molice. List jen zastiňuje.",
+  "Find the insect. Treat that, and wash the leaves with soapy water. Treating the mould alone achieves nothing, because the mould was never the problem.":
+    "Najdi ten hmyz. Ošetři jeho a listy umyj mýdlovou vodou. Ošetřovat samotný povlak nikam nevede, protože povlak nikdy nebyl ten problém.",
+
+  /* ---- the catalogue: disorders ---- */
+  "Overwatering":"Přelití",
+  "Yellowing lower leaves, soft limp growth, and compost that never dries. Often mistaken for thirst, and watering again is what finishes the plant off.":
+    "Žloutnoucí spodní listy, měkký zplihlý přírůstek a substrát, který nikdy neproschne. Často se to splete se žízní — a další zálivka je to, co rostlinu dorazí.",
+  "Watering to a schedule rather than to the pot, an oversized pot, or a saucer left standing full.":
+    "Zálivka podle rozvrhu místo podle květináče, moc velký květináč, nebo plná miska pod ním.",
+  "Let it dry properly, check the roots are still white, and water by weight rather than by day. If the pot has no drainage hole, that is the actual problem.":
+    "Nech to pořádně proschnout, zkontroluj, že kořeny jsou ještě bílé, a zalévej podle váhy, ne podle data. Jestli květináč nemá odtokový otvor, je to on, ten skutečný problém.",
+
+  "Underwatering":"Nedostatek vody",
+  "Wilting that recovers within hours of watering, crisp brown leaf edges, and compost shrunk away from the side of the pot so water runs straight down the gap.":
+    "Vadnutí, které se do pár hodin po zálivce srovná, křupavě hnědé okraje listů a substrát smrštěný od stěny květináče, takže voda proteče rovnou tou škvírou.",
+  "A pot that has become root-bound, or peat compost that has dried past the point where it will take water again.":
+    "Prokořeněný květináč, nebo rašelinový substrát vyschlý za hranici, kdy je ještě schopný přijmout vodu.",
+  "Stand the pot in water for half an hour so the compost rewets all through — pouring from the top only wets the gap. Repot if the roots are circling.":
+    "Postav květináč na půl hodiny do vody, aby se substrát provlhčil skrz naskrz — zálivka shora namočí jen tu škvíru. Když kořeny krouží dokola, přesaď.",
+
+  "Sun scorch":"Spálení sluncem",
+  "Bleached or brown patches on the leaves facing the light, sharply bounded, on the exposed side only. Older leaves that were already there take it worst.":
+    "Vybělené nebo hnědé plochy na listech obrácených ke světlu, ostře ohraničené, jen na osluněné straně. Nejhůř to schytají starší listy, které tam už byly.",
+  "A sudden move into direct sun, or spring light through glass on leaves grown over winter. Leaves cannot re-acclimatise once they have hardened.":
+    "Náhlé přestěhování na přímé slunce, nebo jarní světlo přes sklo na listy vyrostlé přes zimu. Jakmile list vyzraje, už se nepřizpůsobí.",
+  "Move it back and let new growth come in adapted. The damaged tissue will not recover — it is dead — so judge the move by what grows next, not by what is marked.":
+    "Vrať ji zpátky a nech nový přírůstek narůst přizpůsobený. Poškozené pletivo se neuzdraví — je mrtvé — takže posuzuj to podle toho, co naroste, ne podle toho, co je poznamenané.",
+
+  "Cold damage":"Poškození chladem",
+  "Translucent, water-soaked patches that go brown and papery in a day or two, often on the side that was touching a window. Sudden leaf drop after a cold night.":
+    "Průsvitné vodnaté plochy, které během dne dvou zhnědnou a zpapírovatí, často na straně, která se dotýkala okna. Náhlý opad listů po studené noci.",
+  "A leaf pressed against winter glass, a draught from a door, or a trip home from the shop in the cold.":
+    "List přitisknutý na zimní sklo, průvan ode dveří, nebo cesta z obchodu domů v mrazu.",
+  "Move it off the glass. Do not cut the damage away until the plant is growing again in spring — the marked leaf is still feeding it.":
+    "Odsuň ji od skla. Poškození neořezávej, dokud rostlina na jaře zase neroste — ten poznamenaný list ji pořád živí.",
+
+  "Fertiliser burn":"Spálení hnojivem",
+  "Crisp brown leaf margins on an otherwise well-watered plant, and a white or yellow crust on the compost surface and around the pot rim.":
+    "Křupavě hnědé okraje listů na jinak dobře zalité rostlině a bílá nebo žlutá krusta na povrchu substrátu a kolem okraje květináče.",
+  "Feeding too strong, feeding a dry rootball, or hard tap water building up salts over years without a flush.":
+    "Moc silné hnojení, hnojení do suchého balu, nebo tvrdá voda z kohoutku, která roky ukládá soli, aniž by se květináč propláchl.",
+  "Flush the pot: water it through with four or five pot volumes of clean water and let it all drain. Then feed at half strength and only onto damp compost.":
+    "Propláchni květináč: prolij ho čtyřmi až pěti objemy čisté vody a nech všechno odtéct. Pak hnoj na poloviční dávku a jen do vlhkého substrátu.",
+
+  "Dry air":"Suchý vzduch",
+  "Crisp brown tips with a narrow yellow band behind them, on new and old leaves alike. Leaf edges rolling inward.":
+    "Křupavě hnědé špičky s úzkým žlutým proužkem za nimi, na nových i starých listech stejně. Okraje listů se stáčejí dovnitř.",
+  "Indoor heating. Calatheas, ferns and marantas show it first; anything with a thin leaf will eventually.":
+    "Topení. Nejdřív to ukážou kalatey, kapradiny a maranty; nakonec cokoli s tenkým listem.",
+  "Group plants, use a pebble tray or a humidifier. Misting raises humidity for about ten minutes and mostly spreads leaf spot, so it is not the answer.":
+    "Dej rostliny k sobě, použij misku s kamínky nebo zvlhčovač. Rosení zvedne vlhkost tak na deset minut a hlavně roznáší skvrnitost listů, takže řešení to není.",
+
+  "Nutrient deficiency":"Nedostatek živin",
+  "Which leaves go first tells you which nutrient: uniform pale yellowing of the OLDEST leaves is nitrogen, and yellowing between green veins on the oldest leaves is magnesium — both are mobile, so the plant strips old growth to feed new. The same interveinal pattern on the NEWEST leaves is iron, which is not mobile and so shows where it cannot be moved to.":
+    "Které listy jdou první, ti řekne, o kterou živinu jde: rovnoměrné světlé žloutnutí NEJSTARŠÍCH listů je dusík, žloutnutí mezi zelenými žilkami na nejstarších listech je hořčík — oba jsou pohyblivé, takže rostlina obírá starý přírůstek, aby uživila nový. Stejný obrazec mezi žilkami na NEJMLADŠÍCH listech je železo, které pohyblivé není, a tak se ukáže tam, kam se nedá přesunout.",
+  "An unfed plant in old compost, or, for iron, compost too alkaline for the plant to take it up even though it is there.":
+    "Nehnojená rostlina ve vyčerpaném substrátu — a u železa substrát příliš zásaditý na to, aby ho rostlina přijala, i když tam je.",
+  "Nitrogen and magnesium: feed, and repot into fresh compost. Iron: correct the pH rather than adding more iron — chelated iron is a patch, not a fix.":
+    "Dusík a hořčík: pohnojit a přesadit do čerstvého substrátu. Železo: uprav pH místo přidávání dalšího železa — chelát je náplast, ne řešení.",
+
+  "Oedema":"Edém (korkovatění)",
+  "Corky raised blisters on leaf undersides and stems, often in lines. Not a fungus and it does not spread.":
+    "Korkovité vystouplé puchýřky na spodní straně listů a na stoncích, často v řadách. Není to houba a nešíří se.",
+  "Roots taking up water faster than the leaves can lose it, so cells burst — cool dull days after a heavy watering are the classic setup.":
+    "Kořeny berou vodu rychleji, než ji listy stíhají vypařit, takže buňky praskají — klasicky po vydatné zálivce následují chladné zatažené dny.",
+  "Water less on dull days and improve air movement and light. The blistered tissue stays as it is; only new growth will be clean.":
+    "V zatažených dnech zalévej míň a zlepši proudění vzduchu a světlo. Napuchlé pletivo už zůstane; čistý bude až nový přírůstek."
 });
 
 </script>
