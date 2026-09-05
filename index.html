@@ -2851,13 +2851,36 @@ html{overscroll-behavior-y:none}
    directly on top of one another. Deriving the stack means moving the column
    is only ever a change to --fab-b or --fab-r. */
 .n-quick{--fab-r:18px; --fab-b:20px; --fab-size:52px; --fab-pad:44px; --fab-gap:10px;
-  position:fixed; right:var(--fab-r); bottom:var(--fab-b); z-index:65;
+  position:fixed; right:var(--fab-r); bottom:var(--fab-b); z-index:65; display:none;
   width:var(--fab-size); height:var(--fab-size); border-radius:50%;
   border:0; background:var(--accent); color:var(--on-accent); font-size:22px; line-height:1; cursor:pointer;
   box-shadow:0 10px 26px -8px rgba(0,0,0,.4)}
 .n-quick:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
-main > #view-note:not([hidden]) ~ .n-quick, main > #view-teachbench:not([hidden]) ~ .n-quick,
-main > #view-teachbench-student:not([hidden]) ~ .n-quick, html.npad-open .n-quick, html.pfocus .n-quick{display:none}
+/* Quick capture belongs to the Potting Bench tabs and the Notes list — not to
+   the planner/hours/settings apps, the teach side, the note editor or the
+   editor sub-views. Hidden in focus mode and while the scratchpad is open. */
+main > #view-garden:not([hidden]) ~ .n-quick, main > #view-mix:not([hidden]) ~ .n-quick,
+main > #view-cuttings:not([hidden]) ~ .n-quick, main > #view-plan:not([hidden]) ~ .n-quick,
+main > #view-library:not([hidden]) ~ .n-quick, main > #view-stats:not([hidden]) ~ .n-quick,
+main > #view-notes:not([hidden]) ~ .n-quick{display:flex}
+main > #view-garden:not([hidden]) ~ .n-quick-pad, main > #view-mix:not([hidden]) ~ .n-quick-pad,
+main > #view-cuttings:not([hidden]) ~ .n-quick-pad, main > #view-plan:not([hidden]) ~ .n-quick-pad,
+main > #view-library:not([hidden]) ~ .n-quick-pad, main > #view-stats:not([hidden]) ~ .n-quick-pad,
+main > #view-notes:not([hidden]) ~ .n-quick-pad{display:flex}
+html.pfocus main > .n-quick, html.npad-open main > .n-quick{display:none !important}
+/* first-use hint: a one-time pill beside the quick-capture button, dropped
+   after the first tap (L.nqHint). English default, Czech override. */
+html.nq-hint #nQuick::after{content:"New note"; position:absolute; right:calc(100% + 12px); top:50%;
+  transform:translateY(-50%); white-space:nowrap; background:var(--surface); color:var(--ink);
+  border:1px solid var(--line); padding:7px 11px; border-radius:11px; font:600 12px/1 var(--font);
+  box-shadow:0 10px 24px -10px rgba(0,0,0,.35); pointer-events:none}
+html[lang="cs"].nq-hint #nQuick::after{content:"Nová poznámka"}
+/* on phones, let the last row of a list scroll clear of the floating buttons */
+@media (max-width:700px){
+  main > #view-garden, main > #view-mix, main > #view-cuttings,
+  main > #view-plan, main > #view-library, main > #view-stats,
+  main > #view-notes{padding-bottom:92px}
+}
 /* display:flex above would otherwise beat the hidden attribute */
 .n-undo[hidden], .n-tagrow[hidden], .n-trashbar[hidden], .n-nb-tools[hidden]{display:none}
 
@@ -2902,7 +2925,6 @@ main > #view-teachbench-student:not([hidden]) ~ .n-quick, html.npad-open .n-quic
   width:var(--fab-pad); height:var(--fab-pad); font-size:18px; background:var(--surface); color:var(--ink);
   border:1px solid var(--line)}
 .n-quick-pad[aria-expanded="true"]{background:var(--accent); color:var(--on-accent); border-color:var(--accent)}
-main > #view-teachbench:not([hidden]) ~ .n-quick-pad, main > #view-teachbench-student:not([hidden]) ~ .n-quick-pad, html.pfocus .n-quick-pad{display:none}
 .n-pad{position:fixed; right:0; top:0; bottom:0; width:min(420px,100vw); z-index:64; display:flex; flex-direction:column;
   background:var(--surface); border-left:1px solid var(--line); box-shadow:-18px 0 48px -20px rgba(0,0,0,.45);
   transform:translateX(0); transition:transform .22s cubic-bezier(.2,.8,.2,1)}
@@ -25521,6 +25543,8 @@ async function boot(){
   document.querySelectorAll(".langsel button").forEach(b=>
     b.setAttribute("aria-pressed",String(b.dataset.lang===L.lang)));
   applyLang(); watchLang();
+  /* one-time hint on the quick-capture button until the first tap */
+  if(!L.nqHint) document.documentElement.classList.add("nq-hint");
   /* Sync starts last, deliberately. initSync() runs before loadShared(),
      so starting it there would let a remote state land in S moments before
      boot overwrote it with the local one. By here S is loaded and rendered,
@@ -27835,7 +27859,7 @@ function nPlantCardHtml(p){
   });
 
   on("#nUndoBtn","click",()=>{ const fn=nUndoFn; nHideUndo(); if(fn) fn(); });
-  on("#nQuick","click",()=>{ nReturn=null; setApp("notes"); nNewNote(); });
+  on("#nQuick","click",()=>{ if(!L.nqHint){ L.nqHint=1; saveLocal(); document.documentElement.classList.remove("nq-hint"); } nReturn=null; setApp("notes"); nNewNote(); });
 
   on("#pvBody","click",e=>{
     const o=e.target.closest("[data-nopen]"), nw=e.target.closest("[data-nnew]");
