@@ -33317,10 +33317,31 @@ function cbPkmnKey(v){
   return String(v||"").toLowerCase().normalize("NFD")
     .replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"").replace(/set$/,"");
 }
-const CB_PKMN_ALIAS={ "base": "base", "jungle": "jungle" };
+/* The rows above are written short — {c,n,s,r,p,t} — because 174 of them ship
+   inside index.html and spelled-out keys would have been most of the bytes.
+   Every reader goes through this one expander, so the rest of the module says
+   `printedTotal` and means it, and the short form never leaks past this line. */
+const cbPkmnSet=r=>({code:r.c, name:r.n, series:r.s, releaseDate:r.r,
+                     printedTotal:r.p, total:r.t});
+/* Aliases map what a collector types onto the list's own spelling, and are
+   only for what the key cannot reconcile by itself. A trailing "Set" it
+   already handles, so "Base Set", "Jungle Set" and the rest need no entry.
+   What it cannot handle is the ampersand: it drops "&" entirely, so the set
+   list's "Ruby & Sapphire" keys as "rubysapphire" while a collector who types
+   the word out gets "rubyandsapphire" and matches nothing. Every era name in
+   the list has that shape, which is what this table is. Keys are already
+   normalised; values are the set's own name. */
+const CB_PKMN_ALIAS={
+  "rubyandsapphire":"Ruby & Sapphire", "fireredandleafgreen":"FireRed & LeafGreen",
+  "diamondandpearl":"Diamond & Pearl", "heartgoldandsoulsilver":"HeartGold & SoulSilver",
+  "blackandwhite":"Black & White", "sunandmoon":"Sun & Moon",
+  "swordandshield":"Sword & Shield", "scarletandviolet":"Scarlet & Violet",
+  "baseset1":"Base"
+};
 const CB_PKMN_BY_KEY=(()=>{ const m=new Map();
-  CB_PKMN_SETS.forEach(s=>m.set(cbPkmnKey(s.name), s));
-  Object.keys(CB_PKMN_ALIAS).forEach(a=>{ const k=cbPkmnKey(CB_PKMN_ALIAS[a]); if(!m.has(a)) m.set(a, m.get(k)); });
+  CB_PKMN_SETS.forEach(r=>{ const s=cbPkmnSet(r); if(!m.has(cbPkmnKey(s.name))) m.set(cbPkmnKey(s.name), s); });
+  Object.keys(CB_PKMN_ALIAS).forEach(a=>{ const s=m.get(cbPkmnKey(CB_PKMN_ALIAS[a]));
+                                          if(s&&!m.has(a)) m.set(a, s); });
   return m; })();
 function cbSetOf(maker){ return CB_PKMN_BY_KEY.get(cbPkmnKey(maker))||null; }
 
@@ -34277,7 +34298,7 @@ function cbFillDatalists(c){
      completion panel to find it — the field is still free text for binder
      pseudo-sets, exactly as maker is everywhere else. */
   const sets = c && CB_TYPE(c.type).id === "pokemon"
-    ? CB_PKMN_SETS.map(s => s.name) : [];
+    ? CB_PKMN_SETS.map(r => r.n) : [];
   $("#cbMakerList").innerHTML=uniq([...sets, ...pool.map(i=>i.maker)]).map(v=>`<option value="${esc(v)}">`).join("");
   $("#cbLocList").innerHTML=uniq(cbAllItems().map(i=>i.loc)).map(v=>`<option value="${esc(v)}">`).join("");
 }
