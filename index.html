@@ -549,6 +549,11 @@ b{color:var(--ink-strong); font-weight:700}
   transition:border-color .14s, background .14s, transform .18s cubic-bezier(.2,.8,.2,1)}
 .ptile:hover{border-color:var(--accent); color:var(--ink); transform:translateY(-1px)}
 .ptile[aria-pressed="true"]{border-color:var(--accent); background:var(--accent-soft); color:var(--ink)}
+.ptile-all{border-style:dashed; justify-content:center; gap:8px}
+.ptile-all-ic{width:38px; height:38px; display:grid; place-items:center; font-size:21px;
+  line-height:1; color:var(--accent); border-radius:50%; background:var(--accent-soft)}
+.ptile-all:hover{border-color:var(--accent); background:var(--accent-soft)}
+.acall-row{display:flex; padding:4px 15px 10px}
 .picto{width:38px; height:38px; color:var(--accent); flex:none}
 .acopen{margin:0 15px 16px; border:1px solid var(--accent); border-radius:var(--r-sm);
   background:var(--accent-soft); overflow:hidden}
@@ -14442,7 +14447,6 @@ const speciesProp=sp=>EXTRA[sp.n]?EXTRA[sp.n][2]:"";
 const speciesColour=sp=>EXTRA[sp.n]?(EXTRA[sp.n][3]||""):"";
 
 const speciesFind=n=>{ for(const g of SPECIES){ const m=g.list.find(x=>x.n===n); if(m) return m; } return null; };
-const speciesCount=SPECIES.reduce((n,g)=>n+g.list.length,0);
 
 /* ---------------- plant pictograms ---------------- */
 /* Drawn here rather than fetched. An artifact can't pull in an external icon set,
@@ -17382,6 +17386,10 @@ ADDED.forEach(r=>{
 });
 })();
 /* ==== END GENERATED ==== */
+/* The count must be read AFTER the generated block above has pushed the
+   merged species into each group — defined here, not next to SPECIES, or the
+   Academy would advertise the pre-merge 158 while ~1,074 are live. */
+const speciesCount=SPECIES.reduce((n,g)=>n+g.list.length,0);
 const pictoId=n=>PICTO_OF[n]||"broadleaf";
 const picto=(n,cls)=>`<svg class="picto${cls?" "+cls:""}" viewBox="0 0 48 48" fill="none"
   stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"
@@ -17756,7 +17764,7 @@ function renderAcademy(){
 /* ---------------- the plant index, inside the academy ---------------- */
 /* Every species in the book as a grid of drawn leaves. Tapping one opens its
    care sheet in place, right under its own group, so you never lose your spot. */
-let acadPick="", acadQ="";
+let acadPick="", acadQ="", acadAll=false;
 /* The three things a care table can't tell you. Rendered under the numbers so
    the practical answer stays first and the reading sits below it. */
 function loreHtml(sp){
@@ -17809,15 +17817,21 @@ function renderAcadIndex(){
     <span>${esc(x.n)}</span></button>`;
 
   let body;
-  if(!q){
+  const groupHtml=()=>groups.map(g=>`<div class="pgroup">${esc(g.g)}</div>
+    <div class="pgrid">${g.list.map(tile).join("")}</div>`).join("");
+  if(!q&&!acadAll){
     const preview=SPECIES.flatMap(g=>g.list).slice(0,ACAD_PREVIEW);
-    body=`<div class="pgrid">${preview.map(tile).join("")}</div>
-      <p class="hint" style="padding:0 15px 14px; margin:0">${esc(
-        L.lang==="cs"?`${preview.length} z ${speciesCount} — napiš název nebo štítek, ať se rozbalí zbytek.`
-          :`${preview.length} of ${speciesCount} — type a name or tag to unroll the rest.`)}</p>`;
+    body=`<div class="pgrid">${preview.map(tile).join("")}
+      <button type="button" class="ptile ptile-all" data-acadall="1">
+        <span class="ptile-all-ic" aria-hidden="true">⋯</span>
+        <span>${esc(t("Browse all"))}</span></button>
+    </div>
+    <p class="hint" style="padding:0 15px 14px; margin:0">${esc(
+      L.lang==="cs"?`${preview.length} z ${speciesCount} — napiš název nebo štítek, nebo zobraz všechny.`
+        :`${preview.length} of ${speciesCount} — type a name or tag, or browse all.`)}</p>`;
   } else if(found){
-    body=groups.map(g=>`<div class="pgroup">${esc(g.g)}</div>
-      <div class="pgrid">${g.list.map(tile).join("")}</div>`).join("");
+    body=(!q?`<div class="acall-row"><button type="button" class="btn mini" data-acadall="0">‹ ${esc(t("Just the teaser"))}</button></div>`:"")
+      +groupHtml();
   } else {
     body=`<p class="empty" style="padding:0 15px 16px">No plant here matches that.</p>`;
   }
@@ -17840,6 +17854,8 @@ $("#academy").addEventListener("click",e=>{
   const tg=e.target.closest("[data-tag]");
   if(tg){ e.preventDefault(); explainTag(tg.dataset.tag); return; }
   if(e.target.closest("#acadClose")){ acadPick=""; renderAcadIndex(); return; }
+  const al=e.target.closest("[data-acadall]");
+  if(al){ acadAll=al.dataset.acadall==="1"; acadPick=""; renderAcadIndex(); return; }
   const b=e.target.closest("[data-sp]"); if(!b) return;
   acadPick = acadPick===b.dataset.sp ? "" : b.dataset.sp;
   renderAcadIndex();
@@ -17848,7 +17864,7 @@ $("#academy").addEventListener("click",e=>{
 /* re-rendering on each keystroke would drop the caret, so put it back */
 $("#academy").addEventListener("input",e=>{
   if(e.target.id!=="acadQ") return;
-  const pos=e.target.selectionStart; acadQ=e.target.value;
+  const pos=e.target.selectionStart; acadQ=e.target.value; acadAll=false;
   renderAcadIndex();
   const f=$("#acadQ"); if(f){ f.focus(); f.setSelectionRange(pos,pos); }
 });
@@ -26702,6 +26718,7 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
 
 /* Notes, part two. Kept apart from the main dictionary on purpose: three
    sessions were appending to its tail at once. */
+Object.assign(CS,{ "Browse all":"Zobrazit všechny","Just the teaser":"Jen ukázku" });
 Object.assign(CS,{
 "From template ▾":"Ze šablony ▾","Sort":"Řazení","Last edited":"Naposledy upraveno","Created":"Vytvořeno",
 "Pin":"Připnout","Pinned":"Připnuto","Archive":"Archiv","Unarchive":"Vrátit z archivu","archived":"v archivu",
