@@ -615,6 +615,9 @@ b{color:var(--ink-strong); font-weight:700}
   transition:opacity .15s, color .15s}
 #verBadge:hover, #verBadge.open{opacity:1; color:var(--ink-2)}
 #verBadge:focus-visible{outline:2px solid var(--accent); outline-offset:2px; opacity:1}
+.about-row{display:flex; justify-content:space-between; align-items:baseline; gap:14px; font-size:14px}
+.about-row span{color:var(--ink-3); font-size:12px}
+.about-row b{text-align:right; font-variant-numeric:tabular-nums}
 @media print{ #verBadge{display:none} }
 .duerow.swipeable{position:relative; overflow:hidden; touch-action:pan-y; padding:0}
 .duerow.swipeable .duerow-in{display:flex; align-items:center; gap:10px; padding:9px 14px;
@@ -26815,22 +26818,56 @@ setInterval(()=>{
   }catch(e){}
 }, 60000);
 
+Object.assign(CS,{ "About this build":"O této verzi","Version":"Verze","Built":"Sestaveno","Sync":"Synchronizace",
+"Stored on this device. Export a copy to keep it safe.":"Uloženo v tomto zařízení. Pro jistotu si exportujte kopii.",
+"Copy diagnostics":"Zkopírovat diagnostiku","Export/back up data":"Exportovat / zazálohovat data","Copied":"Zkopírováno" });
 /* Built in script rather than markup: this file ships as an Artifact fragment
-   with no <body> tag of its own to anchor to. Tapping expands to the full stamp
-   plus where this copy stores its data — that pair is what tells you which
-   build a given phone is actually running. */
+   with no <body> tag of its own to anchor to. Tapping opens an About sheet —
+   the stamp plus where this copy stores its data — which is what tells you
+   which build a given phone is actually running. */
 (function(){
   const b=document.createElement("button");
   b.type="button"; b.id="verBadge"; b.title="Build info";
   const label=()=>"v"+BUILD.ver+"."+BUILD.n;
   b.textContent=label();
-  let open=false;
-  b.addEventListener("click",()=>{
-    open=!open; b.classList.toggle("open",open);
-    const mode=(typeof ART!=="undefined"&&ART)?t("shared"):t("this device");
-    b.textContent=open?`${label()} · ${BUILD.at} · ${mode}`:label();
-  });
-  const mount=()=>document.body.appendChild(b);
+  const modeNow=()=>{
+    const s=document.querySelector("#syncText");
+    if(s&&s.textContent.trim()) return s.textContent.trim();
+    return (typeof ART!=="undefined"&&ART)?t("shared"):t("this device");
+  };
+  const dlg=document.createElement("dialog");
+  dlg.id="aboutDlg";
+  const buildAbout=()=>{
+    dlg.innerHTML=`<form method="dialog"><div class="dlg-head">${esc(t("About this build"))}</div>
+      <div class="dlg-body">
+        <div class="about-row"><span>${esc(t("Version"))}</span><b>${esc(label())}</b></div>
+        <div class="about-row"><span>${esc(t("Built"))}</span><b>${esc(BUILD.at)}</b></div>
+        <div class="about-row"><span>${esc(t("Sync"))}</span><b>${esc(modeNow())}</b></div>
+        <p class="hint" style="margin:2px 0 0">${esc(t("Stored on this device. Export a copy to keep it safe."))}</p>
+      </div>
+      <div class="dlg-foot">
+        <button type="button" class="btn" id="abCopy">${esc(t("Copy diagnostics"))}</button>
+        <button type="button" class="btn" id="abExport">${esc(t("Export/back up data"))}</button>
+        <button type="button" class="btn primary" id="abClose">${esc(t("Close"))}</button>
+      </div></form>`;
+    const copy=dlg.querySelector("#abCopy");
+    copy.onclick=()=>{
+      const text=`${label()} · ${BUILD.at} · ${modeNow()}`;
+      const done=()=>{ const old=copy.textContent; copy.textContent=t("Copied");
+        setTimeout(()=>{ copy.textContent=old; },1500); };
+      if(navigator.clipboard&&navigator.clipboard.writeText)
+        navigator.clipboard.writeText(text).then(done).catch(done);
+      else done();
+    };
+    dlg.querySelector("#abExport").onclick=()=>{
+      if(typeof exportToFile==="function"){ try{ exportToFile(); }catch(e){} }
+      dlg.close();
+    };
+    dlg.querySelector("#abClose").onclick=()=>dlg.close();
+    dlg.addEventListener("cancel",()=>{});
+  };
+  b.addEventListener("click",()=>{ buildAbout(); dlg.showModal(); });
+  const mount=()=>{ document.body.appendChild(b); document.body.appendChild(dlg); };
   if(document.body) mount(); else addEventListener("DOMContentLoaded",mount);
 })();
 
