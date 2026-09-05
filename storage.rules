@@ -41,5 +41,18 @@ service firebase.storage {
         && request.resource.contentType.matches('image/.*'); // images only
       allow delete: if canManage(studentId);
     }
+
+    // teachbenchMessages/{studentId}/{messageId}/{fileName}
+    // A photo attached to a chat message — a page of a book, a screenshot
+    // of an exercise. Same limits as homework: the picture is there to be
+    // looked at, not to turn the chat into a file store.
+    match /teachbenchMessages/{studentId}/{msgId}/{fileName} {
+      allow read: if canManage(studentId) || isThisStudent(studentId);
+      allow write: if (canManage(studentId) || isThisStudent(studentId))
+        && request.resource != null
+        && request.resource.size < 10 * 1024 * 1024        // 10 MB cap
+        && request.resource.contentType.matches('image/.*'); // images only
+      allow delete: if canManage(studentId);
+    }
   }
 }

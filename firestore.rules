@@ -52,6 +52,13 @@ service cloud.firestore {
          'nextReviewDate', 'lastReviewedAt', 'reviewCount', 'lapses']);
     }
 
+    // A message, once sent, is a record of what somebody actually said.
+    // The only thing either side may change afterwards is the marker
+    // saying they have now seen it — never the words themselves.
+    function onlyReadReceiptChanged() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readAt']);
+    }
+
     // ---------- staff ----------
     match /staff/{uid} {
       allow get: if signedIn() && (request.auth.uid == uid || isOwner());
@@ -132,6 +139,42 @@ service cloud.firestore {
         allow update: if canManage(studentId)
           || (isThisStudent(studentId)
               && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
+        allow delete: if canManage(studentId);
+      }
+
+      /* Free conversation, kept apart from homework on purpose: homework
+         is a piece of work with a state, this is a student saying "I'm
+         ill today" or "what did you mean by that". Each side may only
+         ever write in its own voice — the direction is checked against
+         who is asking, so a student cannot author a message that appears
+         to have come from their teacher. */
+      match /messages/{msgId} {
+        allow read: if canManage(studentId) || isThisStudent(studentId);
+
+        // .get() rather than a bare field read: an absent readAt should
+        // mean "unread", not a denied write on a rule that errored.
+        allow create: if request.resource.data.get('readAt', null) == null
+          && request.resource.data.text is string
+          && request.resource.data.text.size() <= 4000
+          && (
+               (canManage(studentId)
+                 && request.resource.data.direction == "teacher-to-student")
+            || (isThisStudent(studentId)
+                 && request.resource.data.direction == "student-to-teacher")
+          );
+
+        // Only the recipient marks a message read, and marking read is
+        // the only edit either side can make.
+        allow update: if onlyReadReceiptChanged()
+          && (
+               (canManage(studentId)
+                 && resource.data.direction == "student-to-teacher")
+            || (isThisStudent(studentId)
+                 && resource.data.direction == "teacher-to-student")
+          );
+
+        // A student cannot delete what they said, so a difficult message
+        // cannot be quietly withdrawn before the teacher reads it.
         allow delete: if canManage(studentId);
       }
     }

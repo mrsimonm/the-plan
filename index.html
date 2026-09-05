@@ -4853,6 +4853,8 @@ html[data-shell="rail"] body{
           <button type="button" data-tbscope="tasks" aria-pressed="false">Tasks</button>
           <button type="button" data-tbscope="words" aria-pressed="false">Words</button>
           <button type="button" data-tbscope="search" aria-pressed="false">Search</button>
+          <button type="button" data-tbscope="messages" aria-pressed="false">Messages<span
+            class="tbs-unread-n" id="tbMsgMenuCount" hidden></span></button>
         </div>
       </div>
     </div>
@@ -4869,6 +4871,38 @@ html[data-shell="rail"] body{
         </div>
         <p class="pday-sub" id="tbCalRange" style="margin-bottom:10px"></p>
         <div id="tbCalDays" class="stack" style="gap:10px"></div>
+      </div>
+    </div>
+
+    <!-- ---- Messages: the teacher's inbox ----
+         Teachbench is the app she actually has open during the day, so a
+         student's message has to be visible from here rather than only
+         inside the student portal. The Firebase SDK stays unloaded until
+         this section is opened, keeping the rest of Teachbench as
+         network-free as it has always been. -->
+    <div class="stack pstack" id="tbScopeMessages" hidden>
+      <div class="card pad stack" id="tbMsgConnectCard">
+        <span class="eyebrow">Messages</span>
+        <p class="hint" id="tbMsgHint" style="margin:0">Checking…</p>
+        <div class="qadd-row2" id="tbMsgActions" style="flex-wrap:wrap; gap:6px"></div>
+      </div>
+
+      <div class="card" id="tbMsgInbox" hidden></div>
+
+      <div class="card pad stack" id="tbMsgThreadCard" hidden>
+        <div class="row" style="align-items:center; gap:8px">
+          <button class="btn mini" type="button" id="tbMsgBack">← All students</button>
+          <b class="grow" id="tbMsgWho" data-no-i18n>Student</b>
+        </div>
+        <div class="tbs-thread" id="tbMsgThread"></div>
+        <textarea id="tbMsgText" rows="2" placeholder="Write a reply…" aria-label="Reply to this student"></textarea>
+        <div class="row" style="gap:8px; align-items:center">
+          <label class="btn" for="tbMsgPhoto">📷 Photo</label>
+          <input id="tbMsgPhoto" type="file" accept="image/*" hidden>
+          <span class="tbs-muted" id="tbMsgPhotoName" style="font-size:12px; flex:1"></span>
+          <button class="btn primary" id="tbMsgSend">Send</button>
+        </div>
+        <p class="tbs-err" id="tbMsgErr" hidden></p>
       </div>
     </div>
 
@@ -5497,12 +5531,19 @@ html[data-shell="rail"] body{
             <span class="tb-bars" aria-hidden="true"><i></i><i></i><i></i></span>
             <span id="tbsMenuLabel">Today</span>
             <span class="tb-nav-chev" aria-hidden="true">▾</span>
+            <!-- The menu is shut by default, so a message waiting inside it
+                 would otherwise be invisible until someone went looking.
+                 Decorative here on purpose: the readable version of the
+                 same fact is the count on the Chat item below. -->
+            <i class="tbs-unread" id="tbsChatDot" hidden aria-hidden="true"></i>
           </button>
           <div class="tb-menu" id="tbsMenu" hidden>
             <button type="button" data-tbsscope="today" aria-pressed="true">Today</button>
             <button type="button" data-tbsscope="cards" aria-pressed="false">Words</button>
             <button type="button" data-tbsscope="cal" aria-pressed="false">Calendar</button>
             <button type="button" data-tbsscope="homework" aria-pressed="false">Homework</button>
+            <button type="button" data-tbsscope="chat" aria-pressed="false">Chat<span
+              class="tbs-unread-n" id="tbsChatCount" hidden></span></button>
           </div>
         </div>
       </div>
@@ -5584,6 +5625,30 @@ html[data-shell="rail"] body{
             <button class="btn primary" id="tbsHwSend">Send</button>
           </div>
           <p class="tbs-err" id="tbsHwErr" hidden></p>
+        </div>
+      </div>
+
+      <!-- Chat. Deliberately not homework: this is where a student says
+           they are ill, or asks what a word meant, without it looking like
+           a piece of work that needs marking. -->
+      <div id="tbsScopeChat" hidden>
+        <div class="card pad" id="tbsChatIntro">
+          <p class="tbs-muted" style="margin:0; font-size:13px; line-height:1.5">
+            Write to your teacher whenever you like. She won't always answer straight away.</p>
+        </div>
+        <div class="tbs-thread" id="tbsChatList"></div>
+        <!-- composer outside the thread for the same reason as homework:
+             the thread rebuilds on every snapshot and would otherwise wipe
+             a half-typed message the moment one arrives -->
+        <div class="card pad stack">
+          <textarea id="tbsChatText" rows="2" placeholder="Write a message…" aria-label="Your message"></textarea>
+          <div class="row" style="gap:8px; align-items:center">
+            <label class="btn" for="tbsChatPhoto">📷 Photo</label>
+            <input id="tbsChatPhoto" type="file" accept="image/*" hidden>
+            <span class="tbs-muted" id="tbsChatPhotoName" style="font-size:12px; flex:1"></span>
+            <button class="btn primary" id="tbsChatSend">Send</button>
+          </div>
+          <p class="tbs-err" id="tbsChatErr" hidden></p>
         </div>
       </div>
     </div>
@@ -5679,6 +5744,25 @@ html[data-shell="rail"] body{
         <button class="btn" id="tbsStuBack">← Students</button>
       </div>
       <div class="card pad stack" id="tbsStuStats"></div>
+
+      <!-- Chat sits directly under the stats, above the cards and the
+           homework, because a student waiting on an answer is the most
+           time-sensitive thing on this page. -->
+      <div class="card pad stack" id="tbsStuChatCard">
+        <div class="row" style="align-items:center; gap:8px">
+          <span class="eyebrow grow">Chat</span>
+          <span class="tbs-unread-n" id="tbsStuChatCount" hidden></span>
+        </div>
+        <div class="tbs-thread" id="tbsStuChat"></div>
+        <textarea id="tbsStuChatText" rows="2" placeholder="Write a reply…" aria-label="Reply to this student"></textarea>
+        <div class="row" style="gap:8px; align-items:center">
+          <label class="btn" for="tbsStuChatPhoto">📷 Photo</label>
+          <input id="tbsStuChatPhoto" type="file" accept="image/*" hidden>
+          <span class="tbs-muted" id="tbsStuChatPhotoName" style="font-size:12px; flex:1"></span>
+          <button class="btn primary" id="tbsStuChatSend">Send</button>
+        </div>
+        <p class="tbs-err" id="tbsStuChatErr" hidden></p>
+      </div>
       <div class="card pad stack">
         <span class="eyebrow">End of month</span>
         <p class="tbs-muted" style="font-size:12px; margin:0">
@@ -6328,6 +6412,52 @@ html[data-shell="rail"] body{
 #tbdictRes .who{font-family:var(--font);font-variant-numeric:tabular-nums;font-size:9px;
   color:var(--ink-3);border:1px solid var(--line);padding:1px 6px;border-radius:99px}
 .tbdict-kbd{font-size:11px}
+</style>
+
+<style id="tbs-chat">
+/* ---------- Chat: student ↔ teacher ----------
+   Reuses the homework bubble's rhythm rather than inventing a second
+   conversation shape, but a chat has two things homework does not: it
+   scrolls to the newest message, and it says whether the other person
+   has read you. */
+.tbs-thread{max-height:min(52vh, 440px); overflow-y:auto; overscroll-behavior:contain;
+  border:1px solid var(--line); border-radius:var(--r); background:var(--surface)}
+.tbs-thread .empty{padding:18px 14px; margin:0; text-align:center}
+/* One message. `mine` is whoever is looking — the student's own words on
+   the student's phone, the teacher's own on hers — so the same markup
+   reads correctly from both sides. */
+.tbs-msg{padding:10px 14px; border-bottom:1px solid var(--line-soft)}
+.tbs-msg:last-child{border-bottom:0}
+.tbs-msg.mine{background:var(--surface-2)}
+.tbs-msg p{margin:3px 0 0; line-height:1.5; overflow-wrap:anywhere}
+.tbs-msg .tbs-msghead{display:flex; align-items:baseline; gap:8px; font-size:11.5px; color:var(--ink-3)}
+.tbs-msg .tbs-msghead .grow{flex:1; min-width:0}
+/* A message that arrived while you were elsewhere keeps a mark until the
+   thread has actually been on screen. */
+.tbs-msg.unseen{box-shadow:inset 3px 0 0 var(--accent)}
+.tbs-msgimg{margin-top:8px; max-width:min(240px,60%); border-radius:var(--r-sm);
+  border:1px solid var(--line); cursor:zoom-in; display:block}
+/* the read receipt, on your own messages only */
+.tbs-seen{font-size:11px; color:var(--ink-3); flex:0 0 auto}
+/* the unread signals: a bare dot where there is no room for a number,
+   a number where there is */
+.tbs-unread{display:inline-block; width:8px; height:8px; border-radius:50%;
+  background:var(--accent); margin-left:6px; flex:0 0 auto}
+.tbs-unread[hidden]{display:none}
+.tbs-unread-n{display:inline-block; min-width:18px; padding:1px 6px; margin-left:6px;
+  border-radius:var(--r-pill); background:var(--accent); color:var(--on-accent);
+  font-size:11px; font-variant-numeric:tabular-nums; text-align:center; flex:0 0 auto}
+.tbs-unread-n[hidden]{display:none}
+/* the teacher's inbox in Teachbench: one row per student who has written */
+.tb-inbox-row{display:flex; align-items:center; gap:10px; padding:11px 14px;
+  border-bottom:1px solid var(--line-soft); cursor:pointer; width:100%;
+  background:none; border-left:0; border-right:0; border-top:0; text-align:left; font:inherit; color:inherit}
+.tb-inbox-row:last-child{border-bottom:0}
+.tb-inbox-row:hover{background:var(--surface-2)}
+.tb-inbox-row .grow{flex:1; min-width:0}
+.tb-inbox-row b{display:block; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.tb-inbox-row small{color:var(--ink-3); font-size:11.5px; display:block;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 </style>
 <div id="tbdict" hidden>
   <div class="card pad bx">
@@ -18932,7 +19062,7 @@ let tbEditId=null;
 let tbCalWeekOffset=0;
 let tbOccContext=null;
 let tbScope="students";
-const TB_SCOPES=["students","week","tasks","words","search"];
+const TB_SCOPES=["students","week","tasks","words","search","messages"];
 let tbDetailStudentId=null;
 
 function tbSetScope(scope){
@@ -18953,6 +19083,7 @@ function tbSetScope(scope){
   if(scope==="tasks") tbRenderTasks();
   if(scope==="words" && window.tbRenderWords) tbRenderWords();
   if(scope==="search" && window.tbRenderSearch) tbRenderSearch();
+  if(scope==="messages") tbMsgOpen();
 }
 function tbOpenStudentDetail(id){
   tbDetailStudentId=id;
@@ -24937,10 +25068,80 @@ const TBS = (() => {
     return p;
   }
 
+  /* ---- messages ----
+     A plain conversation, kept apart from homework on purpose: homework
+     is a piece of work with a state, this is "I'm ill today" or "what did
+     you mean by that". The shape deliberately echoes a homework item so
+     the same bubble can draw both, plus a read receipt — the thing that
+     makes this a chat rather than a noticeboard. */
+  const msgsOf = id => students().doc(id).collection("messages");
+
+  function onMessages(studentId, cb){
+    return msgsOf(studentId).onSnapshot(
+      s => cb(s.docs.map(d => ({ id:d.id, ...d.data() }))
+               .sort((a,b) => String(a.createdAt).localeCompare(String(b.createdAt))), null),
+      err => { console.warn("messages", err); cb([], err); });
+  }
+
+  /* Upload first, then write the document, for the same reason as
+     homework: the rules let a sender create a message but never edit its
+     photoPath afterwards, so the path has to exist before the doc does.
+     The id is minted here so both halves agree on it. */
+  async function sendMessage(studentId, text, direction, file){
+    await init();
+    const body = String(text||"").trim();
+    /* The rules cap this too; refusing here means the sender is told
+       plainly instead of watching a write fail for no visible reason. */
+    if(body.length > 4000) throw new Error("too-long");
+    const ref = msgsOf(studentId).doc();
+    let photoPath = null;
+
+    if(file){
+      const blob = await shrinkImage(file);
+      if(blob.size > 10 * 1024 * 1024) throw new Error("too-big");
+      const clean = String(file.name || "photo.jpg").replace(/[^\w.\-]/g, "_").slice(-60);
+      photoPath = `teachbenchMessages/${studentId}/${ref.id}/${clean}`;
+      await store.ref(photoPath).put(blob, {
+        contentType: blob.type && blob.type.startsWith("image/") ? blob.type : "image/jpeg"
+      });
+    }
+
+    await ref.set({
+      direction, kind: photoPath ? "photo" : "text",
+      text: body, photoPath,
+      createdAt: new Date().toISOString(), readAt: null
+    });
+    return ref.id;
+  }
+
+  /* How many of the other side's messages have not been seen yet.
+     `mine` is the direction this reader writes in, so everything else is
+     theirs. Pure, so the badge and the thread can both call it. */
+  function unreadCount(list, mine){
+    return (list||[]).filter(m => m.direction !== mine && !m.readAt).length;
+  }
+
+  /* Mark the other side's messages as seen. Called when the thread is
+     genuinely on screen, never merely because data arrived — a badge
+     that clears itself while the phone is in a pocket is worse than no
+     badge at all. Individual failures are swallowed: a receipt that does
+     not land leaves the marker up, which is the harmless direction, and
+     nobody should meet an error because of one. */
+  async function markMessagesRead(studentId, list, mine){
+    await init();
+    const theirs = (list||[]).filter(m => m.direction !== mine && !m.readAt);
+    if(!theirs.length) return 0;
+    const now = new Date().toISOString();
+    await Promise.all(theirs.slice(0, 400).map(m =>
+      msgsOf(studentId).doc(m.id).update({ readAt: now }).catch(() => {})));
+    return theirs.length;
+  }
+
   return { init, redeemCode, myStudentId, signInStaff, currentStaff, signOut,
            onRoster, onStudent, addStudent, knownCode, reissueCode,
            onCards, addCard, deleteCard, submitReview,
            onHomework, sendHomework, photoUrl,
+           onMessages, sendMessage, markMessagesRead, unreadCount,
            onProgress, saveProgress, getProgress };
 })();
 
@@ -24956,6 +25157,9 @@ const TBS_UI = (() => {
   let state = {
     studentOnly:false, studentId:null, staff:null,
     cards:[], homework:[], roster:[], openStudent:null,
+    /* chat: the student's own thread, whether they are looking at it,
+       and — on the teacher's side — how many students are waiting */
+    messages:[], messagesError:null, chatOpen:false, msgUnread:{},
     queue:[], current:null, revealed:false, doneCount:0,
     newType:"vocab", unsub:[],
     calOffset:0,                    // months from the current one
@@ -25019,6 +25223,15 @@ const TBS_UI = (() => {
     state.unsub.push(TBS.onHomework(studentId, (hw, err) => {
       state.homework = hw; state.homeworkError = err || null;
       renderHomework(); renderRecap();
+    }));
+    state.unsub.push(TBS.onMessages(studentId, (msgs, err) => {
+      state.messages = msgs; state.messagesError = err || null;
+      renderChat();
+      /* If the student is sitting on the chat tab when a reply lands,
+         it has genuinely been seen; otherwise the badge stays up until
+         they open it. */
+      if(state.chatOpen) markChatRead();
+      renderChatBadge();
     }));
     state.unsub.push(TBS.onProgress(studentId, (prog, err) => {
       /* Snapshots also echo back this device's own writes. Keeping the
@@ -25202,6 +25415,166 @@ const TBS_UI = (() => {
   function shortDate(iso){
     const d = new Date(iso||0);
     return Number.isFinite(d.getTime()) ? d.toLocaleDateString(undefined,{day:"numeric",month:"short"}) : "";
+  }
+
+  /* ---------- chat ----------
+     One thread drawn from two sides. `myDirection` is the direction the
+     reader writes in, so the same function serves the student's phone
+     and the teacher's screen without either knowing about the other. */
+
+  /* A chat is read in the moment: today's messages carry a time, older
+     ones a date. A column of identical dates tells nobody anything. */
+  function chatStamp(iso){
+    const d = new Date(iso||0);
+    if(!Number.isFinite(d.getTime())) return "";
+    const today = new Date(); today.setHours(0,0,0,0);
+    return d.getTime() >= today.getTime()
+      ? d.toLocaleTimeString(locale(), { hour:"2-digit", minute:"2-digit" })
+      : d.toLocaleDateString(locale(), { day:"numeric", month:"short" });
+  }
+
+  function msgBubble(m, myDirection, mineLabel, theirLabel, isNew){
+    const mine = m.direction === myDirection;
+    /* A message that arrived while the reader was elsewhere keeps a mark
+       down its edge, so opening the thread shows what is new rather than
+       making them work out where they got to.
+
+       Which messages count as new is decided ONCE, when the thread is
+       opened, and held for as long as it stays open. Deriving it from
+       readAt instead would make every mark disappear a moment after the
+       thread appeared — the read receipt races the reader's eyes — which
+       is precisely the moment the marks are for. */
+    const unseen = !mine && (isNew ? isNew(m) : !m.readAt);
+    return `<div class="tbs-msg${mine?" mine":""}${unseen?" unseen":""}">
+      <div class="tbs-msghead">
+        <span class="grow">${mine?mineLabel:theirLabel} · ${esc(chatStamp(m.createdAt))}</span>
+        ${mine && m.readAt ? `<span class="tbs-seen">Read</span>` : ""}
+      </div>
+      ${m.text ? `<p data-no-i18n>${esc(m.text)}</p>` : ""}
+      ${m.photoPath ? `<img class="tbs-msgimg" data-photo="${esc(m.photoPath)}" alt="Photo in a message">` : ""}
+    </div>`;
+  }
+
+  /* Redrawing a thread the reader is halfway through scrolling throws
+     them back to the top, and this runs on every snapshot — including
+     the ones that only carry a read receipt. So the list is fingerprinted
+     and only rebuilt when something visible actually moved. */
+  function paintThread(box, list, myDirection, mineLabel, theirLabel, emptyText, errText, err, isNew){
+    if(!box) return;
+    if(err){ box.innerHTML = `<p class="empty">${esc(errText)}</p>`; box.dataset.stamp = "err"; return; }
+    if(!list.length){ box.innerHTML = `<p class="empty">${esc(emptyText)}</p>`; box.dataset.stamp = "empty"; return; }
+    const stamp = list.map(m => m.id + (m.readAt ? "1" : "0")).join(",");
+    if(box.dataset.stamp === stamp) return;
+    /* Only follow the conversation down if the reader was already at the
+       bottom. Yanking them away from a message they were re-reading is
+       worse than making them scroll. */
+    const wasAtEnd = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+    box.dataset.stamp = stamp;
+    box.innerHTML = list.map(m => msgBubble(m, myDirection, mineLabel, theirLabel, isNew)).join("");
+    fillPhotos(box);
+    if(wasAtEnd) scrollToEnd(box);
+  }
+
+  /* The set of messages that were still unread at the moment a thread was
+     opened. Held as a plain Set of ids so it survives the read receipts
+     that land a second later. */
+  function newAtOpen(list, myDirection){
+    const ids = new Set((list||[])
+      .filter(m => m.direction !== myDirection && !m.readAt)
+      .map(m => m.id));
+    return m => ids.has(m.id);
+  }
+
+  function scrollToEnd(box){
+    if(!box) return;
+    requestAnimationFrame(() => { box.scrollTop = box.scrollHeight; });
+  }
+  function scrollChatToEnd(){ scrollToEnd($$("tbsChatList")); }
+
+  /* A composer is the same object everywhere the conversation appears: a
+     box, a photo, a send button and somewhere to say it failed. Only the
+     direction and whose thread it is differ, so it is written once and
+     told those two things — the student's phone, the teacher's student
+     page, and Teachbench's inbox all wire the same code. */
+  function wireComposer(o){
+    const box = $$(o.text), picker = $$(o.photo), btn = $$(o.send),
+          err = $$(o.err), name = $$(o.name);
+    if(!box || !picker || !btn || !err || !name) return;
+    picker.onchange = () => { name.textContent = picker.files[0] ? picker.files[0].name : ""; };
+    const send = async () => {
+      const body = box.value.trim();
+      const file = picker.files[0] || null;
+      const sid  = o.studentId();
+      if((!body && !file) || !sid) return;
+      err.hidden = true; btn.disabled = true;
+      btn.textContent = file ? "Sending photo…" : "Sending…";
+      try{
+        await TBS.sendMessage(sid, body, o.direction, file);
+        box.value = ""; picker.value = ""; name.textContent = "";
+        if(o.sent) o.sent();
+      }catch(e){
+        /* Whatever was typed stays in the box. Losing someone's words to
+           a dropped connection is the one thing a chat must not do. */
+        const why = e && e.message;
+        err.textContent = why === "too-big"
+            ? "That photo is too large. Try a smaller one."
+          : why === "too-long"
+            ? "That message is too long. Try splitting it up."
+          : "Couldn't send. Your message is still here — try again.";
+        err.hidden = false;
+      }finally{ btn.disabled = false; btn.textContent = "Send"; }
+    };
+    btn.onclick = send;
+    /* Enter sends and Shift+Enter breaks the line, which is what every
+       message box anyone has ever used already does. */
+    box.onkeydown = e => {
+      if(e.key === "Enter" && !e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey){
+        e.preventDefault(); send();
+      }
+    };
+  }
+
+  /* ---------- chat: the student's side ---------- */
+  const STUDENT_SIDE = "student-to-teacher";
+
+  function renderChat(){
+    paintThread($$("tbsChatList"), state.messages || [], STUDENT_SIDE,
+      "You", "Teacher",
+      "No messages yet. Say hello.",
+      "Couldn't load your messages. Check your internet.",
+      state.messagesError, state.chatNew);
+  }
+
+  /* Opening the tab is what counts as having read something; a snapshot
+     arriving is not. Failures are deliberately silent — an unread mark
+     that lingers is harmless, an error over it is not. */
+  function markChatRead(){
+    if(!state.studentId) return;
+    TBS.markMessagesRead(state.studentId, state.messages || [], STUDENT_SIDE).catch(() => {});
+  }
+
+  /* The dot on the shut menu and the number on the Chat item are the same
+     fact told twice, because the menu is closed nearly all the time and a
+     message inside it would otherwise never be found. */
+  function renderChatBadge(){
+    const n = state.chatOpen ? 0 : TBS.unreadCount(state.messages, STUDENT_SIDE);
+    const dot = $$("tbsChatDot"), num = $$("tbsChatCount");
+    if(dot) dot.hidden = n === 0;
+    if(num){ num.hidden = n === 0; num.textContent = String(n); }
+  }
+
+  /* ---------- chat: the teacher's side ---------- */
+  const TEACHER_SIDE = "teacher-to-student";
+
+  function renderStaffChat(list, err){
+    paintThread($$("tbsStuChat"), list || [], TEACHER_SIDE,
+      "You", "Student",
+      "No messages yet.",
+      "Couldn't load these messages. Check your internet.",
+      err, state.staffChatNew);
+    const n = TBS.unreadCount(list, TEACHER_SIDE);
+    const num = $$("tbsStuChatCount");
+    if(num){ num.hidden = n === 0; num.textContent = String(n); }
   }
 
   /* ---------- calendar ----------
@@ -25615,6 +25988,7 @@ const TBS_UI = (() => {
       return `<div class="tbs-row" data-student="${esc(s.id)}">
         <i class="tbs-dot ${st ? st.status : ""}"></i>
         <span class="grow"><b>${esc(s.name)}</b><small>${esc(line)}</small></span>
+        ${state.msgUnread[s.id] ? `<span class="tbs-unread-n">${state.msgUnread[s.id]}</span>` : ""}
         ${st && st.waiting ? `<span class="tbs-pill">homework sent</span>` : ""}
         ${st && st.due ? `<span class="tbs-pill due">${st.due} due</span>` : ""}
       </div>`;
@@ -25639,7 +26013,14 @@ const TBS_UI = (() => {
       const recompute = () => { state.stats[s.id] = statsFor(cards, hw); renderRoster(); };
       const offCards = TBS.onCards(s.id, list => { cards = list; recompute(); });
       const offHw    = TBS.onHomework(s.id, list => { hw = list; recompute(); });
-      state.statUnsub[s.id] = () => { offCards(); offHw(); };
+      /* Unread chat is counted here rather than only on the student's own
+         page, so the roster answers "who is waiting on me" at a glance —
+         which is the whole reason a teacher opens this screen. */
+      const offMsg   = TBS.onMessages(s.id, list => {
+        state.msgUnread[s.id] = TBS.unreadCount(list, "teacher-to-student");
+        renderRoster();
+      });
+      state.statUnsub[s.id] = () => { offCards(); offHw(); offMsg(); };
     });
   }
 
@@ -25681,6 +26062,9 @@ const TBS_UI = (() => {
     $$("tbsStuLink").dataset.code = code || "";
 
     dropStudentListeners();
+    /* A different student is a different conversation: forget what was
+       new in the last one before the first snapshot of this one lands. */
+    state.staffChatNew = null;
     /* The detail panel shows cards, homework and a rollup over both, so
        each side keeps the other's latest copy to recompute against. */
     let cards = [], hw = [], prog = STREAK.empty();
@@ -25693,7 +26077,18 @@ const TBS_UI = (() => {
     state._stuUnsub = [
       TBS.onCards(id, list => { cards = list; renderStaffCards(list); refresh(); }),
       TBS.onHomework(id, list => { hw = list; renderStaffHomework(list); refresh(); }),
-      TBS.onProgress(id, p => { prog = p || STREAK.empty(); refresh(); })
+      TBS.onProgress(id, p => { prog = p || STREAK.empty(); refresh(); }),
+      /* The thread is on screen as soon as this page opens, so anything
+         waiting has genuinely been read the moment it arrives here. */
+      TBS.onMessages(id, (list, err) => {
+        /* First snapshot for this student decides what she had not yet
+           read; later ones must not, or her own read receipts would erase
+           the marks as she was reading them. */
+        if(!state.staffChatNew) state.staffChatNew = newAtOpen(list, "teacher-to-student");
+        renderStaffChat(list, err);
+        if(state.openStudent === id && !err)
+          TBS.markMessagesRead(id, list, "teacher-to-student").catch(() => {});
+      })
     ];
   }
   function dropStudentListeners(){
@@ -25784,9 +26179,20 @@ const TBS_UI = (() => {
       $$("tbsScopeCards").hidden    = scope !== "cards";
       $$("tbsScopeCal").hidden      = scope !== "cal";
       $$("tbsScopeHomework").hidden = scope !== "homework";
+      $$("tbsScopeChat").hidden     = scope !== "chat";
       /* the grid is laid out from the live card list, so draw it when
          it is actually on screen rather than keeping it warm */
       if(scope === "cal") renderCalendar();
+      /* Opening the tab is what counts as reading. The messages were
+         already in memory, so nothing was "seen" until this moment. */
+      state.chatOpen = scope === "chat";
+      if(state.chatOpen){
+        /* Decide what is new BEFORE marking anything read, or the marks
+           are gone before the student has looked at them. */
+        state.chatNew = newAtOpen(state.messages, STUDENT_SIDE);
+        renderChat(); markChatRead(); scrollChatToEnd();
+      }
+      renderChatBadge();
     };
 
     /* student: homework composer. Wired once, because it is static
@@ -25813,6 +26219,23 @@ const TBS_UI = (() => {
         err.hidden = false;
       }finally{ btn.disabled = false; btn.textContent = "Send"; }
     };
+
+    /* chat composers — wireComposer itself lives at module scope, because
+       Teachbench's inbox wires a third one against the same code. */
+    wireComposer({
+      text:"tbsChatText", photo:"tbsChatPhoto", name:"tbsChatPhotoName",
+      send:"tbsChatSend", err:"tbsChatErr",
+      direction:"student-to-teacher",
+      studentId:() => state.studentId,
+      sent:scrollChatToEnd
+    });
+    wireComposer({
+      text:"tbsStuChatText", photo:"tbsStuChatPhoto", name:"tbsStuChatPhotoName",
+      send:"tbsStuChatSend", err:"tbsStuChatErr",
+      direction:"teacher-to-student",
+      studentId:() => state.openStudent,
+      sent:() => scrollToEnd($$("tbsStuChat"))
+    });
 
     /* student: hand the device back */
     $$("tbsNotYou").onclick = async () => {
@@ -25974,7 +26397,10 @@ const TBS_UI = (() => {
     };
   }
 
-  return { start };
+  /* `thread` is the chat drawn as three reusable pieces. Teachbench's
+     inbox is a third place the same conversation appears, and it should
+     not grow its own second copy of a message bubble. */
+  return { start, thread: { paint: paintThread, scrollToEnd, wireComposer, newAtOpen } };
 })();
 
 /* ---------------- boot ---------------- */
@@ -31264,6 +31690,217 @@ Object.assign(CS,{
   "Add":"Přidat",
   "Added to your word bank.":"Přidáno do tvého slovníku slov.",
   "translate":"přeložit"
+});
+
+
+/* ------------------------------------------------- Teachbench: messages --
+   The teacher's inbox. She lives in Teachbench during the day, so a student
+   writing to her has to surface here and not only in the student portal.
+
+   This reuses the portal bridge above wholesale — the same lazily-loaded
+   SDK, the same staff record, the same roster — and TBS_UI.thread for the
+   conversation itself, so there is exactly one message bubble in the app.
+   Nothing below touches the network until the Messages section is opened,
+   which keeps the promise the rest of Teachbench makes. */
+(() => {
+  const TEACHER = "teacher-to-student";
+  let unsubs = {};          // studentId -> listener
+  let threads = {};         // studentId -> messages
+  let openId = null;        // whose thread is on screen, if any
+  let openNew = null;       // what was unread when that thread was opened
+  let wired = false;
+
+  const el = id => document.getElementById(id);
+  const say = msg => { const h = el("tbMsgHint"); if(h) h.textContent = msg || ""; };
+
+  function actions(list){
+    const host = el("tbMsgActions"); if(!host) return;
+    host.innerHTML = (list||[]).map(a =>
+      `<button type="button" class="btn mini${a.primary?" primary":""}" id="${a.id}">${esc(a.label)}</button>`
+    ).join("");
+  }
+
+  /* The count that ends up on the nav menu, so an unopened section can
+     still say that somebody is waiting. */
+  function totalUnread(){
+    return Object.values(threads)
+      .reduce((n, list) => n + TBS.unreadCount(list, TEACHER), 0);
+  }
+  function paintMenuCount(){
+    const b = el("tbMsgMenuCount"); if(!b) return;
+    const n = totalUnread();
+    b.hidden = n === 0; b.textContent = String(n);
+  }
+
+  /* One row per student: who, the last thing said, and how many of their
+     messages are still unread. Students who have written most recently
+     come first — an inbox sorted by name makes you hunt. */
+  function paintInbox(){
+    const box = el("tbMsgInbox"); if(!box) return;
+    const rows = (tbPortalRoster || []).map(s => {
+      const list = threads[s.id] || [];
+      const last = list[list.length - 1] || null;
+      return { s, list, last, unread: TBS.unreadCount(list, TEACHER) };
+    }).sort((a, b) =>
+      String(b.last && b.last.createdAt || "").localeCompare(String(a.last && a.last.createdAt || ""))
+      || String(a.s.name).localeCompare(String(b.s.name)));
+
+    box.hidden = false;
+    if(!rows.length){
+      box.innerHTML = `<p class="empty">No students in the portal yet.</p>`;
+      return;
+    }
+    box.innerHTML = rows.map(r => {
+      const preview = !r.last ? "No messages yet"
+        : (r.last.direction === TEACHER ? "You: " : "") +
+          (r.last.text || (r.last.photoPath ? "Photo" : ""));
+      return `<button type="button" class="tb-inbox-row" data-tbmsg="${esc(r.s.id)}">
+        <span class="grow"><b data-no-i18n>${esc(r.s.name)}</b><small data-no-i18n>${esc(preview)}</small></span>
+        ${r.unread ? `<span class="tbs-unread-n">${r.unread}</span>` : ""}
+      </button>`;
+    }).join("");
+    box.querySelectorAll("[data-tbmsg]").forEach(row =>
+      row.onclick = () => openThread(row.dataset.tbmsg));
+    paintMenuCount();
+  }
+
+  function paintThread(){
+    if(!openId) return;
+    const list = threads[openId] || [];
+    TBS_UI.thread.paint(el("tbMsgThread"), list, TEACHER, "You", "Student",
+      "No messages yet — you can write first.",
+      "Couldn't load this conversation. Check your internet.", null, openNew);
+  }
+
+  function openThread(id){
+    const student = (tbPortalRoster || []).find(s => s.id === id);
+    if(!student) return;
+    openId = id;
+    /* Fixed at the moment she opens it, so her own read receipts do not
+       wipe the marks out from under her. */
+    openNew = TBS_UI.thread.newAtOpen(threads[id] || [], TEACHER);
+    el("tbMsgWho").textContent = student.name;
+    el("tbMsgInbox").hidden = true;
+    el("tbMsgConnectCard").hidden = true;
+    el("tbMsgThreadCard").hidden = false;
+    paintThread();
+    TBS_UI.thread.scrollToEnd(el("tbMsgThread"));
+    /* Reading is opening the thread, not receiving the data. */
+    TBS.markMessagesRead(id, threads[id] || [], TEACHER).catch(() => {});
+  }
+
+  function closeThread(){
+    openId = null; openNew = null;
+    el("tbMsgThreadCard").hidden = true;
+    el("tbMsgConnectCard").hidden = false;
+    paintInbox();
+  }
+
+  /* One listener per student, exactly as the portal's roster stats do.
+     A private teacher has a handful of students, not a school. */
+  function watch(){
+    const wanted = new Set((tbPortalRoster || []).map(s => s.id));
+    Object.keys(unsubs).forEach(id => {
+      if(!wanted.has(id)){ try{ unsubs[id](); }catch(e){} delete unsubs[id]; delete threads[id]; }
+    });
+    (tbPortalRoster || []).forEach(s => {
+      if(unsubs[s.id]) return;
+      unsubs[s.id] = TBS.onMessages(s.id, list => {
+        threads[s.id] = list;
+        if(openId === s.id){
+          paintThread();
+          TBS.markMessagesRead(s.id, list, TEACHER).catch(() => {});
+        }else if(!openId){
+          paintInbox();
+        }
+        paintMenuCount();
+      });
+    });
+  }
+
+  function wireOnce(){
+    if(wired) return; wired = true;
+    const back = el("tbMsgBack"); if(back) back.onclick = closeThread;
+    TBS_UI.thread.wireComposer({
+      text:"tbMsgText", photo:"tbMsgPhoto", name:"tbMsgPhotoName",
+      send:"tbMsgSend", err:"tbMsgErr",
+      direction: TEACHER,
+      studentId: () => openId,
+      sent: () => TBS_UI.thread.scrollToEnd(el("tbMsgThread"))
+    });
+    /* The connect buttons are re-rendered, so they are caught by
+       delegation rather than bound to elements that keep being replaced. */
+    const host = el("tbMsgActions");
+    if(host) host.addEventListener("click", e => {
+      if(e.target.closest("#tbMsgConnectBtn") || e.target.closest("#tbMsgRetry")) connect();
+    });
+  }
+
+  async function connect(){
+    say("Connecting to the portal…");
+    actions([]);
+    try{
+      tbPortalStaff = await TBS.currentStaff();
+    }catch(err){
+      console.warn("[Teachbench] messages connect:", err);
+      tbPortalStaff = null;
+    }
+    if(!tbPortalStaff){
+      say("Not signed in to the portal. Open Student Bench from the menu, sign in there, then come back.");
+      actions([{ id:"tbMsgRetry", label:"Try again" }]);
+      return;
+    }
+    await tbPortalLoadRoster();
+    say(L.lang==="cs" ? "Zprávy od studentů z portálu." : "Messages from your portal students.");
+    actions([]);
+    watch();
+    paintInbox();
+  }
+
+  /* Entry point, called by tbSetScope. Connects by itself only when a
+     member of staff is already signed in on this device — otherwise it
+     asks, which is what keeps Teachbench off the network by default. */
+  window.tbMsgOpen = function(){
+    wireOnce();
+    if(openId) return;                       // came back to an open thread
+    el("tbMsgThreadCard").hidden = true;
+    el("tbMsgConnectCard").hidden = false;
+    if(tbPortalStaff){
+      watch(); paintInbox();
+      say(L.lang==="cs" ? "Zprávy od studentů z portálu." : "Messages from your portal students.");
+      actions([]);
+      return;
+    }
+    if(tbPortalAlreadyLoaded()){ connect(); return; }
+    el("tbMsgInbox").hidden = true;
+    say("Connect once to read and answer messages from your students here.");
+    actions([{ id:"tbMsgConnectBtn", label:"Connect to the portal", primary:true }]);
+  };
+})();
+
+Object.assign(CS,{
+  "Chat":"Chat","Messages":"Zprávy","Read":"Přečteno",
+  "Write a message…":"Napiš zprávu…","Your message":"Tvoje zpráva",
+  "Write a reply…":"Napiš odpověď…","Reply to this student":"Odpověď studentovi",
+  "No messages yet. Say hello.":"Zatím žádné zprávy. Pozdrav.",
+  "No messages yet.":"Zatím žádné zprávy.",
+  "No messages yet — you can write first.":"Zatím žádné zprávy — můžeš napsat první.",
+  "No messages yet":"Zatím žádné zprávy",
+  "Couldn't load your messages. Check your internet.":"Nepovedlo se načíst zprávy. Zkontroluj internet.",
+  "Couldn't load these messages. Check your internet.":"Nepovedlo se načíst tyhle zprávy. Zkontroluj internet.",
+  "Couldn't load this conversation. Check your internet.":"Nepovedlo se načíst tuhle konverzaci. Zkontroluj internet.",
+  "Couldn't send. Your message is still here — try again.":"Nepovedlo se odeslat. Tvoje zpráva tu pořád je — zkus to znovu.",
+  "That message is too long. Try splitting it up.":"Ta zpráva je moc dlouhá. Zkus ji rozdělit.",
+  "Write to your teacher whenever you like. She won't always answer straight away.":
+    "Piš učitelce, kdykoli budeš chtít. Ne vždy odpoví hned.",
+  "Photo in a message":"Fotka ve zprávě",
+  "← All students":"← Všichni studenti",
+  "Messages from your portal students.":"Zprávy od studentů z portálu.",
+  "Connect once to read and answer messages from your students here.":
+    "Připoj se jednou a čti a odpovídej tu na zprávy od studentů.",
+  "Connect to the portal":"Připojit k portálu",
+  "No students in the portal yet.":"V portálu zatím nejsou žádní studenti.",
+  "You: ":"Ty: ","Photo":"Fotka","Student":"Student"
 });
 
 </script>
