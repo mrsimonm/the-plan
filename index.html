@@ -29243,8 +29243,30 @@ var PSYNC = (() => {
     if(dirty) touch();
   }
 
+  /* Was this device signed in at the end of its last session? Firebase keeps
+     the auth token in localStorage (firebase:authUser:*) once persistence has
+     run, so this is readable without loading the SDK. Nothing here means the
+     SDK must not be fetched or Google auth touched on a fresh, unsynced
+     launch — that is the whole point of deferring. */
+  function hasSession(){
+    try{
+      for(let i=0;i<localStorage.length;i++){
+        const k=localStorage.key(i);
+        if(k && k.indexOf("firebase:authUser:")===0) return true;
+      }
+    }catch(e){}
+    return false;
+  }
+
   async function start(){
     if(started) return; started = true;
+    /* The Settings Sync card must exist even before the SDK loads, or an
+       unsynced user would have no way to start. */
+    renderPanel();
+    if(!hasSession() || navigator.onLine === false){
+      setSync("local","this device");
+      return;                                  // local as ever — nothing fetched
+    }
     try{ await init(); }
     catch(e){ setSync("local","this device"); return; }   // offline: local as ever
     auth.onAuthStateChanged(u => { attach(u).catch(err => console.warn("PSYNC", err)); });
@@ -29253,6 +29275,10 @@ var PSYNC = (() => {
   async function signIn(email, password){
     await init();
     await auth.signInWithEmailAndPassword(email, password);
+    /* Deferred boots never registered onAuthStateChanged, so sign in and
+       attach the freshly-authenticated user ourselves. */
+    const u = auth.currentUser;
+    if(u) attach(u).catch(err => console.warn("PSYNC", err));
   }
   async function signOut(){
     await init();
