@@ -5488,11 +5488,22 @@ html[data-shell="rail"] body{
     <div class="tbs-screen" id="tbsHome" hidden>
       <div class="sec-head">
         <h2 id="tbsGreeting">Hello</h2>
-        <div class="seg segsm" id="tbsScopeSeg">
-          <button type="button" data-tbsscope="today" aria-pressed="true">Today</button>
-          <button type="button" data-tbsscope="cards" aria-pressed="false">Words</button>
-          <button type="button" data-tbsscope="cal" aria-pressed="false">Calendar</button>
-          <button type="button" data-tbsscope="homework" aria-pressed="false">Homework</button>
+        <!-- Same control as Teachbench's, and the same reasoning: a strip that
+             is always open spends a row showing three sections you are not
+             looking at, on a screen a student is usually reading on a phone.
+             Shares the .tb-nav styles rather than growing a second set. -->
+        <div class="tb-nav" id="tbsScopeSeg">
+          <button type="button" class="tb-nav-btn" id="tbsMenuBtn" aria-expanded="false" aria-controls="tbsMenu">
+            <span class="tb-bars" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span id="tbsMenuLabel">Today</span>
+            <span class="tb-nav-chev" aria-hidden="true">▾</span>
+          </button>
+          <div class="tb-menu" id="tbsMenu" hidden>
+            <button type="button" data-tbsscope="today" aria-pressed="true">Today</button>
+            <button type="button" data-tbsscope="cards" aria-pressed="false">Words</button>
+            <button type="button" data-tbsscope="cal" aria-pressed="false">Calendar</button>
+            <button type="button" data-tbsscope="homework" aria-pressed="false">Homework</button>
+          </div>
         </div>
       </div>
 
@@ -25739,11 +25750,36 @@ const TBS_UI = (() => {
     $$("tbsCodeInput").onkeydown = e => { if(e.key === "Enter") tryCode(); };
 
     /* student: home tabs */
+    const tbsMenuOpen = on => {
+      const m = $$("tbsMenu"), b = $$("tbsMenuBtn");
+      if(!m || !b) return;
+      m.hidden = !on;
+      b.setAttribute("aria-expanded", String(!!on));
+    };
+    /* closing on a click elsewhere and on Escape, so it is not a menu you can
+       only leave by picking something */
+    document.addEventListener("click", e => {
+      const m = $$("tbsMenu");
+      if(!m || m.hidden) return;
+      if(e.target.closest("#tbsScopeSeg")) return;
+      tbsMenuOpen(false);
+    });
+    document.addEventListener("keydown", e => {
+      const m = $$("tbsMenu");
+      if(e.key !== "Escape" || !m || m.hidden) return;
+      tbsMenuOpen(false);
+      const b = $$("tbsMenuBtn"); if(b) b.focus();
+    });
     $$("tbsScopeSeg").onclick = e => {
+      if(e.target.closest("#tbsMenuBtn")){ tbsMenuOpen($$("tbsMenu").hidden); return; }
       const b = e.target.closest("[data-tbsscope]"); if(!b) return;
       const scope = b.dataset.tbsscope;
-      $$("tbsScopeSeg").querySelectorAll("button").forEach(x =>
+      $$("tbsMenu").querySelectorAll("button").forEach(x =>
         x.setAttribute("aria-pressed", String(x === b)));
+      /* the closed button names the section, which the strip could only do by
+         highlighting one of four */
+      $$("tbsMenuLabel").textContent = b.textContent;
+      tbsMenuOpen(false);
       $$("tbsScopeToday").hidden    = scope !== "today";
       $$("tbsScopeCards").hidden    = scope !== "cards";
       $$("tbsScopeCal").hidden      = scope !== "cal";
