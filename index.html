@@ -624,6 +624,14 @@ b{color:var(--ink-strong); font-weight:700}
   font-size:14px; max-width:calc(100vw - 24px)}
 #pbUpd button{border:0; background:var(--accent); color:var(--on-accent); font:inherit; font-weight:600;
   padding:7px 12px; border-radius:10px; cursor:pointer; white-space:nowrap}
+#pbFull{position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:71; display:flex;
+  align-items:center; gap:14px; padding:10px 10px 10px 16px; background:var(--surface); color:var(--ink);
+  border:1px solid var(--line); border-radius:14px; box-shadow:0 14px 38px -10px rgba(0,0,0,.3);
+  font-size:14px; max-width:calc(100vw - 20px)}
+#pbFull .pbFull-acts{display:flex; gap:6px; align-items:center}
+#pbFull button{border:0; background:var(--accent); color:var(--on-accent); font:inherit; font-weight:600;
+  padding:7px 12px; border-radius:10px; cursor:pointer; white-space:nowrap}
+#pbFull button.ghost{background:transparent; color:var(--ink-2); padding:4px 8px; font-size:16px}
 @media print{ #verBadge{display:none} }
 .duerow.swipeable{position:relative; overflow:hidden; touch-action:pan-y; padding:0}
 .duerow.swipeable .duerow-in{display:flex; align-items:center; gap:10px; padding:9px 14px;
@@ -8071,10 +8079,34 @@ function photosTouched(){ photosDirty=true; }
    synchronously first, so the window in which a pending write could be lost is
    a single frame and never spans a tab switch, a navigation or a close. */
 let pWriteQueued=false;
+/* localStorage quota is ~5MB and photos are the thing that eats it. Warn
+   well before the write starts failing, and only once per session. IndexedDB
+   photo storage is the real fix (Wave 2+); this makes the failure impossible
+   to hit silently in the meantime. */
+const P_STORAGE_WARN=4000000;
+let pWarnShown=false;
+function pStorageWarn(){
+  if(pWarnShown||document.querySelector("#pbFull")) return;
+  pWarnShown=true;
+  const el=document.createElement("div");
+  el.id="pbFull"; el.setAttribute("role","status");
+  el.innerHTML=`<span>${esc(t("Storage is getting full — export a backup or delete a few photos to be safe."))}</span>
+    <span class="pbFull-acts">
+      <button type="button">${esc(t("Export"))}</button>
+      <button type="button" class="ghost" aria-label="${esc(t("Dismiss"))}">×</button>
+    </span>`;
+  el.querySelector("button").onclick=()=>{ if(typeof exportToFile==="function"){ try{ exportToFile(); }catch(e){} } };
+  el.querySelector(".ghost").onclick=()=>{ el.remove(); };
+  document.body.appendChild(el);
+}
 function pFlushWrite(){
   if(!pWriteQueued) return;
   pWriteQueued=false;
-  try{ localStorage.setItem(KEY,JSON.stringify(S)); }
+  try{
+    const json=JSON.stringify(S);
+    if(json.length>P_STORAGE_WARN) pStorageWarn();
+    localStorage.setItem(KEY,json);
+  }
   catch(e){ setSync("error","storage full"); }
 }
 addEventListener("visibilitychange",()=>{ if(document.visibilityState==="hidden") pFlushWrite(); });
@@ -26871,7 +26903,9 @@ setInterval(()=>{
 Object.assign(CS,{ "About this build":"O této verzi","Version":"Verze","Built":"Sestaveno","Sync":"Synchronizace",
 "Stored on this device. Export a copy to keep it safe.":"Uloženo v tomto zařízení. Pro jistotu si exportujte kopii.",
 "Copy diagnostics":"Zkopírovat diagnostiku","Export/back up data":"Exportovat / zazálohovat data","Copied":"Zkopírováno",
-"A new version is ready.":"Je připravená nová verze.","Reload":"Načíst znovu" });
+"A new version is ready.":"Je připravená nová verze.","Reload":"Načíst znovu",
+"Storage is getting full — export a backup or delete a few photos to be safe.":"Úložiště se plní — pro jistotu si exportujte zálohu nebo smažte pár fotek.",
+"Export":"Exportovat","Dismiss":"Zavřít" });
 /* Built in script rather than markup: this file ships as an Artifact fragment
    with no <body> tag of its own to anchor to. Tapping opens an About sheet —
    the stamp plus where this copy stores its data — which is what tells you
