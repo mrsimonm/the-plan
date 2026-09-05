@@ -3160,6 +3160,64 @@ dialog:has(> form > .dlg-foot) > form > .dlg-foot{flex:0 0 auto}
    reasons (its scroll maths needs a known pitch); the rest of the board wants
    it for alignment. */
 .wb-head{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+
+/* ---- pinned care days ----------------------------------------------------
+   Seven equal columns, always, in the reading order of a week rather than the
+   computer's Sunday-first one. Equal columns matter more than tight ones: the
+   picker appears both in the plant dialog and stacked dozens of times down the
+   Care days list, and rows only read as a calendar if the same weekday sits at
+   the same x-position in every one of them. */
+.daypick{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; min-width:0}
+.daypick button{
+  padding:6px 0; font-size:11px; line-height:1.1; text-align:center;
+  border:1px solid var(--line); border-radius:8px; background:transparent;
+  color:var(--ink-3); font-family:var(--font); cursor:pointer; min-width:0;
+  -webkit-tap-highlight-color:transparent; transition:background .12s, color .12s, border-color .12s}
+.daypick button:hover{border-color:var(--ink-3); color:var(--ink-2)}
+.daypick button[aria-pressed="true"]{
+  background:var(--accent); border-color:var(--accent); color:var(--on-accent); font-weight:600}
+/* a day the household doesn't act on is still pickable — pinning is the manual
+   override, so it must be able to overrule the action days too — but it is
+   drawn quieter so choosing one is visibly a deliberate step outside the scheme */
+.daypick button.off-scheme:not([aria-pressed="true"]){opacity:.5}
+
+/* the pinned-days note rides inside the value line, not under it: .pline is
+   single-line by design and clips, so a block-level note is simply cut off */
+.pline-v .pin-days{color:var(--ink-3); font-size:11.5px}
+.pline-v .pin-days::before{content:" · "}
+
+.pindays{margin:0 0 11px}
+.pinrow{display:flex; align-items:center; gap:10px; margin-bottom:6px}
+.pinrow .pin-k{flex:0 0 52px; font-size:12px; color:var(--ink-2)}
+.pinrow .daypick{flex:1 1 auto}
+
+/* ---- Care days view ---- */
+.cd-card{padding:11px 13px}
+.cd-name{display:flex; align-items:baseline; gap:8px; margin-bottom:9px}
+.cd-name b{font-size:14px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.cd-name small{color:var(--ink-3); font-size:11.5px; flex:1 1 auto; min-width:0;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.cd-job{display:flex; align-items:center; gap:10px; margin-bottom:7px}
+.cd-job:last-child{margin-bottom:0}
+.cd-job .cd-k{flex:0 0 52px; font-size:12px; color:var(--ink-2)}
+.cd-job .cd-when{flex:0 0 auto; font-size:10.5px; color:var(--ink-3);
+  font-variant-numeric:tabular-nums; text-align:right; min-width:44px}
+.cd-job .daypick{flex:1 1 auto}
+/* the week strip: seven columns of the same grid, so the counts sit directly
+   above the columns they describe in the rows below */
+.cd-week{display:grid; grid-template-columns:repeat(7,1fr); gap:4px}
+.cd-week div{text-align:center; font-size:11px; color:var(--ink-3); min-width:0}
+.cd-week b{display:block; font-size:15px; color:var(--ink-strong); font-variant-numeric:tabular-nums}
+.cd-week .cd-bar{height:3px; border-radius:2px; background:var(--line); margin-top:5px; overflow:hidden}
+.cd-week .cd-bar i{display:block; height:100%; border-radius:2px; background:var(--accent)}
+.cd-week .today b{color:var(--accent)}
+@media (max-width:380px){
+  .pinrow{flex-direction:column; align-items:stretch; gap:4px}
+  .pinrow .pin-k{flex:none}
+  .cd-job{flex-wrap:wrap}
+  .cd-job .daypick{flex:1 0 100%; order:3}
+  .cd-job .cd-when{margin-left:auto}
+}
 </style>
 <style id="redesign-2">
 /* ---- Redesign 2: "Frosted Glass" ----
@@ -5446,7 +5504,10 @@ html[data-shell="rail"] body{
   <section class="view" id="view-plan" hidden>
     <div class="sec-head">
       <h2>Diary</h2>
-      <button class="btn primary" id="newSched">+ Schedule</button>
+      <div style="display:flex; gap:8px">
+        <button class="btn" id="openCareDays">Care days</button>
+        <button class="btn primary" id="newSched">+ Schedule</button>
+      </div>
     </div>
     <div id="planTaskBar" class="task-bar-full"></div>
     <div class="stack">
@@ -5509,6 +5570,27 @@ html[data-shell="rail"] body{
   <section class="view" id="view-log" hidden>
     <div class="sec-head"><h2>Log</h2><span class="eyebrow" id="logCount"></span></div>
     <div class="card" id="logList"></div>
+  </section>
+
+  <!-- ============ CARE DAYS ============
+       The whole collection laid out as jobs against weekdays, so the week can
+       be arranged by hand instead of being derived. Every row is one routine;
+       tapping a day pins it there and takes it off its interval for good. -->
+  <section class="view" id="view-careplan" hidden>
+    <div class="sec-head"><h2>Care days</h2>
+      <button class="btn" id="cdBack">← Diary</button></div>
+    <div class="stack">
+      <div class="card">
+        <div class="pad" style="padding-bottom:6px">
+          <span class="eyebrow">Your week</span></div>
+        <div class="pad" style="padding-top:0" id="cdWeek"></div>
+      </div>
+      <input type="text" id="cdSearch" class="plant-search" placeholder="Search plants…" autocomplete="off">
+      <div class="stack" id="cdList" style="gap:10px"></div>
+      <p class="hint" style="margin:2px 2px 22px">A job with no days picked keeps running on its interval and
+        lands on the household's action days. Pick days and it stops drifting: it comes due on exactly those
+        days, whatever the interval says. Tap the last lit day again to hand it back to the interval.</p>
+    </div>
   </section>
 
   <!-- ============ TEACHBENCH STUDENT APP ============
@@ -6185,6 +6267,19 @@ html[data-shell="rail"] body{
             <input id="plFeed" type="number" min="1" max="90" value="7" inputmode="numeric"></div>
         </div>
         <p class="hint" id="plSnapHint" style="margin:0 0 11px"></p>
+        <!-- Pinned days: the manual override. Pick days here and this plant
+             stops being scheduled by arithmetic at all — it is watered when
+             you said, on the days you said. Clear them to hand it back. -->
+        <div class="pindays">
+          <span class="eyebrow" style="display:block; margin-bottom:7px">Or put it on fixed days</span>
+          <div class="pinrow"><span class="pin-k">Water</span>
+            <div class="daypick" data-pinkind="water"></div></div>
+          <div class="pinrow"><span class="pin-k">Feed</span>
+            <div class="daypick" data-pinkind="feed"></div></div>
+          <div class="pinrow"><span class="pin-k">Spray</span>
+            <div class="daypick" data-pinkind="spray"></div></div>
+          <p class="hint" id="plPinHint" style="margin:8px 0 0"></p>
+        </div>
         <div class="grid2">
           <div class="field"><label for="plLight">Light</label><select id="plLight"></select></div>
           <div class="field"><label for="plHum">Humidity</label><select id="plHum"></select></div>
@@ -8498,6 +8593,8 @@ function migrate(d){
   d.subjects=(d.subjects||[]).map(x=>Object.assign({module:"plants",spot:"",detail:"",week:1},x));
   d.routines=(d.routines||[]).filter(r=>r&&r.subjectId&&d.subjects.some(x=>x.id===r.subjectId))
     .map(r=>Object.assign({kind:"chore",name:"Care",every:7},r));
+  /* v7: a routine may be pinned to weekdays instead of running on its interval. */
+  d.routines.forEach(r=>{ r.days=normDays(r.days); });
   d.events=(d.events||[]).map(e=>Object.assign({},e,
     {subjectId:e.subjectId||e.plantId||null, kind:e.kind||e.type||"water"}));
   d.planner=d.planner||{sleepWeekday:{from:"23:00",hours:8}, sleepWeekend:{from:"23:00",hours:8}, tasks:[], blocks:[]};
@@ -8725,6 +8822,16 @@ const safeImg=d=>/^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/.tes
 /* Record ids become DOM/attribute data, so anything imported is squeezed to
    id-safe characters at the trust boundary, not at 118 render sites. */
 const cleanId=v=>String(v??"").replace(/[^\w:-]/g,"");
+/* Pinned weekdays, normalised hard at every trust boundary. A stray string or
+   a 9 in here would put a job on a day that never arrives, and the plant would
+   silently stop coming due — a scheduling app failing by going quiet. Function
+   declaration on purpose: migrate() calls it during boot. */
+function normDays(v){
+  return Array.isArray(v)
+    ? v.map(Number).filter(n=>Number.isInteger(n)&&n>=0&&n<=6)
+       .filter((x,i,a)=>a.indexOf(x)===i).sort((a,b)=>a-b)
+    : [];
+}
 function pSanitizeState(d){
   if(!d||typeof d!=="object") return d;
   const cleanOne=o=>{ if(!o||typeof o!=="object") return;
@@ -9270,10 +9377,10 @@ function feedDue(){
     const p=subject(r.subjectId);
     if(!p||p.module!=="plants") return;
     const last=lastEvent(r.id);
-    if(!(+r.every>0)) return;             // paused routines never come due
-    const at=last?snapToActionDay(+new Date(last.at)+(+r.every)*DAY,p.anchor,+new Date(last.at))
-                 :(actionOn()&&p.anchor!=null?nextDow(p.anchor):Date.now());
-    if(sod(at)<=today) due.push({p,r,fm:plantFormula(p)});
+    /* paused routines never come due — unless you pinned days to them yourself */
+    if(!fixedDays(r)&&!(+r.every>0)) return;
+    const at=routineDue(r,p,last,today);
+    if(at!=null&&sod(at)<=today) due.push({p,r,fm:plantFormula(p)});
   });
   if(!due.length) return null;
   const groups={};
@@ -9510,22 +9617,22 @@ function ago(iso){
 }
 /* `anchor` is the plant's action day, and only matters before the first time
    you've ever done the job — after that the snap works off the last event. */
+/* the second argument takes either a whole routine (which may carry pinned
+   days) or a bare interval, so older call sites keep working unchanged */
 function dueState(ev,every,anchor,refTs){
+  const r=(every&&typeof every==="object")?every:{every:+every};
+  const days=fixedDays(r);
   /* interval 0 = paused. It used to mean "weekly" here and "invisible" in the
      diary — the same routine due on one screen and absent from the other. A
-     species marked never-feed (f:0) now genuinely never comes due. */
-  const iv=+every;
-  if(!(iv>0)) return {cls:"ok",text:"—"};
+     species marked never-feed (f:0) now genuinely never comes due. Pinned days
+     override that: days you picked yourself are never a pause. */
+  if(!days&&!(+r.every>0)) return {cls:"ok",text:"—"};
   const ref=sod(refTs!=null?refTs:Date.now());
-  if(!ev){
-    /* never done. With action days on, a plant just added waits for its own
-       day rather than shouting the moment it lands in the garden. */
-    if(!actionOn()||anchor==null) return {cls:"due",text:t("now")};
-    const left=Math.round((nextDow(anchor,ref)-ref)/DAY);
-    if(left<=0) return {cls:"due",text:t("today")};
-    return {cls:"ok",text:L.lang==="cs"?`za ${left} d`:`in ${left}d`};
-  }
-  const left=Math.round((snapToActionDay(+new Date(ev.at)+iv*DAY,anchor,+new Date(ev.at))-ref)/DAY);
+  /* never done, no pinned days, nothing anchoring it: it wants doing now. With
+     action days on, a plant just added waits for its own day rather than
+     shouting the moment it lands in the garden. */
+  if(!ev&&!days&&(!actionOn()||anchor==null)) return {cls:"due",text:t("now")};
+  const left=Math.round((routineDue(r,{anchor},ev,ref)-ref)/DAY);
   if(left<0) return {cls:"over",text:L.lang==="cs"?`${-left} dní po`:`${-left}d late`};
   if(left===0) return {cls:"due",text:t("today")};
   return {cls:"ok",text:L.lang==="cs"?`za ${left} d`:`in ${left}d`};
@@ -9540,7 +9647,7 @@ const isToday=dt=>new Date(dt)>=dayBoundary();
 const tasksDueToday=()=>{const due=new Map(), ref=+dayBoundary();
   S.subjects.filter(x=>x.module==="plants").forEach(p=>{
     S.routines.filter(r=>r.subjectId===p.id).forEach(r=>{
-      const st=dueState(lastEvent(r.id),r.every,p.anchor,ref);
+      const st=dueState(lastEvent(r.id),r,p.anchor,ref);
       if(st.cls==="due" || st.cls==="over") due.set(r.id,r);});});
   return [...due.values()];};
 /* only real routine completions — five ad-hoc waterings with nothing due used
@@ -9729,10 +9836,13 @@ function renderSubjects(){
     const pf=plantFormula(p), ph=latestPhoto(p.id);
     /* the header carries identity only — everything else lives on the plant's own page */
     const sub=[p.species&&p.species!==p.name?p.species:null,p.spot||null].filter(Boolean).join(" · ");
-    const line=(k,ev,st)=>`<div class="pline">
+    /* a job on days you picked yourself says so on the card: the interval it
+       would otherwise be running on is no longer the truth about it */
+    const line=(k,ev,st,pin)=>`<div class="pline">
       <span class="pill ${st.cls}">${st.text}</span>
       <span class="pline-k">${esc(k)}</span>
-      <span class="pline-v">${ev?"last "+esc(ago(ev.at))+" · "+esc(userName(ev.by)):"never done"}</span>
+      <span class="pline-v">${ev?"last "+esc(ago(ev.at))+" · "+esc(userName(ev.by)):"never done"}${
+        pin?`<span class="pin-days">${esc(pin)}</span>`:""}</span>
     </div>`;
     return `<div class="pcard">
       <button type="button" class="pcard-top" data-open-plant="${p.id}">
@@ -9745,7 +9855,7 @@ function renderSubjects(){
         <span class="chev" aria-hidden="true">›</span>
       </button>
       <div class="pcard-body">
-        ${rs.map(r=>{const ev=lastEvent(r.id); return line(r.name,ev,dueState(ev,r.every,p.anchor));}).join("")}
+        ${rs.map(r=>{const ev=lastEvent(r.id); return line(r.name,ev,dueState(ev,r,p.anchor),pinnedShort(r));}).join("")}
         <div class="btn-row">
           ${rs.map(r=>`<button class="btn mini" data-did="${r.id}">${esc(DID[r.kind]||r.name)}</button>`).join("")}
           ${pf?`<button class="btn mini" data-mix="${p.id}">Mix</button>`:""}
@@ -14427,7 +14537,7 @@ function worstState(sid){
   let worst=null;
   const sub=subject(sid);
   careRoutines(sid).forEach(r=>{
-    const st=dueState(lastEvent(r.id),r.every,sub&&sub.anchor);
+    const st=dueState(lastEvent(r.id),r,sub&&sub.anchor);
     const rank={over:3,due:2,ok:1}[st.cls]||0;
     if(!worst||rank>worst.rank) worst={rank,st,r};
   });
@@ -14719,10 +14829,12 @@ function renderPlant(){
     <div class="card">
       <div class="pad" style="padding-bottom:6px"><span class="eyebrow">Care</span></div>
       <div class="pad" style="padding-top:0">
-        ${careRoutines(p.id).map(r=>{const ev=lastEvent(r.id), st=dueState(ev,r.every,p.anchor);
+        ${careRoutines(p.id).map(r=>{const ev=lastEvent(r.id), st=dueState(ev,r,p.anchor);
+          const pin=pinnedShort(r);
           return `<div class="pline"><span class="pill ${st.cls}">${st.text}</span>
             <span class="pline-k">${esc(r.name)}</span>
-            <span class="pline-v">${ev?"last "+esc(ago(ev.at))+" · "+esc(userName(ev.by)):"never done"}</span></div>`;
+            <span class="pline-v">${ev?"last "+esc(ago(ev.at))+" · "+esc(userName(ev.by)):"never done"}${
+              pin?`<span class="pin-days">${esc(pin)}</span>`:""}</span></div>`;
         }).join("")}
         ${sc?`<div class="pline plan"><span class="pline-k">Plan</span>
           <span class="pline-v">${pf?esc(pf.name):"<i>no formula this week</i>"}<small>${
@@ -19241,13 +19353,13 @@ function statsData(){
     const wr=rts.find(r=>r.subjectId===p.id&&r.kind==="water");
     const fr=rts.find(r=>r.subjectId===p.id&&r.kind==="feed");
     const lw=wr?lastEvent(wr.id):null, lf=fr?lastEvent(fr.id):null;
-    const ws=wr?dueState(lw,wr.every,p.anchor):null;
-    const fs=fr?dueState(lf,fr.every,p.anchor):null;
+    const ws=wr?dueState(lw,wr,p.anchor):null;
+    const fs=fr?dueState(lf,fr,p.anchor):null;
     /* spray is first-class care everywhere else — the garden tile goes red for
        an overdue spray while this panel said "0 overdue, 100% ahead" */
     const states=[ws,fs];
     rts.filter(r=>r.subjectId===p.id&&r.kind!=="water"&&r.kind!=="feed")
-       .forEach(r=>states.push(dueState(lastEvent(r.id),r.every,p.anchor)));
+       .forEach(r=>states.push(dueState(lastEvent(r.id),r,p.anchor)));
     states.forEach(s=>{ if(!s) return;
       if(s.cls==="over") over++; else if(s.cls==="due") due++; else ahead++; });
     if(ws&&(ws.cls==="over"||ws.cls==="due")) thirstL+=(plantWater(p).litres||0);
@@ -19688,8 +19800,8 @@ const APPS=[{id:"bench",label:"Potting Bench",view:null},
    not one of Potting Bench's, so it must not be remembered as the bench tab
    you were last on and must not light up Library in the tab strip. It still
    has to be hidden and shown like any other view — see the list in showNow. */
-const BENCH_VIEWS=["garden","library","mix","plants","plan","cuttings","batch","shelf","log","academy","acadedit","plant","product","sched","formula","stats"];
-const NAV_PARENT={batch:"cuttings", plant:"garden", plants:"library", product:"library",
+const BENCH_VIEWS=["garden","library","mix","plants","plan","careplan","cuttings","batch","shelf","log","academy","acadedit","plant","product","sched","formula","stats"];
+const NAV_PARENT={batch:"cuttings", plant:"garden", plants:"library", product:"library", careplan:"plan",
   sched:"plan", formula:"mix", acadedit:"library", shelf:"library", log:"library", academy:"library"};
 
 /* ============================================================================
@@ -21150,6 +21262,7 @@ function showNow(v){
   if(v==="plan"){ anchor=sod(Date.now()); }
   if(v==="shelf") renderShelf(); if(v==="plants") renderSubjects(); if(v==="academy") renderAcademy();
   if(v==="log") renderLog(); if(v==="plan") renderPlan();
+  if(v==="careplan") renderCareDays();
   if(v==="garden") renderGarden(); if(v==="library") renderLibrary();
   if(v==="cuttings") renderCuttings();     // day counts go stale overnight otherwise
   if(v==="plant"&&pvId) renderPlant();
@@ -21354,22 +21467,23 @@ let anchor=sod(Date.now());          // which day/week/month is in view — rese
 function buildAgenda(until){
   const now=Date.now(), today=sod(now), items=[];
   S.routines.forEach(r=>{
-    const p=subject(r.subjectId), every=+r.every||0;
-    if(!p||every<=0) return;
+    const p=subject(r.subjectId);
+    if(!p) return;
+    /* a routine with days you picked yourself is never paused by a 0 interval */
+    if(!fixedDays(r)&&!(+r.every>0)) return;
     const last=lastEvent(r.id);
-    let due=last?snapToActionDay(+new Date(last.at)+every*DAY,p.anchor,+new Date(last.at))
-                :(actionOn()&&p.anchor!=null?nextDow(p.anchor):now);
+    let due=routineDue(r,p,last,now);
     if(due<today){
       items.push({at:due,p,r,type:r.kind,overdue:true});
       /* forecast as if it gets done today; bounded past today, so the
          recomputed date can never land back on today and duplicate the
          overdue row it sits next to */
-      due=snapToActionDay(today+every*DAY,p.anchor,today);
+      due=routineStep(r,p,today);
     }
     for(let n=0; due<=until && n<200; n++){
       items.push({at:due,p,r,type:r.kind});
       /* the bound guarantees forward motion, so no spin guard is needed */
-      due=snapToActionDay(due+every*DAY,p.anchor,due);
+      due=routineStep(r,p,due);
     }
   });
   cuttingsAll().forEach(c=>{
@@ -21463,6 +21577,47 @@ function nextDow(dow,from){
   for(let d=0;d<7;d++){ const c=start+d*DAY; if(new Date(c).getDay()===dow) return c; }
   return start;
 }
+
+/* ---------------- pinned days ----------------
+   The interval is the horticultural truth and the action-day snap is the
+   household's convenience, but sometimes you simply know: this one gets
+   watered on Mondays and Thursdays, and no arithmetic is going to improve on
+   that. A routine carrying `days` is calendar-driven — it comes due on those
+   weekdays and nothing else moves it, not the interval and not the snap.
+   Clear the days and the interval takes over again, untouched. */
+const fixedDays=r=>{ const d=r&&r.days;
+  return Array.isArray(d)&&d.length?d.slice().sort((a,b)=>a-b):null; };
+/* first of `days` on or after `from`; `strict` pushes past `from` itself, which
+   is what stops a job done on its own pinned day reading as due again today */
+function nextFixedDay(days,from,strict){
+  const start=sod(from);
+  for(let i=strict?1:0;i<=7;i++){ const c=start+i*DAY;
+    if(days.indexOf(new Date(c).getDay())>=0) return c; }
+  return start;
+}
+/* THE answer to "when is this routine next due" — every screen goes through
+   here, so pinned days and intervals can never disagree between two views.
+   `p` only has to carry `anchor`. Returns null for a paused routine. */
+function routineDue(r,p,ev,refTs){
+  const ref=sod(refTs!=null?refTs:Date.now());
+  const days=fixedDays(r);
+  if(days) return ev?nextFixedDay(days,+new Date(ev.at),true):nextFixedDay(days,ref,false);
+  const every=+r.every;
+  if(!(every>0)) return null;
+  const anchor=p?p.anchor:null;
+  return ev?snapToActionDay(+new Date(ev.at)+every*DAY,anchor,+new Date(ev.at))
+           :(actionOn()&&anchor!=null?nextDow(anchor,ref):ref);
+}
+/* the same step forward used by every forecast: one pinned day, or one interval */
+const routineStep=(r,p,from)=>{ const days=fixedDays(r);
+  return days?nextFixedDay(days,from,true)
+             :snapToActionDay(sod(from)+(+r.every)*DAY,p?p.anchor:null,sod(from)); };
+/* "Mon & Thu" for a pinned routine, "" for one still on its interval */
+const pinnedLine=r=>{ const d=fixedDays(r); return d?dowList(d):""; };
+/* the same thing for a row that has to stay on one line — the care rows clip,
+   so three full weekday names would simply disappear off the right-hand edge */
+const pinnedShort=r=>{ const d=fixedDays(r);
+  return d?d.slice().sort(dowOrder).map(x=>dowName(x).slice(0,2)).join(", "):""; };
 /* a new plant joins whichever action day is carrying the least, so the load
    spreads instead of everything piling onto the day that happens to be next */
 function leastLoadedActionDay(){
@@ -22367,15 +22522,73 @@ function snapDescribe(every){
     ? `Padne na nejbližší akční den (${names}) — nejvýš ${Math.ceil(gap/2)} dny vedle.`
     : `Snaps to the nearest action day (${names}) — at most ${Math.ceil(gap/2)} days either side.`;
 }
+/* ---------------- the day picker ----------------
+   One component, used in the plant dialog and in every row of the Care days
+   list. Monday first, because that is how a week is read out loud, and the
+   full weekday name in the button's label so a screen reader never has to
+   guess at "We". Days outside the household's action days stay pickable: this
+   control exists precisely so a plant can be taken out of the scheme. */
+const PICK_ORDER=[1,2,3,4,5,6,0];
+function dayPickHTML(days,attrs){
+  const on=Array.isArray(days)?days:[];
+  const act=actionDays();
+  return PICK_ORDER.map(d=>{
+    const lit=on.indexOf(d)>=0, off=actionOn()&&act.indexOf(d)<0;
+    return `<button type="button" class="${off?"off-scheme":""}" ${attrs||""} data-day="${d}"
+      aria-pressed="${lit}" aria-label="${esc(dowName(d))}"
+      title="${esc(dowName(d))}">${esc(dowName(d).slice(0,L.lang==="cs"?2:2))}</button>`;
+  }).join("");
+}
+/* toggling into an empty list is what pins a routine; toggling the last one
+   back out is what hands it to the interval again. Both directions matter —
+   there is no separate mode switch to get out of step with the days. */
+function toggleDay(list,d){
+  const out=(Array.isArray(list)?list:[]).slice(), i=out.indexOf(d);
+  if(i<0) out.push(d); else out.splice(i,1);
+  return out.sort((a,b)=>a-b);
+}
+
+/* the dialog's pinned days live here while it is open, and are only written
+   onto the routines on save — same as every other field in the form */
+let plPins={water:[],feed:[],spray:[]};
+function renderPlPins(){
+  document.querySelectorAll("#plCareDetail .daypick[data-pinkind]").forEach(el=>{
+    el.innerHTML=dayPickHTML(plPins[el.dataset.pinkind]||[]);
+  });
+  const said=["water","feed","spray"].filter(k=>(plPins[k]||[]).length)
+    .map(k=>`${t(k==="water"?"Water":k==="feed"?"Feed":"Spray")}: ${dowList(plPins[k])}`);
+  $("#plPinHint").textContent=said.length
+    ? (L.lang==="cs"
+        ? `${said.join(" · ")} — interval se u nich nepoužije.`
+        : `${said.join(" · ")} — the interval above is ignored for these.`)
+    : (L.lang==="cs"
+        ? "Nic připnuto — vše běží podle intervalu výše."
+        : "Nothing pinned — everything runs on the intervals above.");
+}
+$("#plCareDetail").addEventListener("click",e=>{
+  const b=e.target.closest(".daypick[data-pinkind] button[data-day]"); if(!b) return;
+  e.preventDefault();
+  const kind=b.parentElement.dataset.pinkind;
+  plPins[kind]=toggleDay(plPins[kind],+b.dataset.day);
+  renderPlPins(); plCareSummary();
+});
+
 /* the one-line version of everything hidden behind Adjust */
 function plCareSummary(){
   const w=$("#plWater").value||"?", f=$("#plFeed").value||"?";
   const li=$("#plLight").value, parts=[];
-  parts.push(L.lang==="cs"?`Zálivka po ${w} dnech`:`Water every ${w} d`);
-  parts.push(L.lang==="cs"?`hnojení po ${f}`:`feed every ${f} d`);
+  /* a pinned job reads out as its days, not as an interval it no longer uses */
+  parts.push(plPins.water.length
+    ? (L.lang==="cs"?`Zálivka: ${dowList(plPins.water)}`:`Water on ${dowList(plPins.water)}`)
+    : (L.lang==="cs"?`Zálivka po ${w} dnech`:`Water every ${w} d`));
+  parts.push(plPins.feed.length
+    ? (L.lang==="cs"?`hnojení: ${dowList(plPins.feed)}`:`feed on ${dowList(plPins.feed)}`)
+    : (L.lang==="cs"?`hnojení po ${f}`:`feed every ${f} d`));
   if(li!==""&&LIGHTS[+li]) parts.push(LIGHTS[+li].toLowerCase());
   $("#plCareSummary").textContent=parts.join(" · ");
-  $("#plSnapHint").textContent=snapDescribe(w);
+  /* the snap only describes what happens to an interval — say nothing about it
+     when the days were picked by hand, because nothing is going to snap */
+  $("#plSnapHint").textContent=plPins.water.length?"":snapDescribe(w);
 }
 /* the pot and substrate selects together decide how much this plant drinks —
    show the actual number rather than making anyone trust the machinery */
@@ -22417,6 +22630,9 @@ function openPlant(p){
   $("#plWater").value=wr?wr.every:3;
   $("#plFeed").value=fr?fr.every:7;
   $("#plSpray").value=spr?spr.every:"";
+  plPins={water:(wr&&wr.days||[]).slice(), feed:(fr&&fr.days||[]).slice(),
+          spray:(spr&&spr.days||[]).slice()};
+  renderPlPins();
   $("#plSched").innerHTML='<option value="">None</option>'+S.schedules.map(x=>
     `<option value="${x.id}"${p&&p.schedId===x.id?" selected":""}>${esc(x.name)}</option>`).join("");
   $("#plWeek").value=p?(p.week||1):1;
@@ -22468,9 +22684,10 @@ $("#plantForm").addEventListener("submit",async e=>{
   const sid=editingPlant?editingPlant.id:uid();
   if(editingPlant) Object.assign(editingPlant,d); else S.subjects.push(Object.assign({id:sid},d));
   const set=(kind,label,every)=>{
+    const days=(plPins[kind]||[]).slice();
     const ex=routineOf(sid,kind);
-    if(ex) ex.every=every;
-    else S.routines.push({id:uid(),subjectId:sid,kind,name:label,every});
+    if(ex){ ex.every=every; ex.days=days; }
+    else S.routines.push({id:uid(),subjectId:sid,kind,name:label,every,days});
   };
   /* 0 is a real answer — "never" — not a typo to round up to weekly. The
      carnivores' own care text says never feed them; the form was quietly
@@ -22479,8 +22696,10 @@ $("#plantForm").addEventListener("submit",async e=>{
     if(v==="") return dflt; const n=+v; return Number.isFinite(n)&&n>=0?n:dflt; };
   set("water","Water",ivOf("#plWater",3));
   set("feed","Feed",ivOf("#plFeed",7));
+  /* pinned days are reason enough to have a spray routine: picking Saturdays
+     for it is a clearer statement of intent than any number in the box */
   const sv=$("#plSpray").value.trim();
-  if(sv) set("spray","Spray",Math.max(1,+sv||1));
+  if(sv||plPins.spray.length) set("spray","Spray",sv?Math.max(1,+sv||1):7);
   else S.routines=S.routines.filter(r=>!(r.subjectId===sid&&r.kind==="spray"));
   if(pendingPhoto){
     S.photos=S.photos||[];
@@ -22954,7 +23173,7 @@ function readImportPlants(file){
       });
       const newProducts=products.map(x=>Object.assign({},x,{id:uid()}));
       const newRoutines=routines.filter(r=>idMap[r.subjectId])
-        .map(r=>Object.assign({},r,{id:uid(),subjectId:idMap[r.subjectId]}));
+        .map(r=>Object.assign({},r,{id:uid(),subjectId:idMap[r.subjectId],days:normDays(r.days)}));
       S.subjects.push(...newSubjects);
       S.products.push(...newProducts);
       S.routines.push(...newRoutines);
@@ -35179,6 +35398,124 @@ Object.assign(CS,{
   "Unbuilt, In progress, Built":"Nepostavené, Rozpracované, Postavené",
   "mm, g, ct…":"mm, g, ct…",
   "Move up":"Nahoru", "Move down":"Dolů"
+});
+
+
+/* ============================================================================
+   CARE DAYS
+   The collection as a timetable rather than a set of intervals. Everything
+   else in the app answers "when is this due" by arithmetic; this screen is
+   where you overrule the arithmetic and say which days the job happens on.
+   One row per routine, because a routine is the thing that actually gets
+   scheduled — a plant may want water on Mondays and feed on the first Sunday
+   you get round to, and those are two different answers.
+   ========================================================================== */
+let cdQuery="";
+
+/* How many jobs really land on each weekday over the coming week — pinned and
+   interval alike, read off the same forecast the Diary draws, so the strip can
+   never claim a quieter week than the calendar shows. Anything overdue counts
+   against today, which is the day you would actually do it. */
+function cdWeekCounts(){
+  const today=sod(Date.now()), n=[0,0,0,0,0,0,0];
+  buildAgenda(today+6*DAY).forEach(it=>{
+    if(!it.r) return;                       // cuttings checks aren't a routine
+    const d=new Date(it.at<today?today:it.at).getDay();
+    n[d]++;
+  });
+  return n;
+}
+
+/* split out so a single toggle can refresh the strip without rebuilding the
+   list underneath it — see the click handler for why that matters */
+function cdRenderWeek(){
+  const n=cdWeekCounts(), most=Math.max(1,...n);
+  const todayDow=new Date().getDay();
+  $("#cdWeek").innerHTML=`<div class="cd-week">${PICK_ORDER.map(d=>`
+    <div class="${d===todayDow?"today":""}">
+      <b>${n[d]}</b>${esc(dowName(d).slice(0,2))}
+      <div class="cd-bar"><i style="width:${Math.round(100*n[d]/most)}%"></i></div>
+    </div>`).join("")}</div>
+    <p class="hint" style="margin:9px 0 0">${esc(L.lang==="cs"
+      ? "Kolik úkonů padne na který den v příštím týdnu."
+      : "Jobs falling on each day over the next seven.")}</p>`;
+}
+
+function renderCareDays(){
+  const all=subjectsIn("plants");
+  cdRenderWeek();
+  if(!all.length){
+    $("#cdList").innerHTML='<p class="empty">No plants yet. Add one and its days show up here.</p>';
+    return;
+  }
+  const list=all.filter(p=>plantMatchesQuery(p,cdQuery));
+  if(!list.length){
+    $("#cdList").innerHTML=`<p class="empty">${L.lang==="cs"
+      ? `Žádná rostlina neodpovídá „${esc(cdQuery)}“.`
+      : `No plants match "${esc(cdQuery)}".`}</p>`;
+    return;
+  }
+  $("#cdList").innerHTML=list.map(p=>{
+    const sub=[p.species&&p.species!==p.name?p.species:null,p.spot||null].filter(Boolean).join(" · ");
+    const rs=careRoutines(p.id);
+    const jobs=rs.length?rs.map(r=>{
+      /* the right-hand note only has to explain the case the picker cannot:
+         no days lit means it is still running on its interval, and a plant on
+         no interval either is genuinely never coming due. */
+      const note=fixedDays(r) ? ""
+        : (+r.every>0 ? (L.lang==="cs"?`po ${+r.every} d`:`every ${+r.every}d`)
+                      : (L.lang==="cs"?"nikdy":"never"));
+      return `<div class="cd-job">
+        <span class="cd-k">${esc(r.name)}</span>
+        <div class="daypick" data-cdr="${r.id}">${dayPickHTML(r.days)}</div>
+        <span class="cd-when">${esc(note)}</span>
+      </div>`;
+    }).join("")
+      :`<p class="hint" style="margin:0">${esc(L.lang==="cs"
+          ? "Tahle rostlina zatím nemá žádný úkon."
+          : "Nothing to schedule for this one yet.")}</p>`;
+    return `<div class="card cd-card">
+      <div class="cd-name"><b>${esc(p.name)}</b>${sub?`<small>${esc(sub)}</small>`:""}</div>
+      ${jobs}</div>`;
+  }).join("");
+}
+
+$("#cdList").addEventListener("click",e=>{
+  const b=e.target.closest(".daypick[data-cdr] button[data-day]"); if(!b) return;
+  const pick=b.parentElement;
+  const r=S.routines.find(x=>x.id===pick.dataset.cdr); if(!r) return;
+  r.days=toggleDay(r.days,+b.dataset.day);
+  touch();
+  /* the touched row is repainted in place rather than through renderCareDays:
+     rebuilding the whole list would swap out the very button under the finger,
+     so a quick Mon-then-Thu would lose its second tap to a detached node. */
+  pick.innerHTML=dayPickHTML(r.days);
+  const note=pick.parentElement.querySelector(".cd-when");
+  if(note) note.textContent=fixedDays(r) ? ""
+    : (+r.every>0 ? (L.lang==="cs"?`po ${+r.every} d`:`every ${+r.every}d`)
+                  : (L.lang==="cs"?"nikdy":"never"));
+  cdRenderWeek();
+  /* every surface that answers "when is this due" has to move together, or the
+     Diary and the garden disagree about a plant you just re-scheduled */
+  renderAgenda(); renderSubjects(); renderGarden(); renderDue();
+});
+$("#cdSearch").addEventListener("input",e=>{
+  cdQuery=e.target.value.trim().toLowerCase(); renderCareDays();
+});
+$("#openCareDays").addEventListener("click",()=>show("careplan"));
+$("#cdBack").addEventListener("click",()=>show("plan"));
+
+
+/* ---- Care days (pinned care days) ---- */
+Object.assign(CS,{
+  "Care days":"Dny péče",
+  "← Diary":"← Deník",
+  "Your week":"Tvůj týden",
+  "Or put it on fixed days":"Nebo ji dej na pevné dny",
+  "No plants yet. Add one and its days show up here.":
+    "Zatím žádné rostliny. Přidej jednu a její dny se objeví tady.",
+  "A job with no days picked keeps running on its interval and lands on the household's action days. Pick days and it stops drifting: it comes due on exactly those days, whatever the interval says. Tap the last lit day again to hand it back to the interval.":
+    "Úkon bez vybraných dnů běží dál podle intervalu a padá na akční dny domácnosti. Vyber dny a přestane se posouvat: bude na řadě přesně v ty dny, ať interval říká cokoli. Klepnutím na poslední svítící den ho vrátíš zpátky intervalu."
 });
 
 </script>
