@@ -3312,15 +3312,21 @@ html[data-palette="frosted"]{
   .sec-head h2::after{ content:""; display:block; width:44px; height:5px; margin-top:8px;
     border-radius:3px; background:linear-gradient(90deg,var(--accent),transparent); }
 
-  /* ---- stat tiles & list rows: blocky frosted plates with mass ---- */
-  [class*="kpi"],[class*="stat"],[class*="tile"]{
+  /* ---- stat tiles & list rows: blocky frosted plates with mass ----
+     The substring match is deliberate — it catches every dashboard plate
+     without listing them — but it is indiscriminate, and Cabinet's photo tile
+     is built from .cb-tile / .cb-tile-img / .cb-tile-txt, three nested
+     elements that all contain "tile". Padding each of them by 18px stacked
+     three sets of insets inside a 114px grid cell and the tile came apart.
+     Cabinet draws its own plates, so the whole cb- namespace opts out. */
+  [class*="kpi"]:not([class*="cb-"]),[class*="stat"]:not([class*="cb-"]),[class*="tile"]:not([class*="cb-"]){
     border-radius:20px; padding:18px 20px;
     border:1.5px solid color-mix(in srgb,var(--glass-border) 70%,#fff);
     background-color:var(--frost-fill);
     background-image:var(--spec); background-size:14px 14px,19px 19px;
     box-shadow:inset 0 1px 0 rgba(255,255,255,.22), inset 0 -2px 0 rgba(0,0,0,.14), 0 8px 18px -10px rgba(0,0,0,.5);
   }
-  [class*="row"],[class*="arow"],[class*="prow"]{
+  [class*="row"]:not([class*="cb-"]),[class*="arow"],[class*="prow"]{
     border-radius:16px;
     border-color:color-mix(in srgb,var(--glass-border) 70%,#fff);
   }
@@ -3493,14 +3499,16 @@ html[data-palette="monolith"]{
   .sec-head h2::before{ content:""; display:inline-block; width:5px; height:1em; margin-right:10px;
     border-radius:1px; background:var(--accent); vertical-align:-.15em; }
 
-  /* ---- stat tiles / rows: matte squared plates ---- */
-  [class*="kpi"],[class*="stat"],[class*="tile"]{
+  /* ---- stat tiles / rows: matte squared plates ----
+     cb- opts out for the reason spelled out on the same rule in redesign-2:
+     Cabinet's tile is three nested elements that all contain "tile". */
+  [class*="kpi"]:not([class*="cb-"]),[class*="stat"]:not([class*="cb-"]),[class*="tile"]:not([class*="cb-"]){
     border-radius:10px; padding:16px 18px;
     border:1px solid var(--line); background:var(--surface-2);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.05), inset 0 -1px 0 rgba(0,0,0,.2), var(--shadow);
     font-variant-numeric:tabular-nums;
   }
-  [class*="row"],[class*="arow"],[class*="prow"]{ border-radius:10px; border-color:var(--line); }
+  [class*="row"]:not([class*="cb-"]),[class*="arow"],[class*="prow"]{ border-radius:10px; border-color:var(--line); }
 
   /* ---- spacing: tighter, more precise ---- */
   .stack{ gap:12px; }
@@ -4841,20 +4849,33 @@ html[data-shell="rail"] body{
            which the strip could only show by highlighting, and the sections
            themselves keep their data-tbscope so the existing handler still
            drives them. -->
-      <div class="tb-nav" id="tbScopeSeg">
-        <button type="button" class="tb-nav-btn" id="tbMenuBtn" aria-expanded="false" aria-controls="tbMenu">
-          <span class="tb-bars" aria-hidden="true"><i></i><i></i><i></i></span>
-          <span id="tbMenuLabel">Students</span>
-          <span class="tb-nav-chev" aria-hidden="true">▾</span>
-        </button>
-        <div class="tb-menu" id="tbMenu" hidden>
-          <button type="button" data-tbscope="students" aria-pressed="true">Students</button>
-          <button type="button" data-tbscope="week" aria-pressed="false">Week</button>
-          <button type="button" data-tbscope="tasks" aria-pressed="false">Tasks</button>
-          <button type="button" data-tbscope="words" aria-pressed="false">Words</button>
-          <button type="button" data-tbscope="search" aria-pressed="false">Search</button>
-          <button type="button" data-tbscope="messages" aria-pressed="false">Messages<span
-            class="tbs-unread-n" id="tbMsgMenuCount" hidden></span></button>
+      <!-- Search sits beside the menu rather than behind it: looking for a
+           word is something you do while already in Words, not a place you
+           travel to. It always searches the section you are in, so the
+           question "where am I searching?" is answered by the button next
+           to it. -->
+      <div class="tb-tools">
+        <div class="tb-search" id="tbSearchBar">
+          <span class="tb-search-ico" aria-hidden="true">⌕</span>
+          <input type="search" id="tbSearchInput" placeholder="Search students…"
+                 aria-label="Search this section" autocomplete="off">
+          <button type="button" class="tb-search-x" id="tbSearchClear" hidden
+                  aria-label="Clear search">×</button>
+        </div>
+        <div class="tb-nav" id="tbScopeSeg">
+          <button type="button" class="tb-nav-btn" id="tbMenuBtn" aria-expanded="false" aria-controls="tbMenu">
+            <span class="tb-bars" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span id="tbMenuLabel">Students</span>
+            <span class="tb-nav-chev" aria-hidden="true">▾</span>
+          </button>
+          <div class="tb-menu" id="tbMenu" hidden>
+            <button type="button" data-tbscope="students" aria-pressed="true">Students</button>
+            <button type="button" data-tbscope="week" aria-pressed="false">Week</button>
+            <button type="button" data-tbscope="tasks" aria-pressed="false">Tasks</button>
+            <button type="button" data-tbscope="words" aria-pressed="false">Words</button>
+            <button type="button" data-tbscope="messages" aria-pressed="false">Messages<span
+              class="tbs-unread-n" id="tbMsgMenuCount" hidden></span></button>
+          </div>
         </div>
       </div>
     </div>
@@ -5068,11 +5089,12 @@ html[data-shell="rail"] body{
       </div>
     </div>
 
-    <!-- ---- Search ---- -->
+    <!-- ---- Search results ----
+         Not a section you navigate to any more. It stands in front of
+         whichever section is open, for as long as there is something typed
+         in the box, and shows only that section's matches. -->
     <div class="stack pstack" id="tbScopeSearch" hidden>
-      <div class="card pad">
-        <input type="text" id="tbSearchInput" class="mono-input" placeholder="Search students, words, lessons, tasks…" style="width:100%">
-      </div>
+      <p class="pday-sub" id="tbSearchWhere" style="margin:0"></p>
       <div id="tbSearchResults" class="stack" style="gap:14px"></div>
     </div>
 
@@ -6028,13 +6050,19 @@ html[data-shell="rail"] body{
   <!-- ============ CABINET ============ -->
   <section class="view" id="view-cabinet" hidden>
     <div class="sec-head">
-      <h2>Cabinet</h2>
+      <h2 id="cbTitle">Cabinet</h2>
+      <button class="btn mini" type="button" id="cbToIndex" hidden>← Collections</button>
       <div class="cb-head-acts">
         <button class="btn mini" type="button" id="cbCollBtn">Collection ▾</button>
         <button class="btn mini" type="button" id="cbExportBtn">Export ▾</button>
         <button class="btn primary mini" type="button" id="cbNewBtn">+ Add item</button>
+        <button class="btn primary mini" type="button" id="cbAddColl" hidden>+ Add category</button>
       </div>
     </div>
+
+    <!-- the index: one row per collection, because no two collections track
+         the same things and the list has to say what each one tracks -->
+    <div id="cbIndex" hidden></div>
 
     <div class="card pad">
       <div class="cb-shelf" id="cbShelf" role="tablist" aria-label="Collections"></div>
@@ -6477,6 +6505,36 @@ html[data-shell="rail"] body{
 #tbdictRes .who{font-family:var(--font);font-variant-numeric:tabular-nums;font-size:9px;
   color:var(--ink-3);border:1px solid var(--line);padding:1px 6px;border-radius:99px}
 .tbdict-kbd{font-size:11px}
+/* A result is now a small stacked card rather than a single line, so the row
+   stops centring its children and hangs them from the top instead. */
+#tbdictRes .dict-row{align-items:flex-start;gap:9px}
+#tbdictRes .dict-main{flex:1 1 auto;min-width:0}
+#tbdictRes .dict-head{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap}
+#tbdictRes .dict-head b{font-size:14.5px}
+#tbdictRes .dict-cs{color:var(--ink-2)}
+/* the part of speech: a quiet pill, because its whole job is to separate the
+   two "answer"s and then get out of the way */
+#tbdictRes .dict-pos{font-style:normal;font-size:9.5px;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--ink-3);border:1px solid var(--line);
+  border-radius:99px;padding:1px 6px;flex:none}
+#tbdictRes .dict-def{margin:3px 0 0;font-size:12.5px;line-height:1.45;color:var(--ink-2)}
+/* the level: the same quiet pill as the part of speech, but tinted, because
+   "is this an A1 word or a B1 word" is a question a teacher scans for rather
+   than reads */
+#tbdictRes .dict-cefr{font-style:normal;font-size:9.5px;letter-spacing:.05em;
+  border-radius:99px;padding:1px 6px;flex:none;font-weight:500;
+  border:1px solid currentColor;opacity:.85}
+#tbdictRes .lv-A1{color:var(--ok,#3f9a6a)}
+#tbdictRes .lv-A2{color:var(--accent)}
+#tbdictRes .lv-B1{color:var(--warn,#b7802f)}
+#tbdictRes .lv-B2{color:var(--danger,#b4534b)}
+/* the example sentence, set apart by a rule rather than by quotation marks —
+   it is the one line here that is language rather than description */
+#tbdictRes .dict-ex{margin:5px 0 0;padding-left:8px;border-left:2px solid var(--line);
+  font-size:12.5px;line-height:1.45;color:var(--ink-2);font-style:italic}
+#tbdictRes .dict-syn{margin:3px 0 0;font-size:11.5px;color:var(--ink-3)}
+#tbdictRes .dict-syn em{font-style:normal;text-transform:uppercase;letter-spacing:.05em;
+  font-size:9.5px;margin-right:6px;opacity:.75}
 </style>
 
 <style id="tbs-chat">
@@ -6834,6 +6892,59 @@ html[data-shell="rail"] body{
 .cb-kv[hidden], .cb-lb-bar[hidden], .cb-it-head[hidden], .cb-shot[hidden],
 .cb-search[hidden], .cb-head-acts[hidden], .cb-menu[hidden],
 .cb-thumb[hidden], .cb-search-x[hidden]{display:none}
+
+/* ---- the index: one row per collection ----
+   The shelf chips are a switcher, not a home. They say what a collection is
+   called and how many things are in it, and nothing about what it TRACKS —
+   which is the one fact that differs between a shelf of paintings and a shelf
+   of coins, and the reason a collection is worth making rather than tagging.
+   So Cabinet opens on a list that says it out loud. */
+.cb-index{display:flex; flex-direction:column; gap:9px}
+.cb-cl{display:flex; align-items:stretch; gap:8px}
+.cb-cl-go{flex:1 1 auto; min-width:0; display:flex; align-items:center; gap:13px; text-align:left;
+  appearance:none; cursor:pointer; font:inherit; color:inherit; padding:13px 15px;
+  border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface);
+  transition:border-color .16s, background .16s}
+.cb-cl-go:hover{border-color:var(--accent); background:var(--surface-2)}
+.cb-cl-go:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.cb-cl-ini{flex:0 0 auto; width:42px; height:42px; border-radius:var(--r-xs); display:grid;
+  place-items:center; background:var(--sunk); color:var(--ink-3);
+  font-family:var(--font); font-size:19px; font-weight:700}
+.cb-cl-txt{flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:2px}
+.cb-cl-n{font-size:15px; font-weight:700; color:var(--ink-strong); overflow:hidden;
+  text-overflow:ellipsis; white-space:nowrap}
+.cb-cl-m{font-size:12.5px; color:var(--ink-2); font-variant-numeric:tabular-nums}
+/* what it tracks, one quiet line — clipped rather than wrapped, because the
+   point is the flavour of the list, not every word of it */
+.cb-cl-f{font-size:11.5px; color:var(--ink-3); overflow:hidden; text-overflow:ellipsis;
+  white-space:nowrap}
+.cb-cl-ed{flex:0 0 auto; align-self:center}
+.cb-cl-all .cb-cl-ini{background:none; border:1px dashed var(--line)}
+
+/* ---- the parameter editor, inside the collection dialog ----
+   Label, kind, and one box whose meaning follows the kind: an example for
+   text, the choices for a list, the unit for a number. Three inputs is the
+   most that can be asked for without a second dialog. */
+.cb-pf{display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) minmax(0,1fr) auto auto auto;
+  gap:6px; align-items:center; margin-bottom:7px}
+.cb-pf input, .cb-pf select{min-width:0}
+.cb-pf-b{flex:0 0 auto; appearance:none; cursor:pointer; font:inherit; font-size:13px;
+  width:30px; min-height:34px; padding:0; border-radius:var(--r-xs);
+  border:1px solid var(--line); background:var(--surface-2); color:var(--ink-2)}
+.cb-pf-b:hover:not(:disabled){border-color:var(--accent); color:var(--accent)}
+.cb-pf-b:disabled{opacity:.35; cursor:default}
+.cb-pf-b.danger:hover{border-color:var(--crit); color:var(--crit)}
+.cb-pf-acts{display:flex; gap:8px; flex-wrap:wrap; margin-top:2px}
+@media (max-width:560px){
+  .cb-pf{grid-template-columns:1fr 1fr 1fr; gap:5px}
+  .cb-pf-b{grid-column:span 1; width:auto}
+}
+
+/* a count inside a chip: the space around <small> in the markup is a flex
+   gap, and flex containers drop whitespace between items — so "Owned3" */
+.cb-filters .chip small{margin-left:5px; opacity:.7; font-variant-numeric:tabular-nums}
+
+.cb-index[hidden], .cb-cl[hidden], .cb-pf[hidden], .cb-pf-acts[hidden]{display:none}
 </style>
 <div id="tbdict" hidden>
   <div class="card pad bx">
@@ -6939,6 +7050,19 @@ html[data-shell="rail"] body{
         <input id="cbcMakerLbl" maxlength="40" placeholder="Artist"></div>
       <div class="field"><label for="cbcCur">Currency</label>
         <input id="cbcCur" maxlength="6" placeholder="Kč"></div>
+    </div>
+
+    <!-- what this collection tracks. The template above only fills this in;
+         from here it is the collection's own list. -->
+    <div class="field">
+      <label>What you track</label>
+      <p class="hint" style="margin:0 0 9px">Every collection measures different
+        things. These become the fields on each item, and the columns in the export.</p>
+      <div id="cbcFieldRows"></div>
+      <div class="cb-pf-acts">
+        <button class="btn mini" type="button" id="cbcFieldAdd">+ Add a parameter</button>
+        <button class="btn mini" type="button" id="cbcFieldTpl" hidden></button>
+      </div>
     </div>
     <p class="pwarn" id="cbcWarn" hidden></p>
   </div>
@@ -19560,12 +19684,17 @@ let tbEditId=null;
 let tbCalWeekOffset=0;
 let tbOccContext=null;
 let tbScope="students";
-const TB_SCOPES=["students","week","tasks","words","search","messages"];
+const TB_SCOPES=["students","week","tasks","words","messages"];
 let tbDetailStudentId=null;
 
 function tbSetScope(scope){
   tbScope=scope;
   $("#tbScopeSeg").hidden=false;
+  $("#tbSearchBar").hidden=false;
+  /* A term typed in Words means nothing in Tasks, and carrying it across
+     would land her in a section already filtered by something she was
+     looking for a moment ago. Each section starts unfiltered. */
+  tbSearchReset();
   $("#tbScopeDetail").hidden=true;
   document.querySelectorAll("#tbScopeSeg [data-tbscope]").forEach(b=>
     b.setAttribute("aria-pressed", String(b.dataset.tbscope===scope)));
@@ -19576,16 +19705,21 @@ function tbSetScope(scope){
   if(lbl&&cur) lbl.textContent=cur.textContent;
   tbMenuOpen(false);
   TB_SCOPES.forEach(s=>{ $("#tbScope"+s[0].toUpperCase()+s.slice(1)).hidden = s!==scope; });
+  tbSearchPlaceholder();
   if(scope==="students") renderTeachbench();
   if(scope==="week") tbRenderWeek();
   if(scope==="tasks") tbRenderTasks();
   if(scope==="words" && window.tbRenderWords) tbRenderWords();
-  if(scope==="search" && window.tbRenderSearch) tbRenderSearch();
   if(scope==="messages") tbMsgOpen();
 }
 function tbOpenStudentDetail(id){
   tbDetailStudentId=id;
   $("#tbScopeSeg").hidden=true;
+  /* One student's page is not a section to search inside, and a box left
+     on screen there would be searching the section behind it. */
+  $("#tbSearchBar").hidden=true;
+  tbSearchReset();
+  $("#tbScopeSearch").hidden=true;
   TB_SCOPES.forEach(s=>{ $("#tbScope"+s[0].toUpperCase()+s.slice(1)).hidden=true; });
   $("#tbScopeDetail").hidden=false;
   tbRenderStudentDetail();
@@ -20731,22 +20865,107 @@ function tbRenderStudentDetail(){
 }
 
 /* ============================================================================
-   Teachbench — Search */
+   Teachbench — Search
 
-function tbSearchGroup(title, rows){
-  if(!rows.length) return "";
-  return `<div><div class="field-label" style="margin-bottom:6px">${esc(title)} · ${rows.length}</div>
-    <div class="stack" style="gap:4px">${rows.join("")}</div></div>`;
+   Searching used to be a sixth section: you left whatever you were doing,
+   typed, and got students, words, lessons and tasks back in one pile. It
+   is now a box that lives beside the section menu and only ever looks
+   inside the section that menu names — in Words it finds words, in
+   Messages it finds conversations. The results stand in front of the
+   section for as long as something is typed, and the section comes back
+   untouched the moment the box is empty. */
+
+const TB_SEARCH={
+  students:{ placeholder:"Search students…", where:"Students" },
+  week:    { placeholder:"Search lessons…",  where:"Lessons"  },
+  tasks:   { placeholder:"Search tasks…",    where:"Tasks"    },
+  words:   { placeholder:"Search words…",    where:"Words"    },
+  messages:{ placeholder:"Search messages…", where:"Messages" }
+};
+const tbSearchSpec = () => TB_SEARCH[tbScope] || TB_SEARCH.students;
+
+/* The placeholder is half the answer to "where am I searching?", so it has
+   to follow the section. Resetting __ph hands the translator the new
+   English source instead of the one it cached the first time round. */
+function tbSearchPlaceholder(){
+  const inp=$("#tbSearchInput"); if(!inp) return;
+  const en=tbSearchSpec().placeholder;
+  inp.__ph=en;
+  inp.setAttribute("placeholder", L.lang==="cs" ? t(en) : en);
 }
 
-function tbRenderSearch(){
-  const q=($("#tbSearchInput").value||"").trim().toLowerCase();
-  const host=$("#tbSearchResults");
-  if(q.length<2){ host.innerHTML=`<p class="pday-sub">Type at least two letters.</p>`; return; }
+function tbSearchReset(){
+  const inp=$("#tbSearchInput"); if(inp) inp.value="";
+  const x=$("#tbSearchClear"); if(x) x.hidden=true;
+  const panel=$("#tbScopeSearch"); if(panel) panel.hidden=true;
+}
 
+/* Called on every keystroke and after every section change. It decides
+   which of the two — the section or its results — is on screen. */
+function tbApplySearch(){
+  const inp=$("#tbSearchInput"), panel=$("#tbScopeSearch");
+  if(!inp||!panel) return;
+  const raw=(inp.value||"").trim();
+  const x=$("#tbSearchClear"); if(x) x.hidden=!raw;
+  const own=$("#tbScope"+tbScope[0].toUpperCase()+tbScope.slice(1));
+  if(!own || !$("#tbScopeDetail").hidden){ panel.hidden=true; return; }
+  const on=raw.length>=2;
+  panel.hidden=!on;
+  own.hidden=on;
+  if(on) tbRenderSearch(raw);
+}
+
+function tbSearchSay(text){
+  const line=$("#tbSearchWhere");
+  if(line){ line.textContent=text; line.hidden=!text; }
+}
+
+function tbRenderSearch(raw){
+  const inp=$("#tbSearchInput");
+  const typed=raw!=null ? String(raw) : ((inp&&inp.value)||"").trim();
+  const q=typed.toLowerCase();
+  const host=$("#tbSearchResults");
+  if(!host) return;
+  const cs=L.lang==="cs";
+  const where=tbSearchSpec().where;
+
+  const rows = tbScope==="messages" ? tbSearchMessages(q) : tbSearchLocal(q);
+
+  /* null, not an empty list: Messages has nothing to search until she has
+     connected, and "no matches" would be a lie about an empty inbox. */
+  if(rows===null){
+    tbSearchSay("");
+    host.innerHTML = `<p class="pday-sub">Connect to the portal in Messages first.</p>`;
+    return;
+  }
+
+  host.innerHTML = rows.length
+    ? `<div class="stack" style="gap:4px">${rows.join("")}</div>`
+    : "";
+  tbSearchSay(rows.length
+    ? `${cs?t(where):where} · ${rows.length}`
+    : (cs ? `V sekci ${t(where)} nic neodpovídá „${typed}“.`
+          : `Nothing in ${where} matches "${typed}".`));
+}
+
+/* Conversations, not individual messages: a thread is the thing she opens.
+   A student matches on their own name or on anything said either way. */
+function tbSearchMessages(q){
+  const all = window.tbMsgSearch ? window.tbMsgSearch(q) : null;
+  if(!all) return null;
+  return all.map(r=>`
+    <button type="button" class="tb-inbox-row" data-tb-search-msg="${esc(r.id)}">
+      <span class="grow"><b data-no-i18n>${esc(r.name)}</b><small data-no-i18n>${esc(r.preview)}</small></span>
+      ${r.unread ? `<span class="tbs-unread-n">${r.unread}</span>` : ""}
+    </button>`);
+}
+
+/* Everything else lives in the one local store, so the section only picks
+   which list of it is worth looking through. */
+function tbSearchLocal(q){
   const data=TB.loadData();
 
-  const students=data.students.filter(s=>
+  if(tbScope==="students") return data.students.filter(s=>
     s.name.toLowerCase().includes(q) || (s.notes||"").toLowerCase().includes(q) || tbLevelLabel(s.level).toLowerCase().includes(q)
   ).sort((a,b)=>a.name.localeCompare(b.name)).map(s=>`
     <button type="button" class="row" data-tb-search-student="${s.id}">
@@ -20760,14 +20979,18 @@ function tbRenderSearch(){
     const names=data.studentWords.filter(sw=>sw.wordId===w.id).map(sw=>{ const s=data.students.find(x=>x.id===sw.studentId); return s?s.name:null; }).filter(Boolean);
     return names.length ? names.join(", ") : "In the bank, unassigned";
   };
-  const words=data.words.filter(w=>
+  if(tbScope==="words") return data.words.filter(w=>
     w.term.toLowerCase().includes(q) || (w.definition||"").toLowerCase().includes(q) || (w.example||"").toLowerCase().includes(q)
   ).sort((a,b)=>a.term.localeCompare(b.term)).map(w=>`
     <div class="row" style="cursor:default"><span class="row-main"><span class="row-title" data-no-i18n>${esc(w.term)}</span>
       <span class="row-sub">${esc(byOwner(w))}</span></span></div>`);
 
-  const lessons=data.lessons.filter(l=>
+  /* Whose lesson it was counts as part of the lesson: in Week she is as
+     likely to be looking for "Martin" as for something in the plan. */
+  const lessonWho=l=>{ const s=data.students.find(x=>x.id===l.studentId); return s?s.name:""; };
+  if(tbScope==="week") return data.lessons.filter(l=>
     (l.plan||"").toLowerCase().includes(q) || (l.notes||"").toLowerCase().includes(q)
+    || lessonWho(l).toLowerCase().includes(q)
   ).sort((a,b)=>(b.date||"").localeCompare(a.date||"")).map(l=>{
     const s=data.students.find(x=>x.id===l.studentId);
     const firstLine=(l.plan||"").split("\n")[0]||"No plan";
@@ -20778,23 +21001,39 @@ function tbRenderSearch(){
     </button>`;
   });
 
-  const materials=data.materials.filter(m=>
+  if(tbScope==="tasks") return data.materials.filter(m=>
     m.title.toLowerCase().includes(q) || (m.body||"").toLowerCase().includes(q) || (m.note||"").toLowerCase().includes(q) || (m.topic||"").toLowerCase().includes(q)
   ).sort((a,b)=>a.title.localeCompare(b.title)).map(m=>`
     <div class="row" style="cursor:default"><span class="row-main"><span class="row-title">${esc(m.title)}</span>
       <span class="row-sub">${esc(tbMatTypeLabel(m.type))} · ${esc(tbMatSkillLabel(m.category))}</span></span></div>`);
 
-  const blocks=[tbSearchGroup("Students",students), tbSearchGroup("Words",words), tbSearchGroup("Lessons",lessons), tbSearchGroup("Tasks",materials)].filter(Boolean).join("");
-  host.innerHTML = blocks || `<p class="pday-sub">${L.lang==="cs"
-    ? `Nic neodpovídá „${esc($("#tbSearchInput").value.trim())}“.`
-    : `Nothing matches "${esc($("#tbSearchInput").value.trim())}".`}</p>`;
+  return [];
 }
-$("#tbSearchInput").addEventListener("input", tbRenderSearch);
+$("#tbSearchInput").addEventListener("input", tbApplySearch);
+/* Escape empties the box rather than only blurring it — the section you
+   were reading is one key away again. */
+$("#tbSearchInput").addEventListener("keydown", e=>{
+  if(e.key!=="Escape") return;
+  e.stopPropagation();                  // the section menu also listens for Escape
+  tbSearchReset(); tbApplySearch();
+});
+$("#tbSearchClear").addEventListener("click",()=>{
+  tbSearchReset(); tbApplySearch();
+  const inp=$("#tbSearchInput"); if(inp) inp.focus();
+});
 document.addEventListener("click",e=>{
   const s=e.target.closest("[data-tb-search-student]");
   if(s){ tbOpenStudentDetail(s.dataset.tbSearchStudent); return; }
   const l=e.target.closest("[data-tb-search-lesson]");
-  if(l){ tbOpenLessonDialog(l.dataset.tbSearchLesson, null); }
+  if(l){ tbOpenLessonDialog(l.dataset.tbSearchLesson, null); return; }
+  /* Opening a conversation is leaving the results, so the box empties and
+     Messages comes back with that thread on screen. */
+  const m=e.target.closest("[data-tb-search-msg]");
+  if(m && window.tbMsgOpenThread){
+    const id=m.dataset.tbSearchMsg;
+    tbSearchReset(); tbApplySearch();
+    window.tbMsgOpenThread(id);
+  }
 });
 
 function renderAppMenu(){
@@ -31987,110 +32226,394 @@ tbRenderDetailLessons = function(host, data, studentId){
    it is reachable from every part of the app. Custom teacher pairs are merged
    separately (they ride the existing word bank / flashcards); this module only
    supplies the shared reference list and the search.
+
+   An entry carries five fields rather than the bare [en,cs] pair it started
+   as, because a translation on its own is the least useful thing a dictionary
+   can give a learner:
+
+     en   the English headword.
+     cs   the Czech translation.
+     pos  part of speech. This is the only thing separating the entries that
+          share a headword — "answer" the verb from "answer" the noun, "work"
+          the verb from "work" the noun, "open" the verb from "open" the
+          adjective. Before it existed those looked like duplicate rows.
+     def  a one-line definition in plain English, pitched at the learner and
+          not at a lexicographer, so it can be read aloud in a lesson without
+          needing a second dictionary to decode it.
+     syn  English synonyms: the near-misses a student meets in reading, and
+          the words a teacher reaches for when the first explanation doesn't
+          land. Empty where a word honestly has none — the numbers, "week".
+     cefr the level the word belongs to — A1, A2, B1 or B2. A definition
+          tells you what a word means; the level tells you whether to teach
+          it today, which is the question a teacher planning a lesson is
+          actually asking.
+     ex   one short sentence using the word naturally. This is the field a
+          learner reads first: a gloss explains a word, a sentence shows how
+          it behaves — which preposition follows it, where it sits, what it
+          collocates with. Where a headword has two senses, its example is
+          written to pin down that sense and no other.
+
+   Keep the shape. Everything below — the search index, the ranking, the
+   overlay's row — reads these five fields by name, so adding a word means
+   adding one line here and nothing else.
    ============================================================================ */
 const CZDICT=[
-["and","a"],["or","nebo"],["but","ale"],["yes","ano"],["no","ne"],
-["please","prosím"],["thank you","děkuji"],["sorry","promiň"],
-["hello","ahoj"],["goodbye","na shledanou"],["good morning","dobré ráno"],
-["good night","dobrou noc"],["today","dnes"],["tomorrow","zítra"],
-["yesterday","včera"],["now","teď"],["later","později"],["again","znovu"],
-["always","vždy"],["never","nikdy"],["often","často"],["sometimes","někdy"],
-["here","tady"],["there","tam"],["where","kde"],["when","kdy"],["why","proč"],
-["because","protože"],["what","co"],["who","kdo"],["how","jak"],["which","který"],
-["be","být"],["have","mít"],["do","dělat"],["make","udělat"],["go","jít"],
-["come","přijít"],["eat","jíst"],["drink","pít"],["sleep","spát"],
-["run","běhat"],["speak","mluvit"],["say","říct"],["tell","povědět"],
-["read","číst"],["write","psát"],["listen","poslouchat"],["hear","slyšet"],
-["see","vidět"],["watch","dívat se"],["think","myslet"],["know","vědět"],
-["understand","rozumět"],["learn","učit se"],["teach","učit"],["study","studovat"],
-["remember","pamatovat si"],["forget","zapomenout"],["help","pomáhat"],
-["work","pracovat"],["play","hrát si"],["buy","kupovat"],["sell","prodávat"],
-["open","otevřít"],["close","zavřít"],["start","začít"],["stop","zastavit"],
-["wait","čekat"],["find","najít"],["lose","ztratit"],["give","dát"],
-["take","vzít"],["bring","přinést"],["put","položit"],["ask","ptát se"],
-["answer","odpovědět"],["need","potřebovat"],["want","chtít"],["like","mít rád"],
-["love","milovat"],["live","žít"],["visit","navštívit"],["travel","cestovat"],
-["fly","létat"],["swim","plavat"],["sing","zpívat"],["dance","tančit"],
-["feel","cítit"],["try","zkusit"],["win","vyhrát"],["count","počítat"],
-["call","zavolat"],["show","ukázat"],["send","poslat"],["get","dostat"],
-["use","používat"],["leave","odejít"],["turn","otočit"],["walk","jít pěšky"],
-["house","dům"],["home","domov"],["family","rodina"],["mother","matka"],
-["father","otec"],["brother","bratr"],["sister","sestra"],["friend","přítel"],
-["school","škola"],["teacher","učitel"],["student","student"],["pupil","žák"],
-["lesson","hodina"],["book","kniha"],["pen","pero"],["pencil","tužka"],
-["paper","papír"],["word","slovo"],["sentence","věta"],["language","jazyk"],
-["question","otázka"],["answer","odpověď"],["time","čas"],["day","den"],
-["night","noc"],["week","týden"],["month","měsíc"],["year","rok"],
-["morning","ráno"],["evening","večer"],["hour","hodina"],["minute","minuta"],
-["water","voda"],["food","jídlo"],["bread","chléb"],["milk","mléko"],
-["tea","čaj"],["coffee","káva"],["fruit","ovoce"],["vegetable","zelenina"],
-["apple","jablko"],["meat","maso"],["soup","polévka"],["egg","vejce"],
-["garden","zahrada"],["plant","rostlina"],["flower","květina"],["tree","strom"],
-["leaf","list"],["soil","půda"],["seed","semeno"],["animal","zvíře"],
-["dog","pes"],["cat","kočka"],["bird","pták"],["fish","ryba"],["horse","kůň"],
-["city","město"],["village","vesnice"],["street","ulice"],["car","auto"],
-["train","vlak"],["bus","autobus"],["weather","počasí"],["rain","déšť"],
-["snow","sníh"],["sun","slunce"],["moon","měsíc"],["sky","nebe"],
-["wind","vítr"],["fire","oheň"],["earth","země"],["sea","moře"],
-["good","dobrý"],["bad","špatný"],["big","velký"],["small","malý"],
-["long","dlouhý"],["short","krátký"],["hot","horký"],["cold","studený"],
-["new","nový"],["old","starý"],["young","mladý"],["fast","rychlý"],
-["slow","pomalý"],["easy","snadný"],["hard","těžký"],["happy","šťastný"],
-["sad","smutný"],["beautiful","krásný"],["ugly","ošklivý"],["tall","vysoký"],
-["high","vysoký"],["low","nízký"],["right","správný"],["wrong","špatný"],
-["true","pravdivý"],["important","důležitý"],["interesting","zajímavý"],
-["nice","milý"],["sweet","sladký"],["sour","kyselý"],["clean","čistý"],
-["dirty","špinavý"],["full","plný"],["empty","prázdný"],["open","otevřený"],
-["closed","zavřený"],["light","světlý"],["dark","tmavý"],["expensive","drahý"],
-["cheap","levný"],["one","jeden"],["two","dva"],["three","tři"],["four","čtyři"],
-["five","pět"],["six","šest"],["seven","sedm"],["eight","osm"],["nine","devět"],
-["ten","deset"],["first","první"],["last","poslední"],["next","příští"],
-["more","více"],["less","méně"],["many","mnoho"],["much","hodně"],
-["little","málo"],["some","nějaký"],["all","všichni"],["other","jiný"],
-["same","stejný"],["different","jiný"],["every","každý"],["each","každý"],
-["red","červený"],["blue","modrý"],["green","zelený"],["yellow","žlutý"],
-["black","černý"],["white","bílý"],["brown","hnědý"],["pink","růžový"],
-["man","muž"],["woman","žena"],["boy","chlapec"],["girl","dívka"],
-["child","dítě"],["name","jméno"],["person","člověk"],["people","lidé"],
-["head","hlava"],["eye","oko"],["ear","ucho"],["hand","ruka"],["leg","noha"],
-["foot","noha"],["heart","srdce"],["body","tělo"],["face","obličej"],
-["money","peníze"],["price","cena"],["shop","obchod"],["market","trh"],
-["work","práce"],["job","práce"],["problem","problém"],["idea","nápad"],
-["story","příběh"],["news","zprávy"],["music","hudba"],["song","píseň"],
-["game","hra"],["picture","obrázek"],["photo","fotografie"],["phone","telefon"],
-["computer","počítač"],["thing","věc"],["place","místo"],["way","cesta"],
-["world","svět"],["country","země"],["state","stát"],["number","číslo"],
-["letter","dopis"],["colour","barva"],["summer","léto"],["winter","zima"],
-["spring","jaro"],["autumn","podzim"]
+{en:"and",cs:"a",pos:"conj",cefr:"A1",def:"joins two words or ideas together",ex:"I bought bread and milk.",syn:["plus","as well as"]},
+{en:"or",cs:"nebo",pos:"conj",cefr:"A1",def:"introduces a second choice",ex:"Would you like tea or coffee?",syn:["alternatively"]},
+{en:"but",cs:"ale",pos:"conj",cefr:"A1",def:"introduces something surprising or opposite",ex:"I am tired, but I am happy.",syn:["however","though","yet"]},
+{en:"yes",cs:"ano",pos:"adv",cefr:"A1",def:"the word you say to agree",ex:"Yes, that is my bag.",syn:["yeah","certainly"]},
+{en:"no",cs:"ne",pos:"adv",cefr:"A1",def:"the word you say to refuse or disagree",ex:"No, I do not agree.",syn:["nope","not at all"]},
+{en:"please",cs:"prosím",pos:"adv",cefr:"A1",def:"a polite word added to a request",ex:"Two tickets, please.",syn:["kindly"]},
+{en:"thank you",cs:"děkuji",pos:"phrase",cefr:"A1",def:"what you say when someone helps you",ex:"Thank you for your help.",syn:["thanks","cheers"]},
+{en:"sorry",cs:"promiň",pos:"adj",cefr:"A1",def:"what you say when you have done something wrong",ex:"Sorry, I am late.",syn:["apologies","excuse me"]},
+{en:"hello",cs:"ahoj",pos:"interj",cefr:"A1",def:"a greeting when you meet someone",ex:"Hello, how are you?",syn:["hi","hey"]},
+{en:"goodbye",cs:"na shledanou",pos:"interj",cefr:"A1",def:"what you say when you leave",ex:"She waved goodbye at the door.",syn:["bye","see you"]},
+{en:"good morning",cs:"dobré ráno",pos:"phrase",cefr:"A1",def:"a greeting used early in the day",ex:"Good morning, did you sleep well?",syn:["morning"]},
+{en:"good night",cs:"dobrou noc",pos:"phrase",cefr:"A1",def:"what you say before going to bed",ex:"Good night, see you tomorrow.",syn:["night","sleep well"]},
+{en:"today",cs:"dnes",pos:"adv",cefr:"A1",def:"on this day",ex:"We have a lesson today.",syn:["this day"]},
+{en:"tomorrow",cs:"zítra",pos:"adv",cefr:"A1",def:"on the day after today",ex:"I will call you tomorrow.",syn:["the next day"]},
+{en:"yesterday",cs:"včera",pos:"adv",cefr:"A1",def:"on the day before today",ex:"It rained all day yesterday.",syn:["the day before"]},
+{en:"now",cs:"teď",pos:"adv",cefr:"A1",def:"at this moment",ex:"I am busy now, sorry.",syn:["right now","currently","at present"]},
+{en:"later",cs:"později",pos:"adv",cefr:"A1",def:"at some time after now",ex:"Let us talk about it later.",syn:["afterwards","in a while"]},
+{en:"again",cs:"znovu",pos:"adv",cefr:"A1",def:"one more time",ex:"Could you say that again?",syn:["once more","anew"]},
+{en:"always",cs:"vždy",pos:"adv",cefr:"A1",def:"every time, without exception",ex:"She is always on time.",syn:["forever","constantly"]},
+{en:"never",cs:"nikdy",pos:"adv",cefr:"A1",def:"at no time at all",ex:"I have never been to Prague.",syn:["not once","not ever"]},
+{en:"often",cs:"často",pos:"adv",cefr:"A1",def:"many times, again and again",ex:"We often walk in the park.",syn:["frequently","regularly"]},
+{en:"sometimes",cs:"někdy",pos:"adv",cefr:"A1",def:"on some occasions but not all",ex:"Sometimes I cook, sometimes he does.",syn:["occasionally","now and then"]},
+{en:"here",cs:"tady",pos:"adv",cefr:"A1",def:"in this place",ex:"Please sit here, next to me.",syn:["in this spot","nearby"]},
+{en:"there",cs:"tam",pos:"adv",cefr:"A1",def:"in that place, away from you",ex:"Put the box over there.",syn:["over there","yonder"]},
+{en:"where",cs:"kde",pos:"adv",cefr:"A1",def:"asks about a place",ex:"Where do you live?",syn:["in what place"]},
+{en:"when",cs:"kdy",pos:"adv",cefr:"A1",def:"asks about a time",ex:"When does the film start?",syn:["at what time"]},
+{en:"why",cs:"proč",pos:"adv",cefr:"A1",def:"asks about a reason",ex:"Why are you laughing?",syn:["for what reason","how come"]},
+{en:"because",cs:"protože",pos:"conj",cefr:"A1",def:"gives the reason for something",ex:"I stayed home because I was ill.",syn:["since","as","due to"]},
+{en:"what",cs:"co",pos:"pron",cefr:"A1",def:"asks about a thing",ex:"What is your name?",syn:["which thing"]},
+{en:"who",cs:"kdo",pos:"pron",cefr:"A1",def:"asks about a person",ex:"Who is at the door?",syn:["which person"]},
+{en:"how",cs:"jak",pos:"adv",cefr:"A1",def:"asks about a way of doing something",ex:"How do you make this soup?",syn:["in what way","by what means"]},
+{en:"which",cs:"který",pos:"det",cefr:"A2",def:"asks you to choose from a limited set",ex:"Which bus goes to the station?",syn:["what","whichever"]},
+{en:"be",cs:"být",pos:"verb",cefr:"A1",def:"to exist, or to have a quality",ex:"She wants to be a teacher.",syn:["exist","live"]},
+{en:"have",cs:"mít",pos:"verb",cefr:"A1",def:"to own or hold something",ex:"Do you have a pen?",syn:["own","possess","hold"]},
+{en:"do",cs:"dělat",pos:"verb",cefr:"A1",def:"to carry out an action",ex:"What do you do at weekends?",syn:["perform","carry out"]},
+{en:"make",cs:"udělat",pos:"verb",cefr:"A1",def:"to create or produce something",ex:"I will make a cup of tea.",syn:["create","build","produce"]},
+{en:"go",cs:"jít",pos:"verb",cefr:"A1",def:"to move from one place to another",ex:"We go to school by bus.",syn:["move","travel","head"]},
+{en:"come",cs:"přijít",pos:"verb",cefr:"A1",def:"to move towards the speaker",ex:"Come here for a moment.",syn:["arrive","approach"]},
+{en:"eat",cs:"jíst",pos:"verb",cefr:"A1",def:"to put food in your mouth and swallow it",ex:"We eat dinner at seven.",syn:["consume","have a meal"]},
+{en:"drink",cs:"pít",pos:"verb",cefr:"A1",def:"to take liquid into your mouth and swallow it",ex:"He drinks a lot of water.",syn:["sip","swallow"]},
+{en:"sleep",cs:"spát",pos:"verb",cefr:"A1",def:"to rest with your eyes closed and mind switched off",ex:"The baby is sleeping now.",syn:["rest","doze","nap"]},
+{en:"run",cs:"běhat",pos:"verb",cefr:"A1",def:"to move on your feet faster than walking",ex:"I run in the park every morning.",syn:["jog","sprint","dash"]},
+{en:"speak",cs:"mluvit",pos:"verb",cefr:"A1",def:"to use your voice to say words",ex:"Do you speak English?",syn:["talk","converse"]},
+{en:"say",cs:"říct",pos:"verb",cefr:"A1",def:"to put something into words",ex:"She did not say a word.",syn:["state","utter","remark"]},
+{en:"tell",cs:"povědět",pos:"verb",cefr:"A1",def:"to give information to a particular person",ex:"Tell me what happened.",syn:["inform","let know","relate"]},
+{en:"read",cs:"číst",pos:"verb",cefr:"A1",def:"to look at written words and understand them",ex:"I read the news every morning.",syn:["study","go through"]},
+{en:"write",cs:"psát",pos:"verb",cefr:"A1",def:"to make words on paper or a screen",ex:"Write your name at the top.",syn:["note down","compose","jot"]},
+{en:"listen",cs:"poslouchat",pos:"verb",cefr:"A1",def:"to pay attention to a sound on purpose",ex:"Listen carefully to the question.",syn:["pay attention","tune in"]},
+{en:"hear",cs:"slyšet",pos:"verb",cefr:"A1",def:"to notice a sound with your ears",ex:"I cannot hear you very well.",syn:["catch","perceive"]},
+{en:"see",cs:"vidět",pos:"verb",cefr:"A1",def:"to notice something with your eyes",ex:"Can you see the mountain?",syn:["notice","spot","observe"]},
+{en:"watch",cs:"dívat se",pos:"verb",cefr:"A1",def:"to look at something for a while",ex:"We watched a film last night.",syn:["look at","view","observe"]},
+{en:"think",cs:"myslet",pos:"verb",cefr:"A1",def:"to use your mind to form an idea or opinion",ex:"I think you are right.",syn:["believe","reckon","consider"]},
+{en:"know",cs:"vědět",pos:"verb",cefr:"A1",def:"to have information in your mind",ex:"I do not know the answer.",syn:["be aware","realise"]},
+{en:"understand",cs:"rozumět",pos:"verb",cefr:"A2",def:"to get the meaning of something",ex:"I do not understand this word.",syn:["grasp","follow","get"]},
+{en:"learn",cs:"učit se",pos:"verb",cefr:"A1",def:"to get new knowledge or a new skill",ex:"She is learning to drive.",syn:["study","pick up","master"]},
+{en:"teach",cs:"učit",pos:"verb",cefr:"A1",def:"to help someone else learn",ex:"He teaches maths at our school.",syn:["instruct","train","educate"]},
+{en:"study",cs:"studovat",pos:"verb",cefr:"A1",def:"to spend time learning a subject",ex:"I study English twice a week.",syn:["learn","revise","research"]},
+{en:"remember",cs:"pamatovat si",pos:"verb",cefr:"A2",def:"to keep something in your mind and call it back",ex:"I cannot remember her name.",syn:["recall","recollect"]},
+{en:"forget",cs:"zapomenout",pos:"verb",cefr:"A2",def:"to fail to keep something in your mind",ex:"Do not forget your keys.",syn:["slip your mind","overlook"]},
+{en:"help",cs:"pomáhat",pos:"verb",cefr:"A1",def:"to make something easier for someone",ex:"Can you help me with this?",syn:["assist","aid","support"]},
+{en:"work",cs:"pracovat",pos:"verb",cefr:"A1",def:"to do a job, usually for money",ex:"She works in a hospital.",syn:["labour","toil","be employed"]},
+{en:"play",cs:"hrát si",pos:"verb",cefr:"A1",def:"to do something for fun",ex:"The children are playing outside.",syn:["have fun","mess about"]},
+{en:"buy",cs:"kupovat",pos:"verb",cefr:"A1",def:"to get something by paying for it",ex:"I buy bread at the market.",syn:["purchase","get","acquire"]},
+{en:"sell",cs:"prodávat",pos:"verb",cefr:"A2",def:"to give something in exchange for money",ex:"They sell flowers on the corner.",syn:["trade","market","flog"]},
+{en:"open",cs:"otevřít",pos:"verb",cefr:"A1",def:"to move something so it is no longer shut",ex:"Please open the window.",syn:["unlock","unfasten","unseal"]},
+{en:"close",cs:"zavřít",pos:"verb",cefr:"A1",def:"to move something so it is shut",ex:"Close the door behind you.",syn:["shut","seal","fasten"]},
+{en:"start",cs:"začít",pos:"verb",cefr:"A1",def:"to begin doing something",ex:"The lesson starts at nine.",syn:["begin","commence","kick off"]},
+{en:"stop",cs:"zastavit",pos:"verb",cefr:"A1",def:"to end a movement or an action",ex:"The bus stopped at the corner.",syn:["halt","cease","quit"]},
+{en:"wait",cs:"čekat",pos:"verb",cefr:"A1",def:"to stay where you are until something happens",ex:"Wait for me at the entrance.",syn:["hold on","hang on","stay"]},
+{en:"find",cs:"najít",pos:"verb",cefr:"A1",def:"to discover something you were looking for",ex:"I cannot find my phone.",syn:["discover","locate","come across"]},
+{en:"lose",cs:"ztratit",pos:"verb",cefr:"A2",def:"to no longer have something you had",ex:"Do not lose your ticket.",syn:["misplace","mislay"]},
+{en:"give",cs:"dát",pos:"verb",cefr:"A1",def:"to hand something to someone",ex:"Give me your hand.",syn:["hand over","offer","pass"]},
+{en:"take",cs:"vzít",pos:"verb",cefr:"A1",def:"to pick something up and hold or carry it",ex:"Take an umbrella with you.",syn:["grab","pick up","seize"]},
+{en:"bring",cs:"přinést",pos:"verb",cefr:"A1",def:"to carry something to the place where you are",ex:"Bring your book to the lesson.",syn:["fetch","carry","deliver"]},
+{en:"put",cs:"položit",pos:"verb",cefr:"A1",def:"to move something into a place",ex:"Put the plate on the table.",syn:["place","set down","lay"]},
+{en:"ask",cs:"ptát se",pos:"verb",cefr:"A1",def:"to say a question to someone",ex:"Ask the teacher if you are not sure.",syn:["enquire","query","question"]},
+{en:"answer",cs:"odpovědět",pos:"verb",cefr:"A1",def:"to say something back to a question",ex:"He answered every question correctly.",syn:["reply","respond"]},
+{en:"need",cs:"potřebovat",pos:"verb",cefr:"A1",def:"to have to have something",ex:"I need more time.",syn:["require","must have"]},
+{en:"want",cs:"chtít",pos:"verb",cefr:"A1",def:"to wish to have or do something",ex:"Do you want some coffee?",syn:["wish","desire","fancy"]},
+{en:"like",cs:"mít rád",pos:"verb",cefr:"A1",def:"to find someone or something pleasant",ex:"I like your new coat.",syn:["enjoy","be fond of"]},
+{en:"love",cs:"milovat",pos:"verb",cefr:"A1",def:"to like someone or something very much",ex:"They love their little garden.",syn:["adore","cherish"]},
+{en:"live",cs:"žít",pos:"verb",cefr:"A1",def:"to be alive, or to have your home somewhere",ex:"We live near the river.",syn:["reside","dwell","exist"]},
+{en:"visit",cs:"navštívit",pos:"verb",cefr:"A1",def:"to go and see a person or a place",ex:"We visit my parents on Sunday.",syn:["call on","drop in","stop by"]},
+{en:"travel",cs:"cestovat",pos:"verb",cefr:"A2",def:"to make a journey, usually a long one",ex:"She travels to Brno for work.",syn:["journey","tour","voyage"]},
+{en:"fly",cs:"létat",pos:"verb",cefr:"A1",def:"to move through the air",ex:"Birds fly south in autumn.",syn:["soar","glide"]},
+{en:"swim",cs:"plavat",pos:"verb",cefr:"A1",def:"to move through water using your body",ex:"Can you swim?",syn:["bathe","paddle"]},
+{en:"sing",cs:"zpívat",pos:"verb",cefr:"A1",def:"to make music with your voice",ex:"He sings in a choir.",syn:["chant","hum","carol"]},
+{en:"dance",cs:"tančit",pos:"verb",cefr:"A1",def:"to move your body in time with music",ex:"They danced all evening.",syn:["boogie","waltz"]},
+{en:"feel",cs:"cítit",pos:"verb",cefr:"A1",def:"to have an emotion, or to touch something",ex:"I feel much better today.",syn:["sense","experience","touch"]},
+{en:"try",cs:"zkusit",pos:"verb",cefr:"A1",def:"to make an effort to do something",ex:"Try this soup, it is delicious.",syn:["attempt","have a go","endeavour"]},
+{en:"win",cs:"vyhrát",pos:"verb",cefr:"A2",def:"to come first in a game or a contest",ex:"Our team won the game.",syn:["triumph","succeed","prevail"]},
+{en:"count",cs:"počítat",pos:"verb",cefr:"A1",def:"to say numbers in order, or to work out how many",ex:"The little boy can count to ten.",syn:["number","tally","add up"]},
+{en:"call",cs:"zavolat",pos:"verb",cefr:"A1",def:"to telephone someone, or to shout to them",ex:"Call me when you arrive.",syn:["phone","ring","shout"]},
+{en:"show",cs:"ukázat",pos:"verb",cefr:"A1",def:"to let someone see something",ex:"Show me the photo.",syn:["display","present","reveal"]},
+{en:"send",cs:"poslat",pos:"verb",cefr:"A1",def:"to make something go to another place or person",ex:"I will send you the address.",syn:["dispatch","post","forward"]},
+{en:"get",cs:"dostat",pos:"verb",cefr:"A1",def:"to receive or obtain something",ex:"I got a letter this morning.",syn:["receive","obtain","acquire"]},
+{en:"use",cs:"používat",pos:"verb",cefr:"A1",def:"to do something with a tool or a thing",ex:"May I use your phone?",syn:["employ","apply","utilise"]},
+{en:"leave",cs:"odejít",pos:"verb",cefr:"A1",def:"to go away from a place",ex:"We leave at six in the morning.",syn:["depart","go","exit"]},
+{en:"turn",cs:"otočit",pos:"verb",cefr:"A2",def:"to move something so it faces another way",ex:"Turn the key to the right.",syn:["rotate","spin","twist"]},
+{en:"walk",cs:"chodit",pos:"verb",cefr:"A1",def:"to move on your feet at a normal speed",ex:"I walk to work every day.",syn:["stroll","stride","wander"]},
+{en:"house",cs:"dům",pos:"noun",cefr:"A1",def:"a building where people live",ex:"They live in an old stone house.",syn:["home","dwelling","residence"]},
+{en:"home",cs:"domov",pos:"noun",cefr:"A1",def:"the place where you live and belong",ex:"I am going home now.",syn:["house","place"]},
+{en:"family",cs:"rodina",pos:"noun",cefr:"A1",def:"the people you are related to",ex:"My family is quite large.",syn:["relatives","kin","household"]},
+{en:"mother",cs:"matka",pos:"noun",cefr:"A1",def:"a female parent",ex:"Her mother is a doctor.",syn:["mum","mummy","mom"]},
+{en:"father",cs:"otec",pos:"noun",cefr:"A1",def:"a male parent",ex:"My father taught me to swim.",syn:["dad","daddy","papa"]},
+{en:"brother",cs:"bratr",pos:"noun",cefr:"A1",def:"a boy or man with the same parents as you",ex:"I have one brother and two sisters.",syn:["sibling"]},
+{en:"sister",cs:"sestra",pos:"noun",cefr:"A1",def:"a girl or woman with the same parents as you",ex:"My sister lives in Brno.",syn:["sibling"]},
+{en:"friend",cs:"přítel",pos:"noun",cefr:"A1",def:"someone you like and spend time with",ex:"She is my oldest friend.",syn:["mate","pal","companion"]},
+{en:"school",cs:"škola",pos:"noun",cefr:"A1",def:"a place where children go to learn",ex:"The children walk to school.",syn:["academy","college"]},
+{en:"teacher",cs:"učitel",pos:"noun",cefr:"A1",def:"a person whose job is to help others learn",ex:"Our teacher is very patient.",syn:["tutor","instructor","educator"]},
+{en:"student",cs:"student",pos:"noun",cefr:"A1",def:"a person who is studying, usually at college",ex:"She is a student at the university.",syn:["learner","pupil"]},
+{en:"pupil",cs:"žák",pos:"noun",cefr:"A2",def:"a child who is taught at school",ex:"There are twenty pupils in the class.",syn:["schoolchild","learner"]},
+{en:"lesson",cs:"hodina",pos:"noun",cefr:"A1",def:"a period of time when someone teaches you",ex:"We had a good lesson today.",syn:["class","session"]},
+{en:"book",cs:"kniha",pos:"noun",cefr:"A1",def:"pages with writing, bound together",ex:"I am reading an interesting book.",syn:["volume","title"]},
+{en:"pen",cs:"pero",pos:"noun",cefr:"A1",def:"a tool that writes with ink",ex:"Can I borrow your pen?",syn:["biro","ballpoint"]},
+{en:"pencil",cs:"tužka",pos:"noun",cefr:"A1",def:"a wooden tool that writes and can be rubbed out",ex:"Draw it in pencil first.",syn:["crayon"]},
+{en:"paper",cs:"papír",pos:"noun",cefr:"A1",def:"thin flat material you write or print on",ex:"I need a sheet of paper.",syn:["sheet","page"]},
+{en:"word",cs:"slovo",pos:"noun",cefr:"A1",def:"a single unit of language with a meaning",ex:"I do not know this word.",syn:["term","expression"]},
+{en:"sentence",cs:"věta",pos:"noun",cefr:"A2",def:"a group of words that makes a complete thought",ex:"Write a sentence with each word.",syn:["statement","line"]},
+{en:"language",cs:"jazyk",pos:"noun",cefr:"A2",def:"the words and rules a people use to speak",ex:"Czech is a beautiful language.",syn:["tongue","speech"]},
+{en:"question",cs:"otázka",pos:"noun",cefr:"A1",def:"something you say to get information",ex:"Does anyone have a question?",syn:["query","enquiry"]},
+{en:"answer",cs:"odpověď",pos:"noun",cefr:"A1",def:"what you say or write back to a question",ex:"Your answer was correct.",syn:["reply","response","solution"]},
+{en:"time",cs:"čas",pos:"noun",cefr:"A1",def:"the passing of minutes, hours and years",ex:"I do not have much time today.",syn:["period","while","duration"]},
+{en:"day",cs:"den",pos:"noun",cefr:"A1",def:"a period of twenty-four hours",ex:"It was a long day.",syn:["date","daytime"]},
+{en:"night",cs:"noc",pos:"noun",cefr:"A1",def:"the dark part of the day",ex:"We drove through the night.",syn:["evening","night-time"]},
+{en:"week",cs:"týden",pos:"noun",cefr:"A1",def:"a period of seven days",ex:"See you next week.",syn:[]},
+{en:"month",cs:"měsíc",pos:"noun",cefr:"A1",def:"one of the twelve parts of a year",ex:"She starts her new job next month.",syn:[]},
+{en:"year",cs:"rok",pos:"noun",cefr:"A1",def:"a period of twelve months",ex:"We met three years ago.",syn:["twelvemonth"]},
+{en:"morning",cs:"ráno",pos:"noun",cefr:"A1",def:"the early part of the day",ex:"I run every morning before work.",syn:["dawn","daybreak"]},
+{en:"evening",cs:"večer",pos:"noun",cefr:"A1",def:"the part of the day between afternoon and night",ex:"We usually cook in the evening.",syn:["dusk","nightfall"]},
+{en:"hour",cs:"hodina",pos:"noun",cefr:"A1",def:"a period of sixty minutes",ex:"The journey takes two hours.",syn:[]},
+{en:"minute",cs:"minuta",pos:"noun",cefr:"A1",def:"a period of sixty seconds",ex:"Wait a minute, please.",syn:["moment"]},
+{en:"water",cs:"voda",pos:"noun",cefr:"A1",def:"the clear liquid we drink and wash in",ex:"Could I have a glass of water?",syn:["H2O"]},
+{en:"food",cs:"jídlo",pos:"noun",cefr:"A1",def:"anything people or animals eat",ex:"The food here is very good.",syn:["meal","nourishment","grub"]},
+{en:"bread",cs:"chléb",pos:"noun",cefr:"A1",def:"a baked food made from flour and water",ex:"I bought fresh bread this morning.",syn:["loaf"]},
+{en:"milk",cs:"mléko",pos:"noun",cefr:"A1",def:"the white drink that comes from cows",ex:"There is no milk in the fridge.",syn:["dairy"]},
+{en:"tea",cs:"čaj",pos:"noun",cefr:"A1",def:"a hot drink made by soaking leaves in water",ex:"She drinks tea with lemon.",syn:["brew","cuppa"]},
+{en:"coffee",cs:"káva",pos:"noun",cefr:"A1",def:"a hot dark drink made from roasted beans",ex:"Let us meet for a coffee.",syn:["espresso","brew"]},
+{en:"fruit",cs:"ovoce",pos:"noun",cefr:"A1",def:"the sweet part of a plant that holds the seeds",ex:"Eat more fruit and vegetables.",syn:["produce"]},
+{en:"vegetable",cs:"zelenina",pos:"noun",cefr:"A1",def:"a plant or plant part eaten as food",ex:"I grow my own vegetables.",syn:["veg","greens","produce"]},
+{en:"apple",cs:"jablko",pos:"noun",cefr:"A1",def:"a round firm fruit, usually red or green",ex:"She picked an apple from the tree.",syn:[]},
+{en:"meat",cs:"maso",pos:"noun",cefr:"A1",def:"the flesh of an animal eaten as food",ex:"He does not eat meat.",syn:["flesh"]},
+{en:"soup",cs:"polévka",pos:"noun",cefr:"A1",def:"a hot liquid food eaten with a spoon",ex:"The soup is too hot.",syn:["broth","stew"]},
+{en:"egg",cs:"vejce",pos:"noun",cefr:"A1",def:"the oval thing a bird lays, often eaten for breakfast",ex:"I have two eggs for breakfast.",syn:[]},
+{en:"garden",cs:"zahrada",pos:"noun",cefr:"A1",def:"a piece of ground where plants are grown",ex:"We sat in the garden all afternoon.",syn:["yard","plot","allotment"]},
+{en:"plant",cs:"rostlina",pos:"noun",cefr:"A1",def:"a living thing that grows in soil and makes its own food",ex:"This plant needs more light.",syn:["greenery","vegetation"]},
+{en:"flower",cs:"květina",pos:"noun",cefr:"A1",def:"the coloured part of a plant that makes seeds",ex:"He brought her yellow flowers.",syn:["bloom","blossom"]},
+{en:"tree",cs:"strom",pos:"noun",cefr:"A1",def:"a tall plant with a woody trunk and branches",ex:"There is an old apple tree behind the house.",syn:["sapling","timber"]},
+{en:"leaf",cs:"list",pos:"noun",cefr:"A2",def:"the flat green part growing from a stem",ex:"A single leaf fell onto the path.",syn:["frond","foliage"]},
+{en:"soil",cs:"půda",pos:"noun",cefr:"B1",def:"the top layer of earth that plants grow in",ex:"The soil here is heavy and wet.",syn:["earth","ground","dirt"]},
+{en:"seed",cs:"semeno",pos:"noun",cefr:"A2",def:"the small part of a plant that a new plant grows from",ex:"Sow the seeds in spring.",syn:["pip","grain","kernel"]},
+{en:"animal",cs:"zvíře",pos:"noun",cefr:"A1",def:"a living creature that is not a plant or a person",ex:"What is your favourite animal?",syn:["creature","beast"]},
+{en:"dog",cs:"pes",pos:"noun",cefr:"A1",def:"a four-legged animal often kept as a pet",ex:"Their dog barks at everyone.",syn:["hound","puppy"]},
+{en:"cat",cs:"kočka",pos:"noun",cefr:"A1",def:"a small furry animal often kept as a pet",ex:"The cat is asleep on the chair.",syn:["kitten","feline"]},
+{en:"bird",cs:"pták",pos:"noun",cefr:"A1",def:"an animal with feathers and wings",ex:"A bird was singing outside.",syn:["fowl"]},
+{en:"fish",cs:"ryba",pos:"noun",cefr:"A1",def:"an animal that lives and breathes in water",ex:"We caught three fish.",syn:[]},
+{en:"horse",cs:"kůň",pos:"noun",cefr:"A1",def:"a large animal people ride",ex:"She rides a horse every weekend.",syn:["steed","mare","stallion"]},
+{en:"city",cs:"město",pos:"noun",cefr:"A1",def:"a large town where many people live",ex:"Prague is a beautiful city.",syn:["town","metropolis"]},
+{en:"village",cs:"vesnice",pos:"noun",cefr:"A2",def:"a small group of houses in the countryside",ex:"He grew up in a small village.",syn:["hamlet","settlement"]},
+{en:"street",cs:"ulice",pos:"noun",cefr:"A1",def:"a road in a town with buildings along it",ex:"They live on a quiet street.",syn:["road","avenue","lane"]},
+{en:"car",cs:"auto",pos:"noun",cefr:"A1",def:"a vehicle with four wheels that you drive",ex:"Our car is very old.",syn:["automobile","vehicle","motor"]},
+{en:"train",cs:"vlak",pos:"noun",cefr:"A1",def:"a line of carriages pulled along rails",ex:"The train leaves at half past eight.",syn:["railway"]},
+{en:"bus",cs:"autobus",pos:"noun",cefr:"A1",def:"a large road vehicle that carries many passengers",ex:"I take the bus to work.",syn:["coach"]},
+{en:"weather",cs:"počasí",pos:"noun",cefr:"A1",def:"what the air and sky are doing outside",ex:"The weather was terrible all week.",syn:["conditions","climate"]},
+{en:"rain",cs:"déšť",pos:"noun",cefr:"A1",def:"water falling from the clouds",ex:"We walked home in the rain.",syn:["shower","downpour","drizzle"]},
+{en:"snow",cs:"sníh",pos:"noun",cefr:"A1",def:"soft white flakes of frozen water that fall from the sky",ex:"The snow lay deep in the garden.",syn:["sleet","flurry"]},
+{en:"sun",cs:"slunce",pos:"noun",cefr:"A1",def:"the star that gives the earth light and heat",ex:"The sun came out after lunch.",syn:["sunshine","sunlight"]},
+{en:"moon",cs:"měsíc",pos:"noun",cefr:"A1",def:"the round object that shines in the night sky",ex:"The moon was very bright last night.",syn:["satellite"]},
+{en:"sky",cs:"nebe",pos:"noun",cefr:"A1",def:"the space above the earth where clouds are",ex:"The sky is completely clear.",syn:["heavens","air"]},
+{en:"wind",cs:"vítr",pos:"noun",cefr:"A2",def:"air moving across the land",ex:"A cold wind came from the north.",syn:["breeze","gale","gust"]},
+{en:"fire",cs:"oheň",pos:"noun",cefr:"A2",def:"the bright hot flames made by something burning",ex:"We made a fire and sat around it.",syn:["flame","blaze"]},
+{en:"earth",cs:"země",pos:"noun",cefr:"A2",def:"the planet we live on, or the soil under our feet",ex:"He pushed the seed into the earth.",syn:["world","globe","ground"]},
+{en:"sea",cs:"moře",pos:"noun",cefr:"A1",def:"a large area of salt water",ex:"The children ran towards the sea.",syn:["ocean","waters"]},
+{en:"good",cs:"dobrý",pos:"adj",cefr:"A1",def:"of a high standard, or pleasant",ex:"That is a good idea.",syn:["fine","great","excellent"]},
+{en:"bad",cs:"špatný",pos:"adj",cefr:"A1",def:"of a low standard, or unpleasant",ex:"The weather was bad all weekend.",syn:["poor","awful","terrible"]},
+{en:"big",cs:"velký",pos:"adj",cefr:"A1",def:"large in size",ex:"They have a big kitchen.",syn:["large","huge","enormous"]},
+{en:"small",cs:"malý",pos:"adj",cefr:"A1",def:"little in size",ex:"I live in a small flat.",syn:["little","tiny","compact"]},
+{en:"long",cs:"dlouhý",pos:"adj",cefr:"A1",def:"measuring a lot from end to end",ex:"She has long dark hair.",syn:["lengthy","extended"]},
+{en:"short",cs:"krátký",pos:"adj",cefr:"A1",def:"measuring only a little from end to end",ex:"It was a short but useful meeting.",syn:["brief","stubby"]},
+{en:"hot",cs:"horký",pos:"adj",cefr:"A1",def:"having a high temperature",ex:"Be careful, the plate is hot.",syn:["warm","boiling","scorching"]},
+{en:"cold",cs:"studený",pos:"adj",cefr:"A1",def:"having a low temperature",ex:"My hands are cold.",syn:["chilly","freezing","cool"]},
+{en:"new",cs:"nový",pos:"adj",cefr:"A1",def:"made or bought a short time ago",ex:"Do you like my new shoes?",syn:["fresh","recent","modern"]},
+{en:"old",cs:"starý",pos:"adj",cefr:"A1",def:"having existed for a long time",ex:"This is a very old building.",syn:["ancient","aged","worn"]},
+{en:"young",cs:"mladý",pos:"adj",cefr:"A1",def:"having lived only a short time",ex:"She is too young to drive.",syn:["youthful","junior"]},
+{en:"fast",cs:"rychlý",pos:"adj",cefr:"A1",def:"moving or happening quickly",ex:"He drives a fast car.",syn:["quick","rapid","swift"]},
+{en:"slow",cs:"pomalý",pos:"adj",cefr:"A1",def:"moving or happening without speed",ex:"The internet here is very slow.",syn:["sluggish","unhurried"]},
+{en:"easy",cs:"snadný",pos:"adj",cefr:"A1",def:"needing little effort",ex:"The test was easier than I expected.",syn:["simple","straightforward","effortless"]},
+{en:"hard",cs:"těžký",pos:"adj",cefr:"A1",def:"needing a lot of effort, or firm to touch",ex:"Czech grammar is hard at the start.",syn:["difficult","tough","solid"]},
+{en:"happy",cs:"šťastný",pos:"adj",cefr:"A1",def:"feeling pleased and cheerful",ex:"They look very happy together.",syn:["glad","cheerful","joyful"]},
+{en:"sad",cs:"smutný",pos:"adj",cefr:"A1",def:"feeling unhappy",ex:"The end of the film is sad.",syn:["unhappy","miserable","down"]},
+{en:"beautiful",cs:"krásný",pos:"adj",cefr:"A1",def:"very pleasing to look at",ex:"What a beautiful garden!",syn:["lovely","gorgeous","pretty"]},
+{en:"ugly",cs:"ošklivý",pos:"adj",cefr:"A2",def:"unpleasant to look at",ex:"It is a useful bag, but an ugly one.",syn:["unattractive","hideous"]},
+{en:"tall",cs:"vysoký",pos:"adj",cefr:"A1",def:"greater than usual in height",ex:"Her brother is very tall.",syn:["high","lofty","towering"]},
+{en:"high",cs:"vysoký",pos:"adj",cefr:"A1",def:"far above the ground",ex:"There is a high wall around the garden.",syn:["tall","elevated","lofty"]},
+{en:"low",cs:"nízký",pos:"adj",cefr:"A2",def:"close to the ground, or small in amount",ex:"The ceiling is quite low.",syn:["short","shallow","reduced"]},
+{en:"right",cs:"správný",pos:"adj",cefr:"A1",def:"correct, without mistakes",ex:"You gave the right answer.",syn:["correct","accurate","true"]},
+{en:"wrong",cs:"špatný",pos:"adj",cefr:"A1",def:"not correct",ex:"I took the wrong bus.",syn:["incorrect","mistaken","false"]},
+{en:"true",cs:"pravdivý",pos:"adj",cefr:"A2",def:"agreeing with the facts",ex:"Is that story really true?",syn:["accurate","genuine","factual"]},
+{en:"important",cs:"důležitý",pos:"adj",cefr:"A2",def:"mattering a lot",ex:"This is an important question.",syn:["significant","major","key"]},
+{en:"interesting",cs:"zajímavý",pos:"adj",cefr:"A2",def:"holding your attention",ex:"That is an interesting point.",syn:["engaging","fascinating","intriguing"]},
+{en:"nice",cs:"milý",pos:"adj",cefr:"A1",def:"pleasant or kind",ex:"She was very nice to us.",syn:["kind","pleasant","lovely"]},
+{en:"sweet",cs:"sladký",pos:"adj",cefr:"A1",def:"tasting of sugar",ex:"This tea is too sweet.",syn:["sugary","honeyed"]},
+{en:"sour",cs:"kyselý",pos:"adj",cefr:"A2",def:"having a sharp taste like a lemon",ex:"These apples are quite sour.",syn:["tart","acidic","sharp"]},
+{en:"clean",cs:"čistý",pos:"adj",cefr:"A1",def:"free from dirt",ex:"Put on a clean shirt.",syn:["spotless","tidy","fresh"]},
+{en:"dirty",cs:"špinavý",pos:"adj",cefr:"A1",def:"covered in dirt",ex:"My boots are dirty.",syn:["filthy","grubby","messy"]},
+{en:"full",cs:"plný",pos:"adj",cefr:"A1",def:"holding as much as it can",ex:"The bus was full.",syn:["filled","packed","loaded"]},
+{en:"empty",cs:"prázdný",pos:"adj",cefr:"A2",def:"holding nothing at all",ex:"The house stood empty for years.",syn:["bare","vacant","hollow"]},
+{en:"open",cs:"otevřený",pos:"adj",cefr:"A1",def:"not shut, so people or things can pass",ex:"The shop is open until six.",syn:["unlocked","ajar","accessible"]},
+{en:"closed",cs:"zavřený",pos:"adj",cefr:"A1",def:"shut, so nothing can pass",ex:"The library is closed on Sunday.",syn:["shut","locked","sealed"]},
+{en:"light",cs:"světlý",pos:"adj",cefr:"A2",def:"pale in colour, or full of light",ex:"She painted the room a light green.",syn:["pale","bright","fair"]},
+{en:"dark",cs:"tmavý",pos:"adj",cefr:"A1",def:"with little or no light, or deep in colour",ex:"It gets dark early in winter.",syn:["dim","gloomy","deep"]},
+{en:"expensive",cs:"drahý",pos:"adj",cefr:"A1",def:"costing a lot of money",ex:"That restaurant is too expensive.",syn:["costly","pricey","dear"]},
+{en:"cheap",cs:"levný",pos:"adj",cefr:"A1",def:"costing little money",ex:"I found a cheap flight.",syn:["inexpensive","affordable","low-cost"]},
+{en:"one",cs:"jeden",pos:"num",cefr:"A1",def:"the number 1",ex:"I only need one ticket.",syn:["single","a"]},
+{en:"two",cs:"dva",pos:"num",cefr:"A1",def:"the number 2",ex:"We have two cats.",syn:["pair","couple"]},
+{en:"three",cs:"tři",pos:"num",cefr:"A1",def:"the number 3",ex:"The lesson lasts three hours.",syn:["trio"]},
+{en:"four",cs:"čtyři",pos:"num",cefr:"A1",def:"the number 4",ex:"There are four of us.",syn:["quartet"]},
+{en:"five",cs:"pět",pos:"num",cefr:"A1",def:"the number 5",ex:"I will be back in five minutes.",syn:[]},
+{en:"six",cs:"šest",pos:"num",cefr:"A1",def:"the number 6",ex:"She gets up at six.",syn:[]},
+{en:"seven",cs:"sedm",pos:"num",cefr:"A1",def:"the number 7",ex:"There are seven days in a week.",syn:[]},
+{en:"eight",cs:"osm",pos:"num",cefr:"A1",def:"the number 8",ex:"The train leaves at eight.",syn:[]},
+{en:"nine",cs:"devět",pos:"num",cefr:"A1",def:"the number 9",ex:"Nine people came to the meeting.",syn:[]},
+{en:"ten",cs:"deset",pos:"num",cefr:"A1",def:"the number 10",ex:"Count to ten slowly.",syn:[]},
+{en:"first",cs:"první",pos:"adj",cefr:"A1",def:"coming before all the others",ex:"This is my first visit to Prague.",syn:["earliest","initial","opening"]},
+{en:"last",cs:"poslední",pos:"adj",cefr:"A1",def:"coming after all the others",ex:"That was the last bus.",syn:["final","closing","latest"]},
+{en:"next",cs:"příští",pos:"adj",cefr:"A1",def:"coming immediately after this one",ex:"We will finish it next week.",syn:["following","upcoming","subsequent"]},
+{en:"more",cs:"více",pos:"det",cefr:"A1",def:"a larger amount or number",ex:"Would you like some more soup?",syn:["extra","additional","further"]},
+{en:"less",cs:"méně",pos:"det",cefr:"A2",def:"a smaller amount",ex:"Try to use less salt.",syn:["fewer","reduced"]},
+{en:"many",cs:"mnoho",pos:"det",cefr:"A1",def:"a large number of things you can count",ex:"There were many people at the market.",syn:["numerous","plenty of","lots of"]},
+{en:"much",cs:"hodně",pos:"det",cefr:"A1",def:"a large amount of something you cannot count",ex:"I do not have much money.",syn:["a lot of","plenty of"]},
+{en:"little",cs:"málo",pos:"det",cefr:"A2",def:"only a small amount",ex:"There is very little time left.",syn:["few","hardly any","scarce"]},
+{en:"some",cs:"nějaký",pos:"det",cefr:"A1",def:"an unknown or unstated amount",ex:"I need some help with this.",syn:["a few","certain","several"]},
+{en:"all",cs:"všechno",pos:"det",cefr:"A1",def:"the whole of something, every part",ex:"He ate all the bread.",syn:["every","the whole","entire"]},
+{en:"other",cs:"jiný",pos:"adj",cefr:"A1",def:"not this one, a different one",ex:"The other students have already left.",syn:["another","alternative"]},
+{en:"same",cs:"stejný",pos:"adj",cefr:"A1",def:"not different in any way",ex:"We take the same bus every morning.",syn:["identical","alike","equal"]},
+{en:"different",cs:"odlišný",pos:"adj",cefr:"A2",def:"not the same as something else",ex:"Czech word order is different from English.",syn:["dissimilar","unlike","distinct"]},
+{en:"every",cs:"každý",pos:"det",cefr:"A1",def:"all the members of a group, one by one",ex:"I water the plants every day.",syn:["each","all"]},
+{en:"each",cs:"každý",pos:"det",cefr:"A2",def:"one by one, taken separately",ex:"Each student gets a copy.",syn:["every","apiece"]},
+{en:"red",cs:"červený",pos:"adj",cefr:"A1",def:"the colour of blood",ex:"She was wearing a red scarf.",syn:["crimson","scarlet"]},
+{en:"blue",cs:"modrý",pos:"adj",cefr:"A1",def:"the colour of a clear sky",ex:"The sky is bright blue today.",syn:["azure","navy"]},
+{en:"green",cs:"zelený",pos:"adj",cefr:"A1",def:"the colour of grass",ex:"The leaves are turning green again.",syn:["emerald","olive"]},
+{en:"yellow",cs:"žlutý",pos:"adj",cefr:"A1",def:"the colour of a lemon",ex:"He picked the yellow flowers.",syn:["golden","amber"]},
+{en:"black",cs:"černý",pos:"adj",cefr:"A1",def:"the darkest colour, like night",ex:"I take my coffee black.",syn:["jet","pitch-black"]},
+{en:"white",cs:"bílý",pos:"adj",cefr:"A1",def:"the colour of fresh snow",ex:"The garden was white with snow.",syn:["ivory","pale"]},
+{en:"brown",cs:"hnědý",pos:"adj",cefr:"A1",def:"the colour of soil or wood",ex:"She has brown eyes.",syn:["tan","chestnut"]},
+{en:"pink",cs:"růžový",pos:"adj",cefr:"A1",def:"a pale red colour",ex:"The apple tree has pink blossom.",syn:["rose","blush"]},
+{en:"man",cs:"muž",pos:"noun",cefr:"A1",def:"an adult male person",ex:"An old man was feeding the birds.",syn:["gentleman","bloke","guy"]},
+{en:"woman",cs:"žena",pos:"noun",cefr:"A1",def:"an adult female person",ex:"The woman next door has a lovely garden.",syn:["lady","female"]},
+{en:"boy",cs:"chlapec",pos:"noun",cefr:"A1",def:"a young male person",ex:"The boy lost his hat.",syn:["lad","youngster"]},
+{en:"girl",cs:"dívka",pos:"noun",cefr:"A1",def:"a young female person",ex:"A girl asked me for directions.",syn:["lass","youngster"]},
+{en:"child",cs:"dítě",pos:"noun",cefr:"A1",def:"a young person who is not yet grown up",ex:"Every child in the class can read.",syn:["kid","youngster","infant"]},
+{en:"name",cs:"jméno",pos:"noun",cefr:"A1",def:"the word a person or thing is called",ex:"What is the name of this flower?",syn:["title","label"]},
+{en:"person",cs:"člověk",pos:"noun",cefr:"A1",def:"one human being",ex:"She is a very kind person.",syn:["individual","human","someone"]},
+{en:"people",cs:"lidé",pos:"noun",cefr:"A1",def:"more than one person",ex:"A lot of people came to the market.",syn:["folk","humans","the public"]},
+{en:"head",cs:"hlava",pos:"noun",cefr:"A1",def:"the part of the body above the neck",ex:"My head hurts.",syn:["skull","noggin"]},
+{en:"eye",cs:"oko",pos:"noun",cefr:"A1",def:"the part of the body you see with",ex:"He has one blue eye and one green.",syn:[]},
+{en:"ear",cs:"ucho",pos:"noun",cefr:"A1",def:"the part of the body you hear with",ex:"The dog lifted one ear.",syn:[]},
+{en:"hand",cs:"ruka",pos:"noun",cefr:"A1",def:"the part of the body at the end of the arm",ex:"Wash your hands before dinner.",syn:["palm","fist"]},
+{en:"leg",cs:"noha",pos:"noun",cefr:"A1",def:"the long part of the body you stand and walk on",ex:"He broke his leg skiing.",syn:["limb"]},
+{en:"foot",cs:"chodidlo",pos:"noun",cefr:"A2",def:"the part of the body at the bottom of the leg",ex:"I have a stone in my shoe, under my foot.",syn:["sole"]},
+{en:"heart",cs:"srdce",pos:"noun",cefr:"A1",def:"the organ that pumps blood round the body",ex:"I could hear my heart beating.",syn:["ticker"]},
+{en:"body",cs:"tělo",pos:"noun",cefr:"A2",def:"the whole physical form of a person or animal",ex:"Your body needs water and sleep.",syn:["frame","figure","physique"]},
+{en:"face",cs:"obličej",pos:"noun",cefr:"A1",def:"the front of the head",ex:"She had a smile on her face.",syn:["features","countenance"]},
+{en:"money",cs:"peníze",pos:"noun",cefr:"A1",def:"coins and notes used to buy things",ex:"I did not bring any money.",syn:["cash","funds","currency"]},
+{en:"price",cs:"cena",pos:"noun",cefr:"A1",def:"the amount of money a thing costs",ex:"The price has gone up again.",syn:["cost","charge","fee"]},
+{en:"shop",cs:"obchod",pos:"noun",cefr:"A1",def:"a place where things are sold",ex:"There is a small shop on the corner.",syn:["store","boutique","outlet"]},
+{en:"market",cs:"trh",pos:"noun",cefr:"A1",def:"a place where people buy and sell, often outdoors",ex:"I buy vegetables at the market.",syn:["bazaar","fair","marketplace"]},
+{en:"work",cs:"práce",pos:"noun",cefr:"A1",def:"the activity you do to earn a living",ex:"I have a lot of work this week.",syn:["job","employment","labour"]},
+{en:"job",cs:"práce",pos:"noun",cefr:"A1",def:"the particular position a person is paid to do",ex:"She has a new job in Brno.",syn:["post","role","occupation"]},
+{en:"problem",cs:"problém",pos:"noun",cefr:"A1",def:"something difficult that needs solving",ex:"There is a problem with the heating.",syn:["issue","trouble","difficulty"]},
+{en:"idea",cs:"nápad",pos:"noun",cefr:"A1",def:"a thought or plan that comes to your mind",ex:"That is a very good idea.",syn:["thought","notion","plan"]},
+{en:"story",cs:"příběh",pos:"noun",cefr:"A1",def:"an account of events, real or invented",ex:"He told us the whole story.",syn:["tale","narrative","account"]},
+{en:"news",cs:"zprávy",pos:"noun",cefr:"A1",def:"reports of what has just happened",ex:"I watch the news every evening.",syn:["reports","headlines","information"]},
+{en:"music",cs:"hudba",pos:"noun",cefr:"A1",def:"sounds arranged to be pleasant to hear",ex:"She listens to music while she works.",syn:["tunes","melody"]},
+{en:"song",cs:"píseň",pos:"noun",cefr:"A1",def:"a short piece of music with words",ex:"They sang an old Czech song.",syn:["tune","track","number"]},
+{en:"game",cs:"hra",pos:"noun",cefr:"A1",def:"an activity with rules played for fun",ex:"The children invented a new game.",syn:["match","play","contest"]},
+{en:"picture",cs:"obrázek",pos:"noun",cefr:"A1",def:"a drawing, painting or photograph",ex:"There is a picture of the garden on the wall.",syn:["image","drawing","illustration"]},
+{en:"photo",cs:"fotografie",pos:"noun",cefr:"A1",def:"an image made with a camera",ex:"Can you take a photo of us?",syn:["photograph","snap","shot"]},
+{en:"phone",cs:"telefon",pos:"noun",cefr:"A1",def:"a device for speaking to someone far away",ex:"My phone is almost dead.",syn:["telephone","mobile","handset"]},
+{en:"computer",cs:"počítač",pos:"noun",cefr:"A1",def:"a machine that stores and works with information",ex:"I work on the computer all day.",syn:["PC","laptop","machine"]},
+{en:"thing",cs:"věc",pos:"noun",cefr:"A1",def:"any object you do not name exactly",ex:"There is one more thing I must tell you.",syn:["object","item","article"]},
+{en:"place",cs:"místo",pos:"noun",cefr:"A1",def:"a particular position or area",ex:"This is a good place to sit.",syn:["spot","location","site"]},
+{en:"way",cs:"cesta",pos:"noun",cefr:"A1",def:"a route, or a method of doing something",ex:"Do you know the way to the station?",syn:["route","path","method"]},
+{en:"world",cs:"svět",pos:"noun",cefr:"A1",def:"the earth and everyone on it",ex:"People come here from all over the world.",syn:["globe","planet","earth"]},
+{en:"country",cs:"země",pos:"noun",cefr:"A1",def:"a land with its own government",ex:"Which country are you from?",syn:["nation","state","land"]},
+{en:"state",cs:"stát",pos:"noun",cefr:"B1",def:"a country, or a region within one",ex:"Texas is the second largest state.",syn:["nation","province","territory"]},
+{en:"number",cs:"číslo",pos:"noun",cefr:"A1",def:"a word or sign that says how many",ex:"What is your phone number?",syn:["figure","digit","numeral"]},
+{en:"letter",cs:"dopis",pos:"noun",cefr:"A1",def:"a written message sent to someone",ex:"I got a letter from my sister.",syn:["note","message","correspondence"]},
+{en:"colour",cs:"barva",pos:"noun",cefr:"A1",def:"what you see as red, blue, green and so on",ex:"What is your favourite colour?",syn:["shade","hue","tone"]},
+{en:"summer",cs:"léto",pos:"noun",cefr:"A1",def:"the warmest season of the year",ex:"We spend every summer in the mountains.",syn:["summertime"]},
+{en:"winter",cs:"zima",pos:"noun",cefr:"A1",def:"the coldest season of the year",ex:"The winter was long and grey.",syn:["wintertime"]},
+{en:"spring",cs:"jaro",pos:"noun",cefr:"A1",def:"the season when plants start to grow",ex:"The garden looks best in spring.",syn:["springtime"]},
+{en:"autumn",cs:"podzim",pos:"noun",cefr:"A1",def:"the season when leaves fall from the trees",ex:"In autumn the leaves turn brown.",syn:["fall","harvest time"]}
 ];
 /* diacritic-blind folding: "květina" finds "kvetina", "café" finds "cafe" */
 const _fold=s=>String(s??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
-const _folds=CZDICT.map(([en,cs])=>[en,_fold(en),cs,_fold(cs)]);
-/* pbDict(q) — pure, bidirectional, substring search with prefix-first ranking.
-   Returns [{en,cs,dir}] where dir is "en->cs" when q looks English, "cs->en"
-   when q has Czech diacritics, otherwise "en->cs". */
+/* The search index, folded once at load. Headwords and meanings are folded
+   into separate strings because a hit in a headword has to outrank a hit in a
+   definition: typing "sun" should offer sun/slunce before it offers summer,
+   whose gloss merely mentions warmth. */
+const _folds=CZDICT.map(e=>({
+  e, fen:_fold(e.en), fcs:_fold(e.cs),
+  fmean:_fold(e.def+" "+(e.syn||[]).join(" ")),
+  fex:_fold(e.ex||"")
+}));
+/* pbDict(q) — pure, bidirectional search with headword-first ranking.
+   Returns whole entries, each decorated with:
+     dir  "en->cs" when the query looks English, "cs->en" when it landed on
+          the Czech side — the little label the overlay prints.
+     via  "word" when a headword matched, "meaning" when only the definition
+          or a synonym did, "example" when only the example sentence did.
+          A meaning hit is how you find a word you cannot name: "not correct"
+          has no headword, but it finds "wrong". An example hit is the other
+          way round — it answers "show me this word in use", so searching
+          "garden" turns up every sentence set in one.
+   Ranking is exact headword, then headword prefix, then headword substring,
+   then meaning, then example; ties break towards the shorter word, so "run"
+   comes before "running water" would. */
 function pbDict(q,limit){
   limit=limit||20;
   const f=_fold(q); if(!f) return [];
+  /* A meaning hit must land on a word boundary, and needs three letters to
+     start with. Substring matching is right for a headword — you are half way
+     through typing one — and wrong for a gloss, where "a" would otherwise
+     match every entry in the list. Built once per query, not once per row. */
+  const mre=f.length>=3
+    ? new RegExp("\\b"+f.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"))
+    : null;
   const out=[];
   for(let i=0;i<_folds.length;i++){
-    const en=_folds[i][0], fen=_folds[i][1], cs=_folds[i][2], fcs=_folds[i][3];
-    const enHit=fen.includes(f), csHit=fcs.includes(f);
-    if(!enHit&&!csHit) continue;
-    const enPrefix=fen.startsWith(f), csPrefix=fcs.startsWith(f);
-    out.push({en,cs,dir:(csHit&&!enHit)||(csPrefix&&!enPrefix)?"cs->en":"en->cs",
-      rank:(enPrefix||csPrefix?0:1)});
+    const r=_folds[i], en=r.fen, cs=r.fcs;
+    const enHit=en.includes(f), csHit=cs.includes(f);
+    const enPrefix=en.startsWith(f), csPrefix=cs.startsWith(f);
+    let rank, via="word";
+    if(en===f||cs===f) rank=0;
+    else if(enPrefix||csPrefix) rank=1;
+    else if(enHit||csHit) rank=2;
+    else if(mre&&mre.test(r.fmean)){ rank=3; via="meaning"; }
+    else if(mre&&mre.test(r.fex)){ rank=4; via="example"; }
+    else continue;
+    out.push(Object.assign({},r.e,{
+      dir:(csHit&&!enHit)||(csPrefix&&!enPrefix)?"cs->en":"en->cs",
+      via, rank}));
   }
-  out.sort((a,b)=>a.rank-b.rank);
+  out.sort((a,b)=>a.rank-b.rank||a.en.length-b.en.length);
   return out.slice(0,limit);
 }
 /* pbDictExact(word) — strict (folded) match on either side, for the review
-   card's tap-to-translate. Returns {en,cs} or null. */
+   card's tap-to-translate. Returns the whole entry — en, cs, pos, def, syn —
+   or null. Where a headword carries two entries, as "answer" and "work" and
+   "open" each do, this returns the first; call pbDict when the reader should
+   be shown both. */
 function pbDictExact(word){
   const f=_fold(word); if(!f) return null;
   for(let i=0;i<_folds.length;i++){
-    if(_folds[i][1]===f) return {en:_folds[i][0],cs:_folds[i][2]};
-    if(_folds[i][3]===f) return {en:_folds[i][0],cs:_folds[i][2]};
+    if(_folds[i].fen===f||_folds[i].fcs===f) return _folds[i].e;
   }
   return null;
 }
@@ -32102,7 +32625,11 @@ function pbDictExact(word){
   let dictCtx="student";
   function dictRowsFor(q){
     if(!q.trim()) return [];
-    let rows=pbDict(q,25).map(m=>({en:m.en,cs:m.cs,who:m.dir}));
+    let rows=pbDict(q,25).map(m=>({en:m.en,cs:m.cs,pos:m.pos,cefr:m.cefr,
+      def:m.def,ex:m.ex,syn:m.syn,
+      /* a hit that is nowhere in the headword is worth marking as one, rather
+         than letting it imply a direct translation */
+      who:m.via==="word"?m.dir:"\u2248"}));
     if(dictCtx==="teacher"){
       try{
         const d=TB.loadData();
@@ -32116,7 +32643,8 @@ function pbDictExact(word){
           const fq=_fold(q), fe=_fold(en), fc=_fold(cs);
           if(fe.includes(fq)||fc.includes(fq)){
             seen.add(k);
-            rows.push({en,cs,who:"your bank"});
+            rows.push({en,cs,pos:"",cefr:"",def:"",
+              ex:(w.example||"").trim(),syn:[],who:"your bank"});
           }
         }
       }catch(e){}
@@ -32129,10 +32657,29 @@ function pbDictExact(word){
     const rows=dictRowsFor(q);
     res.innerHTML= q&&!rows.length
       ? '<p class="hint" style="margin:8px 0">No match — add your own pair below, or try without accents.</p>'
-      : rows.map(r=>`<div class="row"><b data-no-i18n>${esc(r.en)}</b>
-          <span data-no-i18n style="color:var(--ink-2)">${esc(r.cs)}</span>
-          <span style="flex:1 1 auto"></span><small data-no-i18n>${esc(r.who)}</small></div>`).join("")
+      : rows.map(dictRowHTML).join("")
         || '<p class="hint" style="margin:8px 0">Type a Czech or English word…</p>';
+  }
+  /* One result. The headword line carries everything needed to pick the right
+     entry out of a list — word, part of speech, translation — and the
+     definition and synonyms sit under it. That way scanning a long result set
+     stays fast, and the detail is already there the moment the scan stops.
+     Every part is data-no-i18n: these are the words themselves, and running
+     them through the interface translator would be nonsense. */
+  function dictRowHTML(r){
+    const syn=(r.syn&&r.syn.length)?r.syn.join(" \u00b7 "):"";
+    return `<div class="row dict-row">
+      <div class="dict-main">
+        <div class="dict-head" data-no-i18n><b>${esc(r.en)}</b>${
+          r.pos?`<i class="dict-pos">${esc(r.pos)}</i>`:""}${
+          r.cefr?`<i class="dict-cefr lv-${esc(r.cefr)}">${esc(r.cefr)}</i>`:""
+        }<span class="dict-cs">${esc(r.cs)}</span></div>${
+          r.def?`<p class="dict-def" data-no-i18n>${esc(r.def)}</p>`:""}${
+          r.ex?`<p class="dict-ex" data-no-i18n>${esc(r.ex)}</p>`:""}${
+          syn?`<p class="dict-syn" data-no-i18n><em>syn</em>${esc(syn)}</p>`:""}
+      </div>
+      <small data-no-i18n>${esc(r.who)}</small>
+    </div>`;
   }
   function openDict(seed,ctx){
     dictCtx=ctx==="teacher"?"teacher":"student";
@@ -32369,6 +32916,34 @@ Object.assign(CS,{
     paintInbox();
   }
 
+  /* What the header search box asks for while Messages is the open
+     section. A conversation matches on the student's name or on anything
+     said in it, either way round. Returns null — not an empty list — when
+     there is nothing to search yet, so the caller can say "connect first"
+     rather than "no matches". */
+  window.tbMsgSearch = function(q){
+    if(!tbPortalStaff || !(tbPortalRoster||[]).length) return null;
+    const needle=String(q||"").toLowerCase();
+    return (tbPortalRoster||[]).map(s => {
+      const list = threads[s.id] || [];
+      const hit = list.find(m => (m.text||"").toLowerCase().includes(needle));
+      const last = list[list.length-1] || null;
+      const shown = hit || last;
+      if(!String(s.name).toLowerCase().includes(needle) && !hit) return null;
+      return {
+        id: s.id, name: s.name,
+        unread: TBS.unreadCount(list, TEACHER),
+        preview: !shown ? "No messages yet"
+          : (shown.direction === TEACHER ? "You: " : "") +
+            (shown.text || (shown.photoPath ? "Photo" : ""))
+      };
+    }).filter(Boolean)
+      .sort((a,b) => String(a.name).localeCompare(String(b.name)));
+  };
+
+  /* A result row in the header search is a way into the thread itself. */
+  window.tbMsgOpenThread = function(id){ openThread(id); };
+
   /* Entry point, called by tbSetScope. Connects by itself only when a
      member of staff is already signed in on this device — otherwise it
      asks, which is what keeps Teachbench off the network by default. */
@@ -32508,8 +33083,27 @@ const CB_TYPES=[
            {k:"speed",l:"Speed",ph:"33⅓"},
            {k:"press",l:"Pressing",ph:"First, 1978"},
            {k:"sleeve",l:"Sleeve",ph:"VG+"}]},
+  {id:"pokemon", name:"Pokémon cards", maker:"Set",
+   cond:["Mint (M)","Near mint (NM)","Lightly played (LP)","Moderately played (MP)",
+         "Heavily played (HP)","Damaged"],
+   fields:[{k:"no",l:"Card number",ph:"025/102"},
+           {k:"rarity",l:"Rarity",opts:["Common","Uncommon","Rare","Double Rare","Ultra Rare",
+                   "Illustration Rare","Special Illustration Rare","Hyper Rare","ACE SPEC Rare",
+                   "Rare Holo","Rare Secret","Promo"]},
+           {k:"variant",l:"Variant",opts:["Normal","Holo","Reverse holo","1st edition",
+                   "Shadowless","Promo","Stamped"]},
+           {k:"lang",l:"Language",opts:["English","Japanese","Korean","Chinese",
+                   "German","French","Italian","Spanish","Portuguese","Other"]},
+           {k:"grader",l:"Grading",opts:["Raw (ungraded)","PSA","CGC","BGS","ACE","Other"]},
+           {k:"grade",l:"Grade",ph:"PSA 10, BGS 9.5…"},
+           {k:"cert",l:"Cert number",ph:"12345678"},
+           {k:"illus",l:"Illustrator",ph:"Mitsuhiro Arita"}]},
   {id:"custom", name:"Something else", maker:"Maker",
-   cond:["Mint","Excellent","Good","Fair","Poor"],
+   /* "Mint condition", not "Mint": the bare word already exists in the CS
+      dictionary as the herb "Máta" (Potting Bench's plant data), so the bare
+      value rendered as a herb in Czech. Its own key keeps the condition a
+      condition. */
+   cond:["Mint condition","Excellent","Good","Fair","Poor"],
    fields:[]}
 ];
 const CB_TYPE=id=>CB_TYPES.find(x=>x.id===id)||CB_TYPES[CB_TYPES.length-1];
@@ -32521,6 +33115,53 @@ const CB_STATUS_LBL=v=>{ const s=CB_STATUS.find(x=>x[0]===v); return s?s[1]:"Own
    they are not part of what the shelf is worth, and an insurer would say so. */
 const CB_GONE={sold:1,gifted:1};
 const CB_WANT={wanted:1,ordered:1};
+
+/* ---------------- what a collection tracks ----------------
+   CB_TYPES above is now a STARTING POINT, not a schema. A collection carries
+   its own `fields` list, seeded from the template it was made with and edited
+   from then on — the point the module was asked for: a coin has a mint mark
+   and a grade, a Spitfire has a scale and a build state, and neither list is
+   guessable in advance.
+
+   Three kinds, and no more. `text` is a line of writing, `choice` is one of a
+   list the owner names, `num` is a measurement with a unit. A fourth kind
+   would need its own column treatment in the CSV and its own row in the
+   report, and nothing so far has wanted one.
+
+   `k` is the key inside an item's `x` map. It is written once and never
+   rewritten, so renaming "Size" to "Dimensions" keeps every measurement
+   already recorded under it. Removing a field does not remove the data
+   either: cbRenderItem prints any `x` key the list no longer names, so a
+   parameter deleted by mistake can be put back and its values are still
+   there.
+
+   Absent `fields` and an EMPTY `fields` are different answers. Absent means
+   "whatever the template says" — every collection made before this editor
+   existed — and empty means the owner cleared the list on purpose. Hence
+   Array.isArray and not .length. */
+const CB_KINDS=[["text","Text"],["choice","One of a list"],["num","A measurement"]];
+const cbTplFields=type=>CB_TYPE(type).fields.map(f=>({
+  k:f.k, l:f.l, kind:f.opts?"choice":"text", ph:f.ph||"",
+  opts:f.opts?f.opts.slice():[], unit:"", wide:!!f.wide}));
+const cbFieldsOf=c=>(c&&Array.isArray(c.fields))?c.fields:cbTplFields((c||{}).type);
+/* A key has to survive a rename, so it is derived from the label ONCE and then
+   frozen. Latin letters only: it ends up as a DOM id suffix and a CSV column
+   header, and the label is where the accents live. */
+function cbFieldKey(label,taken){
+  let base=String(label||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+             .replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"").slice(0,24)||"field";
+  if(/^[0-9]/.test(base)) base="f_"+base;
+  let k=base, n=2;
+  while(taken[k]) k=base+"_"+(n++);
+  return k;
+}
+/* The one-line summary the index prints under a collection's name. */
+function cbFieldSummary(c){
+  const f=cbFieldsOf(c);
+  return f.length
+    ? f.map(x=>t(x.l)+(x.kind==="num"&&x.unit?" ("+x.unit+")":"")).join(" · ")
+    : t("Nothing beyond the basics");
+}
 
 /* ---------------- normalise ----------------
    Runs from migrate(), which boot() calls BEFORE any const in this block has
@@ -32536,19 +33177,46 @@ function cbNormalise(d){
      with no valuation started claiming it had cost nothing. */
   const num=v=>{ if(v==null||v==="") return null;
                  const n=Number(v); return isFinite(n)&&n>=0?n:null; };
-  const TYPES={art:1,models:1,coins:1,books:1,music:1,custom:1};
+  const TYPES={art:1,models:1,coins:1,books:1,music:1,custom:1,pokemon:1};
   const STAT={owned:1,wanted:1,ordered:1,loaned:1,sold:1,gifted:1};
   const ISO=v=>(typeof v==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(v))?v:null;
 
+  /* The collection's own parameter list. Written back ONLY when it is already
+     an array, because absent and empty mean different things — see CB_KINDS.
+     This runs before any const in the block exists, so it cannot ask CB_TYPES
+     what the template fields are, and it does not need to: cbFieldsOf() falls
+     back to the template at read time. */
+  const KIND={text:1,choice:1,num:1};
+  const nfields=v=>{
+    if(!Array.isArray(v)) return null;
+    const seen={}, out=[];
+    v.forEach(f=>{
+      if(!f||typeof f!=="object") return;
+      const k=str(f.k,40).replace(/[^a-zA-Z0-9_]/g,"");
+      if(!k||seen[k]) return;                  /* two fields on one key would shadow each other */
+      seen[k]=1;
+      out.push({k:k, l:str(f.l,40)||k, kind:KIND[f.kind]?f.kind:"text",
+                ph:str(f.ph,60), unit:str(f.unit,12),
+                opts:Array.isArray(f.opts)?f.opts.map(o=>str(o,40)).filter(Boolean).slice(0,30):[],
+                wide:!!f.wide});
+    });
+    return out.slice(0,30);
+  };
+
   d.cabinets=(Array.isArray(d.cabinets)?d.cabinets:[])
     .filter(c=>c&&typeof c==="object")
-    .map(c=>({id:c.id||rid(),
-              name:str(c.name,80)||"Collection",
-              type:TYPES[c.type]?c.type:"custom",
-              makerLbl:str(c.makerLbl,40)||"Maker",
-              cur:str(c.cur,6)||"Kč",
-              createdAt:Number(c.createdAt)||Date.now(),
-              updatedAt:Number(c.updatedAt)||Number(c.createdAt)||Date.now()}));
+    .map(c=>{
+      const o={id:c.id||rid(),
+               name:str(c.name,80)||"Collection",
+               type:TYPES[c.type]?c.type:"custom",
+               makerLbl:str(c.makerLbl,40)||"Maker",
+               cur:str(c.cur,6)||"Kč",
+               createdAt:Number(c.createdAt)||Date.now(),
+               updatedAt:Number(c.updatedAt)||Number(c.createdAt)||Date.now()};
+      const f=nfields(c.fields);
+      if(f) o.fields=f;
+      return o;
+    });
 
   const have={}; d.cabinets.forEach(c=>{ have[c.id]=1; });
   d.cabItems=(Array.isArray(d.cabItems)?d.cabItems:[])
@@ -32880,30 +33548,43 @@ function cbRender(){
   cbLoadThumbs().then(()=>{ if(curView==="cabinet") cbPaint(); });
   cbPaint();
 }
+/* Which of the two screens the module is on. The shelf is only reachable when
+   there is something to put on it, so an empty Cabinet always lands on the
+   index and its invitation. */
+const cbAtShelf=()=>L.cbPane==="shelf"&&!!cbColls().length;
+function cbGoIndex(){ L.cbPane="index"; saveLocal(); cbPaint(); window.scrollTo(0,0); }
+function cbGoShelf(collId){
+  if(collId!==undefined){ L.cbColl=collId; L.cbFilter=""; L.cbQ=""; }
+  L.cbPane="shelf"; saveLocal(); cbPaint(); window.scrollTo(0,0);
+}
+
 function cbPaint(){
   cbPaintShelf();
   const c=cbCur();
-  /* No collections at all: the whole screen is one invitation, and the tools
-     above it would only be furniture for nothing. */
   const none=!cbColls().length;
-  /* With no collections there is nothing for the shelf, the tools or the
-     totals to describe, so the whole card goes rather than standing there as
-     an empty frame with a lone + in it. The empty state below offers the
-     button instead. */
+  const shelf=cbAtShelf();
+  /* The two screens share one view, so everything that belongs to the shelf is
+     hidden wholesale rather than each piece deciding for itself. */
   const card=$("#cbShelf").closest(".card");
-  if(card) card.hidden=none;
-  $("#cbSearch").closest(".card").querySelector(".cb-tools").hidden=none;
-  $("#cbSum").hidden=none;
-  if(none){
-    $("#cbBody").innerHTML="";
-    const e=$("#cbEmpty"); e.hidden=false;
-    e.innerHTML=`<b>Nothing on the shelves yet.</b><br>
-      A collection is one kind of thing — your paintings, or your model aeroplanes.
-      Make one, then start adding what is in it.<br>
-      <button class="btn primary mini" type="button" id="cbFirst" style="margin-top:12px">+ New collection</button>`;
-    const b=$("#cbFirst"); if(b) b.onclick=()=>cbOpenColl(null);
-    return;
+  if(card) card.hidden=!shelf;
+  $("#cbBody").hidden=!shelf;
+  $("#cbIndex").hidden=shelf;
+  $("#cbToIndex").hidden=!shelf;
+  $("#cbCollBtn").hidden=!shelf;
+  $("#cbNewBtn").hidden=!shelf;
+  $("#cbAddColl").hidden=shelf;
+  $("#cbExportBtn").hidden=none;
+  /* the heading carries the collection's own name on the shelf, which is why
+     it has to opt out of the translator while it is doing so */
+  const h=$("#cbTitle");
+  if(h){
+    if(shelf){ h.setAttribute("data-no-i18n",""); h.textContent=c?c.name:t("All collections"); }
+    else { h.removeAttribute("data-no-i18n"); h.textContent=t("Cabinet"); }
   }
+  if(!shelf){ $("#cbEmpty").hidden=true; $("#cbBody").innerHTML=""; cbPaintIndex(); return; }
+
+  $("#cbSearch").closest(".card").querySelector(".cb-tools").hidden=false;
+  $("#cbSum").hidden=false;
   const V=cbView();
   $("#cbSort").value=V.sort; $("#cbGroup").value=V.group;
   $("#cbModeGrid").setAttribute("aria-pressed",String(V.mode!=="list"));
@@ -32932,6 +33613,58 @@ function cbPaint(){
   $("#cbEmpty").hidden=true;
   const sorted=cbSortItems(list,V.sort);
   box.innerHTML=V.group?cbGroupsHtml(sorted,V.group,V.mode):cbBlockHtml(sorted,V.mode);
+}
+
+/* ---- the index ----
+   The question this screen answers is "what do I collect, and what do I write
+   down about each of them" — so every row carries the collection's name, what
+   is in it and what it is worth, and underneath, in a quieter line, the
+   parameters it tracks. That last line is the whole reason the screen exists:
+   it is the only place the difference between a shelf of paintings and a shelf
+   of coins is visible without opening either. */
+function cbPaintIndex(){
+  const el=$("#cbIndex"); if(!el) return;
+  const colls=cbColls();
+  if(!colls.length){
+    el.innerHTML=`<p class="empty"><b>Nothing on the shelves yet.</b><br>
+      A collection is one kind of thing — your paintings, or your model aeroplanes.
+      Make one, choose what you want to record about each piece, then start adding them.<br>
+      <button class="btn primary mini" type="button" data-cbnew="1" style="margin-top:12px">+ Add category</button></p>`;
+    return;
+  }
+  const counts={}, worth={};
+  cbAllItems().forEach(i=>{
+    counts[i.collId]=(counts[i.collId]||0)+1;
+    worth[i.collId]=(worth[i.collId]||0)+cbWorthOf(i);
+  });
+  const row=(id,ini,name,meta,sub,extra)=>`<div class="cb-cl${extra||""}">
+      <button type="button" class="cb-cl-go" data-cbopen="${esc(id)}">
+        <span class="cb-cl-ini" aria-hidden="true">${esc(ini)}</span>
+        <span class="cb-cl-txt">
+          <span class="cb-cl-n" data-no-i18n>${esc(name)}</span>
+          <span class="cb-cl-m" data-no-i18n>${esc(meta)}</span>
+          <span class="cb-cl-f">${esc(sub)}</span>
+        </span>
+      </button>
+      ${id===""?"":`<button type="button" class="btn mini cb-cl-ed"
+        data-cbedit="${esc(id)}">${esc(t("Edit"))}</button>`}
+    </div>`;
+  let h=colls.map(c=>{
+    const n=counts[c.id]||0;
+    const meta=[n+" "+cbItems(n)]
+      .concat(worth[c.id]?[cbMoney(worth[c.id],c.cur)]:[]).join(" · ");
+    return row(c.id,cbInitial(c.name),c.name,meta,cbFieldSummary(c));
+  }).join("");
+  /* One shelf needs no "everything" row; two or more do, because the same
+     painter turning up in two collections is exactly what it is for. */
+  if(colls.length>1){
+    const all=cbAllItems(), cur=(new Set(colls.map(x=>x.cur))).size===1?colls[0].cur:null;
+    const T=cbTotals(all);
+    const meta=[all.length+" "+cbItems(all.length)]
+      .concat(cur&&T.worth?[cbMoney(T.worth,cur)]:[]).join(" · ");
+    h+=row("","∗",t("All collections"),meta,t("Everything, side by side")," cb-cl-all");
+  }
+  el.innerHTML=`<div class="cb-index">${h}</div>`;
 }
 
 function cbPaintShelf(){
@@ -33081,10 +33814,16 @@ function cbRenderItem(){
   if(i.status!=="owned") add(t("Status"), t(CB_STATUS_LBL(i.status)));
   add(t("Condition"), i.cond);
   if(i.qty>1) add(t("How many"), String(i.qty));
-  /* the per-type fields, in the order the template declares them */
-  T.fields.forEach(f=>add(t(f.l), i.x[f.k]));
-  /* anything the person added themselves on a custom collection */
-  Object.keys(i.x).forEach(k=>{ if(!T.fields.some(f=>f.k===k)) add(k, i.x[k]); });
+  /* the collection's own parameters, in the order it lists them */
+  const FLD=cbFieldsOf(c), own=Array.isArray(c.fields);
+  FLD.forEach(f=>{
+    const v=i.x[f.k];
+    add(own?f.l:t(f.l), (v&&f.kind==="num"&&f.unit)?v+" "+f.unit:v);
+  });
+  /* anything the person added themselves, and anything recorded under a
+     parameter the collection has since dropped — deleting a field must not
+     quietly delete what was written in it */
+  Object.keys(i.x).forEach(k=>{ if(!FLD.some(f=>f.k===k)) add(k, i.x[k]); });
   add(t("Where it is"), i.loc);
   add(t("Bought from"), i.from);
   add(t("Paid"), i.paid!=null?cbMoney(i.paid,cur):"");
@@ -33245,21 +33984,35 @@ function cbOpenItemDlg(id){
     $("#cbfCond").insertAdjacentHTML("beforeend",`<option value="${esc(i.cond)}">${esc(i.cond)}</option>`);
   $("#cbfCond").value=i?i.cond:"";
 
-  /* the per-type fields */
-  $("#cbfExtra").innerHTML=T.fields.map(f=>{
+  /* The collection's own parameters. `own` is true once the owner has edited
+     the list, and then the labels are their words — which the translator must
+     leave alone, or a field called "Grade" comes back in Czech. */
+  const FLD=cbFieldsOf(c), own=Array.isArray(c.fields);
+  $("#cbfExtra").innerHTML=FLD.map(f=>{
     const v=i?(i.x[f.k]||""):"";
-    const inner=f.opts
-      ? `<select id="cbx_${esc(f.k)}"><option value=""></option>`
-        +f.opts.map(o=>`<option value="${esc(o)}"${o===v?" selected":""}>${esc(t(o))}</option>`).join("")+`</select>`
-      : `<input id="cbx_${esc(f.k)}" maxlength="400" value="${esc(v)}" placeholder="${esc(f.ph||"")}">`;
+    let inner;
+    if(f.kind==="choice"&&(f.opts||[]).length)
+      inner=`<select id="cbx_${esc(f.k)}"><option value=""></option>`
+        +f.opts.map(o=>`<option value="${esc(o)}"${o===v?" selected":""}>${esc(own?o:t(o))}</option>`).join("")
+        /* a value recorded before this choice was removed from the list must
+           not be silently dropped by opening the item and saving it again */
+        +(v&&!f.opts.includes(v)?`<option value="${esc(v)}" selected>${esc(v)}</option>`:"")
+        +`</select>`;
+    else if(f.kind==="num")
+      inner=`<input id="cbx_${esc(f.k)}" type="number" step="any" inputmode="decimal"
+               value="${esc(v)}" placeholder="${esc(f.unit||f.ph||"")}">`;
+    else
+      inner=`<input id="cbx_${esc(f.k)}" maxlength="400" value="${esc(v)}" placeholder="${esc(f.ph||"")}">`;
+    const lbl=esc(f.l)+(f.kind==="num"&&f.unit?` <small data-no-i18n>(${esc(f.unit)})</small>`:"");
     return `<div class="field"${f.wide?' style="grid-column:1/-1"':""}>
-      <label for="cbx_${esc(f.k)}">${esc(f.l)}</label>${inner}</div>`;
+      <label for="cbx_${esc(f.k)}"${own?" data-no-i18n":""}>${lbl}</label>${inner}</div>`;
   }).join("");
 
-  /* a "something else" collection gets to invent its own fields */
+  /* a "something else" collection gets to invent its own fields per item, on
+     top of whatever the collection itself tracks */
   const isCustom=T.id==="custom";
   $("#cbfCustom").hidden=!isCustom;
-  cbDlgKv=isCustom&&i?Object.keys(i.x).map(k=>[k,i.x[k]]):[];
+  cbDlgKv=isCustom&&i?Object.keys(i.x).filter(k=>!FLD.some(f=>f.k===k)).map(k=>[k,i.x[k]]):[];
   cbPaintKv();
 
   cbFillDatalists(c);
@@ -33347,9 +34100,18 @@ async function cbSaveItemDlg(){
   i.valuedAt=$("#cbfValued").value||null;
   i.notes=$("#cbfNotes").value.slice(0,8000);
   i.tags=[...new Set($("#cbfTags").value.split(",").map(s=>s.trim().slice(0,40)).filter(Boolean))].slice(0,20);
-  const x={};
-  T.fields.forEach(f=>{ const el=$("#cbx_"+f.k); const v=el?el.value.trim().slice(0,400):"";
-                        if(v) x[f.k]=v; });
+  /* Start from what is already recorded, not from nothing. A parameter the
+     owner has since taken off the collection is still shown on the item —
+     cbRenderItem prints every x key the list no longer names — and rebuilding
+     x out of the form alone would delete it the first time the item was
+     opened and saved. A custom collection is the exception: its KV editor
+     shows every key the fields do not, so the form there really is the whole
+     record and can be rebuilt. */
+  const FLD=cbFieldsOf(c);
+  const x=(T.id==="custom")?{}:Object.assign({},i.x);
+  FLD.forEach(f=>{ const el=$("#cbx_"+f.k); if(!el) return;
+                   const v=el.value.trim().slice(0,400);
+                   if(v) x[f.k]=v; else delete x[f.k]; });
   if(T.id==="custom") cbDlgKv.forEach(([k,v])=>{ k=String(k||"").trim().slice(0,40);
                         v=String(v||"").trim().slice(0,400); if(k&&v) x[k]=v; });
   i.x=x;
@@ -33380,11 +34142,20 @@ async function cbSaveItemDlg(){
 }
 function cbWarn(sel,msg){ const el=$(sel); if(!el) return; el.textContent=msg; el.hidden=false; }
 
-/* ---------------- the collection editor ---------------- */
-let cbEditCollId=null;
+/* ---------------- the collection editor ----------------
+   cbcFields is a working copy, not the collection's list: nothing is written
+   until Save, so Cancel really cancels and a parameter deleted by accident is
+   still there when the dialog is reopened. `cbcFieldsDirty` remembers whether
+   the owner has touched it, which is what decides if changing the template
+   underneath them is helpful or rude. */
+let cbEditCollId=null, cbcFields=[], cbcFieldsDirty=false;
 function cbOpenColl(id){
   const c=id?cbCollById(id):null;
   cbEditCollId=id||null;
+  cbcFields=(c?cbFieldsOf(c):cbTplFields("art")).map(f=>({
+    k:f.k, l:f.l, kind:f.kind||"text", ph:f.ph||"", unit:f.unit||"",
+    opts:(f.opts||[]).slice(), wide:!!f.wide}));
+  cbcFieldsDirty=false;
   $("#cbCollDlgTitle").textContent=c?t("Edit collection"):t("New collection");
   $("#cbcType").innerHTML=CB_TYPES.map(x=>
     `<option value="${esc(x.id)}">${esc(t(x.name))}</option>`).join("");
@@ -33395,6 +34166,7 @@ function cbOpenColl(id){
   $("#cbCollDel").hidden=!c;
   $("#cbcWarn").hidden=true;
   cbTypeHint();
+  cbPaintFieldRows();
   $("#cbCollDlg").showModal();
   setTimeout(()=>{ const f=$("#cbcName"); if(f) f.focus(); },30);
 }
