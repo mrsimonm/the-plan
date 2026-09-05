@@ -6912,8 +6912,11 @@ html[data-shell="rail"] body{
    which is the one fact that differs between a shelf of paintings and a shelf
    of coins, and the reason a collection is worth making rather than tagging.
    So Cabinet opens on a list that says it out loud. */
-.cb-index{display:flex; flex-direction:column; gap:9px}
-.cb-cl{display:flex; align-items:stretch; gap:8px}
+/* One grid for the whole list rather than a flex row per collection, so every
+   Edit button lands in the same column and the row that has none — "All
+   collections" — is still exactly as wide as the rest. */
+.cb-index{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:9px 8px; align-items:center}
+.cb-cl{display:contents}
 .cb-cl-go{flex:1 1 auto; min-width:0; display:flex; align-items:center; gap:13px; text-align:left;
   appearance:none; cursor:pointer; font:inherit; color:inherit; padding:13px 15px;
   border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface);
@@ -6948,9 +6951,17 @@ html[data-shell="rail"] body{
 .cb-pf-b:disabled{opacity:.35; cursor:default}
 .cb-pf-b.danger:hover{border-color:var(--crit); color:var(--crit)}
 .cb-pf-acts{display:flex; gap:8px; flex-wrap:wrap; margin-top:2px}
+/* On a phone the six controls cannot sit on one line, and wrapped into a bare
+   two-row block it stops being obvious which ↑↓× belong to which parameter.
+   So each parameter becomes a small plate: its name across the top, kind and
+   detail beneath, the three buttons along the bottom. */
 @media (max-width:560px){
-  .cb-pf{grid-template-columns:1fr 1fr 1fr; gap:5px}
-  .cb-pf-b{grid-column:span 1; width:auto}
+  .cb-pf{grid-template-columns:repeat(6,1fr); gap:6px; margin-bottom:9px;
+    padding:9px; border:1px solid var(--line); border-radius:var(--r-xs); background:var(--sunk)}
+  .cb-pf>*:nth-child(1){grid-column:span 6}
+  .cb-pf>*:nth-child(2), .cb-pf>*:nth-child(3){grid-column:span 3}
+  .cb-pf>*:nth-child(4), .cb-pf>*:nth-child(5), .cb-pf>*:nth-child(6){grid-column:span 2}
+  .cb-pf-b{width:auto}
 }
 
 /* a count inside a chip: the space around <small> in the markup is a flex
@@ -28536,12 +28547,16 @@ Object.assign(CS,{ "About this build":"O této verzi","Version":"Verze","Built":
    auto-reload while they might be typing — the toast hands them the button. */
 function pbOfferReload(){
   if(document.querySelector("#pbUpd")) return;
-  const t=document.createElement("div");
-  t.id="pbUpd"; t.setAttribute("role","status");
-  t.innerHTML=`<span>${esc(t("A new version is ready."))}</span>
+  /* NOT `const t` — the app's translator is a global called t(), and naming
+     the element t shadowed it, so the next line called a <div>. The toast
+     threw before it was ever appended and nobody was ever told a new build
+     had landed. */
+  const el=document.createElement("div");
+  el.id="pbUpd"; el.setAttribute("role","status");
+  el.innerHTML=`<span>${esc(t("A new version is ready."))}</span>
     <button type="button">${esc(t("Reload"))}</button>`;
-  t.querySelector("button").onclick=()=>{ if(window.pbReloadNow) window.pbReloadNow(); };
-  document.body.appendChild(t);
+  el.querySelector("button").onclick=()=>{ if(window.pbReloadNow) window.pbReloadNow(); };
+  document.body.appendChild(el);
 }
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
   window.addEventListener("load", () => {
@@ -33421,11 +33436,19 @@ function cbFieldKey(label,taken){
   while(taken[k]) k=base+"_"+(n++);
   return k;
 }
+/* A parameter's label, translated only if it is still one of the templates'
+   own words. Everything else is the owner's writing and the dictionary must
+   not have an opinion about it: a collection that renames "Technique" to
+   "Medium" means the technique, and CS has "Medium" as the middle size. This
+   also keeps a Czech reader's "Měřítko" where a template-made collection is
+   left alone, which is what the module did before the list was editable. */
+const CB_TPL_LABELS=(()=>{ const s={}; CB_TYPES.forEach(x=>x.fields.forEach(f=>{ s[f.l]=1; })); return s; })();
+const cbLabel=l=>CB_TPL_LABELS[l]?t(l):l;
 /* The one-line summary the index prints under a collection's name. */
 function cbFieldSummary(c){
   const f=cbFieldsOf(c);
   return f.length
-    ? f.map(x=>t(x.l)+(x.kind==="num"&&x.unit?" ("+x.unit+")":"")).join(" · ")
+    ? f.map(x=>cbLabel(x.l)+(x.kind==="num"&&x.unit?" ("+x.unit+")":"")).join(" · ")
     : t("Nothing beyond the basics");
 }
 
@@ -33899,11 +33922,20 @@ function cbPaintIndex(){
       <button class="btn primary mini" type="button" data-cbnew="1" style="margin-top:12px">+ Add category</button></p>`;
     return;
   }
-  const counts={}, worth={};
-  cbAllItems().forEach(i=>{
-    counts[i.collId]=(counts[i.collId]||0)+1;
-    worth[i.collId]=(worth[i.collId]||0)+cbWorthOf(i);
-  });
+  /* The same arithmetic the shelf does, so the two screens never disagree
+     about what a collection is worth: a thing you want but have not got, and
+     a thing you had and sold, are records rather than assets. They are said
+     out loud on the row so the count explains itself. */
+  const per={};
+  cbColls().forEach(c=>{ per[c.id]=[]; });
+  cbAllItems().forEach(i=>{ if(per[i.collId]) per[i.collId].push(i); });
+  const metaOf=(items,cur)=>{
+    const T=cbTotals(items);
+    return [T.n+" "+cbItems(T.n)]
+      .concat(cur&&T.worth?[cbMoney(T.worth,cur)]:[])
+      .concat(T.want?[T.want+" "+t("wanted")]:[])
+      .concat(T.gone?[T.gone+" "+t("gone")]:[]).join(" · ");
+  };
   const row=(id,ini,name,meta,sub,extra)=>`<div class="cb-cl${extra||""}">
       <button type="button" class="cb-cl-go" data-cbopen="${esc(id)}">
         <span class="cb-cl-ini" aria-hidden="true">${esc(ini)}</span>
@@ -33913,23 +33945,18 @@ function cbPaintIndex(){
           <span class="cb-cl-f">${esc(sub)}</span>
         </span>
       </button>
-      ${id===""?"":`<button type="button" class="btn mini cb-cl-ed"
+      ${id===""?`<span class="cb-cl-ed"></span>`
+               :`<button type="button" class="btn mini cb-cl-ed"
         data-cbedit="${esc(id)}">${esc(t("Edit"))}</button>`}
     </div>`;
-  let h=colls.map(c=>{
-    const n=counts[c.id]||0;
-    const meta=[n+" "+cbItems(n)]
-      .concat(worth[c.id]?[cbMoney(worth[c.id],c.cur)]:[]).join(" · ");
-    return row(c.id,cbInitial(c.name),c.name,meta,cbFieldSummary(c));
-  }).join("");
+  let h=colls.map(c=>
+    row(c.id,cbInitial(c.name),c.name,metaOf(per[c.id],c.cur),cbFieldSummary(c))).join("");
   /* One shelf needs no "everything" row; two or more do, because the same
      painter turning up in two collections is exactly what it is for. */
   if(colls.length>1){
-    const all=cbAllItems(), cur=(new Set(colls.map(x=>x.cur))).size===1?colls[0].cur:null;
-    const T=cbTotals(all);
-    const meta=[all.length+" "+cbItems(all.length)]
-      .concat(cur&&T.worth?[cbMoney(T.worth,cur)]:[]).join(" · ");
-    h+=row("","∗",t("All collections"),meta,t("Everything, side by side")," cb-cl-all");
+    const cur=(new Set(colls.map(x=>x.cur))).size===1?colls[0].cur:null;
+    h+=row("","∗",t("All collections"),metaOf(cbAllItems(),cur),
+           t("Everything, side by side")," cb-cl-all");
   }
   el.innerHTML=`<div class="cb-index">${h}</div>`;
 }
@@ -34082,10 +34109,10 @@ function cbRenderItem(){
   add(t("Condition"), i.cond);
   if(i.qty>1) add(t("How many"), String(i.qty));
   /* the collection's own parameters, in the order it lists them */
-  const FLD=cbFieldsOf(c), own=Array.isArray(c.fields);
+  const FLD=cbFieldsOf(c);
   FLD.forEach(f=>{
     const v=i.x[f.k];
-    add(own?f.l:t(f.l), (v&&f.kind==="num"&&f.unit)?v+" "+f.unit:v);
+    add(cbLabel(f.l), (v&&f.kind==="num"&&f.unit)?v+" "+f.unit:v);
   });
   /* anything the person added themselves, and anything recorded under a
      parameter the collection has since dropped — deleting a field must not
@@ -34251,16 +34278,19 @@ function cbOpenItemDlg(id){
     $("#cbfCond").insertAdjacentHTML("beforeend",`<option value="${esc(i.cond)}">${esc(i.cond)}</option>`);
   $("#cbfCond").value=i?i.cond:"";
 
-  /* The collection's own parameters. `own` is true once the owner has edited
-     the list, and then the labels are their words — which the translator must
-     leave alone, or a field called "Grade" comes back in Czech. */
-  const FLD=cbFieldsOf(c), own=Array.isArray(c.fields);
+  /* The collection's own parameters. The labels still go through t(): a
+     collection made from a template carries the template's English words
+     until someone changes them, and marking the whole list untranslatable
+     because it is now editable would hand a Czech reader "Scale" where they
+     used to get "Měřítko". A label t() has never heard of passes straight
+     through, which is what happens to anything actually typed here. */
+  const FLD=cbFieldsOf(c);
   $("#cbfExtra").innerHTML=FLD.map(f=>{
     const v=i?(i.x[f.k]||""):"";
     let inner;
     if(f.kind==="choice"&&(f.opts||[]).length)
       inner=`<select id="cbx_${esc(f.k)}"><option value=""></option>`
-        +f.opts.map(o=>`<option value="${esc(o)}"${o===v?" selected":""}>${esc(own?o:t(o))}</option>`).join("")
+        +f.opts.map(o=>`<option value="${esc(o)}"${o===v?" selected":""}>${esc(t(o))}</option>`).join("")
         /* a value recorded before this choice was removed from the list must
            not be silently dropped by opening the item and saving it again */
         +(v&&!f.opts.includes(v)?`<option value="${esc(v)}" selected>${esc(v)}</option>`:"")
@@ -34270,9 +34300,11 @@ function cbOpenItemDlg(id){
                value="${esc(v)}" placeholder="${esc(f.unit||f.ph||"")}">`;
     else
       inner=`<input id="cbx_${esc(f.k)}" maxlength="400" value="${esc(v)}" placeholder="${esc(f.ph||"")}">`;
-    const lbl=esc(f.l)+(f.kind==="num"&&f.unit?` <small data-no-i18n>(${esc(f.unit)})</small>`:"");
+    /* translated once, here — the walker must not have a second go at it, or a
+       label that happens to be a dictionary key gets translated twice */
+    const lbl=esc(cbLabel(f.l))+(f.kind==="num"&&f.unit?` <small>(${esc(f.unit)})</small>`:"");
     return `<div class="field"${f.wide?' style="grid-column:1/-1"':""}>
-      <label for="cbx_${esc(f.k)}"${own?" data-no-i18n":""}>${lbl}</label>${inner}</div>`;
+      <label for="cbx_${esc(f.k)}" data-no-i18n>${lbl}</label>${inner}</div>`;
   }).join("");
 
   /* a "something else" collection gets to invent its own fields per item, on
@@ -34449,8 +34481,64 @@ const cbDefaultCur=()=>{
 function cbTypeHint(){
   const T=CB_TYPE($("#cbcType").value);
   $("#cbcTypeHint").textContent=T.fields.length
-    ? t("Adds fields for")+": "+T.fields.map(f=>t(f.l)).join(", ").toLowerCase()
-    : t("No extra fields — you name your own on each item.");
+    ? t("A starting point — the parameters below are yours to change.")
+    : t("A blank start — add whatever parameters this collection needs.");
+  /* Once the list has been edited, changing the template must not throw that
+     work away without asking. The offer stays on screen instead. */
+  /* One key, not a sentence glued together out of three: Czech will not put
+     the type name where English does, and t() is a dictionary, not a
+     formatter. The dialog says which template is selected two rows above. */
+  const b=$("#cbcFieldTpl");
+  if(b){ b.hidden=!cbcFieldsDirty||!T.fields.length;
+         b.textContent=t("Use the template's parameters instead"); }
+}
+
+/* ---- the parameter rows ----
+   Three boxes per row and one of them changes meaning with the kind: an
+   example answer for text, the choices for a list, the unit for a
+   measurement. Asking for those in a fourth column would have made the row
+   unreadable on a phone and the fourth box empty two times in three. */
+function cbPaintFieldRows(){
+  const box=$("#cbcFieldRows"); if(!box) return;
+  if(!cbcFields.length){
+    box.innerHTML=`<p class="hint" style="margin:0 0 4px">${
+      esc(t("Nothing extra yet — just the title, maker, dates and value every collection keeps."))}</p>`;
+    return;
+  }
+  box.innerHTML=cbcFields.map((f,ix)=>{
+    const third=f.kind==="choice"?(f.opts||[]).join(", "):f.kind==="num"?(f.unit||""):(f.ph||"");
+    const ph=f.kind==="choice"?t("Unbuilt, In progress, Built")
+            :f.kind==="num"?t("mm, g, ct…"):t("An example answer");
+    return `<div class="cb-pf">
+      <input data-cbfl="${ix}" maxlength="40" value="${esc(f.l)}" data-no-i18n
+             placeholder="${esc(t("What it is called"))}" aria-label="${esc(t("What it is called"))}">
+      <select data-cbfk="${ix}" aria-label="${esc(t("Kind"))}">${CB_KINDS.map(k=>
+        `<option value="${k[0]}"${k[0]===f.kind?" selected":""}>${esc(t(k[1]))}</option>`).join("")}</select>
+      <input data-cbfx="${ix}" maxlength="200" value="${esc(third)}" data-no-i18n
+             placeholder="${esc(ph)}" aria-label="${esc(ph)}">
+      <button type="button" class="cb-pf-b" data-cbfmv="${ix}:-1"
+        aria-label="${esc(t("Move up"))}"${ix===0?" disabled":""}>↑</button>
+      <button type="button" class="cb-pf-b" data-cbfmv="${ix}:1"
+        aria-label="${esc(t("Move down"))}"${ix===cbcFields.length-1?" disabled":""}>↓</button>
+      <button type="button" class="cb-pf-b danger" data-cbfdel="${ix}"
+        aria-label="${esc(t("Remove"))}">×</button>
+    </div>`;
+  }).join("");
+}
+/* The rows are the truth between repaints — read them back before doing
+   anything that redraws them, or a half-typed label is lost. */
+function cbReadFieldRows(){
+  const box=$("#cbcFieldRows"); if(!box) return;
+  box.querySelectorAll("[data-cbfl]").forEach(el=>{
+    const f=cbcFields[+el.dataset.cbfl]; if(f) f.l=el.value.slice(0,40);
+  });
+  box.querySelectorAll("[data-cbfx]").forEach(el=>{
+    const f=cbcFields[+el.dataset.cbfx]; if(!f) return;
+    const v=el.value;
+    if(f.kind==="choice") f.opts=v.split(",").map(s=>s.trim().slice(0,40)).filter(Boolean).slice(0,30);
+    else if(f.kind==="num") f.unit=v.trim().slice(0,12);
+    else f.ph=v.trim().slice(0,60);
+  });
 }
 function cbSaveColl(){
   const name=$("#cbcName").value.trim();
@@ -34462,8 +34550,29 @@ function cbSaveColl(){
   c.type=$("#cbcType").value;
   c.makerLbl=($("#cbcMakerLbl").value.trim()||CB_TYPE(c.type).maker).slice(0,40);
   c.cur=($("#cbcCur").value.trim()||cbDefaultCur()).slice(0,6);
+
+  /* The parameter list. A key is minted once from the label it was first
+     given and then kept, so renaming a field leaves every value recorded
+     under it exactly where it is. A row left unnamed is an abandoned row, not
+     a field called "". */
+  cbReadFieldRows();
+  const taken={}, fields=[];
+  cbcFields.forEach(f=>{
+    const l=String(f.l||"").trim(); if(!l) return;
+    let k=f.k;
+    if(!k||taken[k]) k=cbFieldKey(l,taken);
+    taken[k]=1;
+    const kind=f.kind||"text";
+    fields.push({k:k, l:l.slice(0,40), kind:kind,
+                 ph:kind==="text"?String(f.ph||"").slice(0,60):"",
+                 unit:kind==="num"?String(f.unit||"").slice(0,12):"",
+                 opts:kind==="choice"?(f.opts||[]).slice(0,30):[],
+                 wide:!!f.wide});
+  });
+  c.fields=fields.slice(0,30);
   c.updatedAt=Date.now();
-  if(fresh){ (S.cabinets=S.cabinets||[]).push(c); L.cbColl=c.id; saveLocal(); }
+
+  if(fresh){ (S.cabinets=S.cabinets||[]).push(c); L.cbColl=c.id; L.cbPane="shelf"; saveLocal(); }
   touch();
   $("#cbCollDlg").close();
   cbRender();
@@ -34478,7 +34587,9 @@ async function cbDeleteColl(){
   for(const i of items) for(const pid of i.photos) await cbPicDrop(pid);
   S.cabItems=cbAllItems().filter(i=>i.collId!==c.id);
   S.cabinets=cbColls().filter(x=>x.id!==c.id);
-  if(L.cbColl===c.id){ L.cbColl=(cbColls()[0]||{}).id||""; saveLocal(); }
+  if(L.cbColl===c.id){ L.cbColl=(cbColls()[0]||{}).id||""; }
+  /* deleting the shelf you were standing on leaves nowhere to stand */
+  L.cbPane="index"; saveLocal();
   touch();
   $("#cbCollDlg").close();
   cbRender();
@@ -34537,11 +34648,19 @@ function cbCsvCell(v){
 function cbExportCsv(){
   const list=cbSortItems(cbScopeItems(),cbView().sort);
   if(!list.length) return say(t("There is nothing here to export yet."));
-  /* every per-type field used anywhere in the scope becomes a column, so one
-     file can hold two kinds of collection without losing either */
+  /* every parameter used anywhere in the scope becomes a column, so one file
+     can hold two kinds of collection without losing either. The heading is
+     the parameter's LABEL where a collection still declares it — "Mint mark",
+     not "mint" — and the bare key otherwise, which is what a value recorded
+     under a since-deleted parameter falls back to. */
+  const label={};
+  cbColls().forEach(c=>cbFieldsOf(c).forEach(f=>{
+    if(!label[f.k]) label[f.k]=f.l+(f.kind==="num"&&f.unit?" ("+f.unit+")":"");
+  }));
   const extra=[...new Set(list.flatMap(i=>Object.keys(i.x)))];
   const head=["Collection","Title","Maker","Year","Acquired","Status","Condition","Quantity",
-              "Where","Bought from","Paid","Worth","Currency","Valued on","Tags","Photos","Notes"].concat(extra);
+              "Where","Bought from","Paid","Worth","Currency","Valued on","Tags","Photos","Notes"]
+             .concat(extra.map(k=>label[k]||k));
   const rows=list.map(i=>{
     const c=cbCollOf(i)||{};
     return [c.name,i.title,i.maker,i.year,i.acq,CB_STATUS_LBL(i.status),i.cond,i.qty,
@@ -34663,6 +34782,16 @@ function cbReport(){
   const on=(sel,ev,fn)=>{ const el=$(sel); if(el) el.addEventListener(ev,fn); };
 
   on("#cbNewBtn","click",()=>{ if(!cbColls().length) cbOpenColl(null); else cbOpenItemDlg(null); });
+  on("#cbAddColl","click",()=>cbOpenColl(null));
+  on("#cbToIndex","click",cbGoIndex);
+  /* the index: open a collection, or edit what it tracks */
+  on("#cbIndex","click",e=>{
+    if(e.target.closest("[data-cbnew]")) return cbOpenColl(null);
+    const ed=e.target.closest("[data-cbedit]");
+    if(ed){ e.stopPropagation(); return cbOpenColl(ed.dataset.cbedit); }
+    const go=e.target.closest("[data-cbopen]");
+    if(go) cbGoShelf(go.dataset.cbopen);
+  });
   on("#cbCollBtn","click",e=>{
     e.stopPropagation();
     const c=cbCur();
@@ -34734,11 +34863,11 @@ function cbReport(){
     /* the maker's name and a tag are both links back into a filtered list —
        "everything else by this artist" is the question this module exists for */
     const mk=e.target.closest("[data-cbmaker]");
-    if(mk){ L.cbColl=""; L.cbQ=mk.dataset.cbmaker; L.cbFilter="";
+    if(mk){ L.cbColl=""; L.cbQ=mk.dataset.cbmaker; L.cbFilter=""; L.cbPane="shelf";
             cbSetView({group:"maker"}); saveLocal();
             $("#cbSearch").value=L.cbQ; cbRender(); show("cabinet"); return; }
     const tg=e.target.closest("[data-cbtag]");
-    if(tg){ L.cbFilter="t:"+tg.dataset.cbtag; saveLocal(); cbRender(); show("cabinet"); }
+    if(tg){ L.cbFilter="t:"+tg.dataset.cbtag; L.cbPane="shelf"; saveLocal(); cbRender(); show("cabinet"); }
   });
 
   /* the item dialog */
@@ -34770,12 +34899,52 @@ function cbReport(){
   on("#cbCollCancel","click",()=>$("#cbCollDlg").close());
   on("#cbCollDel","click",cbDeleteColl);
   on("#cbcType","change",e=>{
-    cbTypeHint();
     /* the maker label follows the type until the person overrides it: picking
        "Books" should say Author without being asked twice */
     const lbl=$("#cbcMakerLbl"), was=CB_TYPES.map(x=>x.maker);
     if(!lbl.value.trim()||was.includes(lbl.value.trim())) lbl.value=CB_TYPE(e.target.value).maker;
+    /* the same courtesy for the parameters, but only while they are still the
+       template's — once they are the owner's work, the swap is offered rather
+       than done */
+    if(!cbcFieldsDirty){ cbcFields=cbTplFields(e.target.value); cbPaintFieldRows(); }
+    cbTypeHint();
   });
+  on("#cbcFieldTpl","click",()=>{
+    cbcFields=cbTplFields($("#cbcType").value);
+    cbcFieldsDirty=false; cbPaintFieldRows(); cbTypeHint();
+  });
+  on("#cbcFieldAdd","click",()=>{
+    cbReadFieldRows();
+    cbcFields.push({k:"",l:"",kind:"text",ph:"",unit:"",opts:[],wide:false});
+    cbcFieldsDirty=true; cbPaintFieldRows(); cbTypeHint();
+    const rows=$("#cbcFieldRows").querySelectorAll("[data-cbfl]");
+    const last=rows[rows.length-1]; if(last) last.focus();
+  });
+  on("#cbcFieldRows","click",e=>{
+    const del=e.target.closest("[data-cbfdel]");
+    if(del){ cbReadFieldRows(); cbcFields.splice(+del.dataset.cbfdel,1);
+             cbcFieldsDirty=true; cbPaintFieldRows(); cbTypeHint(); return; }
+    const mv=e.target.closest("[data-cbfmv]");
+    if(mv){
+      cbReadFieldRows();
+      const [ix,d]=mv.dataset.cbfmv.split(":").map(Number), to=ix+d;
+      if(to>=0&&to<cbcFields.length){
+        const [f]=cbcFields.splice(ix,1); cbcFields.splice(to,0,f);
+        cbcFieldsDirty=true; cbPaintFieldRows(); cbTypeHint();
+        const b=$("#cbcFieldRows").querySelectorAll(`[data-cbfmv="${to}:${d}"]`)[0];
+        if(b&&!b.disabled) b.focus();
+      }
+    }
+  });
+  /* the kind decides what the third box means, so the row has to be redrawn */
+  on("#cbcFieldRows","change",e=>{
+    const k=e.target.closest("[data-cbfk]"); if(!k) return;
+    cbReadFieldRows();
+    const f=cbcFields[+k.dataset.cbfk]; if(!f) return;
+    f.kind=k.value;
+    cbcFieldsDirty=true; cbPaintFieldRows(); cbTypeHint();
+  });
+  on("#cbcFieldRows","input",()=>{ cbcFieldsDirty=true; });
 
   /* the lightbox */
   on("#cbLbClose","click",cbLbClose);
@@ -34869,6 +35038,7 @@ Object.assign(CS,{
   "Art & paintings":"Umění a obrazy", "Scale models":"Modely",
   "Coins, stamps & notes":"Mince, známky a bankovky", "Books":"Knihy",
   "Records & music":"Desky a hudba", 
+
 
   "New item":"Nová položka", "Edit item":"Upravit položku", "+ Add item":"+ Přidat položku",
   "Item":"Položka", "item":"položka", "items":"položek",
@@ -34970,6 +35140,45 @@ Object.assign(CS,{
   "Chinese":"Čínština", "German":"Němčina", "French":"Francouzština",
   "Italian":"Italština", "Spanish":"Španělština", "Portuguese":"Portugalština",
   "Raw (ungraded)":"Nehodnocená"
+});
+
+/* The collections index and the parameter editor, in Czech. Its own
+   Object.assign at the very end for the reason the block above gives: three
+   sessions edit this file at once, and appending is the one shape that cannot
+   collide. Keys already carried above ("Collections", "All collections",
+   "wanted", "gone", "Remove") are deliberately not repeated — the last
+   assignment would win, and quietly redefining another module's word is
+   exactly the bug this arrangement exists to avoid.
+
+   A note on the word: English says "parameter", Czech says "údaj". "Kolonka"
+   is the box you type into and is already spoken for by the per-item custom
+   fields; what the collection declares is the thing being recorded, not the
+   box. */
+Object.assign(CS,{
+  "+ Add category":"+ Přidat kategorii", "← Collections":"← Sbírky",
+  "Nothing beyond the basics":"Nic nad rámec základů",
+  "Everything, side by side":"Všechno vedle sebe",
+  "Make one, choose what you want to record about each piece, then start adding them.":
+    "Založ jednu, vyber si, co chceš u každého kusu zapisovat, a pak je přidávej.",
+
+  "What you track":"Co si zapisuješ",
+  "Every collection measures different things. These become the fields on each item, and the columns in the export.":
+    "Každá sbírka měří něco jiného. Tyhle údaje pak najdeš u každé položky a ve sloupcích exportu.",
+  "A starting point — the parameters below are yours to change.":
+    "Jen začátek — údaje níž si můžeš změnit.",
+  "A blank start — add whatever parameters this collection needs.":
+    "Prázdný začátek — přidej si údaje, které tahle sbírka potřebuje.",
+  "Use the template's parameters instead":"Použít radši údaje ze šablony",
+  "+ Add a parameter":"+ Přidat údaj",
+  "Nothing extra yet — just the title, maker, dates and value every collection keeps.":
+    "Zatím nic navíc — jen název, autor, data a cena, co si vede každá sbírka.",
+
+  "What it is called":"Jak se to jmenuje", "An example answer":"Příklad odpovědi",
+  "Kind":"Druh", "Text":"Text", "One of a list":"Jedna z možností",
+  "A measurement":"Měřený údaj",
+  "Unbuilt, In progress, Built":"Nepostavené, Rozpracované, Postavené",
+  "mm, g, ct…":"mm, g, ct…",
+  "Move up":"Nahoru", "Move down":"Dolů"
 });
 
 </script>

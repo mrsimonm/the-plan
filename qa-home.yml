@@ -1,0 +1,103 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - button "Settings" [ref=e3] [cursor=pointer]: ⚙
+    - button [ref=e5] [cursor=pointer]:
+      - heading "Potting·Bench" [level=1] [ref=e6]
+      - generic [ref=e7]: ▾
+    - generic [ref=e8]:
+      - group "Language" [ref=e9]:
+        - button "EN" [pressed] [ref=e10] [cursor=pointer]
+        - button "CZ" [ref=e11] [cursor=pointer]
+      - combobox "Who is using the app" [ref=e15]:
+        - option "Me" [selected]
+        - option "Edit"
+  - tablist [ref=e17]:
+    - tab "Garden" [selected] [ref=e18] [cursor=pointer]
+    - tab "Bench" [ref=e19] [cursor=pointer]
+    - tab "Grow" [ref=e20] [cursor=pointer]
+    - tab "Diary" [ref=e21] [cursor=pointer]
+    - tab "Library" [ref=e22] [cursor=pointer]
+    - tab "Stats" [ref=e23] [cursor=pointer]
+    - generic [ref=e24]: 0%
+  - main [ref=e26]:
+    - text: +
+    - generic [ref=e27]:
+      - generic [ref=e28]:
+        - heading "Still up" [level=2] [ref=e29]
+        - generic [ref=e30]:
+          - button "Batch care" [ref=e31] [cursor=pointer]
+          - button "+ Plant" [ref=e32] [cursor=pointer]
+      - generic [ref=e33]:
+        - generic [ref=e46]:
+          - generic [ref=e47]: Today
+          - generic [ref=e48]: 0%
+        - generic [ref=e51]: 0/1 done
+      - generic [ref=e35]:
+        - generic [ref=e52]:
+          - generic [ref=e53]:
+            - generic [ref=e54]: 3 things to do
+            - button "Diary" [ref=e55] [cursor=pointer]
+          - generic [ref=e56]:
+            - generic [ref=e57]: Watered
+            - generic [ref=e58]:
+              - generic [ref=e59]: today
+              - generic [ref=e60]: 🌿
+              - generic [ref=e61]:
+                - text: Monstera Deliciosa
+                - generic [ref=e62]: Water
+              - button "Done" [ref=e63] [cursor=pointer]
+          - generic [ref=e64]:
+            - generic [ref=e65]: Watered
+            - generic [ref=e66]:
+              - generic [ref=e67]: today
+              - generic [ref=e68]: 🌿
+              - generic [ref=e69]:
+                - text: Monstera Deliciosa
+                - generic [ref=e70]: Water
+              - button "Done" [ref=e71] [cursor=pointer]
+          - generic [ref=e72]:
+            - generic [ref=e73]: Watered
+            - generic [ref=e74]:
+              - generic [ref=e75]: today
+              - generic [ref=e76]: 🌿
+              - generic [ref=e77]:
+                - text: Monstera Deliciosa
+                - generic [ref=e78]: Water
+              - button "Done" [ref=e79] [cursor=pointer]
+        - textbox "Search plants…" [ref=e41]
+        - generic [ref=e42]:
+          - button "🌿 Monstera Deliciosa Living room window water now" [ref=e80] [cursor=pointer]:
+            - generic [ref=e81]: 🌿
+            - generic [ref=e82]:
+              - generic [ref=e83]: Monstera Deliciosa
+              - generic [ref=e84]: Living room window
+              - generic [ref=e85]: water now
+          - button "🌿 Snake Plant Variegated Bedroom" [ref=e86] [cursor=pointer]:
+            - generic [ref=e87]: 🌿
+            - generic [ref=e88]:
+              - generic [ref=e89]: Snake Plant Variegated
+              - generic [ref=e90]: Bedroom
+          - button "🌿 Monstera Deliciosa Living room window water now" [ref=e91] [cursor=pointer]:
+            - generic [ref=e92]: 🌿
+            - generic [ref=e93]:
+              - generic [ref=e94]: Monstera Deliciosa
+              - generic [ref=e95]: Living room window
+              - generic [ref=e96]: water now
+          - button "🌿 Snake Plant Variegated Bedroom" [ref=e97] [cursor=pointer]:
+            - generic [ref=e98]: 🌿
+            - generic [ref=e99]:
+              - generic [ref=e100]: Snake Plant Variegated
+              - generic [ref=e101]: Bedroom
+          - button "🌿 Monstera Deliciosa Living room window water now" [ref=e102] [cursor=pointer]:
+            - generic [ref=e103]: 🌿
+            - generic [ref=e104]:
+              - generic [ref=e105]: Monstera Deliciosa
+              - generic [ref=e106]: Living room window
+              - generic [ref=e107]: water now
+          - button "🌿 Snake Plant Variegated Bedroom" [ref=e108] [cursor=pointer]:
+            - generic [ref=e109]: 🌿
+            - generic [ref=e110]:
+              - generic [ref=e111]: Snake Plant Variegated
+              - generic [ref=e112]: Bedroom
+    - text: + +
+  - button "v1.0.48" [ref=e45] [cursor=pointer]
