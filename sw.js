@@ -3,7 +3,7 @@
    is fetched fresh when there IS a signal and falls back to the cached copy
    when there is not (see the fetch handler); icons and fonts stay cache-first.
    Bump CACHE when you want to evict everything a device has cached. */
-const CACHE = "potting-bench-v59";
+const CACHE = "potting-bench-v60";
 const SHELL = ["./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {
@@ -32,9 +32,18 @@ self.addEventListener("message", e => {
 
    Network-first costs one request the browser would make anyway, and the catch
    below still serves the cached shell when there is no signal, which is the
-   case this worker exists for. */
+   case this worker exists for.
+
+   The index.html fallback is for NAVIGATIONS ONLY. Answering a failed script
+   (or any subresource) fetch with index.html used to turn a lost gstatic
+   Firebase SDK request into 'Uncaught SyntaxError: Unexpected token <' — the
+   browser parsed the app shell as JavaScript and the student portal dead-ended
+   on a first cold load with no way forward but a manual reload. Scripts,
+   styles, images and fetch calls now propagate their failure (Response.error)
+   so the page shows its real retry path instead. */
+const isNavigate = req => req.mode === "navigate" || req.destination === "document";
 const isShell = req => {
-  if (req.mode === "navigate") return true;
+  if (isNavigate(req)) return true;
   const u = new URL(req.url);
   return u.origin === self.location.origin &&
          (u.pathname === "/" || u.pathname.endsWith("/index.html"));
@@ -50,7 +59,8 @@ self.addEventListener("fetch", e => {
           caches.open(CACHE).then(c => c.put(e.request, copy));
         }
         return res;
-      }).catch(() => caches.match(e.request).then(hit => hit || caches.match("./index.html")))
+      }).catch(() => caches.match(e.request).then(hit =>
+        hit || (isNavigate(e.request) ? caches.match("./index.html") : Response.error())))
     );
     return;
   }
@@ -63,6 +73,6 @@ self.addEventListener("fetch", e => {
         caches.open(CACHE).then(c => c.put(e.request, copy));
       }
       return res;
-    }).catch(() => caches.match("./index.html")))
+    }).catch(() => Response.error()))
   );
 });
