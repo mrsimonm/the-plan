@@ -7929,7 +7929,7 @@ function setLang(v){
   /* the academy is translated at the data layer by rich(), so its nodes cache the
      language they were built in — rebuild the open view rather than trying to
      restore text that was never English in the first place */
-  try{ renderAll(); renderAcademy(); show(curView); }catch(e){}
+  try{ renderAll(); renderAcademy(); show(curView); }catch(e){ diagRecord("render",(e&&e.message)||e,e); }
   applyLang();
 }
 const prod=id=>S.products.find(p=>p.id===id);
@@ -8044,7 +8044,7 @@ async function loadShared(){
   stateLoaded=!readFailed;
   return seed();
 }
-function saveLocal(){ try{ localStorage.setItem(LOCAL_KEY,JSON.stringify(L)); }catch(e){} }
+function saveLocal(){ try{ localStorage.setItem(LOCAL_KEY,JSON.stringify(L)); }catch(e){ diagRecord("saveLocal",(e&&e.message)||e,e); } }
 /* photosLoaded: did we actually read the photo file this session?
    photosDirty:  has a photo been added, edited or removed since the last push?
    dirty:        is there any unsaved work at all? — the flag push() was missing,
@@ -29120,7 +29120,7 @@ var PSYNC = (() => {
        undo path -- and the stack now holds snapshots of a planner that no
        longer exists here. Undoing into one would quietly republish it. */
     try{ if(typeof pUndoReset==="function") pUndoReset(); }catch(e){}
-    try{ renderWho(); renderAll(); renderAcademy(); show(curView); }catch(e){}
+    try{ renderWho(); renderAll(); renderAcademy(); show(curView); }catch(e){ diagRecord("render",(e&&e.message)||e,e); }
     setSync("saved","synced");
   }
 
@@ -29186,7 +29186,7 @@ var PSYNC = (() => {
         if(prev && prev !== uid){
           S = seed();
           try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
-          try{ renderWho(); renderAll(); renderAcademy(); show(curView); }catch(e){}
+          try{ renderWho(); renderAll(); renderAcademy(); show(curView); }catch(e){ diagRecord("render",(e&&e.message)||e,e); }
           dirty = false;
         }
         claim();
