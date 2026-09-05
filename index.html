@@ -8728,14 +8728,27 @@ function foliageLine(evs){
    single leaf a fortnight in reads as half of one, without anything being
    logged in between.
 
-   It is honest from the very first leaf, so it is shown from the very first
-   leaf. A short window does make the number swing, but the answer to that is
-   to print the window next to it — "2 leaves over 9 days" — so it can be read
-   for what it is, never to hold the figure back until the data looks calmer.
+   What it must NOT do is extrapolate further than the window can carry. The
+   first version printed a figure from the very first leaf, on the grounds
+   that showing the window beside it made it readable. It does not: one leaf
+   logged today, divided by one day, is "30 a month, 365 a year", and no
+   amount of small print next to a number that wrong makes it mean anything.
+   That is not a rate, it is a single data point wearing a rate's clothes.
 
-   The window is floored at a day so the first leaf of the day has something
-   to divide by. */
+   So each figure waits for a window long enough to support it. A monthly
+   number needs a fortnight behind it; an annual one needs a quarter, because
+   quoting a year from three weeks is the same mistake one size larger. Below
+   the threshold the panel says only what it actually knows — the count, and
+   how long it has been watching. The height line directly above it already
+   works this way, holding its "cm a month" back until 21 days have passed,
+   so the two now agree instead of one of them overclaiming.
+
+   The window is floored at a day so a same-day first leaf still divides. */
+const LEAF_MONTH_MIN_DAYS=14;   /* a fortnight before quoting a month */
+const LEAF_YEAR_MIN_DAYS=90;    /* a quarter before quoting a year */
 const leafWindowDays=firstAt=>Math.max(1,(Date.now()-new Date(firstAt))/DAY);
+const leafHasMonthly=firstAt=>leafWindowDays(firstAt)>=LEAF_MONTH_MIN_DAYS;
+const leafHasYearly =firstAt=>leafWindowDays(firstAt)>=LEAF_YEAR_MIN_DAYS;
 const leafPerMonth=(total,firstAt)=>total/leafWindowDays(firstAt)*30.44;
 const leafPerYear =(total,firstAt)=>total/leafWindowDays(firstAt)*365.25;
 /* one decimal while the number is small enough for it to mean something */
@@ -8754,12 +8767,20 @@ function leafSpanWord(days){
    directly above it so the two read as one pair. */
 function foliageRate(evs){
   if(!evs.length) return "";
+  const cs=L.lang==="cs";
   const n=leafTotal(evs), first=evs[evs.length-1].at;   // evs are newest-first
-  const basis=`${n} ${leafWord(n)} `
-    +`${L.lang==="cs"?"za":"over"} ${leafSpanWord(leafWindowDays(first))}`;
-  return `${L.lang==="cs"?"asi":"about"} ${leafNum(leafPerMonth(n,first))} `
-    +`${L.lang==="cs"?"listů za měsíc":"a month"} · ${leafNum(leafPerYear(n,first))} `
-    +`${L.lang==="cs"?"za rok":"a year"}  —  ${basis}`;
+  const basis=`${n} ${leafWord(n)} ${cs?"za":"over"} ${leafSpanWord(leafWindowDays(first))}`;
+  /* under a fortnight there is no rate to give, so say the plain thing rather
+     than dress the count up as one */
+  if(!leafHasMonthly(first))
+    return `${basis} — ${cs?"na tempo je ještě brzy":"too early for a rate"}`;
+  const monthly=`${cs?"asi":"about"} ${leafNum(leafPerMonth(n,first))} `
+    +`${cs?"listů za měsíc":"a month"}`;
+  /* the annual figure waits for a quarter; before that it would just be the
+     monthly one multiplied by twelve and dressed as a year's observation */
+  const yearly=leafHasYearly(first)
+    ? ` · ${leafNum(leafPerYear(n,first))} ${cs?"za rok":"a year"}` : "";
+  return `${monthly}${yearly}  —  ${basis}`;
 }
 
 const careRoutines=sid=>routinesFor(sid)
@@ -18275,14 +18296,23 @@ function statsData(){
     const p=subs.find(x=>x.id===id); if(!p) return null;   // deleted plant, stale log
     const f=leafBy[id];
     return {p, n:f.n, first:f.first, last:f.last,
+            ripe:leafHasMonthly(f.first), ripeYear:leafHasYearly(f.first),
             perMonth:leafPerMonth(f.n,f.first), perYear:leafPerYear(f.n,f.first)};
-  }).filter(Boolean).sort((a,b)=>b.perMonth-a.perMonth);
+  }).filter(Boolean).sort((a,b)=>(b.ripe-a.ripe)||(b.perMonth-a.perMonth));
   const folFirst=folPlants.reduce((a,x)=>!a||x.first<a?x.first:a,null);
+  /* Only plants watched long enough contribute to the headline rates. A plant
+     logged for the first time this morning would otherwise add its own
+     "30 a month" to the collection total and move a number that is supposed
+     to describe months of growth. Its leaves still count towards the total
+     and it still appears in the list — it just does not get a vote on the
+     rate until it has been watched for one. */
+  const ripe=folPlants.filter(x=>x.ripe), ripeY=folPlants.filter(x=>x.ripeYear);
   D.fol={plants:folPlants,
     tracked:folPlants.length,
+    rated:ripe.length, ratedYear:ripeY.length,
     total:folPlants.reduce((a,x)=>a+x.n,0),
-    perMonth:folPlants.reduce((a,x)=>a+x.perMonth,0),
-    perYear:folPlants.reduce((a,x)=>a+x.perYear,0),
+    perMonth:ripe.reduce((a,x)=>a+x.perMonth,0),
+    perYear:ripeY.reduce((a,x)=>a+x.perYear,0),
     since:folFirst,
     /* newest leaf anywhere — answers "am I still doing this?" */
     last:folPlants.reduce((a,x)=>!a||x.last>a?x.last:a,null)};
@@ -18545,20 +18575,22 @@ function renderStats(){
   const folCard=card("Foliage",
     fo.tracked?`<div class="statrow q">
       ${statCell(fo.total,"leaves")}
-      ${statCell(leafNum(fo.perMonth),"a month")}
-      ${statCell(leafNum(fo.perYear),"a year")}
+      ${statCell(fo.rated?leafNum(fo.perMonth):"—","a month",fo.rated?"":"none")}
+      ${statCell(fo.ratedYear?leafNum(fo.perYear):"—","a year",fo.ratedYear?"":"none")}
       ${statCell(fo.tracked,"plants watched")}
     </div>
     <div style="margin-top:15px">
       <span class="eyebrow" style="display:block;margin-bottom:7px">${esc(t("Fastest growing"))}</span>
       ${barList(fo.plants.slice(0,6).map(x=>
-        [x.p.name, leafNum(x.perMonth), `${x.n} ${L.lang==="cs"?"za":"over"} ${leafSpanWord(leafWindowDays(x.first))}`]),
+        [x.p.name, x.ripe?leafNum(x.perMonth):"—",
+         `${x.n} ${L.lang==="cs"?"za":"over"} ${leafSpanWord(leafWindowDays(x.first))}`]),
         {unit:L.lang==="cs"?" /měs":" /mo"})}
     </div>`
     :`<p class="hint" style="margin:0">${esc(t(
-        "No leaves logged yet. Open a plant and tap + New leaf when one opens — a rate appears from the very first one."))}</p>`,
+        "No leaves logged yet. Open a plant and tap + New leaf when one opens."))}</p>`,
     fo.tracked?"Each plant's rate runs from its own first logged leaf to today, so a quiet month pulls it down on its own. "
-      +"The month and year figures are those per-plant rates added up — early ones swing about until a few weeks are behind them.":null);
+      +"A plant needs a fortnight behind it before it counts towards the monthly figure and a quarter before the yearly one — "
+      +"until then it shows a dash, because a leaf logged this morning is a data point, not a rate.":null);
 
   /* --- 4. propagation --- */
   const p=D.prop;
