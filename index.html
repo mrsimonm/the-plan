@@ -569,6 +569,8 @@ b{color:var(--ink-strong); font-weight:700}
 .lore-k{font-family:var(--font); font-weight:600;
   text-transform:uppercase; letter-spacing:.07em; font-size:10.5px; color:var(--accent)}
 .pg-list{border-top:1px solid var(--line)}
+.pg-go{display:flex; justify-content:flex-end; margin-top:12px;
+  padding-top:11px; border-top:1px solid var(--line-soft)}
 .pg-row{border-bottom:1px solid var(--line)}
 .pg-row:last-child{border-bottom:0}
 .pg-head{display:flex; align-items:center; gap:10px; width:100%; background:none; border:0;
@@ -8972,7 +8974,12 @@ function renderCuttings(){
       </div>`;
 }
 
-function openCutDlg(){
+/* `presetMethod` comes from the propagation guide's "Start one now". It beats
+   the species' usual recommendation on purpose: somebody who has just read
+   that page and pressed the button there has chosen the method deliberately,
+   and having the dialog quietly switch it back to the default would read as
+   the button not having worked. */
+function openCutDlg(presetMethod){
   const plants=subjectsIn("plants");
   $("#cutFrom").innerHTML=plants.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("")
     +'<option value="__other">Not one of mine</option>';
@@ -8984,7 +8991,17 @@ function openCutDlg(){
   $("#cutWhen").value=ymd(Date.now());
   $("#cutN").value=3; $("#cutNote").value="";
   syncCutMethod();
+  /* after syncCutMethod, or it would be overwritten by the recommendation */
+  if(presetMethod&&METHODS[presetMethod]){
+    $("#cutMethod").value=presetMethod;
+    cutMethodHint(presetMethod);
+  }
   $("#cutDlg").showModal();
+}
+function cutMethodHint(k){
+  const m=METHODS[k];
+  $("#cutHint").textContent=m?`${t(m.l)} — ${L.lang==="cs"?"obvykle":"usually"} ${
+    m.lo?m.lo+"–":""}${m.hi} ${L.lang==="cs"?"dní":"days"}.`:"";
 }
 /* pick the method the care sheet already recommends */
 function syncCutMethod(){
@@ -8992,9 +9009,7 @@ function syncCutMethod(){
   const sp = v==="__other" ? speciesFind($("#cutSp").value)
            : (()=>{ const p=subject(v); return p?speciesFind(p.species):null; })();
   if(sp) $("#cutMethod").value=methodFor(sp);
-  const m=METHODS[$("#cutMethod").value];
-  $("#cutHint").textContent=m?`${t(m.l)} — ${L.lang==="cs"?"obvykle":"usually"} ${
-    m.lo?m.lo+"–":""}${m.hi} ${L.lang==="cs"?"dní":"days"}.`:"";
+  cutMethodHint($("#cutMethod").value);
 }
 $("#cutFrom").addEventListener("change",()=>{
   $("#cutSpWrap").hidden=$("#cutFrom").value!=="__other";
@@ -9002,7 +9017,7 @@ $("#cutFrom").addEventListener("change",()=>{
 });
 $("#cutSp").addEventListener("change",syncCutMethod);
 $("#cutMethod").addEventListener("change",syncCutMethod);
-$("#addCut").addEventListener("click",openCutDlg);
+$("#addCut").addEventListener("click",()=>openCutDlg());
 $("#cutBody").addEventListener("click",async e=>{
   if(e.target.closest("#cutFirst")){ openCutDlg(); return; }
   const ob=e.target.closest("[data-open-batch]");
@@ -13435,6 +13450,9 @@ function propGuideHtml(idPrefix){
         ${sec("How it works",`<p>${esc(t(m.why||""))}</p>`)}
         ${sec("What to expect",`<p>${esc(t(m.expect))}</p>`)}
         ${sec("Usually goes wrong because",`<p>${esc(t(m.wrong))}</p>`)}
+        ${idPrefix==="cutPg"?`<div class="pg-go">
+          <button type="button" class="btn primary mini" data-propgo="${k}">${esc(t("Start one now"))}</button>
+        </div>`:""}
       </div>`:""}
     </div>`;
   }).join("");
@@ -13451,6 +13469,18 @@ function renderPropGuide(){
   if(a) a.innerHTML=propGuideHtml("cutPg");
   if(b) b.innerHTML=propGuideHtml("acadPg");
 }
+/* Reading a method and starting one are the same intent a second apart, so the
+   guide ends with the door rather than leaving you to find it: the button
+   opens the ordinary Add cutting dialog with this method already chosen. It is
+   only on the Grow tab — the Academy mounts the same guide to be read, not
+   acted on. Placed before the [data-prop] handler because the header toggle
+   listens on the whole document and would otherwise also fold the row shut
+   under the dialog that just opened. */
+document.addEventListener("click",e=>{
+  const g=e.target.closest("[data-propgo]"); if(!g) return;
+  e.preventDefault(); e.stopPropagation();
+  openCutDlg(g.dataset.propgo);
+});
 document.addEventListener("click",e=>{
   const h=e.target.closest("[data-prop]"); if(!h) return;
   const k=h.dataset.prop;
@@ -22247,7 +22277,7 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "Care events per day over the last 30 days":"Úkony péče po dnech za posledních 30 dní",
 "Cumulative care events over the last 30 days":"Kumulativní úkony péče za posledních 30 dní",
 /* ---- propagation guide ---- */
-"Ways to make more":"Jak jich mít víc",
+"Ways to make more":"Jak jich mít víc","Start one now":"Rovnou začít",
 "Eleven methods, easiest first. Tap one to read how it works and what it suits.":"Jedenáct způsobů, od nejsnazšího. Klepni na některý a přečti si, jak funguje a na co se hodí.",
 "When to do it":"Kdy to dělat","What it suits":"Na co se hodí",
 "How it's done":"Jak se to dělá","How it works":"Jak to funguje",
