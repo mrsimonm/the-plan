@@ -4972,6 +4972,7 @@ html[data-shell="rail"] body{
         <button type="button" data-tbwordsub="bystudent" aria-pressed="false">By student</button>
         <button type="button" data-tbwordsub="review" aria-pressed="false">Review</button>
       </div>
+      <button type="button" class="btn mini" id="tbDictOpen" style="align-self:flex-start">Dictionary ⇄</button>
 
       <div class="stack" id="tbWordBank">
         <form class="card pad qadd" id="tbWordForm">
@@ -5588,6 +5589,8 @@ html[data-shell="rail"] body{
              several shapes, so the student is told which one this is. -->
         <p class="tbs-prompt" id="tbsCardPrompt" hidden></p>
         <div class="tbs-front" id="tbsCardFront" data-no-i18n></div>
+        <button type="button" class="btn mini" id="tbsTranslate" style="align-self:flex-start;display:none" title="Look the word up">⇄ translate</button>
+        <p class="tbs-dict" id="tbsDictPeek" hidden data-no-i18n></p>
 
         <!-- first sight of a word: recognise it before recalling it -->
         <div class="tbs-choices" id="tbsChoices" hidden></div>
@@ -6301,6 +6304,41 @@ html[data-shell="rail"] body{
     <button class="btn primary" type="button" id="batchCareApply">Log it</button>
   </div>
 </dialog>
+
+<!-- Dictionary overlay (CZ <-> EN) — shared by Teach Bench & Study Bench -->
+<style>
+#tbdict{position:fixed;inset:0;z-index:130;display:flex;align-items:center;justify-content:center;
+  padding:20px;background:rgba(10,8,14,.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#tbdict[hidden]{display:none}
+#tbdict .bx{width:min(540px,100%);max-height:84vh;display:flex;flex-direction:column;gap:10px}
+#tbdictRes{overflow:auto;min-height:80px;flex:1 1 auto}
+#tbdictRes .row{border-bottom:1px solid var(--line);padding:9px 2px;gap:10px}
+#tbdictRes .row small{color:var(--ink-3)}
+#tbdictRes .who{font-family:var(--font);font-variant-numeric:tabular-nums;font-size:9px;
+  color:var(--ink-3);border:1px solid var(--line);padding:1px 6px;border-radius:99px}
+.tbdict-kbd{font-size:11px}
+</style>
+<div id="tbdict" hidden>
+  <div class="card pad bx">
+    <div style="display:flex;align-items:center;gap:8px">
+      <b style="font-size:18px">Dictionary</b>
+      <span class="eyebrow">czech &nbsp;⇄&nbsp; english</span>
+      <span style="flex:1 1 auto"></span>
+      <button type="button" class="btn mini" id="tbdictClose" aria-label="Close">✕</button>
+    </div>
+    <input type="search" id="tbdictQ" class="mono-input" autocomplete="off"
+      placeholder="Search a word — Czech or English…" aria-label="Search dictionary">
+    <div id="tbdictRes" class="stack"></div>
+    <div id="tbdictAdd" hidden style="border-top:1px solid var(--line);padding-top:10px">
+      <div class="row" style="gap:6px">
+        <input type="text" id="tbdictEn" class="mono-input" placeholder="English word" style="flex:1 1 45%">
+        <input type="text" id="tbdictCs" class="mono-input" placeholder="Czech word" style="flex:1 1 45%">
+        <button type="button" class="btn mini primary" id="tbdictAddBtn">Add</button>
+      </div>
+      <p class="hint" style="margin:6px 0 0">Saved to your word bank, so it backs up and can be sent to flashcards.</p>
+    </div>
+  </div>
+</div>
 <script>
 "use strict";
 
@@ -7429,6 +7467,13 @@ const TB = (() => {
     { id: 'c1-02', level: 'c1', text: 'Use language flexibly for social and professional purposes' },
     { id: 'c1-03', level: 'c1', text: 'Understand implicit meaning and humour' },
     { id: 'c1-04', level: 'c1', text: 'Write clear, well-structured text on complex subjects' },
+
+    { id: 'c2-01', level: 'c2', text: 'Speak with total ease and precision about complex or sensitive topics' },
+    { id: 'c2-02', level: 'c2', text: 'Summarise information from different spoken and written sources' },
+    { id: 'c2-03', level: 'c2', text: 'Catch nuances, idioms and indirect meaning' },
+    { id: 'c2-04', level: 'c2', text: 'Write clear, smoothly flowing text in an appropriate style' },
+    { id: 'c2-05', level: 'c2', text: 'Express myself spontaneously and at length with natural fluency' },
+    { id: 'c2-06', level: 'c2', text: 'Structure a convincing argument to suit the listener' },
   ];
 
   /* ---- the money and attendance arithmetic ------------------------------
@@ -27177,6 +27222,12 @@ Object.assign(CS,{
 
 Object.assign(CS,{ "you@example.com":"vas@example.com","sk-ant-…":"sk-ant-…","claude-opus-5":"claude-opus-5" });
 
+Object.assign(CS,{ "Speak with total ease and precision about complex or sensitive topics":"Mluvit zcela plynule a přesně o složitých či citlivých tématech",
+"Summarise information from different spoken and written sources":"Shrnout informace z různých mluvených i psaných zdrojů",
+"Catch nuances, idioms and indirect meaning":"Postřehnout nuance, idiomy a nepřímý význam",
+"Write clear, smoothly flowing text in an appropriate style":"Napsat jasný a plynulý text vhodným stylem",
+"Express myself spontaneously and at length with natural fluency":"Vyjádřit se spontánně a obšírně s přirozenou plynulostí",
+"Structure a convincing argument to suit the listener":"Vystavět přesvědčivou argumentaci podle posluchače" });
 boot();
 
 /* The progress bars used to be rebuilt every 2 seconds forever, in every view,
@@ -30716,10 +30767,11 @@ function tbRenderCanDo(){
 
   /* Show the student's own level and the one below and above it: the ones
      below are what they should already have, the one above is what to aim
-     at. Showing all of A1 to C1 at once would be a wall. */
-  const order = ["a1", "a2", "b1", "b2", "c1"];
-  const base = String(student.level || "a1").replace("p", "");
-  const at = Math.max(0, order.indexOf(base));
+     at. Showing all of A1 to C2 at once would be a wall. */
+  const order = ["a1", "a2", "b1", "b2", "c1", "c2"];
+  const base = String(student.level || "a1").replace("p", "").toLowerCase();
+  let at = order.indexOf(base);
+  if(at < 0) at = base >= "c2" ? order.length - 1 : 0;
   const show = order.slice(Math.max(0, at - 1), at + 2);
 
   host.innerHTML = show.map(lvl => {
@@ -30734,7 +30786,7 @@ function tbRenderCanDo(){
       <div class="stack" style="gap:2px">${items.map(c => `
         <label class="tb-cando${ticked.has(c.id) ? " on" : ""}">
           <input type="checkbox" data-tb-cando="${esc(c.id)}"${ticked.has(c.id) ? " checked" : ""}>
-          <span>${esc(c.text)}</span>
+          <span>${esc(t(c.text))}</span>
         </label>`).join("")}</div>
     </div>`;
   }).join("");
@@ -31060,5 +31112,114 @@ function pbDictExact(word){
   }
   return null;
 }
+
+
+/* ============ Dictionary UI (CZ <-> EN) — overlay controller ============ */
+(()=>{
+  const ov=()=>document.getElementById("tbdict");
+  let dictCtx="student";
+  function dictRowsFor(q){
+    if(!q.trim()) return [];
+    let rows=pbDict(q,25).map(m=>({en:m.en,cs:m.cs,who:m.dir}));
+    if(dictCtx==="teacher"){
+      try{
+        const d=TB.loadData();
+        const seen=new Set();
+        rows=rows.filter(r=>{const k=_fold(r.en)+"|"+_fold(r.cs); if(seen.has(k))return false; seen.add(k); return true;});
+        for(const w of d.words||[]){
+          const en=(w.term||"").trim(), cs=(w.definition||"").trim();
+          if(!en||!cs) continue;
+          const k=_fold(en)+"|"+_fold(cs);
+          if(seen.has(k)) continue;
+          const fq=_fold(q), fe=_fold(en), fc=_fold(cs);
+          if(fe.includes(fq)||fc.includes(fq)){
+            seen.add(k);
+            rows.push({en,cs,who:"your bank"});
+          }
+        }
+      }catch(e){}
+    }
+    return rows;
+  }
+  function dictRender(){
+    const res=document.getElementById("tbdictRes");
+    const q=document.getElementById("tbdictQ").value;
+    const rows=dictRowsFor(q);
+    res.innerHTML= q&&!rows.length
+      ? '<p class="hint" style="margin:8px 0">No match — add your own pair below, or try without accents.</p>'
+      : rows.map(r=>`<div class="row"><b data-no-i18n>${esc(r.en)}</b>
+          <span data-no-i18n style="color:var(--ink-2)">${esc(r.cs)}</span>
+          <span style="flex:1 1 auto"></span><small data-no-i18n>${esc(r.who)}</small></div>`).join("")
+        || '<p class="hint" style="margin:8px 0">Type a Czech or English word…</p>';
+  }
+  function openDict(seed,ctx){
+    dictCtx=ctx==="teacher"?"teacher":"student";
+    const o=ov(); if(!o) return;
+    const add=document.getElementById("tbdictAdd"); if(add) add.hidden=dictCtx!=="teacher";
+    o.hidden=false; o.style.display="flex";
+    const inp=document.getElementById("tbdictQ");
+    inp.value=seed||""; inp.focus(); dictRender();
+  }
+  function closeDict(){ const o=ov(); if(o){o.hidden=true; o.style.display="";} }
+  document.addEventListener("click",e=>{
+    if(e.target.closest&&e.target.closest("#tbdictClose")){ closeDict(); return; }
+    if(e.target.closest&&e.target.closest("#tbDictOpen")){ openDict("","teacher"); return; }
+    if(e.target.closest&&e.target.closest("[data-open-dict]")){
+      const el=e.target.closest("[data-open-dict]");
+      openDict(el.dataset.openDict||"", el.dataset.dictCtx||"student"); return;
+    }
+    if(e.target.closest&&e.target.closest("#tbsTranslate")){
+      const front=document.getElementById("tbsCardFront");
+      const w=(front&&front.textContent||"").trim();
+      openDict(w,"student"); return;
+    }
+  });
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&ov()&&!ov().hidden) closeDict(); });
+  const qEl=document.getElementById("tbdictQ");
+  if(qEl) qEl.addEventListener("input",dictRender);
+  const addBtn=document.getElementById("tbdictAddBtn");
+  if(addBtn) addBtn.addEventListener("click",()=>{
+    const en=document.getElementById("tbdictEn").value.trim();
+    const cs=document.getElementById("tbdictCs").value.trim();
+    if(!en||!cs){ return; }
+    try{
+      const d=TB.loadData();
+      d.words.push(TB.createWord({term:en,definition:cs,example:""}));
+      TB.saveData(d);
+      document.getElementById("tbdictEn").value="";
+      document.getElementById("tbdictCs").value="";
+      document.getElementById("tbdictAdd").hidden=true;
+      dictRender();
+      const note=document.getElementById("tbdictAdd");
+      if(note) { const p=document.createElement("p"); p.className="hint";
+        p.style.cssText="margin:6px 0 0;color:var(--ok)";
+        p.setAttribute("data-no-i18n","");
+        p.textContent="\u2713 "+en+" \u2194 "+cs+" added to your word bank.";
+        note.before(p); setTimeout(()=>p.remove(),2600); }
+    }catch(err){}
+  });
+  /* reveal the review-card translate button whenever a front word is shown */
+  const front=document.getElementById("tbsCardFront");
+  if(front && "MutationObserver" in window){
+    const tbtn=document.getElementById("tbsTranslate");
+    const set=()=>{ if(tbtn) tbtn.style.display=(front.textContent&&front.textContent.trim())?"inline-flex":"none"; };
+    new MutationObserver(set).observe(front,{childList:true,subtree:true,characterData:true});
+    set();
+  }
+})();
+
+
+
+Object.assign(CS,{
+  "Dictionary":"Slovník",
+  "Dictionary ⇄":"Slovník ⇄",
+  "czech &nbsp;⇄&nbsp; english":"česky &nbsp;⇄&nbsp; anglicky",
+  "Search a word — Czech or English…":"Hledej slovo — česky nebo anglicky…",
+  "English word":"Anglické slovo",
+  "Czech word":"České slovo",
+  "Add":"Přidat",
+  "Added to your word bank.":"Přidáno do tvého slovníku slov.",
+  "translate":"přeložit"
+});
 
 </script>
