@@ -618,6 +618,12 @@ b{color:var(--ink-strong); font-weight:700}
 .about-row{display:flex; justify-content:space-between; align-items:baseline; gap:14px; font-size:14px}
 .about-row span{color:var(--ink-3); font-size:12px}
 .about-row b{text-align:right; font-variant-numeric:tabular-nums}
+#pbUpd{position:fixed; left:50%; bottom:44px; transform:translateX(-50%); z-index:72; display:flex;
+  align-items:center; gap:12px; padding:9px 10px 9px 16px; background:var(--surface); color:var(--ink);
+  border:1px solid var(--line); border-radius:14px; box-shadow:0 14px 38px -10px rgba(0,0,0,.3);
+  font-size:14px; max-width:calc(100vw - 24px)}
+#pbUpd button{border:0; background:var(--accent); color:var(--on-accent); font:inherit; font-weight:600;
+  padding:7px 12px; border-radius:10px; cursor:pointer; white-space:nowrap}
 @media print{ #verBadge{display:none} }
 .duerow.swipeable{position:relative; overflow:hidden; touch-action:pan-y; padding:0}
 .duerow.swipeable .duerow-in{display:flex; align-items:center; gap:10px; padding:9px 14px;
@@ -7818,7 +7824,7 @@ const $=s=>document.querySelector(s);
 /* Build stamp. `n` is incremented by bump.py at publish time so two phones can
    be compared at a glance — an installed PWA serving a stale service-worker
    cache is otherwise indistinguishable from an up-to-date one. */
-const BUILD={ver:"1.0",n:57,at:"2026-09-04"};
+const BUILD={ver:"1.0",n:58,at:"2026-09-05"};
 const uid=()=>Math.random().toString(36).slice(2,9);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
@@ -26864,7 +26870,8 @@ setInterval(()=>{
 
 Object.assign(CS,{ "About this build":"O této verzi","Version":"Verze","Built":"Sestaveno","Sync":"Synchronizace",
 "Stored on this device. Export a copy to keep it safe.":"Uloženo v tomto zařízení. Pro jistotu si exportujte kopii.",
-"Copy diagnostics":"Zkopírovat diagnostiku","Export/back up data":"Exportovat / zazálohovat data","Copied":"Zkopírováno" });
+"Copy diagnostics":"Zkopírovat diagnostiku","Export/back up data":"Exportovat / zazálohovat data","Copied":"Zkopírováno",
+"A new version is ready.":"Je připravená nová verze.","Reload":"Načíst znovu" });
 /* Built in script rather than markup: this file ships as an Artifact fragment
    with no <body> tag of its own to anchor to. Tapping opens an About sheet —
    the stamp plus where this copy stores its data — which is what tells you
@@ -26917,9 +26924,37 @@ Object.assign(CS,{ "About this build":"O této verzi","Version":"Verze","Built":
   if(document.body) mount(); else addEventListener("DOMContentLoaded",mount);
 })();
 
+/* The service worker is network-first for the shell, so a reload always picks
+   up a fresh index.html; this just tells the customer one is waiting instead
+   of leaving them to guess why a fix they were promised hasn't "arrived". No
+   auto-reload while they might be typing — the toast hands them the button. */
+function pbOfferReload(){
+  if(document.querySelector("#pbUpd")) return;
+  const t=document.createElement("div");
+  t.id="pbUpd"; t.setAttribute("role","status");
+  t.innerHTML=`<span>${esc(t("A new version is ready."))}</span>
+    <button type="button">${esc(t("Reload"))}</button>`;
+  t.querySelector("button").onclick=()=>{ if(window.pbReloadNow) window.pbReloadNow(); };
+  document.body.appendChild(t);
+}
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch(() => {});
+    navigator.serviceWorker.register("./sw.js").then(reg=>{
+      reg.addEventListener("updatefound",()=>{
+        const nw=reg.installing; if(!nw) return;
+        nw.addEventListener("statechange",()=>{
+          if(nw.state==="installed"&&navigator.serviceWorker.controller) pbOfferReload();
+        });
+      });
+      let ready=false;
+      navigator.serviceWorker.addEventListener("controllerchange",()=>{
+        if(ready){ ready=false; location.reload(); }
+      });
+      window.pbReloadNow=()=>{
+        ready=true;
+        if(reg.waiting){ reg.waiting.postMessage({type:"SKIP_WAITING"}); } else location.reload();
+      };
+    }).catch(() => {});
   });
 }
 /* ============================================================================

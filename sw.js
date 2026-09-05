@@ -3,7 +3,7 @@
    is fetched fresh when there IS a signal and falls back to the cached copy
    when there is not (see the fetch handler); icons and fonts stay cache-first.
    Bump CACHE when you want to evict everything a device has cached. */
-const CACHE = "potting-bench-v46";
+const CACHE = "potting-bench-v58";
 const SHELL = ["./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {
@@ -14,6 +14,11 @@ self.addEventListener("activate", e => {
   e.waitUntil(caches.keys()
     .then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
+});
+
+/* the page asks to take over when its "reload for the new version" is pressed */
+self.addEventListener("message", e => {
+  if (e.data && e.data.type === "SKIP_WAITING") self.skipWaiting();
 });
 
 /* The app shell is NETWORK-first, everything else cache-first.
