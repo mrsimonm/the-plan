@@ -7981,7 +7981,7 @@ function diagAll(){
   try{ const r=localStorage.getItem(DIAG_KEY); const p=r?JSON.parse(r):[]; return Array.isArray(p)?p:[]; }
   catch(e){ return []; }
 }
-function diagRecord(type,msg,err){
+function diagRecord(type,msg,err,badge){
   try{
     const arr=diagAll();
     arr.push({ at:new Date().toISOString(), b:BUILD.ver+"."+BUILD.n, t:type,
@@ -7990,8 +7990,10 @@ function diagRecord(type,msg,err){
       d:diagDigest() });
     while(arr.length>DIAG_MAX) arr.shift();
     try{ localStorage.setItem(DIAG_KEY,JSON.stringify(arr)); }catch(e){}
-    /* surface, don't hide: a captured failure shows on the sync badge */
-    if(typeof setSync==="function"){ try{ setSync("error","something went wrong"); }catch(e){} }
+    /* surface, don't hide: a captured failure shows on the sync badge.
+       `badge` defaults to true; background reads that are expected to fail
+       offline (portal/list fetch) pass false so they only fill the ring. */
+    if(badge!==false && typeof setSync==="function"){ try{ setSync("error","something went wrong"); }catch(e){} }
   }catch(e){}
 }
 window.addEventListener("error",ev=>diagRecord("error",(ev&&ev.message)||"window error",ev&&ev.error));
@@ -24712,12 +24714,12 @@ const TBS = (() => {
             : students().where("teacherId","==",staff.uid);
     return q.onSnapshot(
       s => cb(s.docs.map(d => ({ id:d.id, ...d.data() }))),
-      err => { console.warn("roster", err); cb([]); });
+      err => { diagRecord("tbs-fetch", "roster load failed", err, false); cb([]); });
   }
   function onStudent(studentId, cb){
     return students().doc(studentId).onSnapshot(
       d => cb(d.exists ? { id:d.id, ...d.data() } : null),
-      err => { console.warn("student", err); cb(null); });
+      err => { diagRecord("tbs-fetch", "student load failed", err, false); cb(null); });
   }
 
   /* A code short enough to read down the phone, long enough not to be
@@ -24790,7 +24792,7 @@ const TBS = (() => {
        working link, which is better than locking them out. */
     if(oldHash && oldHash !== hash){
       try{ await db.collection("accessCodes").doc(oldHash).delete(); }
-      catch(e){ console.warn("revoke old code", e); }
+      catch(e){ diagRecord("tbs", "revoke old code failed", e, false); }
     }
     rememberCode(studentId, code);
     return code;
@@ -24805,7 +24807,7 @@ const TBS = (() => {
   function onCards(studentId, cb){
     return cardsOf(studentId).onSnapshot(
       s => cb(s.docs.map(d => ({ id:d.id, ...d.data() })), null),
-      err => { console.warn("cards", err); cb([], err); });
+      err => { diagRecord("tbs-fetch", "cards load failed", err, false); cb([], err); });
   }
   async function addCard(studentId, card){
     await init();
@@ -24839,7 +24841,7 @@ const TBS = (() => {
   function onProgress(studentId, cb){
     return progRef(studentId).onSnapshot(
       d => cb(d.exists ? d.data() : STREAK.empty(), null),
-      err => { console.warn("progress", err); cb(STREAK.empty(), err); });
+      err => { diagRecord("tbs-fetch", "progress load failed", err, false); cb(STREAK.empty(), err); });
   }
   /* Written by the student's own device as a by-product of reviewing.
      Merged rather than replaced so two tabs cannot wipe each other's
@@ -24861,7 +24863,7 @@ const TBS = (() => {
     return hwOf(studentId).onSnapshot(
       s => cb(s.docs.map(d => ({ id:d.id, ...d.data() }))
                .sort((a,b) => String(a.createdAt).localeCompare(String(b.createdAt))), null),
-      err => { console.warn("homework", err); cb([], err); });
+      err => { diagRecord("tbs-fetch", "homework load failed", err, false); cb([], err); });
   }
   /* A phone photo is 3-5 MB of detail nobody needs to read a worksheet,
      and the teacher is often on mobile data. Downscale to something
@@ -25497,7 +25499,7 @@ const TBS_UI = (() => {
        queue replays it if the connection has dropped. */
     const now = new Date();
     const next = SRS.scheduleNext(c, g, now);
-    TBS.submitReview(state.studentId, c.id, c, g).catch(e => console.warn("review", e));
+    TBS.submitReview(state.studentId, c.id, c, g).catch(e => diagRecord("tbs-review", e && e.message ? e.message : e, e, true));
 
     /* Credit the streak from the card's state BEFORE this answer: how
        late it was, and whether anything else had been left to rot. */
@@ -25514,7 +25516,7 @@ const TBS_UI = (() => {
     }, now);
     /* Nothing left in the queue and nothing re-queued: the day is clear. */
     if(!state.queue.length && g !== "again") state.progress = STREAK.clearedDay(state.progress, now);
-    TBS.saveProgress(state.studentId, state.progress).catch(e => console.warn("progress", e));
+    TBS.saveProgress(state.studentId, state.progress).catch(e => diagRecord("tbs-progress", e && e.message ? e.message : e, e, true));
     renderStreak();
 
     /* "Again" means again in this session, not tomorrow. */
@@ -25844,7 +25846,7 @@ const TBS_UI = (() => {
       try{
         await TBS.addStudent(name, state.staff);
         $$("tbsNewStudentName").value = "";
-      }catch(e){ console.warn("addStudent", e); }
+      }catch(e){ diagRecord("tb", "add student failed", e, true); }
       finally{ $$("tbsAddStudent").disabled = false; }
     };
     $$("tbsStuBack").onclick = () => { dropStudentListeners(); show("tbsStaffHome"); };
@@ -25909,7 +25911,7 @@ const TBS_UI = (() => {
         });
         $$("tbsNewFront").value = ""; $$("tbsNewBack").value = "";
         $$("tbsNewExpl").value = ""; $$("tbsNewExample").value = "";
-      }catch(e){ console.warn("addCard", e); }
+      }catch(e){ diagRecord("tb", "add card failed", e, true); }
       finally{ $$("tbsAddCard").disabled = false; }
     };
 
@@ -25928,7 +25930,7 @@ const TBS_UI = (() => {
         await TBS.sendHomework(state.openStudent, t, "teacher-to-student", f);
         $$("tbsHwText").value = ""; hwPicker.value = ""; $$("tbsHwPhotoName").textContent = "";
       }catch(e){
-        console.warn("sendHomework", e);
+        diagRecord("tb", "send homework failed", e, true);
         $$("tbsHwPhotoName").textContent = e && e.message === "too-big"
           ? "That photo is too large." : "Couldn't send — try again.";
       }
@@ -30284,7 +30286,7 @@ async function tbPortalConnect(){
   try{
     tbPortalStaff = await TBS.currentStaff();
   }catch(err){
-    console.warn("[Teachbench] portal connect:", err);
+    diagRecord("tb", "portal connect failed", err, false);
     tbPortalStaff = null;
   }
   if(!tbPortalStaff){
@@ -30310,7 +30312,7 @@ function tbPortalLoadRoster(){
         else { settled = true; resolve(); }
       });
     }catch(err){
-      console.warn("[Teachbench] portal roster:", err);
+      diagRecord("tb", "portal roster failed", err, false);
       if(!settled){ settled = true; resolve(); }
     }
     /* Never leave the card saying "Connecting…" for ever if the snapshot
@@ -30472,7 +30474,7 @@ async function tbPushWords(){
       $("#tbPushWarn").textContent = L.lang==="cs"
         ? `Odesílám ${sent} z ${picked.length}…` : `Sending ${sent} of ${picked.length}…`;
     }catch(err){
-      console.warn("[Teachbench] push word:", err);
+      diagRecord("tb", "portal push word failed", err, true);
       failed.push(r.word.term);
     }
   }
@@ -30621,7 +30623,7 @@ async function tbRunMakeCards(){
           explanation:null, example:word.example || null
         });
         sent++;
-      }catch(err){ console.warn("[Teachbench] lesson push:", err); failed++; }
+      }catch(err){ diagRecord("tb", "lesson push failed", err, true); failed++; }
     }
     msg += csL
       ? (failed ? `. Na portál odesláno ${sent}, ${failed} selhalo.` : `, a všech ${sent} šlo na portál jako kartičky.`)
@@ -30749,7 +30751,7 @@ async function tbCopyStatement(){
   }catch(err){
     /* Clipboard access can be refused; showing the text is better than
        silently doing nothing. */
-    console.warn("[Teachbench] clipboard:", err);
+    diagRecord("tb", "clipboard failed", err, false);
     window.prompt("Copy this month's statement:", text);
   }
 }
