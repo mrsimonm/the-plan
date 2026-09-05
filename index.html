@@ -3234,6 +3234,14 @@ dialog:has(> form > .dlg-foot) > form > .dlg-foot{flex:0 0 auto}
 .linkish{background:none; border:0; padding:0; font:inherit; color:var(--accent);
   cursor:pointer; text-decoration:underline; text-underline-offset:2px}
 
+/* a cycle row swaps the seven day-buttons for one select — same column, so a
+   mixed list of cycle and pinned plants still reads down the page */
+.cd-sel{flex:1 1 auto; min-width:0; padding:5px 8px; font-size:12px;
+  border:1px solid var(--line); border-radius:8px; background:var(--sunk);
+  color:var(--ink); font-family:var(--font)}
+.cd-name .chipinfo{flex:0 0 auto}
+.hint.bad{color:var(--crit)}
+
 .pindays{margin:0 0 11px}
 .pinrow{display:flex; align-items:center; gap:10px; margin-bottom:6px}
 .pinrow .pin-k{flex:0 0 52px; font-size:12px; color:var(--ink-2)}
@@ -4234,6 +4242,37 @@ html[data-shell="rail"] body{
                   </div>
                   <p class="hint" style="margin:8px 0 0">A plant keeps its day until you move it. Anything that
                     runs properly late still shows up straight away — action days are the plan, not a cage.</p>
+                </div>
+                <!-- The cycle. Sits under the action days deliberately: those
+                     are the beat this counts against, so it would make no sense
+                     anywhere else. -->
+                <div class="field" style="margin-top:15px; border-top:1px solid var(--glass-border); padding-top:14px">
+                  <label>Fertiliser day</label>
+                  <label class="lu" style="border:0; padding:0; margin-bottom:9px">
+                    <span class="sw"><input id="feedDayOn" type="checkbox"><i></i></span>
+                    <span class="lu-name">One fertiliser day a week<small>Feeds only ever land on this day, so you mix once</small></span>
+                  </label>
+                  <div id="feedDayPicker" class="btn-row" style="gap:6px"></div>
+                  <p class="hint" id="feedDayHint" style="margin:8px 0 0"></p>
+                </div>
+                <div class="field" style="margin-top:13px">
+                  <label>Put the plants on the cycle</label>
+                  <p class="hint" style="margin:0 0 9px">One rhythm instead of two intervals: a plant drinks every
+                    so many action days, and every so many of those drinks is the feed. No plant can ever be due
+                    a watering and a feed on the same day again, because a feed <em>is</em> a watering.</p>
+                  <div class="grid2">
+                    <div class="field"><label for="cycWater">Water every</label>
+                      <select id="cycWater"></select></div>
+                    <div class="field"><label for="cycFeed">Feed every</label>
+                      <select id="cycFeed"></select></div>
+                  </div>
+                  <p class="hint" id="cycPreview" style="margin:2px 0 9px"></p>
+                  <div class="btn-row">
+                    <button class="btn mini primary" type="button" id="cycApplyAll">Put every plant on this</button>
+                    <button class="btn mini" type="button" id="cycStagger">Stagger them</button>
+                    <button class="btn mini" type="button" id="cycOffAll">Take them all off</button>
+                  </div>
+                  <p class="hint" id="cycCount" style="margin:9px 0 0"></p>
                 </div>
               </div>
             </div>
@@ -8632,6 +8671,9 @@ function seed(){return{
      are added from the user menu ("+ Add someone"); nothing assumes a count. */
   v:6, users:[{id:"u1",name:"Me"}],
   actionDaysOn:true, actionDays:[3,0],          // Wednesday & Sunday
+  /* the cycle: one fertiliser day a week, and the defaults a plant joins on */
+  feedDayOn:true, feedDay:0,                    // Sunday
+  cycleDefault:{water:1, feed:2},               // every beat, every 2nd is a feed
   cuttings:[], photos:[], products:[], formulas:[], schedules:[], subjects:[], routines:[], events:[], tasks:[],
   issues:[],
   notes:[], notebooks:[],
@@ -8740,6 +8782,24 @@ function migrate(d){
     .map(r=>Object.assign({kind:"chore",name:"Care",every:7},r));
   /* v7: a routine may be pinned to weekdays instead of running on its interval. */
   d.routines.forEach(r=>{ r.days=normDays(r.days); });
+  /* v9: the cycle. A plant's watering and feeding stop being two independent
+     intervals and become one rhythm with a feed multiplier on it. Off by
+     default on every existing plant — the mode changes when a plant is fed,
+     so it must never switch itself on under someone. */
+  if(typeof d.feedDayOn!=="boolean") d.feedDayOn=true;
+  { const fd=+d.feedDay; d.feedDay=Number.isInteger(fd)&&fd>=0&&fd<=6?fd:0; }
+  d.cycleDefault=Object.assign({water:1,feed:2},d.cycleDefault||{});
+  d.cycleDefault.water=Math.max(1,Math.min(12,+d.cycleDefault.water||1));
+  d.cycleDefault.feed=Math.max(0,Math.min(12,+d.cycleDefault.feed||0));
+  d.subjects.forEach(x=>{
+    const c=Object.assign({on:false,water:1,feed:2,off:0},x.cycle||{});
+    c.on=!!c.on;
+    c.water=Math.max(1,Math.min(12,+c.water||1));
+    c.feed=Math.max(0,Math.min(12,+c.feed||0));
+    c.off=Math.max(0,Math.min(11,+c.off||0));
+    x.cycle=c;
+  });
+
   /* v8: pests, diseases and disorders. An issue whose plant has gone is dropped
      — it describes something that happened TO a plant, so without the plant it
      is not a record of anything. Status is closed to the three the UI can draw:
@@ -9545,6 +9605,17 @@ function feedDue(){
     const at=routineDue(r,p,last,today);
     if(at!=null&&sod(at)<=today) due.push({p,r,fm:plantFormula(p)});
   });
+  /* Plants on the cycle have no feed routine to find above — their feed rides
+     on a watering — so they are collected from the beat instead. Without this
+     the mixing screen would report nothing to mix on the fertiliser day, which
+     is the one day it exists for. */
+  S.subjects.forEach(p=>{
+    if(p.module!=="plants"||!cycleOn(p)) return;
+    const wr=routineOf(p.id,"water"); if(!wr) return;
+    const lastW=lastEvent(wr.id);
+    const nx=cycleNext(p, lastW?sod(+new Date(lastW.at))+DAY:today);
+    if(nx&&nx.feed&&sod(nx.at)<=today) due.push({p,r:wr,fm:plantFormula(p)});
+  });
   if(!due.length) return null;
   const groups={};
   due.forEach(d=>{ const k=d.fm?d.fm.id:"__none"; (groups[k]=groups[k]||[]).push(d); });
@@ -9782,8 +9853,23 @@ function ago(iso){
    you've ever done the job — after that the snap works off the last event. */
 /* the second argument takes either a whole routine (which may carry pinned
    days) or a bare interval, so older call sites keep working unchanged */
+/* the third argument takes the whole plant now — the cycle lives on the plant,
+   not on the routine — while still accepting a bare anchor from older callers */
 function dueState(ev,every,anchor,refTs){
   const r=(every&&typeof every==="object")?every:{every:+every};
+  const p=(anchor&&typeof anchor==="object")?anchor:{anchor};
+  if(cycleOn(p)){
+    if(r.kind==="feed") return {cls:"ok",text:"—"};   // it rides on the watering now
+    if(r.kind==="water"){
+      const ref0=sod(refTs!=null?refTs:Date.now());
+      const at=routineDue(r,p,ev,ref0);
+      if(at==null) return {cls:"ok",text:"—"};
+      const left=Math.round((at-ref0)/DAY);
+      if(left<0) return {cls:"over",text:L.lang==="cs"?`${-left} dní po`:`${-left}d late`};
+      if(left===0) return {cls:"due",text:t("today")};
+      return {cls:"ok",text:L.lang==="cs"?`za ${left} d`:`in ${left}d`};
+    }
+  }
   const days=fixedDays(r);
   /* interval 0 = paused. It used to mean "weekly" here and "invisible" in the
      diary — the same routine due on one screen and absent from the other. A
@@ -9794,8 +9880,8 @@ function dueState(ev,every,anchor,refTs){
   /* never done, no pinned days, nothing anchoring it: it wants doing now. With
      action days on, a plant just added waits for its own day rather than
      shouting the moment it lands in the garden. */
-  if(!ev&&!days&&(!actionOn()||anchor==null)) return {cls:"due",text:t("now")};
-  const left=Math.round((routineDue(r,{anchor},ev,ref)-ref)/DAY);
+  if(!ev&&!days&&(!actionOn()||p.anchor==null)) return {cls:"due",text:t("now")};
+  const left=Math.round((routineDue(r,p,ev,ref)-ref)/DAY);
   if(left<0) return {cls:"over",text:L.lang==="cs"?`${-left} dní po`:`${-left}d late`};
   if(left===0) return {cls:"due",text:t("today")};
   return {cls:"ok",text:L.lang==="cs"?`za ${left} d`:`in ${left}d`};
@@ -9810,7 +9896,7 @@ const isToday=dt=>new Date(dt)>=dayBoundary();
 const tasksDueToday=()=>{const due=new Map(), ref=+dayBoundary();
   S.subjects.filter(x=>x.module==="plants").forEach(p=>{
     S.routines.filter(r=>r.subjectId===p.id).forEach(r=>{
-      const st=dueState(lastEvent(r.id),r,p.anchor,ref);
+      const st=dueState(lastEvent(r.id),r,p,ref);
       if(st.cls==="due" || st.cls==="over") due.set(r.id,r);});});
   return [...due.values()];};
 /* only real routine completions — five ad-hoc waterings with nothing due used
@@ -10021,7 +10107,7 @@ function renderSubjects(){
         <span class="chev" aria-hidden="true">›</span>
       </button>
       <div class="pcard-body">
-        ${rs.map(r=>{const ev=lastEvent(r.id); return line(r.name,ev,dueState(ev,r,p.anchor),pinnedShort(r));}).join("")}
+        ${rs.map(r=>{const ev=lastEvent(r.id); return line(r.name,ev,dueState(ev,r,p),pinnedShort(r));}).join("")}
         <div class="btn-row">
           ${rs.map(r=>`<button class="btn mini" data-did="${r.id}">${esc(DID[r.kind]||r.name)}</button>`).join("")}
           ${pf?`<button class="btn mini" data-mix="${p.id}">Mix</button>`:""}
@@ -14703,7 +14789,7 @@ function worstState(sid){
   let worst=null;
   const sub=subject(sid);
   careRoutines(sid).forEach(r=>{
-    const st=dueState(lastEvent(r.id),r,sub&&sub.anchor);
+    const st=dueState(lastEvent(r.id),r,sub);
     const rank={over:3,due:2,ok:1}[st.cls]||0;
     if(!worst||rank>worst.rank) worst={rank,st,r};
   });
@@ -14730,15 +14816,15 @@ function renderGarden(){
         ${items.slice(0,5).map(it=>{
           const sw=(!it.cut&&it.r);                       // cuttings need opening, not completing
           const ph=latestPhoto(it.p.id);
-          return `<div class="duerow${sw?" swipeable":""}"${sw?` data-swipe-routine="${it.r.id}"`:""}>
-          ${sw?`<span class="swipe-act" aria-hidden="true">${swipeVerb(it.r)}</span>`:""}
+          return `<div class="duerow${sw?" swipeable":""}"${sw?` data-swipe-routine="${it.r.id}"${it.feed?' data-swipe-feed="1"':""}`:""}>
+          ${sw?`<span class="swipe-act" aria-hidden="true">${swipeVerb(it.r,it)}</span>`:""}
           <div class="duerow-in">
             <span class="pill ${it.overdue?"over":"due"}">${it.overdue?"late":"today"}</span>
             ${ph?`<img class="lu-thumb" src="${safeImg(photoSrc(ph))}" alt="">`:'<span class="lu-thumb none">🌿</span>'}
             <span class="duerow-t">${esc(it.p.name)}
               <small>${esc(it.cut?"check the cuttings":routineName(it))}</small></span>
             ${it.cut?`<button class="btn mini" data-gocut="${it.cut.id}">Open</button>`
-                    :(it.r?`<button class="btn mini" data-agdone="${it.r.id}">Done</button>`:"")}
+                    :(it.r?`<button class="btn mini" data-agdone="${it.r.id}"${it.feed?' data-agfeed="1"':""}>Done</button>`:"")}
           </div>
         </div>`;}).join("")}
         ${tasks.slice(0,3).map(tk=>{
@@ -14799,7 +14885,7 @@ $("#gardenDue").addEventListener("click",async e=>{
   const dn=e.target.closest("[data-agdone]"), gt=e.target.closest("[data-gtask]");
   if(go){ show(go.dataset.go); return; }
   if(gc){ bhId=gc.dataset.gocut; renderBatch(); show("batch"); return; }
-  if(dn){ const r=S.routines.find(x=>x.id===dn.dataset.agdone); if(r){ logRoutine(r);
+  if(dn){ const r=S.routines.find(x=>x.id===dn.dataset.agdone); if(r){ logRoutine(r,null,dn.dataset.agfeed?"feed":null);
     renderGarden(); renderSubjects(); renderLog(); renderAgenda(); } return; }
   if(gt){ const t=S.tasks.find(x=>x.id===gt.dataset.gtask);
     if(t){ t.done=true; t.doneBy=L.me; t.doneAt=new Date().toISOString();
@@ -14813,8 +14899,10 @@ $("#gardenDue").addEventListener("click",async e=>{
 
    Touch only, deliberately: the Done button already serves mouse and keyboard,
    and a pointer-events version would fight text selection on the laptop. */
-function swipeVerb(r){
-  const k=(r&&r.kind)||"";
+function swipeVerb(r,it){
+  /* a cycle feed rides on the water routine, so the verb has to come from the
+     occurrence when there is one — swiping a feed row must not say "Watered" */
+  const k=(it&&it.feed)?"feed":((r&&r.kind)||"");
   return esc(t(k==="water"?"Watered":k==="feed"?"Fed":"Done"));
 }
 (function(){
@@ -14870,7 +14958,8 @@ function swipeVerb(r){
     if(!reduced()){ el.style.transition="transform .16s ease-in"; el.style.transform=`translateX(${r.clientWidth||innerWidth}px)`; }
     row=inner=null; axis=null; dx=0;
     const run=()=>{
-      if(rid){ const rt=S.routines.find(x=>x.id===rid); if(rt) logRoutine(rt); }
+      if(rid){ const rt=S.routines.find(x=>x.id===rid);
+        if(rt) logRoutine(rt,null,r.dataset.swipeFeed?"feed":null); }
       else if(tid){ const tk=(S.tasks||[]).find(x=>x.id===tid);
         if(tk){ tk.done=true; tk.doneBy=L.me; tk.doneAt=new Date().toISOString(); touch(); } }
       renderGarden(); renderSubjects(); renderLog(); renderAgenda();
@@ -15007,7 +15096,7 @@ function renderPlant(){
     <div class="card">
       <div class="pad" style="padding-bottom:6px"><span class="eyebrow">Care</span></div>
       <div class="pad" style="padding-top:0">
-        ${careRoutines(p.id).map(r=>{const ev=lastEvent(r.id), st=dueState(ev,r,p.anchor);
+        ${careRoutines(p.id).map(r=>{const ev=lastEvent(r.id), st=dueState(ev,r,p);
           const pin=pinnedShort(r);
           return `<div class="pline"><span class="pill ${st.cls}">${st.text}</span>
             <span class="pline-k">${esc(r.name)}</span>
@@ -19567,13 +19656,13 @@ function statsData(){
     const wr=rts.find(r=>r.subjectId===p.id&&r.kind==="water");
     const fr=rts.find(r=>r.subjectId===p.id&&r.kind==="feed");
     const lw=wr?lastEvent(wr.id):null, lf=fr?lastEvent(fr.id):null;
-    const ws=wr?dueState(lw,wr,p.anchor):null;
-    const fs=fr?dueState(lf,fr,p.anchor):null;
+    const ws=wr?dueState(lw,wr,p):null;
+    const fs=fr?dueState(lf,fr,p):null;
     /* spray is first-class care everywhere else — the garden tile goes red for
        an overdue spray while this panel said "0 overdue, 100% ahead" */
     const states=[ws,fs];
     rts.filter(r=>r.subjectId===p.id&&r.kind!=="water"&&r.kind!=="feed")
-       .forEach(r=>states.push(dueState(lastEvent(r.id),r,p.anchor)));
+       .forEach(r=>states.push(dueState(lastEvent(r.id),r,p)));
     states.forEach(s=>{ if(!s) return;
       if(s.cls==="over") over++; else if(s.cls==="due") due++; else ahead++; });
     if(ws&&(ws.cls==="over"||ws.cls==="due")) thirstL+=(plantWater(p).litres||0);
@@ -20124,6 +20213,7 @@ function renderStats(){
 }
 
 function renderAll(){ renderMixSel(); renderDue(); renderHow(); renderMix(); renderShelf(); renderSubjects(); renderCuttings(); renderPlan(); renderLog(); renderTaskBar(); renderTaskBarFull("#gardenTaskBar"); renderTaskBarFull("#planTaskBar"); renderGarden(); renderLibrary(); renderActionDays(); renderPropGuide(); renderStats();
+  if(typeof renderCycle==="function") try{ renderCycle(); }catch(e){}
   if(typeof renderHealth==="function") try{ renderHealth(); }catch(e){}
   /* the planner sat outside this list historically — after an import or reset
      its DOM stayed stale until you navigated to it. Caches cleared too, since
@@ -21835,6 +21925,27 @@ function buildAgenda(until){
   S.routines.forEach(r=>{
     const p=subject(r.subjectId);
     if(!p) return;
+    /* On the cycle the plant emits ONE series of jobs, each of which is either
+       a watering or that watering carrying the feed. The feed routine therefore
+       contributes nothing here — if it still emitted its own dates the diary
+       would show the very Water-and-Feed-on-one-day pair the cycle exists to
+       abolish, which is precisely how the two-interval model failed. */
+    if(cycleOn(p)){
+      if(r.kind!=="water") { if(r.kind==="feed") return; }
+      if(r.kind==="water"){
+        const last=lastEvent(r.id);
+        const warm=lastFeedAt(p);
+        /* an overdue watering is reported once from where it actually stands,
+           then the series carries on from today as if it were done now */
+        const first=cycleNext(p,last?sod(+new Date(last.at))+DAY:today);
+        if(first&&first.at<today){
+          items.push({at:first.at,p,r,type:first.feed?"feed":"water",feed:first.feed,overdue:true});
+        }
+        cycleSchedule(p,today,until,warm).forEach(x=>
+          items.push({at:x.at,p,r,type:x.feed?"feed":"water",feed:x.feed}));
+        return;
+      }
+    }
     /* a routine with days you picked yourself is never paused by a 0 interval */
     if(!fixedDays(r)&&!(+r.every>0)) return;
     const last=lastEvent(r.id);
@@ -21922,7 +22033,7 @@ function snapToActionDay(ts,anchor,notBefore){
   const target=sod(ts), floor=notBefore!=null?sod(notBefore):null;
   const cand=[];
   for(let d=-6;d<=6;d++){
-    const c=target+d*DAY;
+    const c=addDays(target,d);
     if(floor!=null&&c<=floor) continue;
     if(days.indexOf(new Date(c).getDay())>=0) cand.push({ts:c,diff:Math.abs(d)});
   }
@@ -21937,10 +22048,20 @@ function snapToActionDay(ts,anchor,notBefore){
   });
   return cand[0].ts;
 }
+/* Step whole DAYS by the calendar, never by adding 86_400_000 to a midnight.
+   On the night the clocks go back the local day is 25 hours long, so
+   midnight + DAY lands at 23:00 on the SAME date — a stepper built that way
+   either returns the day it was already on (and, in a loop, never advances) or
+   skips one in spring. setDate() moves the date field itself and is immune;
+   the re-normalise afterwards covers the spring morning where 00:00 does not
+   exist. A once-a-year bug that eats a whole schedule when it lands. */
+const addDays=(ts,n)=>{ const d=new Date(sod(ts)); d.setDate(d.getDate()+n);
+  d.setHours(0,0,0,0); return +d; };
+
 /* next time this weekday comes round, today counting as a hit */
 function nextDow(dow,from){
   const start=sod(from||Date.now());
-  for(let d=0;d<7;d++){ const c=start+d*DAY; if(new Date(c).getDay()===dow) return c; }
+  for(let d=0;d<7;d++){ const c=addDays(start,d); if(new Date(c).getDay()===dow) return c; }
   return start;
 }
 
@@ -21957,7 +22078,7 @@ const fixedDays=r=>{ const d=r&&r.days;
    is what stops a job done on its own pinned day reading as due again today */
 function nextFixedDay(days,from,strict){
   const start=sod(from);
-  for(let i=strict?1:0;i<=7;i++){ const c=start+i*DAY;
+  for(let i=strict?1:0;i<=7;i++){ const c=addDays(start,i);
     if(days.indexOf(new Date(c).getDay())>=0) return c; }
   return start;
 }
@@ -21966,6 +22087,17 @@ function nextFixedDay(days,from,strict){
    `p` only has to carry `anchor`. Returns null for a paused routine. */
 function routineDue(r,p,ev,refTs){
   const ref=sod(refTs!=null?refTs:Date.now());
+  /* On the cycle the plant has one rhythm and feeding rides on it, so the feed
+     routine stops producing dates of its own entirely — that is the whole point
+     of the mode, and letting it keep a rhythm here is exactly the collision the
+     cycle exists to remove. */
+  if(cycleOn(p)){
+    if(r.kind==="feed") return null;
+    if(r.kind==="water"){
+      const nx=cycleNext(p, ev?sod(+new Date(ev.at))+DAY:ref);
+      return nx?nx.at:null;
+    }
+  }
   const days=fixedDays(r);
   if(days) return ev?nextFixedDay(days,+new Date(ev.at),true):nextFixedDay(days,ref,false);
   const every=+r.every;
@@ -21975,7 +22107,9 @@ function routineDue(r,p,ev,refTs){
            :(actionOn()&&anchor!=null?nextDow(anchor,ref):ref);
 }
 /* the same step forward used by every forecast: one pinned day, or one interval */
-const routineStep=(r,p,from)=>{ const days=fixedDays(r);
+const routineStep=(r,p,from)=>{
+  if(cycleOn(p)&&r.kind==="water"){ const nx=cycleNext(p,sod(from)+DAY); return nx?nx.at:sod(from)+DAY; }
+  const days=fixedDays(r);
   return days?nextFixedDay(days,from,true)
              :snapToActionDay(sod(from)+(+r.every)*DAY,p?p.anchor:null,sod(from)); };
 /* "Mon & Thu" for a pinned routine, "" for one still on its interval */
@@ -22039,7 +22173,10 @@ function feedSub(it){
 const KIND_NAME={water:"Water",feed:"Feed",spray:"Spray"};
 /* older saved routines predate the name field, so fall back to the kind */
 const rName=r=>(r&&(r.name||KIND_NAME[r.kind]))||"Care";
-const routineName=it=>it.cut?"check":(it.r?rName(it.r):it.type);
+/* on the cycle the job's NAME comes from the occurrence, not the routine: the
+   same water routine produces plain waterings and feeds, and calling the feed
+   "Water" would undo the one thing the mode is for */
+const routineName=it=>it.cut?"check":(it.feed?KIND_NAME.feed:(it.r?rName(it.r):it.type));
 function agendaRows(list,actionable){
   return list.map(it=>{
     if(it.past){
@@ -22067,7 +22204,7 @@ function agendaRows(list,actionable){
     return `<div class="arow${actionable?"":" soon"}">
       <span class="arow-name">${esc(it.p.name)}<span class="ev-type ${it.type}">${esc(routineName(it))}</span></span>
       <span class="arow-sub">${esc([sub,hist].filter(Boolean).join("  ·  "))}</span>
-      ${actionable&&it.r?`<button class="btn mini" data-agdone="${it.r.id}">Done</button>`:""}
+      ${actionable&&it.r?`<button class="btn mini" data-agdone="${it.r.id}"${it.feed?' data-agfeed="1"':""}>Done</button>`:""}
     </div>`;
   }).join("");
 }
@@ -22094,7 +22231,7 @@ function renderDayDialog(){
       <span>${esc(it.p.name)}</span><span class="ev-type ${it.type}">${esc(routineName(it))}</span>
       ${note?`<span class="hint">${esc(note)}</span>`:""}
       ${it.past?'<span class="tick">✓</span>'
-        :(dayAnchor===today&&it.r?`<button type="button" class="btn mini" data-agdone="${it.r.id}">Done</button>`:"")}
+        :(dayAnchor===today&&it.r?`<button type="button" class="btn mini" data-agdone="${it.r.id}"${it.feed?' data-agfeed="1"':""}>Done</button>`:"")}
     </div>`;
   }).join(""):"";
 
@@ -22147,7 +22284,8 @@ $("#dayDlg").addEventListener("click",async e=>{
   }
   if(done){
     const r=S.routines.find(x=>x.id===done.dataset.agdone); if(!r) return;
-    logRoutine(r);
+    const asKind=done.dataset.agfeed?"feed":null;
+    logRoutine(r,null,asKind);
     renderDayDialog(); renderAgenda(); renderSubjects(); renderLog();
   }
 });
@@ -22287,7 +22425,8 @@ $("#agenda").addEventListener("click",async e=>{
   const done=e.target.closest("[data-agdone]"), day=e.target.closest("[data-day]");
   if(done){
     const r=S.routines.find(x=>x.id===done.dataset.agdone); if(!r) return;
-    logRoutine(r);
+    const asKind=done.dataset.agfeed?"feed":null;
+    logRoutine(r,null,asKind);
     renderPlan(); renderSubjects(); renderLog();
     return;
   }
@@ -23108,9 +23247,12 @@ $("#subjectList").addEventListener("click",async e=>{
   if(ed) openPlant(subject(ed.dataset.editPlant));
 });
 /* one place that knows how to record any routine being done */
-function logRoutine(r,extra){
+/* `asKind` exists for the cycle: a feed there is produced by the WATER routine,
+   and logging it as a watering would leave the feed counter never advancing —
+   the plant would come up for its feed again on the very next beat, forever. */
+function logRoutine(r,extra,asKind){
   const fm=routineFormula(r), p=subject(r.subjectId);
-  logEvent(r.subjectId,r.kind,Object.assign({routineId:r.id,
+  logEvent(r.subjectId,asKind||r.kind,Object.assign({routineId:r.id,
     formulaId:fm?fm.id:null, schedId:(p&&p.schedId)||null,
     week:(p&&p.schedId)?(p.week||1):null},extra||{}));
 }
@@ -23285,7 +23427,7 @@ $("#actDayPicker").addEventListener("click",e=>{
   /* plants anchored to a day that no longer exists get moved to a live one */
   S.subjects.forEach(p=>{ if(p.module==="plants"&&p.anchor!=null&&S.actionDays.indexOf(p.anchor)<0)
     p.anchor=null; });
-  touch(); renderActionDays(); renderSubjects(); renderAgenda(); renderDue();
+  touch(); renderActionDays(); renderCycle(); renderSubjects(); renderAgenda(); renderDue();
 });
 $("#actSpread").addEventListener("click",async()=>{
   const days=actionDays();
@@ -35843,6 +35985,43 @@ function renderCareDays(){
   $("#cdList").innerHTML=list.map(p=>{
     const sub=[p.species&&p.species!==p.name?p.species:null,p.spot||null].filter(Boolean).join(" · ");
     const rs=careRoutines(p.id);
+    /* A plant on the cycle has one rhythm, not a grid of weekdays — showing it
+       seven day-buttons per job would be offering a choice the mode does not
+       have. It gets the two numbers that ARE its schedule instead. */
+    if(cycleOn(p)){
+      const c=cycleOf(p);
+      const nx=cycleNext(p,Date.now());
+      const spray=rs.filter(r=>r.kind==="spray");
+      return `<div class="card cd-card">
+        <div class="cd-name"><b>${esc(p.name)}</b>${sub?`<small>${esc(sub)}</small>`:""}
+          <span class="chipinfo">${esc(t("cycle"))}</span></div>
+        <div class="cd-job">
+          <span class="cd-k">${esc(t("Water"))}</span>
+          <select class="cd-sel" data-cycw="${p.id}">${CYC_WATER_OPTS.map(n=>
+            `<option value="${n}"${+c.water===n?" selected":""}>${esc(cycWaterLabel(n))}</option>`).join("")}</select>
+        </div>
+        <div class="cd-job">
+          <span class="cd-k">${esc(t("Feed"))}</span>
+          <select class="cd-sel" data-cycf="${p.id}">${CYC_FEED_OPTS.map(n=>
+            `<option value="${n}"${+c.feed===n?" selected":""}>${esc(cycFeedLabel(n))}</option>`).join("")}</select>
+        </div>
+        ${spray.map(r=>`<div class="cd-job">
+          <span class="cd-k">${esc(r.name)}</span>
+          <div class="daypick" data-cdr="${r.id}">${dayPickHTML(r.days)}</div>
+          <span class="cd-when">${esc(fixedDays(r)?"":(+r.every>0?(L.lang==="cs"?`po ${+r.every} d`:`every ${+r.every}d`):""))}</span>
+        </div>`).join("")}
+        <p class="hint" style="margin:7px 0 0">${esc(cycleLine(p))}${nx?` ${L.lang==="cs"?"Další:":"Next:"} ${
+          esc(new Date(nx.at).toLocaleDateString(locale(),{weekday:"short",day:"numeric",month:"short"}))}${
+          nx.feed?` — ${esc(t("a feed"))}`:""}.`:""}</p>
+        ${cycleReachesFeedDay(p)?"":`<p class="hint bad" style="margin:5px 0 0">${
+          L.lang==="cs"
+            ? `Tenhle rytmus nikdy nepadne na ${esc(dowName(feedDay()))}, takže se hnojí až po třech kolech navíc. Přepni zálivku na každý akční den, nebo změň den hnojení.`
+            : `This rhythm never lands on ${esc(dowName(feedDay()))}, so it only feeds after three rounds of waiting. Water every action day instead, or move the fertiliser day.`}</p>`}
+        <div class="btn-row" style="margin-top:8px">
+          <button class="btn mini" data-cycoff="${p.id}">${esc(t("Off the cycle"))}</button>
+        </div>
+      </div>`;
+    }
     const jobs=rs.length?rs.map(r=>{
       /* the right-hand note only has to explain the case the picker cannot:
          no days lit means it is still running on its interval, and a plant on
@@ -35861,11 +36040,39 @@ function renderCareDays(){
           : "Nothing to schedule for this one yet.")}</p>`;
     return `<div class="card cd-card">
       <div class="cd-name"><b>${esc(p.name)}</b>${sub?`<small>${esc(sub)}</small>`:""}</div>
-      ${jobs}</div>`;
+      ${jobs}
+      <div class="btn-row" style="margin-top:8px">
+        <button class="btn mini" data-cycon="${p.id}">${esc(t("Put on the cycle"))}</button>
+      </div></div>`;
   }).join("");
 }
 
+$("#cdList").addEventListener("change",e=>{
+  const w=e.target.closest("[data-cycw]"), f=e.target.closest("[data-cycf]");
+  const el=w||f; if(!el) return;
+  const p=subject(el.dataset[w?"cycw":"cycf"]); if(!p) return;
+  const c=cycleOf(p);
+  p.cycle=Object.assign({},c,w?{water:Math.max(1,+el.value||1)}:{feed:Math.max(0,+el.value||0)});
+  /* the phase has to stay inside the new count, or a plant on "every 4th" moved
+     to "every 2nd" keeps an offset of 3 and simply never comes round — and if
+     the plant is fed, prefer the phase that can actually reach fertiliser day */
+  const nw=Math.max(1,+p.cycle.water||1), nf=Math.max(0,+p.cycle.feed||0);
+  const fp=nf>0?phaseForFeedDay(nw):null;
+  p.cycle.off=fp!=null?fp:(Math.max(0,+p.cycle.off||0)%nw);
+  touch(); renderCareDays(); renderAgenda(); renderSubjects(); renderGarden(); renderDue(); renderCycle();
+});
 $("#cdList").addEventListener("click",e=>{
+  const on=e.target.closest("[data-cycon]"), off=e.target.closest("[data-cycoff]");
+  if(on||off){
+    const p=subject((on||off).dataset[on?"cycon":"cycoff"]); if(!p) return;
+    const def=S.cycleDefault||{water:1,feed:2};
+    if(on){
+      const w=+def.water||1, f=+def.feed||0, fp=f>0?phaseForFeedDay(w):null;
+      p.cycle=Object.assign({},cycleOf(p),{on:true,water:w,feed:f,off:fp!=null?fp:0});
+    } else p.cycle=Object.assign({},cycleOf(p),{on:false});
+    touch(); renderCareDays(); renderAgenda(); renderSubjects(); renderGarden(); renderDue(); renderCycle();
+    return;
+  }
   const b=e.target.closest(".daypick[data-cdr] button[data-day]"); if(!b) return;
   const pick=b.parentElement;
   const r=S.routines.find(x=>x.id===pick.dataset.cdr); if(!r) return;
@@ -36731,6 +36938,312 @@ Object.assign(CS,{
     "Kořeny berou vodu rychleji, než ji listy stíhají vypařit, takže buňky praskají — klasicky po vydatné zálivce následují chladné zatažené dny.",
   "Water less on dull days and improve air movement and light. The blistered tissue stays as it is; only new growth will be clean.":
     "V zatažených dnech zalévej míň a zlepši proudění vzduchu a světlo. Napuchlé pletivo už zůstane; čistý bude až nový přírůstek."
+});
+
+
+/* ============================================================================
+   THE CYCLE
+
+   The app used to schedule Water and Feed as two independent rhythms — water
+   every 3 days, feed every 7 — and then act surprised when both fell due on
+   the same plant on the same day. That is not a scheduling bug, it is a
+   modelling one: a feed is not an event that happens near a watering, it IS a
+   watering, with fertiliser in the can. Two intervals can never be made to
+   agree about that, because nothing was ever telling them they described the
+   same act.
+
+   So on the cycle, a plant has ONE rhythm and feeding is a property of it:
+
+     · The household waters on its action days. That is the beat.
+     · A plant drinks every Nth beat — every one, every other, every third.
+     · Every Mth of THAT plant's waterings is the feed.
+     · A feed only ever lands on the fertiliser day. If a plant's feed-watering
+       falls on any other day it stays a plain watering and the feed waits for
+       its next watering that IS on that day, so fertiliser gets mixed once a
+       week and not on five separate evenings.
+
+   The whole schedule is therefore a function of the calendar and three small
+   numbers, not of what has been logged. Two devices compute the same answer
+   without having to agree about history first, and nothing drifts because
+   somebody watered a day late.
+
+   Counting runs off an absolute ordinal — how many action days have passed
+   since a fixed Monday — rather than off the last event, which is what keeps
+   "every other beat" meaning the same thing on every screen and after every
+   reload. `off` is the plant's phase within that count, so half a collection
+   can sit on the even beats and half on the odd.
+   ========================================================================== */
+const CYC_EPOCH=(()=>{ const d=new Date(2024,0,1); d.setHours(0,0,0,0); return +d; })(); // a Monday
+const CYC_MAX_STEPS=4000;              // hard stop; a year of daily action days is ~365
+
+/* how many action days have fallen on or before `ts`, counting from the epoch.
+   Done by arithmetic rather than by walking, so a date years out costs the same
+   as tomorrow. Math.round on the day count absorbs the ±1h a DST change puts
+   into a difference of midnights. */
+function actionOrdinal(ts){
+  const days=actionDays(); if(!days.length) return 0;
+  const dayNum=Math.round((sod(ts)-CYC_EPOCH)/DAY);
+  const weeks=Math.floor(dayNum/7), rem=dayNum-weeks*7;
+  let n=weeks*days.length;
+  for(let r=0;r<=rem;r++) if(days.indexOf((1+r)%7)>=0) n++;   // epoch is a Monday
+  return n;
+}
+/* the first action day on or after `from` */
+function nextActionDay(from){
+  const days=actionDays(), start=sod(from);
+  for(let k=0;k<8;k++){ const c=addDays(start,k); if(days.indexOf(new Date(c).getDay())>=0) return c; }
+  return start;
+}
+
+const CYCLE_DEF={on:false, water:1, feed:2, off:0};
+const cycleOf=p=>Object.assign({},CYCLE_DEF,(p&&p.cycle)||{});
+/* The cycle rides on the action days, so with those switched off there is no
+   beat to count and the plant falls back to its own interval. Better than
+   inventing a beat nobody asked for. */
+const cycleOn=p=>!!(p&&p.cycle&&p.cycle.on&&actionOn()&&actionDays().length);
+const feedDayOn=()=>S.feedDayOn!==false;
+const feedDay=()=>{ const d=+S.feedDay; return Number.isInteger(d)&&d>=0&&d<=6?d:0; };
+
+/* The plant's waterings between two dates, each marked feed or not.
+
+   `lastFeed` warms the feed counter up: without it a window starting next
+   month would begin counting from zero and put the feed in the wrong place.
+   With no feed ever logged we warm up from 90 days back, which is enough beats
+   for the count to settle into the same phase it would really be in. */
+function cycleSchedule(p,fromTs,untilTs,lastFeed){
+  if(!cycleOn(p)) return [];
+  const c=cycleOf(p);
+  const N=Math.max(1,Math.min(12,+c.water||1));
+  const M=Math.max(0,Math.min(12,+c.feed||0));
+  const off=((+c.off||0)%N+N)%N;
+  const from=sod(fromTs), until=sod(untilTs);
+  const warm=Math.min(from, lastFeed?sod(lastFeed):from-90*DAY);
+  const out=[];
+  let ts=nextActionDay(warm), since=0, steps=0;
+  while(ts<=until && steps++<CYC_MAX_STEPS){
+    const ord=actionOrdinal(ts);
+    /* is this beat one of this plant's? */
+    if(((ord-1-off)%N+N)%N===0){
+      since++;
+      let feed=false;
+      if(M>0 && since>=M){
+        const onFeedDay=!feedDayOn()||new Date(ts).getDay()===feedDay();
+        /* The fertiliser day is a hard rule right up to the point where obeying
+           it would mean never feeding the plant at all. A plant on every 2nd
+           beat can sit permanently on the days that are NOT the fertiliser day,
+           and then a pure rule starves it in silence — the worst kind of
+           failure, because nothing on any screen ever says so. So after three
+           times round without a chance, it feeds anyway. Care days flags the
+           plant so the phase can be fixed properly. */
+        if(onFeedDay || since>=M*3){ feed=true; since=0; }
+      }
+      if(ts>=from) out.push({at:ts, feed});
+    }
+    ts=nextActionDay(addDays(ts,1));
+  }
+  return out;
+}
+/* Which phase to put a plant on so its waterings include the fertiliser day.
+   With action days Sun & Wed and a plant drinking every 2nd beat, one phase is
+   all Sundays and the other all Wednesdays — and on the wrong one the plant can
+   never be fed on the fertiliser day. Returns null when no phase reaches it,
+   which is the case Care days warns about. */
+function phaseForFeedDay(N){
+  const n=Math.max(1,+N||1);
+  if(n===1||!feedDayOn()||!actionDays().length) return 0;
+  const start=sod(Date.now());
+  for(let off=0;off<n;off++){
+    let ts=nextActionDay(start);
+    for(let k=0;k<n*14;k++){
+      const o=actionOrdinal(ts);
+      if(((o-1-off)%n+n)%n===0 && new Date(ts).getDay()===feedDay()) return off;
+      ts=nextActionDay(addDays(ts,1));
+    }
+  }
+  return null;
+}
+/* does this plant's rhythm ever bring it round on the fertiliser day? */
+function cycleReachesFeedDay(p){
+  if(!cycleOn(p)) return true;
+  const c=cycleOf(p);
+  if(!(+c.feed>0)||!feedDayOn()) return true;
+  const start=sod(Date.now());
+  return cycleSchedule(p,start,start+120*DAY,null)
+    .some(x=>new Date(x.at).getDay()===feedDay());
+}
+
+/* the newest logged feed for a plant, which is what the counter warms up from */
+function lastFeedAt(p){
+  let best=null;
+  (S.events||[]).forEach(e=>{
+    if(e.subjectId!==p.id) return;
+    if((e.kind||e.type)!=="feed") return;
+    const t2=+new Date(e.at);
+    if(best==null||t2>best) best=t2;
+  });
+  return best;
+}
+/* the next watering for a plant on the cycle, and whether it is the feed */
+function cycleNext(p,after){
+  const from=sod(after!=null?after:Date.now());
+  const s=cycleSchedule(p,from,from+400*DAY,lastFeedAt(p));
+  return s.length?s[0]:null;
+}
+
+/* in words, for every screen that has to explain what a plant is doing */
+function cycleLine(p){
+  const c=cycleOf(p), cs=L.lang==="cs";
+  const N=Math.max(1,+c.water||1), M=Math.max(0,+c.feed||0);
+  const beat=N===1
+    ? (cs?"každý akční den":"every action day")
+    : (cs?`každý ${N}. akční den`:`every ${ord(N)} action day`);
+  if(!M) return cs?`Zálivka ${beat}, bez hnojení.`:`Water ${beat}, never fed.`;
+  const fed=M===1
+    ? (cs?"a hnojí se pokaždé":"and fed every time")
+    : (cs?`a každá ${M}. zálivka je hnojení`:`and every ${ord(M)} watering is a feed`);
+  return cs?`Zálivka ${beat} ${fed}.`:`Water ${beat}, ${fed}.`;
+}
+const ord=n=>{ if(L.lang==="cs") return n+".";
+  const s=["th","st","nd","rd"], v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); };
+
+
+/* ---------------- the cycle: settings ---------------- */
+const CYC_WATER_OPTS=[1,2,3,4,5,6];
+const CYC_FEED_OPTS=[0,1,2,3,4,5,6];
+const cycWaterLabel=n=>L.lang==="cs"
+  ? (n===1?"každý akční den":`každý ${n}. akční den`)
+  : (n===1?"every action day":`every ${ord(n)} action day`);
+const cycFeedLabel=n=>n===0
+  ? (L.lang==="cs"?"nikdy":"never")
+  : (n===1 ? (L.lang==="cs"?"každou zálivku":"every watering")
+           : (L.lang==="cs"?`každou ${n}. zálivku`:`every ${ord(n)} watering`));
+
+/* what the current defaults actually produce, in days — the sentence that
+   makes "every 2nd of every 3rd" mean something you can picture */
+function cycPreviewLine(w,f){
+  const days=actionDays(), cs=L.lang==="cs";
+  if(!days.length||!actionOn()) return cs
+    ? "Zapni nejdřív akční dny — cyklus se počítá podle nich."
+    : "Turn action days on first — the cycle counts against them.";
+  const perWeek=days.length;
+  /* average days between waterings: a week has `perWeek` beats, this plant
+     takes every wth of them */
+  const gapW=(7/perWeek)*w;
+  const bits=[cs?`zálivka zhruba po ${oneDp(gapW)} dnech`:`a drink about every ${oneDp(gapW)} days`];
+  if(f>0){
+    const gapF=gapW*f;
+    bits.push(cs?`hnojení zhruba po ${oneDp(gapF)} dnech`:`a feed about every ${oneDp(gapF)} days`);
+  } else bits.push(cs?"nikdy se nehnojí":"never fed");
+  const fd=feedDayOn()?` · ${cs?"vždy v":"always on a"} ${dowName(feedDay())}`:"";
+  return bits.join(" · ")+fd+".";
+}
+
+function renderCycle(){
+  if(!$("#feedDayOn")) return;
+  $("#feedDayOn").checked=feedDayOn();
+  $("#feedDayPicker").style.display=feedDayOn()?"":"none";
+  $("#feedDayPicker").innerHTML=PICK_ORDER.map(d=>
+    `<button class="btn mini${d===feedDay()?" primary":""}" type="button"
+      data-feedday="${d}">${esc(dowName(d).slice(0,L.lang==="cs"?2:3))}</button>`).join("");
+  /* a fertiliser day that is not an action day can never be reached, because a
+     feed rides on a watering and waterings only happen on action days */
+  const clash=feedDayOn()&&actionOn()&&actionDays().indexOf(feedDay())<0;
+  $("#feedDayHint").textContent=!feedDayOn()
+    ? (L.lang==="cs"?"Hnojení padne, kdykoli na něj vyjde řada."
+                    :"Feeds land whenever the count comes up, on any day.")
+    : clash
+      ? (L.lang==="cs"?`${dowName(feedDay())} není akční den, takže se na něj zálivka nikdy netrefí a hnojení by nikdy nepřišlo. Vyber některý z akčních dnů.`
+                      :`${dowName(feedDay())} is not an action day, so no watering ever lands on it and a feed could never happen. Pick one of your action days.`)
+      : (L.lang==="cs"?`Hnojí se jen v ${dowName(feedDay())}. Jindy je to prostě zálivka.`
+                      :`Fertiliser only on ${dowName(feedDay())}. Any other day it is just a watering.`);
+  $("#feedDayHint").classList.toggle("bad",!!clash);
+
+  const def=S.cycleDefault||{water:1,feed:2};
+  $("#cycWater").innerHTML=CYC_WATER_OPTS.map(n=>
+    `<option value="${n}"${+def.water===n?" selected":""}>${esc(cycWaterLabel(n))}</option>`).join("");
+  $("#cycFeed").innerHTML=CYC_FEED_OPTS.map(n=>
+    `<option value="${n}"${+def.feed===n?" selected":""}>${esc(cycFeedLabel(n))}</option>`).join("");
+  $("#cycPreview").textContent=cycPreviewLine(+def.water||1,+def.feed||0);
+
+  const plants=subjectsIn("plants"), on=plants.filter(cycleOn).length;
+  $("#cycCount").textContent=!plants.length
+    ? (L.lang==="cs"?"Zatím žádné rostliny.":"No plants yet.")
+    : (L.lang==="cs"
+        ? `${on} z ${plants.length} ${pl3(plants.length,"rostliny","rostlin","rostlin")} jede na cyklu.`
+        : `${on} of ${plural(plants.length,"plant")} on the cycle.`);
+}
+
+$("#feedDayOn").addEventListener("change",e=>{
+  S.feedDayOn=e.target.checked; touch(); renderCycle(); renderAll();
+});
+$("#feedDayPicker").addEventListener("click",e=>{
+  const b=e.target.closest("[data-feedday]"); if(!b) return;
+  S.feedDay=+b.dataset.feedday; touch(); renderCycle(); renderAll();
+});
+["#cycWater","#cycFeed"].forEach(id=>$(id).addEventListener("change",()=>{
+  S.cycleDefault={water:Math.max(1,+$("#cycWater").value||1),
+                  feed:Math.max(0,+$("#cycFeed").value||0)};
+  touch(); renderCycle();
+}));
+$("#cycApplyAll").addEventListener("click",async()=>{
+  const plants=subjectsIn("plants");
+  if(!plants.length){ say(L.lang==="cs"?"Zatím žádné rostliny.":"No plants to put on it yet."); return; }
+  const w=Math.max(1,+$("#cycWater").value||1), f=Math.max(0,+$("#cycFeed").value||0);
+  if(!await ask(L.lang==="cs"
+    ? `Dát všech ${plants.length} ${pl3(plants.length,"rostlinu","rostliny","rostlin")} na ${cycWaterLabel(w)} a hnojit ${cycFeedLabel(f)}?\n\nJejich vlastní intervaly zůstanou uložené — když cyklus vypneš, vrátí se.`
+    : `Put all ${plural(plants.length,"plant")} on ${cycWaterLabel(w)}, feeding ${cycFeedLabel(f)}?\n\nTheir own intervals stay saved — turn the cycle off and they come back.`,
+    L.lang==="cs"?"Nastavit":"Set them")) return;
+  /* Dealt round-robin by phase so a collection on "every other beat" splits in
+     half instead of every plant landing on the same one and leaving the other
+     beat empty. Plants in the same spot stay together — you water a room at a
+     time, not a list. */
+  /* Phase matters more than spreading when a plant is fed: land it where the
+     fertiliser day is reachable first, and only deal the rest round-robin. */
+  const fp=f>0?phaseForFeedDay(w):null;
+  plants.slice().sort((a,b)=>String(a.spot||"").localeCompare(String(b.spot||"")))
+    .forEach((p,i)=>{ p.cycle=Object.assign({},cycleOf(p),
+      {on:true,water:w,feed:f,off:fp!=null?fp:i%w}); });
+  touch(); renderCycle(); renderAll();
+  say(L.lang==="cs"?`${plants.length} na cyklu.`:`${plural(plants.length,"plant")} on the cycle.`,"Done");
+});
+$("#cycStagger").addEventListener("click",()=>{
+  const on=subjectsIn("plants").filter(cycleOn);
+  if(!on.length){ say(L.lang==="cs"?"Nic na cyklu.":"Nothing is on the cycle yet."); return; }
+  /* only plants that are never fed get dealt round the beats — moving a fed
+     plant off the fertiliser-day phase to balance a load would cost it its feed */
+  on.slice().sort((a,b)=>String(a.spot||"").localeCompare(String(b.spot||"")))
+    .forEach((p,i)=>{ const c=cycleOf(p);
+      if(+c.feed>0) return;
+      p.cycle=Object.assign({},c,{off:i%Math.max(1,+c.water||1)}); });
+  touch(); renderCycle(); renderAll();
+  say(L.lang==="cs"?"Rozloženo.":"Spread across the beats.","Done");
+});
+$("#cycOffAll").addEventListener("click",async()=>{
+  const on=subjectsIn("plants").filter(cycleOn);
+  if(!on.length){ say(L.lang==="cs"?"Nic na cyklu.":"Nothing is on the cycle."); return; }
+  if(!await ask(L.lang==="cs"
+    ? `Sundat ${on.length} ${pl3(on.length,"rostlinu","rostliny","rostlin")} z cyklu zpátky na vlastní intervaly?`
+    : `Take ${plural(on.length,"plant")} off the cycle, back to their own intervals?`,
+    L.lang==="cs"?"Sundat":"Take off")) return;
+  on.forEach(p=>{ p.cycle=Object.assign({},cycleOf(p),{on:false}); });
+  touch(); renderCycle(); renderAll();
+});
+
+
+/* ---- the cycle, in Czech ---- */
+Object.assign(CS,{
+  "Fertiliser day":"Den hnojení",
+  "One fertiliser day a week":"Jeden den hnojení týdně",
+  "Feeds only ever land on this day, so you mix once":"Hnojení padne vždycky jen na tenhle den, takže mícháš jednou",
+  "Put the plants on the cycle":"Dát rostliny na cyklus",
+  "One rhythm instead of two intervals: a plant drinks every so many action days, and every so many of those drinks is the feed. No plant can ever be due a watering and a feed on the same day again, because a feed":
+    "Jeden rytmus místo dvou intervalů: rostlina pije každý x-tý akční den a každá x-tá zálivka je hnojení. Žádné rostlině už nikdy nevyjde zálivka a hnojení na stejný den, protože hnojení",
+  "is a watering.":"je zálivka.",
+  "Water every":"Zalévat", "Feed every":"Hnojit",
+  "Put every plant on this":"Dát na to všechny rostliny",
+  "Stagger them":"Rozložit je", "Take them all off":"Sundat je z toho",
+  "cycle":"cyklus", "Off the cycle":"Pryč z cyklu", "Put on the cycle":"Dát na cyklus",
+  "a feed":"hnojení", "No plants yet.":"Zatím žádné rostliny."
 });
 
 </script>
