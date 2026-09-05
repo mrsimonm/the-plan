@@ -30947,4 +30947,118 @@ tbRenderDetailLessons = function(host, data, studentId){
   });
 })();
 
+/* ============================================================================
+   Czech ⇄ English dictionary (Teach Bench / Study Bench)
+   Built-in list + a pure lookup engine. Appended at the end of the script so
+   it is reachable from every part of the app. Custom teacher pairs are merged
+   separately (they ride the existing word bank / flashcards); this module only
+   supplies the shared reference list and the search.
+   ============================================================================ */
+const CZDICT=[
+["and","a"],["or","nebo"],["but","ale"],["yes","ano"],["no","ne"],
+["please","prosím"],["thank you","děkuji"],["sorry","promiň"],
+["hello","ahoj"],["goodbye","na shledanou"],["good morning","dobré ráno"],
+["good night","dobrou noc"],["today","dnes"],["tomorrow","zítra"],
+["yesterday","včera"],["now","teď"],["later","později"],["again","znovu"],
+["always","vždy"],["never","nikdy"],["often","často"],["sometimes","někdy"],
+["here","tady"],["there","tam"],["where","kde"],["when","kdy"],["why","proč"],
+["because","protože"],["what","co"],["who","kdo"],["how","jak"],["which","který"],
+["be","být"],["have","mít"],["do","dělat"],["make","udělat"],["go","jít"],
+["come","přijít"],["eat","jíst"],["drink","pít"],["sleep","spát"],
+["run","běhat"],["speak","mluvit"],["say","říct"],["tell","povědět"],
+["read","číst"],["write","psát"],["listen","poslouchat"],["hear","slyšet"],
+["see","vidět"],["watch","dívat se"],["think","myslet"],["know","vědět"],
+["understand","rozumět"],["learn","učit se"],["teach","učit"],["study","studovat"],
+["remember","pamatovat si"],["forget","zapomenout"],["help","pomáhat"],
+["work","pracovat"],["play","hrát si"],["buy","kupovat"],["sell","prodávat"],
+["open","otevřít"],["close","zavřít"],["start","začít"],["stop","zastavit"],
+["wait","čekat"],["find","najít"],["lose","ztratit"],["give","dát"],
+["take","vzít"],["bring","přinést"],["put","položit"],["ask","ptát se"],
+["answer","odpovědět"],["need","potřebovat"],["want","chtít"],["like","mít rád"],
+["love","milovat"],["live","žít"],["visit","navštívit"],["travel","cestovat"],
+["fly","létat"],["swim","plavat"],["sing","zpívat"],["dance","tančit"],
+["feel","cítit"],["try","zkusit"],["win","vyhrát"],["count","počítat"],
+["call","zavolat"],["show","ukázat"],["send","poslat"],["get","dostat"],
+["use","používat"],["leave","odejít"],["turn","otočit"],["walk","jít pěšky"],
+["house","dům"],["home","domov"],["family","rodina"],["mother","matka"],
+["father","otec"],["brother","bratr"],["sister","sestra"],["friend","přítel"],
+["school","škola"],["teacher","učitel"],["student","student"],["pupil","žák"],
+["lesson","hodina"],["book","kniha"],["pen","pero"],["pencil","tužka"],
+["paper","papír"],["word","slovo"],["sentence","věta"],["language","jazyk"],
+["question","otázka"],["answer","odpověď"],["time","čas"],["day","den"],
+["night","noc"],["week","týden"],["month","měsíc"],["year","rok"],
+["morning","ráno"],["evening","večer"],["hour","hodina"],["minute","minuta"],
+["water","voda"],["food","jídlo"],["bread","chléb"],["milk","mléko"],
+["tea","čaj"],["coffee","káva"],["fruit","ovoce"],["vegetable","zelenina"],
+["apple","jablko"],["meat","maso"],["soup","polévka"],["egg","vejce"],
+["garden","zahrada"],["plant","rostlina"],["flower","květina"],["tree","strom"],
+["leaf","list"],["soil","půda"],["seed","semeno"],["animal","zvíře"],
+["dog","pes"],["cat","kočka"],["bird","pták"],["fish","ryba"],["horse","kůň"],
+["city","město"],["village","vesnice"],["street","ulice"],["car","auto"],
+["train","vlak"],["bus","autobus"],["weather","počasí"],["rain","déšť"],
+["snow","sníh"],["sun","slunce"],["moon","měsíc"],["sky","nebe"],
+["wind","vítr"],["fire","oheň"],["earth","země"],["sea","moře"],
+["good","dobrý"],["bad","špatný"],["big","velký"],["small","malý"],
+["long","dlouhý"],["short","krátký"],["hot","horký"],["cold","studený"],
+["new","nový"],["old","starý"],["young","mladý"],["fast","rychlý"],
+["slow","pomalý"],["easy","snadný"],["hard","těžký"],["happy","šťastný"],
+["sad","smutný"],["beautiful","krásný"],["ugly","ošklivý"],["tall","vysoký"],
+["high","vysoký"],["low","nízký"],["right","správný"],["wrong","špatný"],
+["true","pravdivý"],["important","důležitý"],["interesting","zajímavý"],
+["nice","milý"],["sweet","sladký"],["sour","kyselý"],["clean","čistý"],
+["dirty","špinavý"],["full","plný"],["empty","prázdný"],["open","otevřený"],
+["closed","zavřený"],["light","světlý"],["dark","tmavý"],["expensive","drahý"],
+["cheap","levný"],["one","jeden"],["two","dva"],["three","tři"],["four","čtyři"],
+["five","pět"],["six","šest"],["seven","sedm"],["eight","osm"],["nine","devět"],
+["ten","deset"],["first","první"],["last","poslední"],["next","příští"],
+["more","více"],["less","méně"],["many","mnoho"],["much","hodně"],
+["little","málo"],["some","nějaký"],["all","všichni"],["other","jiný"],
+["same","stejný"],["different","jiný"],["every","každý"],["each","každý"],
+["red","červený"],["blue","modrý"],["green","zelený"],["yellow","žlutý"],
+["black","černý"],["white","bílý"],["brown","hnědý"],["pink","růžový"],
+["man","muž"],["woman","žena"],["boy","chlapec"],["girl","dívka"],
+["child","dítě"],["name","jméno"],["person","člověk"],["people","lidé"],
+["head","hlava"],["eye","oko"],["ear","ucho"],["hand","ruka"],["leg","noha"],
+["foot","noha"],["heart","srdce"],["body","tělo"],["face","obličej"],
+["money","peníze"],["price","cena"],["shop","obchod"],["market","trh"],
+["work","práce"],["job","práce"],["problem","problém"],["idea","nápad"],
+["story","příběh"],["news","zprávy"],["music","hudba"],["song","píseň"],
+["game","hra"],["picture","obrázek"],["photo","fotografie"],["phone","telefon"],
+["computer","počítač"],["thing","věc"],["place","místo"],["way","cesta"],
+["world","svět"],["country","země"],["state","stát"],["number","číslo"],
+["letter","dopis"],["colour","barva"],["summer","léto"],["winter","zima"],
+["spring","jaro"],["autumn","podzim"]
+];
+/* diacritic-blind folding: "květina" finds "kvetina", "café" finds "cafe" */
+const _fold=s=>String(s??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+const _folds=CZDICT.map(([en,cs])=>[en,_fold(en),cs,_fold(cs)]);
+/* pbDict(q) — pure, bidirectional, substring search with prefix-first ranking.
+   Returns [{en,cs,dir}] where dir is "en->cs" when q looks English, "cs->en"
+   when q has Czech diacritics, otherwise "en->cs". */
+function pbDict(q,limit){
+  limit=limit||20;
+  const f=_fold(q); if(!f) return [];
+  const out=[];
+  for(let i=0;i<_folds.length;i++){
+    const en=_folds[i][0], fen=_folds[i][1], cs=_folds[i][2], fcs=_folds[i][3];
+    const enHit=fen.includes(f), csHit=fcs.includes(f);
+    if(!enHit&&!csHit) continue;
+    const enPrefix=fen.startsWith(f), csPrefix=fcs.startsWith(f);
+    out.push({en,cs,dir:(csHit&&!enHit)||(csPrefix&&!enPrefix)?"cs->en":"en->cs",
+      rank:(enPrefix||csPrefix?0:1)});
+  }
+  out.sort((a,b)=>a.rank-b.rank);
+  return out.slice(0,limit);
+}
+/* pbDictExact(word) — strict (folded) match on either side, for the review
+   card's tap-to-translate. Returns {en,cs} or null. */
+function pbDictExact(word){
+  const f=_fold(word); if(!f) return null;
+  for(let i=0;i<_folds.length;i++){
+    if(_folds[i][1]===f) return {en:_folds[i][0],cs:_folds[i][2]};
+    if(_folds[i][3]===f) return {en:_folds[i][0],cs:_folds[i][2]};
+  }
+  return null;
+}
+
 </script>
