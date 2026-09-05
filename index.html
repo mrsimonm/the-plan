@@ -19132,23 +19132,23 @@ function tbRenderWeek(){
   const data=TB.loadData();
   const anchor=TB.addPlainDays(tbTodayPlain(), tbCalWeekOffset*7);
   const weekStart=TB.startOfWeekPlain(anchor);
-  const weekEnd=TB.addPlainDays(weekStart,4);
+  const weekEnd=TB.addPlainDays(weekStart,6);
   $("#tbCalRange").textContent=tbFormatShortDate(weekStart)+" – "+tbFormatShortDate(weekEnd);
 
   const entriesByDate=new Map();
-  for(let i=0;i<5;i++) entriesByDate.set(TB.addPlainDays(weekStart,i), []);
+  for(let i=0;i<7;i++) entriesByDate.set(TB.addPlainDays(weekStart,i), []);
 
   for(const student of data.students.filter(s=>s.active)){
-    for(const occ of TB.occurrencesForStudent(student, data.lessons, weekStart, 5)){
+    for(const occ of TB.occurrencesForStudent(student, data.lessons, weekStart, 7)){
       const bucket=entriesByDate.get(occ.date);
       if(bucket) bucket.push({student, occ});
     }
   }
 
   const today=tbTodayPlain();
-  const dayNames=["Mon","Tue","Wed","Thu","Fri"];
+  const dayNames=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 
-  $("#tbCalDays").innerHTML=Array.from({length:5},(_, i)=>{
+  $("#tbCalDays").innerHTML=Array.from({length:7},(_, i)=>{
     const date=TB.addPlainDays(weekStart,i);
     const entries=entriesByDate.get(date);
     const timed=entries.filter(e=>e.occ.time).sort((a,b)=>a.occ.time.localeCompare(b.occ.time));
