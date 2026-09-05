@@ -2189,6 +2189,33 @@ textarea.desc{min-height:66px; font-family:var(--font); font-size:15px}
 .ev-type.leaf{color:var(--ok)}
 /* the foliage block shares the Growth card with the photo strip, so it needs a
    rule off the top rather than a gap that collapses when there are no photos */
+/* ---- Teachbench section menu ----
+   Anchored to its button so the panel rolls down over the page rather than
+   pushing the section below it down as it opens, which on a phone moved the
+   thing you were about to read. */
+.tb-nav{position:relative}
+.tb-nav-btn{display:inline-flex; align-items:center; gap:9px; cursor:pointer;
+  padding:7px 12px; min-height:38px; border-radius:var(--r-sm,9px);
+  border:1px solid var(--line); background:var(--surface-2); color:var(--ink);
+  font:inherit; font-size:13.5px; font-weight:600}
+.tb-nav-btn:hover{border-color:var(--line-strong)}
+.tb-nav-btn:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.tb-bars{display:inline-flex; flex-direction:column; gap:3px; width:14px}
+.tb-bars i{display:block; height:2px; border-radius:2px; background:currentColor; opacity:.75}
+.tb-nav-chev{font-size:10px; opacity:.6; margin-left:2px}
+.tb-nav-btn[aria-expanded="true"] .tb-nav-chev{transform:rotate(180deg)}
+.tb-menu{position:absolute; z-index:30; top:calc(100% + 6px); right:0; min-width:172px;
+  display:flex; flex-direction:column; padding:5px;
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r-sm,10px);
+  box-shadow:0 16px 40px -12px rgba(0,0,0,.42)}
+.tb-menu[hidden]{display:none}
+.tb-menu button{appearance:none; border:0; background:none; cursor:pointer; font:inherit;
+  font-size:13.5px; color:var(--ink); text-align:left; padding:9px 11px;
+  border-radius:7px; min-height:38px}
+.tb-menu button:hover{background:var(--sunk)}
+.tb-menu button[aria-pressed="true"]{background:var(--accent-soft); color:var(--accent); font-weight:600}
+.tb-menu button:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+
 .foliage{padding-top:12px; border-top:1px solid var(--line)}
 /* narrow on purpose: it is a qualifier on the button beside it, not a field in
    its own right, and it must not read as the main action of the row */
@@ -4808,12 +4835,25 @@ html[data-shell="rail"] body{
   <section class="view" id="view-teachbench" hidden>
     <div class="sec-head">
       <h2>Teachbench</h2>
-      <div class="seg segsm" id="tbScopeSeg">
-        <button type="button" data-tbscope="students" aria-pressed="true">Students</button>
-        <button type="button" data-tbscope="week" aria-pressed="false">Week</button>
-        <button type="button" data-tbscope="tasks" aria-pressed="false">Tasks</button>
-        <button type="button" data-tbscope="words" aria-pressed="false">Words</button>
-        <button type="button" data-tbscope="search" aria-pressed="false">Search</button>
+      <!-- Five sections behind one control. The strip they used to sit in was
+           always open and always taking a row, on a header that already has a
+           title in it; on a phone it wrapped. The button names where you are,
+           which the strip could only show by highlighting, and the sections
+           themselves keep their data-tbscope so the existing handler still
+           drives them. -->
+      <div class="tb-nav" id="tbScopeSeg">
+        <button type="button" class="tb-nav-btn" id="tbMenuBtn" aria-expanded="false" aria-controls="tbMenu">
+          <span class="tb-bars" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span id="tbMenuLabel">Students</span>
+          <span class="tb-nav-chev" aria-hidden="true">▾</span>
+        </button>
+        <div class="tb-menu" id="tbMenu" hidden>
+          <button type="button" data-tbscope="students" aria-pressed="true">Students</button>
+          <button type="button" data-tbscope="week" aria-pressed="false">Week</button>
+          <button type="button" data-tbscope="tasks" aria-pressed="false">Tasks</button>
+          <button type="button" data-tbscope="words" aria-pressed="false">Words</button>
+          <button type="button" data-tbscope="search" aria-pressed="false">Search</button>
+        </div>
       </div>
     </div>
 
@@ -18843,6 +18883,12 @@ function tbSetScope(scope){
   $("#tbScopeDetail").hidden=true;
   document.querySelectorAll("#tbScopeSeg [data-tbscope]").forEach(b=>
     b.setAttribute("aria-pressed", String(b.dataset.tbscope===scope)));
+  /* the button carries the current section's name, so a closed menu still
+     says where you are — the thing the old always-open strip did by
+     highlighting one of five */
+  const lbl=$("#tbMenuLabel"), cur=document.querySelector(`#tbMenu [data-tbscope="${scope}"]`);
+  if(lbl&&cur) lbl.textContent=cur.textContent;
+  tbMenuOpen(false);
   TB_SCOPES.forEach(s=>{ $("#tbScope"+s[0].toUpperCase()+s.slice(1)).hidden = s!==scope; });
   if(scope==="students") renderTeachbench();
   if(scope==="week") tbRenderWeek();
@@ -18859,10 +18905,29 @@ function tbOpenStudentDetail(id){
 }
 $("#tbDetailBack").addEventListener("click",()=>{ tbSetScope("students"); renderTeachbench(); });
 $("#tbDetailEdit").addEventListener("click",()=>{ if(tbDetailStudentId) tbOpenEditDialog(tbDetailStudentId); });
+function tbMenuOpen(on){
+  const m=$("#tbMenu"), b=$("#tbMenuBtn");
+  if(!m||!b) return;
+  m.hidden=!on;
+  b.setAttribute("aria-expanded",String(!!on));
+}
 $("#tbScopeSeg").addEventListener("click",e=>{
+  if(e.target.closest("#tbMenuBtn")){ tbMenuOpen($("#tbMenu").hidden); return; }
   const b=e.target.closest("[data-tbscope]");
   if(!b) return;
-  tbSetScope(b.dataset.tbscope);
+  tbSetScope(b.dataset.tbscope);          // closes the menu on the way through
+});
+/* a menu that only shuts by choosing something is a trap — anywhere else and
+   Escape both close it, and Escape puts the focus back where it came from */
+document.addEventListener("click",e=>{
+  if(!$("#tbMenu")||$("#tbMenu").hidden) return;
+  if(e.target.closest("#tbScopeSeg")) return;
+  tbMenuOpen(false);
+});
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Escape"||!$("#tbMenu")||$("#tbMenu").hidden) return;
+  tbMenuOpen(false);
+  const b=$("#tbMenuBtn"); if(b) b.focus();
 });
 
 function tbFillLevelSelect(sel){
