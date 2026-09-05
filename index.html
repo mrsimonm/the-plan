@@ -6680,6 +6680,19 @@ html[data-shell="rail"] body{
 .cb-grp[data-open="0"] .cb-grp-caret{transform:rotate(-90deg)}
 .cb-grp[data-open="0"] .cb-grid, .cb-grp[data-open="0"] .cb-rows{display:none}
 
+/* ---- pokémon set completion panel ---- */
+.cb-pkmn-h{margin-bottom:10px}
+.cb-pkmn-set{padding:9px 0; border-top:1px solid var(--line-soft)}
+.cb-pkmn-set:first-of-type{border-top:0; padding-top:0}
+.cb-pkmn-line{display:flex; align-items:baseline; justify-content:space-between; gap:10px; font-size:14px}
+.cb-pkmn-n{color:var(--ink-3); font-variant-numeric:tabular-nums; font-size:12.5px}
+.cb-pkmn-bar{height:6px; border-radius:99px; background:var(--sunk); overflow:hidden; margin:7px 0 6px}
+.cb-pkmn-bar i{display:block; height:100%; border-radius:99px; background:var(--accent)}
+.cb-pkmn-sub{font-size:12px; color:var(--ink-3)}
+.cb-pkmn-miss{font-size:12.5px; color:var(--ink-2); margin-top:5px; line-height:1.5}
+.cb-pkmn-miss span{display:inline-block; margin-right:4px; background:var(--surface-2);
+  border:1px solid var(--line); border-radius:6px; padding:1px 7px}
+
 /* ---- the grid: a wall of pictures ----
    auto-fill rather than a fixed count, so one rule covers a 360px phone (two
    up) and a wide desktop (six) without a media query per breakpoint. */
@@ -28431,6 +28444,8 @@ Object.assign(CS,{ "Speak with total ease and precision about complex or sensiti
 "Write clear, smoothly flowing text in an appropriate style":"Napsat jasný a plynulý text vhodným stylem",
 "Express myself spontaneously and at length with natural fluency":"Vyjádřit se spontánně a obšírně s přirozenou plynulostí",
 "Structure a convincing argument to suit the listener":"Vystavět přesvědčivou argumentaci podle posluchače" });
+;
+Object.assign(CS,{ "Set completion":"Dokončení sad", "Missing":"Chybí" });
 boot();
 
 /* The progress bars used to be rebuilt every 2 seconds forever, in every view,
@@ -33115,6 +33130,236 @@ const CB_STATUS_LBL=v=>{ const s=CB_STATUS.find(x=>x[0]===v); return s?s[1]:"Own
    they are not part of what the shelf is worth, and an insurer would say so. */
 const CB_GONE={sold:1,gifted:1};
 const CB_WANT={wanted:1,ordered:1};
+const CB_PKMN_SETS=[
+  {c:"base1",n:"Base",s:"Base",r:"1999/01/09",p:102,t:102},
+  {c:"base2",n:"Jungle",s:"Base",r:"1999/06/16",p:64,t:64},
+  {c:"basep",n:"Wizards Black Star Promos",s:"Base",r:"1999/07/01",p:53,t:53},
+  {c:"base3",n:"Fossil",s:"Base",r:"1999/10/10",p:62,t:62},
+  {c:"base4",n:"Base Set 2",s:"Base",r:"2000/02/24",p:130,t:130},
+  {c:"base5",n:"Team Rocket",s:"Base",r:"2000/04/24",p:82,t:83},
+  {c:"gym1",n:"Gym Heroes",s:"Gym",r:"2000/08/14",p:132,t:132},
+  {c:"gym2",n:"Gym Challenge",s:"Gym",r:"2000/10/16",p:132,t:132},
+  {c:"neo1",n:"Neo Genesis",s:"Neo",r:"2000/12/16",p:111,t:111},
+  {c:"neo2",n:"Neo Discovery",s:"Neo",r:"2001/06/01",p:75,t:75},
+  {c:"si1",n:"Southern Islands",s:"Other",r:"2001/07/31",p:18,t:18},
+  {c:"neo3",n:"Neo Revelation",s:"Neo",r:"2001/09/21",p:64,t:66},
+  {c:"neo4",n:"Neo Destiny",s:"Neo",r:"2002/02/28",p:105,t:113},
+  {c:"base6",n:"Legendary Collection",s:"Other",r:"2002/05/24",p:110,t:110},
+  {c:"ecard1",n:"Expedition Base Set",s:"E-Card",r:"2002/09/15",p:165,t:165},
+  {c:"bp",n:"Best of Game",s:"Other",r:"2002/12/01",p:9,t:9},
+  {c:"ecard2",n:"Aquapolis",s:"E-Card",r:"2003/01/15",p:147,t:182},
+  {c:"ecard3",n:"Skyridge",s:"E-Card",r:"2003/05/12",p:144,t:182},
+  {c:"ex1",n:"Ruby & Sapphire",s:"EX",r:"2003/07/01",p:109,t:109},
+  {c:"ex2",n:"Sandstorm",s:"EX",r:"2003/09/18",p:100,t:100},
+  {c:"np",n:"Nintendo Black Star Promos",s:"NP",r:"2003/10/01",p:40,t:40},
+  {c:"ex3",n:"Dragon",s:"EX",r:"2003/11/24",p:97,t:100},
+  {c:"ex4",n:"Team Magma vs Team Aqua",s:"EX",r:"2004/03/01",p:95,t:97},
+  {c:"ex5",n:"Hidden Legends",s:"EX",r:"2004/06/01",p:101,t:102},
+  {c:"tk1b",n:"EX Trainer Kit Latios",s:"EX",r:"2004/06/01",p:10,t:10},
+  {c:"tk1a",n:"EX Trainer Kit Latias",s:"EX",r:"2004/06/01",p:10,t:10},
+  {c:"ex6",n:"FireRed & LeafGreen",s:"EX",r:"2004/09/01",p:112,t:116},
+  {c:"pop1",n:"POP Series 1",s:"POP",r:"2004/09/01",p:17,t:17},
+  {c:"ex7",n:"Team Rocket Returns",s:"EX",r:"2004/11/01",p:109,t:111},
+  {c:"ex8",n:"Deoxys",s:"EX",r:"2005/02/01",p:107,t:108},
+  {c:"ex9",n:"Emerald",s:"EX",r:"2005/05/01",p:106,t:107},
+  {c:"pop2",n:"POP Series 2",s:"POP",r:"2005/08/01",p:17,t:17},
+  {c:"ex10",n:"Unseen Forces",s:"EX",r:"2005/08/01",p:115,t:145},
+  {c:"ex11",n:"Delta Species",s:"EX",r:"2005/10/31",p:113,t:114},
+  {c:"ex12",n:"Legend Maker",s:"EX",r:"2006/02/01",p:92,t:93},
+  {c:"tk2a",n:"EX Trainer Kit 2 Plusle",s:"EX",r:"2006/03/01",p:12,t:12},
+  {c:"tk2b",n:"EX Trainer Kit 2 Minun",s:"EX",r:"2006/03/01",p:12,t:12},
+  {c:"pop3",n:"POP Series 3",s:"POP",r:"2006/04/01",p:17,t:17},
+  {c:"ex13",n:"Holon Phantoms",s:"EX",r:"2006/05/01",p:110,t:111},
+  {c:"pop4",n:"POP Series 4",s:"POP",r:"2006/08/01",p:17,t:17},
+  {c:"ex14",n:"Crystal Guardians",s:"EX",r:"2006/08/01",p:100,t:100},
+  {c:"ex15",n:"Dragon Frontiers",s:"EX",r:"2006/11/01",p:101,t:101},
+  {c:"ex16",n:"Power Keepers",s:"EX",r:"2007/02/02",p:108,t:108},
+  {c:"pop5",n:"POP Series 5",s:"POP",r:"2007/03/01",p:17,t:17},
+  {c:"dp1",n:"Diamond & Pearl",s:"Diamond & Pearl",r:"2007/05/01",p:130,t:130},
+  {c:"dpp",n:"DP Black Star Promos",s:"Diamond & Pearl",r:"2007/05/01",p:56,t:56},
+  {c:"dp2",n:"Mysterious Treasures",s:"Diamond & Pearl",r:"2007/08/01",p:123,t:124},
+  {c:"pop6",n:"POP Series 6",s:"POP",r:"2007/09/01",p:17,t:17},
+  {c:"dp3",n:"Secret Wonders",s:"Diamond & Pearl",r:"2007/11/01",p:132,t:132},
+  {c:"dp4",n:"Great Encounters",s:"Diamond & Pearl",r:"2008/02/01",p:106,t:106},
+  {c:"pop7",n:"POP Series 7",s:"POP",r:"2008/03/01",p:17,t:17},
+  {c:"dp5",n:"Majestic Dawn",s:"Diamond & Pearl",r:"2008/05/01",p:100,t:100},
+  {c:"dp6",n:"Legends Awakened",s:"Diamond & Pearl",r:"2008/08/01",p:146,t:146},
+  {c:"pop8",n:"POP Series 8",s:"POP",r:"2008/09/01",p:17,t:17},
+  {c:"dp7",n:"Stormfront",s:"Diamond & Pearl",r:"2008/11/01",p:100,t:106},
+  {c:"pl1",n:"Platinum",s:"Platinum",r:"2009/02/11",p:127,t:133},
+  {c:"pop9",n:"POP Series 9",s:"POP",r:"2009/03/01",p:17,t:17},
+  {c:"pl2",n:"Rising Rivals",s:"Platinum",r:"2009/05/16",p:111,t:120},
+  {c:"pl3",n:"Supreme Victors",s:"Platinum",r:"2009/08/19",p:147,t:153},
+  {c:"pl4",n:"Arceus",s:"Platinum",r:"2009/11/04",p:99,t:111},
+  {c:"ru1",n:"Pok\u00e9mon Rumble",s:"Other",r:"2009/12/02",p:16,t:16},
+  {c:"hgss1",n:"HeartGold & SoulSilver",s:"HeartGold & SoulSilver",r:"2010/02/10",p:123,t:124},
+  {c:"hsp",n:"HGSS Black Star Promos",s:"HeartGold & SoulSilver",r:"2010/02/10",p:25,t:25},
+  {c:"hgss2",n:"HS\u2014Unleashed",s:"HeartGold & SoulSilver",r:"2010/05/12",p:95,t:96},
+  {c:"hgss3",n:"HS\u2014Undaunted",s:"HeartGold & SoulSilver",r:"2010/08/18",p:90,t:91},
+  {c:"hgss4",n:"HS\u2014Triumphant",s:"HeartGold & SoulSilver",r:"2010/11/03",p:102,t:103},
+  {c:"col1",n:"Call of Legends",s:"HeartGold & SoulSilver",r:"2011/02/09",p:95,t:106},
+  {c:"bwp",n:"BW Black Star Promos",s:"Black & White",r:"2011/03/01",p:101,t:101},
+  {c:"bw1",n:"Black & White",s:"Black & White",r:"2011/04/25",p:114,t:115},
+  {c:"mcd11",n:"McDonald's Collection 2011",s:"Other",r:"2011/06/17",p:12,t:12},
+  {c:"bw2",n:"Emerging Powers",s:"Black & White",r:"2011/08/31",p:98,t:98},
+  {c:"bw3",n:"Noble Victories",s:"Black & White",r:"2011/11/16",p:101,t:102},
+  {c:"bw4",n:"Next Destinies",s:"Black & White",r:"2012/02/08",p:99,t:103},
+  {c:"bw5",n:"Dark Explorers",s:"Black & White",r:"2012/05/09",p:108,t:111},
+  {c:"mcd12",n:"McDonald's Collection 2012",s:"Other",r:"2012/06/15",p:12,t:12},
+  {c:"bw6",n:"Dragons Exalted",s:"Black & White",r:"2012/08/15",p:124,t:128},
+  {c:"dv1",n:"Dragon Vault",s:"Black & White",r:"2012/10/05",p:20,t:21},
+  {c:"bw7",n:"Boundaries Crossed",s:"Black & White",r:"2012/11/07",p:149,t:153},
+  {c:"bw8",n:"Plasma Storm",s:"Black & White",r:"2013/02/06",p:135,t:138},
+  {c:"bw9",n:"Plasma Freeze",s:"Black & White",r:"2013/05/08",p:116,t:122},
+  {c:"bw10",n:"Plasma Blast",s:"Black & White",r:"2013/08/14",p:101,t:105},
+  {c:"xyp",n:"XY Black Star Promos",s:"XY",r:"2013/10/12",p:211,t:216},
+  {c:"bw11",n:"Legendary Treasures",s:"Black & White",r:"2013/11/06",p:113,t:140},
+  {c:"xy0",n:"Kalos Starter Set",s:"XY",r:"2013/11/08",p:39,t:39},
+  {c:"xy1",n:"XY",s:"XY",r:"2014/02/05",p:146,t:146},
+  {c:"xy2",n:"Flashfire",s:"XY",r:"2014/05/07",p:106,t:110},
+  {c:"mcd14",n:"McDonald's Collection 2014",s:"Other",r:"2014/05/23",p:12,t:12},
+  {c:"xy3",n:"Furious Fists",s:"XY",r:"2014/08/13",p:111,t:114},
+  {c:"xy4",n:"Phantom Forces",s:"XY",r:"2014/11/05",p:119,t:124},
+  {c:"xy5",n:"Primal Clash",s:"XY",r:"2015/02/04",p:160,t:164},
+  {c:"dc1",n:"Double Crisis",s:"XY",r:"2015/03/25",p:34,t:34},
+  {c:"xy6",n:"Roaring Skies",s:"XY",r:"2015/05/06",p:108,t:112},
+  {c:"xy7",n:"Ancient Origins",s:"XY",r:"2015/08/12",p:98,t:100},
+  {c:"xy8",n:"BREAKthrough",s:"XY",r:"2015/11/04",p:162,t:165},
+  {c:"mcd15",n:"McDonald's Collection 2015",s:"Other",r:"2015/11/27",p:12,t:12},
+  {c:"xy9",n:"BREAKpoint",s:"XY",r:"2016/02/03",p:122,t:126},
+  {c:"g1",n:"Generations",s:"XY",r:"2016/02/22",p:83,t:117},
+  {c:"xy10",n:"Fates Collide",s:"XY",r:"2016/05/02",p:124,t:129},
+  {c:"xy11",n:"Steam Siege",s:"XY",r:"2016/08/03",p:114,t:116},
+  {c:"mcd16",n:"McDonald's Collection 2016",s:"Other",r:"2016/08/19",p:12,t:12},
+  {c:"xy12",n:"Evolutions",s:"XY",r:"2016/11/02",p:108,t:113},
+  {c:"smp",n:"SM Black Star Promos",s:"Sun & Moon",r:"2017/02/03",p:248,t:250},
+  {c:"sm1",n:"Sun & Moon",s:"Sun & Moon",r:"2017/02/03",p:149,t:173},
+  {c:"sm2",n:"Guardians Rising",s:"Sun & Moon",r:"2017/05/05",p:145,t:180},
+  {c:"sm3",n:"Burning Shadows",s:"Sun & Moon",r:"2017/08/05",p:147,t:177},
+  {c:"sm35",n:"Shining Legends",s:"Sun & Moon",r:"2017/10/06",p:73,t:81},
+  {c:"sm4",n:"Crimson Invasion",s:"Sun & Moon",r:"2017/11/03",p:111,t:126},
+  {c:"mcd17",n:"McDonald's Collection 2017",s:"Other",r:"2017/11/07",p:12,t:12},
+  {c:"sm5",n:"Ultra Prism",s:"Sun & Moon",r:"2018/02/02",p:156,t:178},
+  {c:"sm6",n:"Forbidden Light",s:"Sun & Moon",r:"2018/05/04",p:131,t:150},
+  {c:"sm7",n:"Celestial Storm",s:"Sun & Moon",r:"2018/08/03",p:168,t:187},
+  {c:"sm75",n:"Dragon Majesty",s:"Sun & Moon",r:"2018/09/07",p:70,t:80},
+  {c:"mcd18",n:"McDonald's Collection 2018",s:"Other",r:"2018/10/16",p:12,t:12},
+  {c:"sm8",n:"Lost Thunder",s:"Sun & Moon",r:"2018/11/02",p:214,t:240},
+  {c:"sm9",n:"Team Up",s:"Sun & Moon",r:"2019/02/01",p:181,t:198},
+  {c:"det1",n:"Detective Pikachu",s:"Sun & Moon",r:"2019/04/05",p:18,t:18},
+  {c:"sm10",n:"Unbroken Bonds",s:"Sun & Moon",r:"2019/05/03",p:214,t:234},
+  {c:"sm11",n:"Unified Minds",s:"Sun & Moon",r:"2019/08/02",p:236,t:260},
+  {c:"sm115",n:"Hidden Fates",s:"Sun & Moon",r:"2019/08/23",p:68,t:69},
+  {c:"sma",n:"Hidden Fates Shiny Vault",s:"Sun & Moon",r:"2019/08/23",p:94,t:94},
+  {c:"mcd19",n:"McDonald's Collection 2019",s:"Other",r:"2019/10/15",p:12,t:12},
+  {c:"sm12",n:"Cosmic Eclipse",s:"Sun & Moon",r:"2019/11/01",p:236,t:272},
+  {c:"swshp",n:"SWSH Black Star Promos",s:"Sword & Shield",r:"2019/11/15",p:307,t:304},
+  {c:"swsh1",n:"Sword & Shield",s:"Sword & Shield",r:"2020/02/07",p:202,t:216},
+  {c:"swsh2",n:"Rebel Clash",s:"Sword & Shield",r:"2020/05/01",p:192,t:209},
+  {c:"swsh3",n:"Darkness Ablaze",s:"Sword & Shield",r:"2020/08/14",p:189,t:201},
+  {c:"fut20",n:"Pok\u00e9mon Futsal Collection",s:"Other",r:"2020/09/11",p:5,t:5},
+  {c:"swsh35",n:"Champion's Path",s:"Sword & Shield",r:"2020/09/25",p:73,t:80},
+  {c:"swsh4",n:"Vivid Voltage",s:"Sword & Shield",r:"2020/11/13",p:185,t:203},
+  {c:"mcd21",n:"McDonald's Collection 2021",s:"Other",r:"2021/02/09",p:25,t:25},
+  {c:"swsh45sv",n:"Shining Fates Shiny Vault",s:"Sword & Shield",r:"2021/02/19",p:122,t:122},
+  {c:"swsh45",n:"Shining Fates",s:"Sword & Shield",r:"2021/02/19",p:72,t:73},
+  {c:"swsh5",n:"Battle Styles",s:"Sword & Shield",r:"2021/03/19",p:163,t:183},
+  {c:"swsh6",n:"Chilling Reign",s:"Sword & Shield",r:"2021/06/18",p:198,t:233},
+  {c:"swsh7",n:"Evolving Skies",s:"Sword & Shield",r:"2021/08/27",p:203,t:237},
+  {c:"cel25c",n:"Celebrations: Classic Collection",s:"Sword & Shield",r:"2021/10/08",p:25,t:25},
+  {c:"cel25",n:"Celebrations",s:"Sword & Shield",r:"2021/10/08",p:25,t:25},
+  {c:"swsh8",n:"Fusion Strike",s:"Sword & Shield",r:"2021/11/12",p:264,t:284},
+  {c:"swsh9",n:"Brilliant Stars",s:"Sword & Shield",r:"2022/02/25",p:172,t:186},
+  {c:"swsh9tg",n:"Brilliant Stars Trainer Gallery",s:"Sword & Shield",r:"2022/02/25",p:30,t:30},
+  {c:"swsh10",n:"Astral Radiance",s:"Sword & Shield",r:"2022/05/27",p:189,t:216},
+  {c:"swsh10tg",n:"Astral Radiance Trainer Gallery",s:"Sword & Shield",r:"2022/05/27",p:30,t:30},
+  {c:"pgo",n:"Pok\u00e9mon GO",s:"Sword & Shield",r:"2022/07/01",p:78,t:88},
+  {c:"mcd22",n:"McDonald's Collection 2022",s:"Other",r:"2022/08/03",p:15,t:15},
+  {c:"swsh11",n:"Lost Origin",s:"Sword & Shield",r:"2022/09/09",p:196,t:217},
+  {c:"swsh11tg",n:"Lost Origin Trainer Gallery",s:"Sword & Shield",r:"2022/09/09",p:30,t:30},
+  {c:"swsh12",n:"Silver Tempest",s:"Sword & Shield",r:"2022/11/11",p:195,t:215},
+  {c:"swsh12tg",n:"Silver Tempest Trainer Gallery",s:"Sword & Shield",r:"2022/11/11",p:30,t:30},
+  {c:"svp",n:"Scarlet & Violet Black Star Promos",s:"Scarlet & Violet",r:"2023/01/01",p:215,t:196},
+  {c:"swsh12pt5",n:"Crown Zenith",s:"Sword & Shield",r:"2023/01/20",p:159,t:160},
+  {c:"swsh12pt5gg",n:"Crown Zenith Galarian Gallery",s:"Sword & Shield",r:"2023/01/20",p:70,t:70},
+  {c:"sv1",n:"Scarlet & Violet",s:"Scarlet & Violet",r:"2023/03/31",p:198,t:258},
+  {c:"sve",n:"Scarlet & Violet Energies",s:"Scarlet & Violet",r:"2023/03/31",p:8,t:8},
+  {c:"sv2",n:"Paldea Evolved",s:"Scarlet & Violet",r:"2023/06/09",p:193,t:279},
+  {c:"sv3",n:"Obsidian Flames",s:"Scarlet & Violet",r:"2023/08/11",p:197,t:230},
+  {c:"sv3pt5",n:"151",s:"Scarlet & Violet",r:"2023/09/22",p:165,t:207},
+  {c:"sv4",n:"Paradox Rift",s:"Scarlet & Violet",r:"2023/11/03",p:182,t:266},
+  {c:"sv4pt5",n:"Paldean Fates",s:"Scarlet & Violet",r:"2024/01/26",p:91,t:245},
+  {c:"sv5",n:"Temporal Forces",s:"Scarlet & Violet",r:"2024/03/22",p:162,t:218},
+  {c:"sv6",n:"Twilight Masquerade",s:"Scarlet & Violet",r:"2024/05/24",p:167,t:226},
+  {c:"sv6pt5",n:"Shrouded Fable",s:"Scarlet & Violet",r:"2024/08/02",p:64,t:99},
+  {c:"sv7",n:"Stellar Crown",s:"Scarlet & Violet",r:"2024/09/13",p:142,t:175},
+  {c:"sv8",n:"Surging Sparks",s:"Scarlet & Violet",r:"2024/11/08",p:191,t:252},
+  {c:"sv8pt5",n:"Prismatic Evolutions",s:"Scarlet & Violet",r:"2025/01/17",p:131,t:180},
+  {c:"sv9",n:"Journey Together",s:"Scarlet & Violet",r:"2025/03/28",p:159,t:190},
+  {c:"sv10",n:"Destined Rivals",s:"Scarlet & Violet",r:"2025/05/30",p:182,t:244},
+  {c:"zsv10pt5",n:"Black Bolt",s:"Scarlet & Violet",r:"2025/07/18",p:86,t:172},
+  {c:"rsv10pt5",n:"White Flare",s:"Scarlet & Violet",r:"2025/07/18",p:86,t:173},
+  {c:"me1",n:"Mega Evolution",s:"Mega Evolution",r:"2025/09/26",p:132,t:188},
+  {c:"me2",n:"Phantasmal Flames",s:"Mega Evolution",r:"2025/11/14",p:94,t:130},
+  {c:"me2pt5",n:"Ascended Heroes",s:"Mega Evolution",r:"2026/01/30",p:217,t:295},
+  {c:"me3",n:"Perfect Order",s:"Mega Evolution",r:"2026/03/27",p:88,t:124},
+  {c:"me4",n:"Chaos Rising",s:"Mega Evolution",r:"2026/05/22",p:86,t:122},
+  {c:"me5",n:"Pitch Black",s:"Mega Evolution",r:"2026/07/17",p:84,t:120}
+];
+
+/* Set-name matching is fuzzy on purpose: the field is free text, so a
+   collector typing "Base Set" has to find the API's "Base". The key lowercases,
+   drops diacritics and non-alphanumerics and strips a trailing "set", which
+   resolves every realistic variant ("Base"/"Base Set", "Jungle"/"Jungle Set",
+   "Pokémon GO"/"Pokemon GO set"). CB_PKMN_ALIAS is the escape hatch for any
+   pair the normaliser cannot reconcile. */
+function cbPkmnKey(v){
+  return String(v||"").toLowerCase().normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"").replace(/set$/,"");
+}
+const CB_PKMN_ALIAS={ "base": "base", "jungle": "jungle" };
+const CB_PKMN_BY_KEY=(()=>{ const m=new Map();
+  CB_PKMN_SETS.forEach(s=>m.set(cbPkmnKey(s.name), s));
+  Object.keys(CB_PKMN_ALIAS).forEach(a=>{ const k=cbPkmnKey(CB_PKMN_ALIAS[a]); if(!m.has(a)) m.set(a, m.get(k)); });
+  return m; })();
+function cbSetOf(maker){ return CB_PKMN_BY_KEY.get(cbPkmnKey(maker))||null; }
+
+/* The set-completion panel for pokémon collections: per matched maker (=set),
+   owned / printedTotal with a bar, a "missing" list of wanted/ordered rows,
+   and the value tally of what is owned. Sets the collector never matched are
+   simply not drawn, so custom binders degrade gracefully. */
+function cbSetPanel(cur){
+  if(!cur) return "";
+  const items=cbAllItems().filter(i=>i.collId===cur.id);
+  if(!items.length) return "";
+  const curSym=cur.cur||"Kč";
+  const groups=[];
+  items.forEach(i=>{
+    const s=cbSetOf(i.maker); if(!s) return;
+    let g=groups.find(x=>x.s.code===s.code);
+    if(!g){ g={s, owned:0, missing:0, value:0, want:[]}; groups.push(g); }
+    if(CB_WANT[i.status]){ g.missing++; g.want.push(i); }
+    else if(cbCounted(i)){ g.owned++; g.value+=cbWorthOf(i)||0; }
+  });
+  if(!groups.length) return "";
+  groups.sort((a,b)=>a.s.releaseDate<b.s.releaseDate?-1:1);
+  const bar=(o,t)=>t?`<div class="cb-pkmn-bar"><i style="width:${Math.min(100,Math.round(o/t*100))}%"></i></div>`
+                    :`<div class="cb-pkmn-bar"><i style="width:0%"></i></div>`;
+  return `<div class="cb-pkmn card pad" style="margin-bottom:14px">
+    <div class="cb-pkmn-h"><b>${esc(t("Set completion"))}</b></div>
+    ${groups.map(g=>{
+      const s=g.s, cur2=curSym, val=g.value?cbMoney(g.value,cur2):"";
+      const missing=g.want.length?`<div class="cb-pkmn-miss">${esc(t("Missing"))}: `+
+        g.want.map(w=>`<span data-no-i18n>${esc(w.title)}${w.x&&w.x.no?` (#${esc(w.x.no)})`:""}</span>`).join(", ")+`</div>`:"";
+      return `<div class="cb-pkmn-set">
+        <div class="cb-pkmn-line"><b data-no-i18n>${esc(s.name)}</b>
+          <span class="cb-pkmn-n" data-no-i18n>${g.owned} / ${s.printedTotal}</span></div>
+        ${bar(g.owned,s.printedTotal)}
+        <div class="cb-pkmn-sub">${esc(t("Owned"))}: ${g.owned}${val?` · ${esc(t("Value"))}: ${val}`:""}</div>
+        ${missing}
+      </div>`;}).join("")}
+  </div>`;
+}
 
 /* ---------------- what a collection tracks ----------------
    CB_TYPES above is now a STARTING POINT, not a schema. A collection carries
@@ -33612,7 +33857,8 @@ function cbPaint(){
   }
   $("#cbEmpty").hidden=true;
   const sorted=cbSortItems(list,V.sort);
-  box.innerHTML=V.group?cbGroupsHtml(sorted,V.group,V.mode):cbBlockHtml(sorted,V.mode);
+  const pkPanel=(c&&c.type==="pokemon")?cbSetPanel(c):"";
+  box.innerHTML=pkPanel+(V.group?cbGroupsHtml(sorted,V.group,V.mode):cbBlockHtml(sorted,V.mode));
 }
 
 /* ---- the index ----
@@ -34026,7 +34272,13 @@ function cbFillDatalists(c){
   const pool=cbAllItems().filter(i=>!c||i.collId===c.id);
   const uniq=(arr)=>[...new Set(arr.filter(Boolean))].sort((a,b)=>
     a.localeCompare(b,locale(),{sensitivity:"base"})).slice(0,300);
-  $("#cbMakerList").innerHTML=uniq(pool.map(i=>i.maker)).map(v=>`<option value="${esc(v)}">`).join("");
+  /* A pokémon collection's "set" is the maker: back the field with the real
+     set list (174 sets) so what gets typed matches a set well enough for the
+     completion panel to find it — the field is still free text for binder
+     pseudo-sets, exactly as maker is everywhere else. */
+  const sets = c && CB_TYPE(c.type).id === "pokemon"
+    ? CB_PKMN_SETS.map(s => s.name) : [];
+  $("#cbMakerList").innerHTML=uniq([...sets, ...pool.map(i=>i.maker)]).map(v=>`<option value="${esc(v)}">`).join("");
   $("#cbLocList").innerHTML=uniq(cbAllItems().map(i=>i.loc)).map(v=>`<option value="${esc(v)}">`).join("");
 }
 function cbPaintKv(){
