@@ -30952,10 +30952,16 @@ tbRenderDetailLessons = function(host, data, studentId){
       $("#tbPayWarn").textContent = "How many lessons does this pay for?";
       return;
     }
+    const payDate = $("#tbPayDate").value;
+    if(!payDate){
+      $("#tbPayWarn").hidden = false;
+      $("#tbPayWarn").textContent = "Pick a date for this payment.";
+      return;
+    }
     const data = TB.loadData();
     data.payments.push(TB.createPayment({
       studentId: student.id,
-      date: $("#tbPayDate").value,
+      date: payDate,
       lessons,
       amount: Number($("#tbPayAmount").value) || 0,
       note: $("#tbPayNote").value
