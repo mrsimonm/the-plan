@@ -8185,6 +8185,14 @@ async function push(){
   if(!stateLoaded){ pushing=false; dirty=wasDirty; setSync("readonly","not saved — could not read your data"); return; }
   try{
     const {photos,...rest}=S;
+    /* The shots themselves stay on the device that took them — they always
+       have, and a library of 640px JPEGs would not fit in the state document
+       anyway. Their thumbnails do fit, and they are what makes the other
+       device usable: without them every plant there is an identical leaf icon.
+       Sent inside the state rather than as the separate photo file, because
+       that file is dropped on purpose by the Firestore backend. */
+    rest.photoThumbs=(photos||[]).filter(x=>x&&x.thumb)
+      .map(x=>({id:x.id,subjectId:x.subjectId,at:x.at,h:x.h==null?null:x.h,by:x.by,thumb:x.thumb}));
     const files={"data/state.json":JSON.stringify(rest)};
     /* Only ever write the photo file if this session actually read it. Without
        this, one failed fetch on open plus any edit published [] over the whole
@@ -8858,7 +8866,7 @@ function renderSubjects(){
     </div>`;
     return `<div class="pcard">
       <button type="button" class="pcard-top" data-open-plant="${p.id}">
-        ${ph?`<img class="pcard-thumb" src="${safeImg(ph.data)}" alt="">`
+        ${ph?`<img class="pcard-thumb" src="${safeImg(photoSrc(ph))}" alt="">`
             :'<span class="pcard-thumb none">🌿</span>'}
         <span class="pcard-head" style="flex:1">
           <span class="pcard-name">${esc(p.name)}</span>
@@ -9142,7 +9150,7 @@ function renderBatch(){
       </div>
       ${shots.length?`<div class="strip">${shots.slice().reverse().map(x=>`
         <button type="button" class="shot" data-shot="${x.id}">
-          <img src="${safeImg(x.data)}" alt="">
+          <img src="${safeImg(photoSrc(x))}" alt="">
           <small>${esc(new Date(x.at).toLocaleDateString(locale(),{day:"numeric",month:"short"}))}</small>
         </button>`).join("")}</div>
       `:""}
@@ -13580,7 +13588,7 @@ function renderGarden(){
           ${sw?`<span class="swipe-act" aria-hidden="true">${swipeVerb(it.r)}</span>`:""}
           <div class="duerow-in">
             <span class="pill ${it.overdue?"over":"due"}">${it.overdue?"late":"today"}</span>
-            ${ph?`<img class="lu-thumb" src="${safeImg(ph.data)}" alt="">`:'<span class="lu-thumb none">🌿</span>'}
+            ${ph?`<img class="lu-thumb" src="${safeImg(photoSrc(ph))}" alt="">`:'<span class="lu-thumb none">🌿</span>'}
             <span class="duerow-t">${esc(it.p.name)}
               <small>${esc(it.cut?"check the cuttings":routineName(it))}</small></span>
             ${it.cut?`<button class="btn mini" data-gocut="${it.cut.id}">Open</button>`
@@ -13594,7 +13602,7 @@ function renderGarden(){
           <span class="swipe-act" aria-hidden="true">${esc(t("Done"))}</span>
           <div class="duerow-in">
             <span class="pill due">task</span>
-            ${tsub?(ph?`<img class="lu-thumb" src="${safeImg(ph.data)}" alt="">`:'<span class="lu-thumb none">🌿</span>'):""}
+            ${tsub?(ph?`<img class="lu-thumb" src="${safeImg(photoSrc(ph))}" alt="">`:'<span class="lu-thumb none">🌿</span>'):""}
             <span class="duerow-t">${esc(tk.text)}<small>${
               esc(tsub?tsub.name:"anytime")}</small></span>
             <button class="btn mini" data-gtask="${tk.id}">Done</button>
@@ -13823,7 +13831,7 @@ function renderPlant(){
 
   $("#pvBody").innerHTML=`
     <div class="card" style="overflow:hidden">
-      ${hero?`<img class="pv-hero" src="${safeImg(hero.data)}" alt="${esc(p.name)}">`
+      ${hero?`<img class="pv-hero" src="${safeImg(photoSrc(hero))}" alt="${esc(p.name)}">`
             :`<div class="pv-hero-empty"><span>No photos yet</span>
                <span class="photo-row" style="width:100%; max-width:320px">${photoButtons("btn mini")}</span></div>`}
       <div class="pad">
@@ -13866,7 +13874,7 @@ function renderPlant(){
       </div>
       ${shots.length?`<div class="strip">${shots.slice().reverse().map(x=>`
         <button type="button" class="shot" data-shot="${x.id}">
-          <img src="${safeImg(x.data)}" alt="">
+          <img src="${safeImg(photoSrc(x))}" alt="">
           <small>${esc(new Date(x.at).toLocaleDateString(locale(),{day:"numeric",month:"short"}))}</small>
           ${x.h?`<b>${x.h} cm</b>`:""}
         </button>`).join("")}</div>
@@ -14025,9 +14033,12 @@ async function takePhoto(e){
   if(!file||(!pvId&&!bcId)) return;
   try{
     const data=await shrinkImage(file);
+    /* made now rather than lazily: this is the one moment the image is already
+       decoded and the person is waiting anyway */
+    let thumb=null; try{ thumb=await makeThumb(data); }catch(e){}
     S.photos=S.photos||[];
     const subjectId=pvId||bcId;
-    const shot={id:uid(),subjectId,at:new Date().toISOString(),data,h:null,by:L.me};
+    const shot={id:uid(),subjectId,at:new Date().toISOString(),data,thumb,h:null,by:L.me};
     S.photos.push(shot); photosTouched();
     touch();
     if(pvId) renderPlant();
@@ -14079,7 +14090,7 @@ function openShot(id){
   shotId=id;
   $("#shotTitle").textContent=new Date(x.at).toLocaleDateString(locale(),
     {weekday:"long",day:"numeric",month:"long"});
-  $("#shotImg").src=x.data;
+  $("#shotImg").src=photoSrc(x);
   $("#shotH").value=x.h||"";
   $("#shotDlg").showModal();
   setTimeout(()=>$("#shotH").focus(),40);
@@ -14129,6 +14140,64 @@ function shrinkImage(file){
     img.src=url;
   });
 }
+/* ---- thumbnails ----
+   A full shot is 640px at q0.65, around 35 kB. Small enough to keep a few
+   dozen on one device, far too big to travel: the sync deliberately strips
+   photos, so a second device shows a wall of identical leaf icons and you
+   cannot tell an Alocasia from a Philodendron without opening each one.
+
+   A thumbnail at 128px and q0.5 is 2-3 kB — roughly a fifteenth — and a whole
+   library of them fits inside the state document with room to spare. It is too
+   coarse to study, and that is fine: its only job is to be recognisable at the
+   size of a tile, so the right plant can be picked out of a list on a phone
+   that has never seen the originals.
+
+   The full shot therefore stays per-device, as it always has, and only the
+   thumb is published. A device holding the original keeps showing it; a device
+   holding only the thumb shows that. Nothing is ever downgraded — see
+   photoSrc, and the merge in applyRemote. */
+const THUMB_MAX=128, THUMB_Q=0.5;
+function shrinkDataUrl(dataUrl,max,q){
+  return new Promise((res,rej)=>{
+    const img=new Image();
+    img.onload=()=>{
+      const sc=Math.min(1,max/Math.max(img.width,img.height));
+      const c=document.createElement("canvas");
+      c.width=Math.max(1,Math.round(img.width*sc));
+      c.height=Math.max(1,Math.round(img.height*sc));
+      c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+      try{ res(c.toDataURL("image/jpeg",q)); }catch(err){ rej(err); }
+    };
+    img.onerror=()=>rej(new Error("thumbnail failed"));
+    img.src=dataUrl;
+  });
+}
+const makeThumb=dataUrl=>shrinkDataUrl(dataUrl,THUMB_MAX,THUMB_Q);
+/* The original when this device holds it, the travelling thumb when it does
+   not. Every place that draws a photo goes through here, so a device that
+   received only thumbs shows pictures rather than empty frames. */
+const photoSrc=ph=>(ph&&(ph.data||ph.thumb))||"";
+/* Existing shots predate thumbs. Backfilled quietly, in batches, so opening
+   the app after an update does not lock up decoding a hundred images at once.
+   A failure is recorded rather than retried in a loop: data that will not
+   decode now will not decode on the next pass either. */
+let thumbBackfillRunning=false;
+async function backfillThumbs(){
+  if(thumbBackfillRunning) return;
+  const missing=(S.photos||[]).filter(x=>x.data&&!x.thumb&&!x.thumbFailed);
+  if(!missing.length) return;
+  thumbBackfillRunning=true;
+  let made=0;
+  for(const ph of missing.slice(0,40)){
+    try{ ph.thumb=await makeThumb(ph.data); made++; }
+    catch(e){ ph.thumbFailed=true; }
+    await new Promise(r=>setTimeout(r,0));
+  }
+  thumbBackfillRunning=false;
+  if(made){ try{ photosTouched(); }catch(e){} touch(); }
+  if(missing.length>40) setTimeout(backfillThumbs,1500);
+}
+
 const photosFor=sid=>(S.photos||[]).filter(p=>p.subjectId===sid)
   .sort((a,b)=>a.at.localeCompare(b.at));
 const latestPhoto=sid=>{ const l=photosFor(sid); return l.length?l[l.length-1]:null; };
@@ -21399,6 +21468,7 @@ $("#plantForm").addEventListener("submit",async e=>{
   if(pendingPhoto){
     S.photos=S.photos||[];
     S.photos.push({id:uid(),subjectId:sid,at:new Date().toISOString(),
+      thumb:await makeThumb(pendingPhoto).catch(()=>null),
       data:pendingPhoto,h:null,by:L.me});
     photosTouched();
     pendingPhoto=null;
@@ -21472,7 +21542,7 @@ function pickerPlantRowHtml(p,checked){
   return `<label class="lu">
     <span class="sw"><input type="checkbox" data-lp="${p.id}"${checked?" checked":""}><i></i></span>
     <span class="lu-name">${esc(p.name)}<small>${p.spot?esc(p.spot):""}</small></span>
-    ${ph?`<img class="lu-thumb" src="${safeImg(ph.data)}" alt="">`:'<span class="lu-thumb none">🌿</span>'}</label>`;
+    ${ph?`<img class="lu-thumb" src="${safeImg(photoSrc(ph))}" alt="">`:'<span class="lu-thumb none">🌿</span>'}</label>`;
 }
 /* log the whole mix against several plants at once */
 $("#logMix").addEventListener("click",async()=>{
@@ -25764,6 +25834,8 @@ async function boot(){
   if(studentModeRequested()) return bootStudentApp();
   try{ const raw=localStorage.getItem(LOCAL_KEY); if(raw) L=Object.assign(L,JSON.parse(raw)); }catch(e){}
   applyTheme();
+  /* thumbnails for shots taken before they existed — idle work, never blocking */
+  setTimeout(()=>{ try{ backfillThumbs(); }catch(e){} },2500);
   await initSync();
   S=await loadShared();
   if(!S.users||!S.users.length) S.users=seed().users;   // repair empty, never reset a solo setup
@@ -29309,7 +29381,15 @@ var PSYNC = (() => {
               setSync("error","sync: bad data"); return; }
 
     S = next;
-    S.photos = keepPhotos || [];
+    /* Local originals always win — a device that holds the real shot must not
+       be downgraded to somebody else's thumbnail. Anything this device has
+       never seen is adopted as a thumb-only record, which is what lets a
+       second phone show recognisable plants without ever holding the photos. */
+    const localPhotos = keepPhotos || [];
+    const haveIds = new Set(localPhotos.map(x=>x&&x.id));
+    const adopted = (next.photoThumbs||[]).filter(x=>x&&x.id&&!haveIds.has(x.id));
+    S.photos = localPhotos.concat(adopted);
+    delete S.photoThumbs;                     // a transport field, not state
     lastRev = d.rev || 0;
     claim();                                  // this device now holds their state
     /* Persist directly instead of via touch(): touch() would mark the state
