@@ -1727,6 +1727,20 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .nav button:hover{color:var(--ink)}
 .nav button[aria-selected="true"]{color:var(--on-accent); background:var(--accent)}
 .nav button:focus-visible{outline:2px solid var(--accent); outline-offset:-3px}
+/* Narrow phones: all six tabs must fit without swiping. The day-progress chip
+   is the piece that used to push Library/Stats past the right edge, and it
+   duplicates the Today card on Garden/Diary anyway, so it is dropped rather
+   than squeezed; the tabs themselves get tighter padding and type so the
+   whole pill fits at 360/390. Below ~340 the strip falls back to its native
+   scroll with the edge-fade affordance above. */
+@media (max-width:420px){
+  #taskBar{display:none !important}
+}
+@media (max-width:400px){
+  .nav{scroll-padding-inline:0; padding-left:4px; padding-right:4px; gap:1px}
+  .nav button{padding:9px 6px; font-size:12.5px; letter-spacing:-.02em}
+  .navwrap{padding-left:6px; padding-right:6px}
+}
 
 main{order:2; flex:1; padding:16px 14px 48px; width:100%; max-width:1060px; margin:0 auto}
 .view[hidden]{display:none}
