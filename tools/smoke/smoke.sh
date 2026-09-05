@@ -101,6 +101,7 @@ hours|setApp("hours")
 teachbench|setApp("teachbench")
 teachbench-student|setApp("teachbench-student")
 notes|setApp("notes")
+cabinet|setApp("cabinet")
 settings|show("settings")
 EOF_VIEWS
 

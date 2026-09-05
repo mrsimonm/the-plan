@@ -6024,6 +6024,71 @@ html[data-shell="rail"] body{
     <button class="btn mini" type="button" id="nUndoBtn">Undo</button>
   </div>
 
+
+  <!-- ============ CABINET ============ -->
+  <section class="view" id="view-cabinet" hidden>
+    <div class="sec-head">
+      <h2>Cabinet</h2>
+      <div class="cb-head-acts">
+        <button class="btn mini" type="button" id="cbCollBtn">Collection ▾</button>
+        <button class="btn mini" type="button" id="cbExportBtn">Export ▾</button>
+        <button class="btn primary mini" type="button" id="cbNewBtn">+ Add item</button>
+      </div>
+    </div>
+
+    <div class="card pad">
+      <div class="cb-shelf" id="cbShelf" role="tablist" aria-label="Collections"></div>
+
+      <div class="cb-tools">
+        <div class="cb-search">
+          <input type="search" id="cbSearch" autocomplete="off"
+                 placeholder="Search this collection…" aria-label="Search this collection">
+          <button type="button" class="cb-search-x" id="cbSearchX" aria-label="Clear search" hidden>×</button>
+        </div>
+        <label class="cb-sr" for="cbGroup">Group by</label>
+        <select id="cbGroup" aria-label="Group by">
+          <option value="">No grouping</option>
+          <option value="maker">By maker</option>
+          <option value="year">By year</option>
+          <option value="status">By status</option>
+          <option value="location">By location</option>
+          <option value="tag">By tag</option>
+        </select>
+        <label class="cb-sr" for="cbSort">Sort</label>
+        <select id="cbSort" aria-label="Sort">
+          <option value="acquired">Newest added</option>
+          <option value="title">Title</option>
+          <option value="maker">Maker</option>
+          <option value="year">Year</option>
+          <option value="value">Value</option>
+        </select>
+        <div class="seg" role="group" aria-label="View">
+          <button type="button" id="cbModeGrid" aria-pressed="true">Grid</button>
+          <button type="button" id="cbModeList" aria-pressed="false">List</button>
+        </div>
+      </div>
+
+      <div class="cb-filters" id="cbFilters" hidden></div>
+      <div class="cb-sum" id="cbSum"></div>
+    </div>
+
+    <div id="cbBody" style="margin-top:14px"></div>
+    <p class="empty" id="cbEmpty" hidden></p>
+  </section>
+
+  <!-- ============ ONE CABINET ITEM ============ -->
+  <section class="view" id="view-cabitem" hidden>
+    <div class="sec-head">
+      <h2 class="cb-sr">Item</h2>
+      <button class="btn" type="button" id="cbBack">← Cabinet</button>
+      <div class="cb-head-acts">
+        <button class="btn mini" type="button" id="cbItemEdit">Edit</button>
+        <button class="btn mini danger" type="button" id="cbItemDel">Delete…</button>
+      </div>
+    </div>
+    <div id="cbItemBody"></div>
+  </section>
+
 </main>
 
 <!-- web clipper: paste text or a link, or scan an image for its text -->
@@ -6458,6 +6523,317 @@ html[data-shell="rail"] body{
 .tb-inbox-row b{display:block; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .tb-inbox-row small{color:var(--ink-3); font-size:11.5px; display:block;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+
+/* ---------- Teachbench header search ----------
+   The field and the section menu are one control between them: what you
+   type is looked for inside whatever the button says. So they share a row,
+   and on a phone that row drops under the title whole rather than letting
+   the field crush the button. */
+.tb-tools{display:flex; align-items:center; gap:8px; min-width:0; flex:0 1 auto}
+.tb-search{display:flex; align-items:center; gap:6px; min-width:0; flex:1 1 190px;
+  max-width:280px; padding:0 10px; min-height:38px;
+  border:1px solid var(--line); border-radius:var(--r-sm,9px); background:var(--surface-2)}
+.tb-search:focus-within{border-color:var(--accent)}
+.tb-search[hidden]{display:none}
+.tb-search-ico{font-size:15px; line-height:1; color:var(--ink-3); flex:none}
+.tb-search input{flex:1; min-width:0; appearance:none; border:0; background:none;
+  color:var(--ink); font:inherit; font-size:13.5px; padding:7px 0; outline:none}
+.tb-search input::-webkit-search-cancel-button{display:none}
+.tb-search input::placeholder{color:var(--ink-3)}
+.tb-search-x{appearance:none; border:0; background:none; cursor:pointer; flex:none;
+  color:var(--ink-3); font-size:17px; line-height:1; padding:2px 2px 4px; border-radius:4px}
+.tb-search-x:hover{color:var(--ink)}
+.tb-search-x[hidden]{display:none}
+@media (max-width:560px){
+  #view-teachbench .sec-head{flex-wrap:wrap}
+  .tb-tools{flex:1 1 100%; justify-content:space-between}
+  .tb-search{max-width:none}
+}
+
+/* ============================================================================
+   CABINET — the collections module.
+
+   A shelf of separate collections (paintings, model aeroplanes, coins…), each
+   holding items that are photographed, described and valued. It borrows the
+   app's cards, chips, fields and dialogs wholesale; everything below is only
+   the shapes those pieces do not already cover — the photo tile, the shelf
+   switcher, the grouped list, the lightbox.
+
+   One rule runs through the whole module: THE PHOTO IS THE RECORD. A painting
+   or a finished kit is a thing you recognise by looking at it, not by reading
+   its title, so the grid is the default view and the tile is mostly image.
+   The dense list is there for the collections where that is untrue — coins,
+   stamps, books — and the toggle between them is remembered per collection.
+   ============================================================================ */
+
+/* ---- the shelf: one chip per collection, with its count ---- */
+.cb-shelf{display:flex; gap:7px; overflow-x:auto; padding:2px 2px 8px; margin:0 -2px;
+  scrollbar-width:none; -webkit-overflow-scrolling:touch}
+.cb-shelf::-webkit-scrollbar{display:none}
+.cb-shelf .chip{flex:0 0 auto; display:inline-flex; align-items:center; gap:7px; min-height:34px}
+.cb-shelf .chip b{font-weight:600}
+.cb-shelf-n{font-size:11.5px; color:var(--ink-3); font-variant-numeric:tabular-nums}
+.cb-shelf .chip[aria-pressed="true"] .cb-shelf-n{color:var(--on-accent); opacity:.75}
+.cb-shelf-add{flex:0 0 auto; border-style:dashed}
+
+/* ---- the toolbar above the items ---- */
+.cb-tools{display:flex; flex-wrap:wrap; gap:9px; align-items:center}
+.cb-search{flex:1 1 190px; min-width:0; display:flex; align-items:center; gap:6px;
+  background:var(--sunk); border:1px solid var(--line); border-radius:var(--r-pill); padding:0 12px}
+.cb-search input{flex:1; min-width:0; appearance:none; border:0; background:none; outline:none;
+  font:inherit; font-size:14px; color:var(--ink-strong); padding:8px 0; min-height:34px}
+.cb-search input::-webkit-search-cancel-button{display:none}
+.cb-search input::placeholder{color:var(--ink-3)}
+.cb-search-x{appearance:none; border:0; background:none; cursor:pointer; flex:none; color:var(--ink-3);
+  font-size:17px; line-height:1; padding:2px; border-radius:4px}
+.cb-search-x:hover{color:var(--ink)}
+.cb-search-x[hidden]{display:none}
+.cb-tools select{appearance:none; border:1px solid var(--line); background:var(--surface-2); color:var(--ink);
+  border-radius:var(--r-pill); font:inherit; font-size:13px; font-weight:600; padding:7px 11px;
+  min-height:34px; cursor:pointer;
+  /* the global `input,select,textarea{width:100%}` rule would otherwise push
+     every control in this toolbar onto a line of its own */
+  width:auto; flex:0 0 auto; max-width:48%}
+.cb-search input{width:100%}
+.cb-tools .seg{flex:0 0 auto; width:auto}
+.cb-tools .seg button{padding:0 13px; min-width:56px}
+
+/* the filter chips sit on their own line so the toolbar never wraps mid-control */
+.cb-filters{display:flex; flex-wrap:wrap; gap:6px; margin-top:10px}
+.cb-filters[hidden]{display:none}
+
+/* ---- the summary strip: what is here, and what it is worth ----
+   Deliberately quiet. It is the answer to "how much is on this shelf" — the
+   question an insurer asks — not a headline the module is about money. */
+.cb-sum{display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 16px; margin-top:12px;
+  padding-top:11px; border-top:1px solid var(--line)}
+.cb-sum-i{display:flex; align-items:baseline; gap:6px; font-size:13px; color:var(--ink-3)}
+.cb-sum-i b{font-size:15px; font-weight:700; color:var(--ink-strong); font-variant-numeric:tabular-nums}
+
+/* ---- grouped sections (by maker, by year, by status…) ---- */
+.cb-grp{margin-top:18px}
+.cb-grp:first-child{margin-top:0}
+.cb-grp-head{display:flex; align-items:baseline; gap:9px; width:100%; appearance:none; border:0;
+  background:none; cursor:pointer; padding:0 2px 9px; text-align:left; color:inherit; font:inherit}
+.cb-grp-head h3{font-family:var(--font); font-size:15px; font-weight:700; letter-spacing:-.01em;
+  color:var(--ink-strong); margin:0; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.cb-grp-meta{font-size:12px; color:var(--ink-3); font-variant-numeric:tabular-nums; white-space:nowrap}
+.cb-grp-caret{margin-left:auto; flex:0 0 auto; color:var(--ink-3); font-size:12px; transition:transform .18s}
+.cb-grp[data-open="0"] .cb-grp-caret{transform:rotate(-90deg)}
+.cb-grp[data-open="0"] .cb-grid, .cb-grp[data-open="0"] .cb-rows{display:none}
+
+/* ---- the grid: a wall of pictures ----
+   auto-fill rather than a fixed count, so one rule covers a 360px phone (two
+   up) and a wide desktop (six) without a media query per breakpoint. */
+.cb-grid{display:grid; gap:11px; grid-template-columns:repeat(auto-fill, minmax(132px, 1fr))}
+.cb-tile{position:relative; display:flex; flex-direction:column; text-align:left; appearance:none;
+  border:1px solid var(--glass-border); background:var(--glass-fill); backdrop-filter:var(--glass-blur);
+  -webkit-backdrop-filter:var(--glass-blur); border-radius:var(--r-sm); overflow:hidden; cursor:pointer;
+  padding:0; font:inherit; color:inherit; transition:transform .18s cubic-bezier(.2,.8,.2,1), border-color .18s}
+.cb-tile:hover{border-color:var(--accent)}
+.cb-tile:active{transform:scale(.98)}
+.cb-tile:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.cb-tile-img{position:relative; aspect-ratio:1; background:var(--sunk); overflow:hidden}
+.cb-tile-img img{width:100%; height:100%; object-fit:cover; display:block}
+/* no photo yet: the initial of the title, big and faint, so the tile still reads */
+.cb-tile-ph{position:absolute; inset:0; display:grid; place-items:center; color:var(--ink-3);
+  font-family:var(--font); font-size:30px; font-weight:700; opacity:.45; user-select:none}
+.cb-tile-n{position:absolute; right:6px; bottom:6px; padding:2px 7px; border-radius:var(--r-pill);
+  background:rgba(0,0,0,.55); color:#fff; font-size:11px; font-weight:600; font-variant-numeric:tabular-nums;
+  backdrop-filter:blur(4px)}
+.cb-tile-txt{padding:8px 10px 10px; min-width:0}
+.cb-tile-t{font-size:13px; font-weight:600; color:var(--ink-strong); line-height:1.3;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.cb-tile-m{margin-top:3px; font-size:11.5px; color:var(--ink-3); overflow:hidden;
+  text-overflow:ellipsis; white-space:nowrap}
+
+/* a badge for anything that is not simply "owned" — wanted, sold, on loan.
+   Owned items get none: the common case should be the quiet one. */
+.cb-badge{position:absolute; left:6px; top:6px; padding:2px 8px; border-radius:var(--r-pill);
+  font-size:10.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase;
+  background:var(--accent); color:var(--on-accent)}
+.cb-badge[data-s="wanted"]{background:var(--amber); color:#fff}
+.cb-badge[data-s="ordered"]{background:var(--amber); color:#fff}
+.cb-badge[data-s="sold"]{background:var(--ink-3); color:var(--surface)}
+.cb-badge[data-s="loaned"]{background:var(--ink-3); color:var(--surface)}
+.cb-badge[data-s="gifted"]{background:var(--ink-3); color:var(--surface)}
+
+/* ---- the list: the same items as data ---- */
+.cb-rows{display:flex; flex-direction:column; gap:1px; background:var(--line); border-radius:var(--r-sm);
+  overflow:hidden; border:1px solid var(--line)}
+.cb-row{display:flex; align-items:center; gap:11px; width:100%; appearance:none; border:0; cursor:pointer;
+  background:var(--surface); padding:9px 11px; font:inherit; color:inherit; text-align:left; min-height:56px}
+.cb-row:hover{background:var(--surface-2)}
+.cb-row:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+.cb-row-img{flex:0 0 auto; width:40px; height:40px; border-radius:var(--r-xs); overflow:hidden;
+  background:var(--sunk); position:relative}
+.cb-row-img img{width:100%; height:100%; object-fit:cover; display:block}
+.cb-row-ph{position:absolute; inset:0; display:grid; place-items:center; color:var(--ink-3);
+  font-size:15px; font-weight:700; opacity:.5}
+.cb-row-txt{flex:1; min-width:0}
+.cb-row-t{font-size:14px; font-weight:600; color:var(--ink-strong); overflow:hidden;
+  text-overflow:ellipsis; white-space:nowrap}
+.cb-row-m{font-size:12px; color:var(--ink-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.cb-row-r{flex:0 0 auto; text-align:right; font-size:12.5px; color:var(--ink-3);
+  font-variant-numeric:tabular-nums}
+.cb-row-v{font-weight:600; color:var(--ink-strong)}
+
+/* ---- one item ---- */
+.cb-it-head{display:flex; align-items:flex-start; gap:12px; margin-bottom:10px}
+.cb-it-head h2{flex:1; min-width:0; font-size:22px; font-family:var(--font); font-weight:700;
+  letter-spacing:-.02em; line-height:1.2}
+.cb-it-maker{margin-top:3px; font-size:14px; color:var(--ink-3)}
+.cb-it-maker button{appearance:none; border:0; background:none; padding:0; font:inherit; color:var(--accent);
+  cursor:pointer; text-decoration:underline; text-underline-offset:2px}
+
+/* the photo strip: one big frame, thumbnails under it. object-fit:contain, not
+   cover — a painting cropped to a square is a different painting. */
+.cb-shot{position:relative; border-radius:var(--r-sm); overflow:hidden; background:var(--sunk);
+  aspect-ratio:4/3; display:grid; place-items:center}
+.cb-shot img{max-width:100%; max-height:100%; object-fit:contain; display:block; cursor:zoom-in}
+.cb-shot-empty{color:var(--ink-3); font-size:13px; text-align:center; padding:20px}
+.cb-strip{display:flex; gap:7px; margin-top:9px; overflow-x:auto; padding-bottom:2px;
+  scrollbar-width:none}
+.cb-strip::-webkit-scrollbar{display:none}
+.cb-thumb{position:relative; flex:0 0 auto; width:54px; height:54px; border-radius:var(--r-xs);
+  overflow:hidden; border:2px solid transparent; background:var(--sunk); cursor:pointer; padding:0;
+  appearance:none}
+.cb-thumb img{width:100%; height:100%; object-fit:cover; display:block}
+.cb-thumb[aria-current="true"]{border-color:var(--accent)}
+.cb-thumb-add{display:grid; place-items:center; border:1px dashed var(--line-strong); color:var(--ink-3);
+  font-size:20px; background:none}
+.cb-cap{margin-top:8px; font-size:12.5px; color:var(--ink-3); line-height:1.5}
+
+/* the facts table — label left, value right, one row per fact that has a value */
+.cb-facts{display:grid; grid-template-columns:auto 1fr; gap:8px 14px; font-size:13.5px}
+.cb-facts dt{font-family:var(--font); font-weight:600; text-transform:uppercase; letter-spacing:.06em;
+  font-size:11px; color:var(--ink-3); padding-top:2px; white-space:nowrap}
+.cb-facts dd{margin:0; color:var(--ink-strong); min-width:0; overflow-wrap:anywhere}
+.cb-note{white-space:pre-wrap; font-size:14px; line-height:1.6; color:var(--ink)}
+
+/* ---- the lightbox: a photo at the size it deserves ---- */
+.cb-lightbox{padding:0; border:0; background:transparent; max-width:98vw; max-height:98vh; overflow:visible}
+.cb-lightbox::backdrop{background:rgba(0,0,0,.86)}
+.cb-lightbox img{max-width:96vw; max-height:82vh; border-radius:var(--r-sm); display:block; margin:0 auto}
+.cb-lb-bar{display:flex; align-items:center; justify-content:center; gap:10px; margin-top:12px}
+.cb-lb-cap{color:#fff; opacity:.8; font-size:13px; text-align:center; margin-top:8px; max-width:80vw}
+
+/* ---- the printable report ----
+   Rendered into a normal dialog on screen and handed to the browser's own
+   print dialog, which is how it becomes a PDF. No print library: @media print
+   hides the app and lets the report have the paper to itself. */
+/* the report is a table, so it gets more room than the 500px every other
+   dialog is sized to, and it has to be able to shrink inside a flex .dlg-body
+   or the horizontal scroll below never engages */
+#cbRepDlg{width:min(920px,calc(100vw - 24px))}
+#cbRepDlg .dlg-body{min-width:0}
+.cb-rep{font-size:12px; color:var(--ink); min-width:0}
+.cb-rep h1{font-size:20px; font-family:var(--font); font-weight:700; letter-spacing:-.02em;
+  color:var(--ink-strong); margin:0 0 3px}
+.cb-rep-sub{font-size:11.5px; color:var(--ink-3); margin:0 0 14px}
+/* on screen the table is wider than a phone; it scrolls inside its own box
+   rather than making the whole dialog scroll sideways */
+.cb-rep-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch; min-width:0; max-width:100%}
+.cb-rep table{width:100%; min-width:560px; border-collapse:collapse}
+.cb-rep th{text-align:left; font-size:9.5px; text-transform:uppercase; letter-spacing:.06em;
+  color:var(--ink-3); border-bottom:1px solid var(--line-strong); padding:5px 6px; white-space:nowrap}
+.cb-rep td{padding:6px; border-bottom:1px solid var(--line-soft); vertical-align:top}
+.cb-rep td b{color:var(--ink-strong)}
+.cb-rep td img{width:40px; height:40px; object-fit:cover; border-radius:3px; display:block}
+.cb-rep-tot td{font-weight:700; color:var(--ink-strong)}
+.cb-rep-grp td{background:var(--sunk); font-weight:700; font-size:11px; color:var(--ink-strong)}
+/* Printing is the point of this dialog — it is how it becomes a PDF. The app
+   is hidden outright and the report is handed the paper, in ink on white
+   whatever palette the screen happens to be using. */
+@media print{
+  body > *{display:none !important}
+  body > dialog#cbRepDlg{display:block !important; position:static; inset:auto; max-width:none;
+    max-height:none; width:auto; margin:0; padding:0; border:0; background:#fff; box-shadow:none;
+    overflow:visible; color:#000}
+  #cbRepDlg::backdrop{display:none}
+  #cbRepDlg .dlg-foot, #cbRepDlg .dlg-head{display:none !important}
+  #cbRepDlg .dlg-body{max-height:none; overflow:visible; padding:0; display:block}
+  .cb-rep, .cb-rep h1, .cb-rep td, .cb-rep td b, .cb-rep-tot td{color:#000}
+  .cb-rep-sub, .cb-rep th{color:#444}
+  .cb-rep-scroll{overflow:visible}
+  .cb-rep table{min-width:0}
+  .cb-rep th{border-bottom:1px solid #999}
+  .cb-rep td{border-bottom:1px solid #ddd}
+  .cb-rep-grp td{background:#f0f0f0}
+  .cb-rep tr{break-inside:avoid}
+  thead{display:table-header-group}
+}
+
+/* ---- the photo-picking row in the item dialog ---- */
+.cb-pick{display:flex; flex-wrap:wrap; gap:7px}
+.cb-pick .cb-thumb{width:58px; height:58px}
+.cb-pick-x{position:absolute; top:1px; right:1px; width:18px; height:18px; padding:0; line-height:1;
+  border-radius:50%; border:0; background:rgba(0,0,0,.62); color:#fff; font-size:12px; cursor:pointer;
+  display:grid; place-items:center}
+.cb-pick-cov{position:absolute; left:1px; bottom:1px; padding:1px 5px; border-radius:var(--r-pill);
+  background:var(--accent); color:var(--on-accent); font-size:9px; font-weight:700; letter-spacing:.04em}
+.cb-pick-lbl{position:relative; overflow:hidden}
+.cb-pick-lbl input{position:absolute; inset:0; opacity:0; cursor:pointer}
+
+/* per-type extra fields, drawn from the collection's template */
+.cb-extra{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+@media (max-width:460px){ .cb-extra{grid-template-columns:1fr} }
+/* a custom collection lets the user name their own fields */
+.cb-kv{display:flex; gap:7px; align-items:center; margin-bottom:7px}
+.cb-kv input{flex:1 1 0; min-width:0}
+.cb-kv button{flex:0 0 auto}
+
+/* On a phone the controls are deliberately finger-sized, so five of them
+   stacked would push the first item off the screen entirely. One predictable
+   row each instead of whatever the wrap happened to produce, the filter chips
+   scrolling sideways like the shelf above them rather than growing a second
+   line, and a summary that fits on one. */
+@media (max-width:560px){
+  #view-cabinet .sec-head{flex-wrap:wrap}
+  .cb-tools{gap:8px}
+  .cb-search{flex:1 1 100%}
+  .cb-tools select{flex:1 1 0; max-width:none; min-width:0}
+  .cb-tools .seg{flex:1 1 100%}
+  .cb-filters{flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none;
+    margin:10px -20px 0; padding:0 20px 2px}
+  .cb-filters::-webkit-scrollbar{display:none}
+  .cb-filters .chip{flex:0 0 auto}
+  .cb-sum{gap:3px 12px; margin-top:10px; padding-top:9px}
+  .cb-sum-i{font-size:12px}
+  .cb-sum-i b{font-size:14px}
+  .cb-grid{grid-template-columns:repeat(auto-fill, minmax(104px, 1fr)); gap:9px}
+}
+@media (prefers-reduced-motion:reduce){
+  .cb-tile, .cb-grp-caret{transition:none}
+  .cb-tile:active{transform:none}
+}
+
+/* ---- module-local utilities ----
+   Deliberately not reaching for .n-sr / .n-head-acts: borrowing another
+   module's classes couples the two, and Notes is free to rename its own. */
+.cb-sr{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
+  clip:rect(0 0 0 0); white-space:nowrap; border:0}
+.cb-head-acts{display:flex; gap:8px; align-items:center; margin-left:auto; flex-wrap:wrap}
+
+/* the little header menu */
+.cb-menu{position:absolute; z-index:80; min-width:190px; padding:6px; border-radius:var(--r-sm);
+  background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow-lift)}
+.cb-menu button{display:block; width:100%; text-align:left; appearance:none; border:0; background:none;
+  font:inherit; font-size:13.5px; color:var(--ink); padding:8px 10px; border-radius:var(--r-xs); cursor:pointer}
+.cb-menu button:hover{background:var(--accent-soft); color:var(--accent)}
+.cb-menu button.danger:hover{color:var(--crit)}
+.cb-menu hr{border:0; border-top:1px solid var(--line); margin:5px 2px}
+
+/* ---- the [hidden] trap ----
+   [hidden]{display:none} lives in the user-agent sheet, and ANY author rule
+   setting display beats it. Every class above that sets display and is ever
+   toggled with el.hidden needs saying again here, or it stays on screen. */
+.cb-tools[hidden], .cb-sum[hidden], .cb-filters[hidden], .cb-shelf[hidden],
+.cb-grid[hidden], .cb-rows[hidden], .cb-row[hidden], .cb-tile[hidden],
+.cb-pick[hidden], .cb-extra[hidden], .cb-facts[hidden], .cb-strip[hidden],
+.cb-kv[hidden], .cb-lb-bar[hidden], .cb-it-head[hidden], .cb-shot[hidden],
+.cb-search[hidden], .cb-head-acts[hidden], .cb-menu[hidden],
+.cb-thumb[hidden], .cb-search-x[hidden]{display:none}
 </style>
 <div id="tbdict" hidden>
   <div class="card pad bx">
@@ -6480,6 +6856,122 @@ html[data-shell="rail"] body{
     </div>
   </div>
 </div>
+
+<!-- ============ CABINET dialogs ============
+     Body-level, exactly like the homework-photo dialog above: a <dialog> that
+     lives inside a hidden <section class="view"> cannot be shown at all, and
+     that has bitten this app before. -->
+
+<dialog id="cbItemDlg"><form id="cbItemForm">
+  <h3 class="dlg-head" id="cbItemDlgTitle">Item</h3>
+  <div class="dlg-body">
+    <div class="field"><label for="cbfTitle">Title</label>
+      <input id="cbfTitle" required maxlength="160" placeholder="Sunflowers in a blue jug"></div>
+    <div class="field"><label for="cbfMaker" id="cbfMakerLbl">Maker</label>
+      <input id="cbfMaker" maxlength="120" list="cbMakerList" autocomplete="off" placeholder="Who made it">
+      <datalist id="cbMakerList"></datalist></div>
+    <div class="grid2">
+      <div class="field"><label for="cbfYear">Year made</label>
+        <input id="cbfYear" maxlength="40" placeholder="1968, or c.1890"></div>
+      <div class="field"><label for="cbfAcq">Acquired</label>
+        <input type="date" id="cbfAcq"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label for="cbfStatus">Status</label>
+        <select id="cbfStatus"></select></div>
+      <div class="field"><label for="cbfCond">Condition</label>
+        <select id="cbfCond"></select></div>
+    </div>
+
+    <div class="field"><label>Photos</label>
+      <div class="cb-pick" id="cbfPics"></div>
+      <p class="hint" id="cbfPicsHint" style="margin:6px 0 0"></p></div>
+
+    <div class="cb-extra" id="cbfExtra"></div>
+    <div id="cbfCustom" hidden>
+      <div class="field"><label>Your own fields</label>
+        <div id="cbfKvRows"></div>
+        <button class="btn mini" type="button" id="cbfKvAdd">+ Add a field</button></div>
+    </div>
+
+    <div class="grid2">
+      <div class="field"><label for="cbfLoc">Where it is</label>
+        <input id="cbfLoc" maxlength="120" list="cbLocList" autocomplete="off" placeholder="Study, north wall">
+        <datalist id="cbLocList"></datalist></div>
+      <div class="field"><label for="cbfQty">How many</label>
+        <input id="cbfQty" type="number" min="1" max="9999" step="1" value="1" inputmode="numeric"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label for="cbfPaid">Paid</label>
+        <input id="cbfPaid" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0"></div>
+      <div class="field"><label for="cbfWorth">Worth now</label>
+        <input id="cbfWorth" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label for="cbfFrom">Bought from</label>
+        <input id="cbfFrom" maxlength="160" placeholder="Dealer, auction, gift…"></div>
+      <div class="field"><label for="cbfValued">Valued on</label>
+        <input type="date" id="cbfValued"></div>
+    </div>
+    <div class="field"><label for="cbfTags">Tags</label>
+      <input id="cbfTags" maxlength="240" placeholder="oil, framed, favourite — separated by commas"></div>
+    <div class="field"><label for="cbfNotes">About it</label>
+      <textarea id="cbfNotes" rows="5" maxlength="8000"
+        placeholder="Where it came from, what happened to it, why you wanted it."></textarea></div>
+    <p class="pwarn" id="cbfWarn" hidden></p>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn mini" type="button" id="cbItemCancel">Cancel</button>
+    <button class="btn primary mini" type="submit">Save</button>
+  </div>
+</form></dialog>
+
+<dialog id="cbCollDlg"><form id="cbCollForm">
+  <h3 class="dlg-head" id="cbCollDlgTitle">Collection</h3>
+  <div class="dlg-body">
+    <div class="field"><label for="cbcName">Name</label>
+      <input id="cbcName" required maxlength="80" placeholder="Paintings"></div>
+    <div class="field"><label for="cbcType">What sort of thing</label>
+      <select id="cbcType"></select>
+      <p class="hint" id="cbcTypeHint" style="margin:2px 0 0"></p></div>
+    <div class="grid2">
+      <div class="field"><label for="cbcMakerLbl">Call the maker</label>
+        <input id="cbcMakerLbl" maxlength="40" placeholder="Artist"></div>
+      <div class="field"><label for="cbcCur">Currency</label>
+        <input id="cbcCur" maxlength="6" placeholder="Kč"></div>
+    </div>
+    <p class="pwarn" id="cbcWarn" hidden></p>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn mini danger" type="button" id="cbCollDel">Delete…</button>
+    <button class="btn mini" type="button" id="cbCollCancel">Cancel</button>
+    <button class="btn primary mini" type="submit">Save</button>
+  </div>
+</form></dialog>
+
+<!-- a photo at full size, with its caption and a way to walk the set -->
+<dialog id="cbLbDlg" class="cb-lightbox">
+  <img id="cbLbImg" alt="">
+  <p class="cb-lb-cap" id="cbLbCap"></p>
+  <div class="cb-lb-bar">
+    <button class="btn mini" type="button" id="cbLbPrev" aria-label="Previous photo">←</button>
+    <button class="btn mini" type="button" id="cbLbCap2">Caption…</button>
+    <button class="btn mini danger" type="button" id="cbLbDel">Delete</button>
+    <button class="btn mini" type="button" id="cbLbNext" aria-label="Next photo">→</button>
+    <button class="btn mini" type="button" id="cbLbClose" aria-label="Close">✕</button>
+  </div>
+</dialog>
+
+<!-- the valuation / insurance report: printed by the browser, no library -->
+<dialog id="cbRepDlg">
+  <h3 class="dlg-head">Collection report</h3>
+  <div class="dlg-body"><div class="cb-rep" id="cbRepBody"></div></div>
+  <div class="dlg-foot">
+    <button class="btn mini" type="button" id="cbRepClose">Close</button>
+    <button class="btn primary mini" type="button" id="cbRepPrint">Print / save as PDF</button>
+  </div>
+</dialog>
+
 <script>
 "use strict";
 
@@ -7755,6 +8247,7 @@ function seed(){return{
   actionDaysOn:true, actionDays:[3,0],          // Wednesday & Sunday
   cuttings:[], photos:[], products:[], formulas:[], schedules:[], subjects:[], routines:[], events:[], tasks:[],
   notes:[], notebooks:[],
+  cabinets:[], cabItems:[],
   planner:{sleepOff:false, sleepWeekday:{from:"23:00",hours:8}, sleepWeekend:{from:"23:00",hours:8}, sleepEx:{}, tasks:[], blocks:[], linkCare:true, linkHours:true, linkProjects:true, carePace:3},
   hours:{projects:[], sessions:[], running:null,
     settings:{currency:"Kč", pomoWork:25, pomoShort:5, pomoLong:15, pomoCycle:4}},
@@ -8025,6 +8518,7 @@ function migrate(d){
      call shipped a commit ahead of its definition. A missing normaliser
      should cost that one module's tidy-up, not the user's entire app. */
   if(typeof nNormalise==="function") nNormalise(d);
+  if(typeof cbNormalise==="function") cbNormalise(d);
   d.v=6;
   /* Every id here is about to become DOM/attribute data — squeeze anything an
      import (or a remote sync) may have smuggled in to id-safe characters. */
@@ -8088,7 +8582,7 @@ function pSanitizeState(d){
   const cleanOne=o=>{ if(!o||typeof o!=="object") return;
     ["id","subjectId","studentId"].forEach(k=>{ if(o[k]!==undefined) o[k]=cleanId(o[k]); }); };
   const lists=["subjects","products","formulas","schedules","cuttings","photos",
-    "routines","events","tasks","notes","users","hours"];
+    "routines","events","tasks","notes","users","hours","cabinets","cabItems"];
   for(const name of lists){
     const arr=d[name];
     if(!Array.isArray(arr)) continue;
@@ -19012,7 +19506,10 @@ function renderAll(){ renderMixSel(); renderDue(); renderHow(); renderMix(); ren
      its DOM stayed stale until you navigated to it. Caches cleared too, since
      the underlying data may be wholly different now. */
   pCareCache={}; pSessCache=null; if(window.ppClearExt) ppClearExt();
-  if(typeof pSelISO!=="undefined"&&pSelISO) try{ renderPlanner(); }catch(e){} }
+  if(typeof pSelISO!=="undefined"&&pSelISO) try{ renderPlanner(); }catch(e){}
+  /* Cabinet draws its thumbnails out of IndexedDB, so an import or a remote
+     apply has to go back through cbRender() rather than repaint from S alone. */
+  if(typeof cbRender==="function") try{ cbRender(); }catch(e){} }
 
 function renderTaskBar(){
   const {done,total,pct}=taskProgress();
@@ -19037,7 +19534,8 @@ const APPS=[{id:"bench",label:"Potting Bench",view:null},
             {id:"hours",label:"Hours",view:"hours"},
             {id:"teachbench",label:"Teachbench",view:"teachbench"},
             {id:"teachbench-student",label:"Student Bench",view:"teachbench-student"},
-            {id:"notes",label:"Notes",view:"notes"}];
+            {id:"notes",label:"Notes",view:"notes"},
+            {id:"cabinet",label:"Cabinet",view:"cabinet"}];
 /* "settings" is deliberately NOT here any more: it is the whole app's screen,
    not one of Potting Bench's, so it must not be remembered as the bench tab
    you were last on and must not light up Library in the tab strip. It still
@@ -20366,7 +20864,7 @@ function showNow(v){
      own re-render is a no-op rather than a recursion. */
   if(v!=="planner"&&document.documentElement.classList.contains("pfocus")) pSetFocus(false);
   document.querySelectorAll(".nav button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.view===v)));
-  BENCH_VIEWS.concat(["planner","hours","hproject","teachbench","teachbench-student","notes","note","settings"]).forEach(x=>{ $("#view-"+x).hidden=(x!==v); });
+  BENCH_VIEWS.concat(["planner","hours","hproject","teachbench","teachbench-student","notes","note","cabinet","cabitem","settings"]).forEach(x=>{ $("#view-"+x).hidden=(x!==v); });
   /* editor sub-views (product/formula/plant/batch/…) are populated by their
      open* call, not by showNow — relaunching straight into one was a blank
      shell that crashed on the first tap. Remember their parent tab instead. */
@@ -20381,6 +20879,8 @@ function showNow(v){
   if(v==="teachbench") renderTeachbench();
   if(v==="teachbench-student") renderTeachbenchStudent();
   if(v==="notes") renderNotes();
+  if(v==="cabinet") cbRender();
+  if(v==="cabitem") cbRenderItem();
   /* a remote state can land while a note is open — repaint, don't just regrow */
   if(v==="note"){ nRenderEditor(); nGrowAll(); }
   if(v==="mix"){ renderVol(); renderStr(); renderDue(); renderHow(); renderMix(); }
@@ -30191,6 +30691,13 @@ var PSYNC = (() => {
    one MutationObserver over <main> is enough to keep the rail's current item
    marked and the briefing shown only on the garden — no hook into show().
    ============================================================================ */
+/* The rail is built once, at boot, from t(grp.g) — so a group label whose
+   translation lives in a dictionary block further down the file is read before
+   that block has run, and bakes in English for the life of the page. Cabinet's
+   own dictionary is at the end of the script (the one place concurrent edits
+   cannot collide), so its single rail word has to be registered here instead. */
+Object.assign(CS,{ "Collect":"Sbírky" });
+
 const DZ_ICON={
   garden:'<path d="M12 20v-8"/><path d="M12 12a6 6 0 0 1 6-6 6 6 0 0 1-6 6Z"/><path d="M12 14a5 5 0 0 0-5-5 5 5 0 0 0 5 5Z"/>',
   mix:'<path d="M9 3h6"/><path d="M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/>',
@@ -30202,7 +30709,8 @@ const DZ_ICON={
   hours:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   notes:'<path d="M5 3h9l5 5v13H5Z"/><path d="M14 3v5h5M8 13h8M8 17h5"/>',
   teachbench:'<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 5.5a3 3 0 0 1 0 5M18 20a6 6 0 0 0-3-5.2"/>',
-  student:'<path d="M3 8.5 12 4l9 4.5-9 4.5Z"/><path d="M7 11v5c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5v-5"/>'
+  student:'<path d="M3 8.5 12 4l9 4.5-9 4.5Z"/><path d="M7 11v5c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5v-5"/>',
+  cabinet:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M12 3v18M4 9.5h16M4 16h16"/>'
 };
 const dzSvg=k=>'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'+(DZ_ICON[k]||"")+'</svg>';
 
@@ -30224,7 +30732,9 @@ const DZ_ITEMS=[
     {k:"notes",    app:"notes",   en:"Notes"}]},
   {g:"Teach", items:[
     {k:"teachbench", app:"teachbench",         en:"Teachbench"},
-    {k:"student",    app:"teachbench-student", en:"Student Bench"}]}
+    {k:"student",    app:"teachbench-student", en:"Student Bench"}]},
+  {g:"Collect", items:[
+    {k:"cabinet",  app:"cabinet", en:"Cabinet"}]}
 ];
 function dzGo(it){
   if(it.app==="bench"){ setApp("bench"); show(it.view); }
@@ -30238,6 +30748,7 @@ function dzCurrentKey(){
   if(v==="notes"||v==="note") return "notes";
   if(v==="teachbench") return "teachbench";
   if(v==="teachbench-student") return "student";
+  if(v==="cabinet"||v==="cabitem") return "cabinet";
   const parent=(typeof NAV_PARENT==="object"&&NAV_PARENT[v])||v;
   return parent;
 }
@@ -30424,7 +30935,7 @@ function applyLayout(){
    sends Settings "back" to Library — and pairing on it would put unrelated
    screens side by side.
    ============================================================================ */
-const PANE_OF={ plant:"garden", batch:"cuttings", note:"notes",
+const PANE_OF={ plant:"garden", batch:"cuttings", note:"notes", cabitem:"cabinet",
                 product:"library", plants:"library", formula:"mix", sched:"plan" };
 let paneBusy=false;
 function paneVisible(){
@@ -30458,7 +30969,8 @@ function paneApply(){
         /* the list was last drawn who knows when — repaint it so the row you
            just opened is marked and anything added since is there */
         const paint={garden:"renderGarden", cuttings:"renderCuttings", notes:"renderNotes",
-                     library:"renderLibrary", mix:"renderMix", plan:"renderPlan"}[listName];
+                     library:"renderLibrary", mix:"renderMix", plan:"renderPlan",
+                     cabinet:"cbRender"}[listName];
         if(paint&&typeof window[paint]==="function"){ try{ window[paint](); }catch(e){} }
       }
     }
@@ -31901,6 +32413,1491 @@ Object.assign(CS,{
   "Connect to the portal":"Připojit k portálu",
   "No students in the portal yet.":"V portálu zatím nejsou žádní studenti.",
   "You: ":"Ty: ","Photo":"Fotka","Student":"Student"
+});
+
+/* The header search box. Its placeholder names the section it is looking
+   in, so there is one per section rather than one general one. */
+Object.assign(CS,{
+  "Search students…":"Hledat studenty…",
+  "Search lessons…":"Hledat lekce…",
+  "Search tasks…":"Hledat úkoly…",
+  "Search words…":"Hledat slovíčka…",
+  "Search messages…":"Hledat zprávy…",
+  "Search this section":"Hledat v této sekci",
+  "Clear search":"Vymazat hledání",
+  "Connect to the portal in Messages first.":"Nejdřív se ve Zprávách připoj k portálu."
+});
+
+
+/* ============================================================================
+   CABINET — collections: paintings, model aeroplanes, coins, records, books.
+
+   The shape of the problem is that no two collections share a schema. A
+   painting has a medium and a frame; a 1:72 Spitfire has a scale, a kit number
+   and a build state; a coin has a mint mark and a grade. Writing one table per
+   kind of thing would mean writing the sorting, the grouping, the search and
+   the export once per kind, and the module would gain nothing when its owner
+   started collecting something new.
+
+   So there is ONE item record. Ten fields are universal — title, maker, year,
+   acquired, status, condition, where it is, what it cost, what it is worth,
+   tags, notes — and everything type-specific lives in a free `x` map driven by
+   a template picked when the collection is made. Adding "watches" later is a
+   six-line entry in CB_TYPES, not a new code path.
+
+   The one field that has to be universal is MAKER. It is what the person who
+   asked for this module actually wanted: every work by the same artist
+   together. If art stored `artist` and models stored `manufacturer`, grouping
+   would need writing twice and would break the moment a third collection
+   arrived. One `maker` field, relabelled per collection, groups everything.
+
+   PHOTOS DO NOT GO IN localStorage.
+   The rest of the app keeps photos as base64 data URLs inside the state
+   document. At ~35 kB each that is already near the 5 MB origin quota — see
+   P_STORAGE_WARN — and this module is photo-first by definition: two hundred
+   items with three shots each is twenty megabytes. So Cabinet keeps its
+   pictures as Blobs in IndexedDB, which is measured in hundreds of megabytes,
+   and the state document holds nothing but photo ids. That also means the
+   originals can be 1600px instead of 640px, which matters when the item IS a
+   picture. The trade is that photos are per-device, exactly as the rest of the
+   app's photos already are, and that the JSON backup does not carry them —
+   which is why this module has its own picture-bearing export.
+   ============================================================================ */
+
+/* ---------------- templates ----------------
+   `maker` is the label, not the field name. `fields` become the per-type
+   inputs and, wherever they are worth showing, columns in the export. */
+const CB_TYPES=[
+  {id:"art", name:"Art & paintings", maker:"Artist",
+   cond:["As new","Excellent","Good","Fair","Restored","Damaged"],
+   fields:[{k:"medium",l:"Technique",ph:"Oil on canvas"},
+           {k:"size",l:"Size",ph:"60 × 40 cm"},
+           {k:"frame",l:"Frame",ph:"Gilt, original"},
+           {k:"signed",l:"Signed",ph:"Lower right"},
+           {k:"edition",l:"Edition",ph:"3 / 50"},
+           {k:"prov",l:"Provenance",ph:"Where it has been",wide:true}]},
+  {id:"models", name:"Scale models", maker:"Manufacturer",
+   cond:["Sealed","Complete","Started","Missing parts","Built","Damaged"],
+   fields:[{k:"scale",l:"Scale",ph:"1:72"},
+           {k:"kit",l:"Kit number",ph:"A05127"},
+           {k:"subject",l:"Subject",ph:"Spitfire Mk.IX"},
+           {k:"build",l:"Build state",opts:["Unbuilt","In progress","Built","On display"]},
+           {k:"scheme",l:"Markings",ph:"No. 610 Sqn, 1940"},
+           {k:"aftermarket",l:"Aftermarket",ph:"Eduard etch, Quinta cockpit"}]},
+  {id:"coins", name:"Coins, stamps & notes", maker:"Issuer",
+   cond:["Uncirculated","Extremely fine","Very fine","Fine","Good","Poor"],
+   fields:[{k:"country",l:"Country",ph:"Czechoslovakia"},
+           {k:"denom",l:"Denomination",ph:"20 Kčs"},
+           {k:"mint",l:"Mint mark",ph:"—"},
+           {k:"metal",l:"Metal",ph:"Silver .500"},
+           {k:"cert",l:"Certification",ph:"NGC MS64"},
+           {k:"cat",l:"Catalogue no.",ph:"KM# 58"}]},
+  {id:"books", name:"Books", maker:"Author",
+   cond:["As new","Fine","Very good","Good","Reading copy","Poor"],
+   fields:[{k:"publisher",l:"Publisher",ph:"Odeon"},
+           {k:"edition",l:"Edition",ph:"First"},
+           {k:"binding",l:"Binding",ph:"Cloth, dust jacket"},
+           {k:"isbn",l:"ISBN",ph:""},
+           {k:"pages",l:"Pages",ph:""},
+           {k:"inscribed",l:"Inscribed",ph:"Signed by the author"}]},
+  {id:"music", name:"Records & music", maker:"Artist",
+   cond:["Mint (M)","Near mint (NM)","Very good+","Very good","Good","Poor"],
+   fields:[{k:"label",l:"Label",ph:"Supraphon"},
+           {k:"cat",l:"Catalogue no.",ph:"1113 2745"},
+           {k:"format",l:"Format",ph:"LP, 12″"},
+           {k:"speed",l:"Speed",ph:"33⅓"},
+           {k:"press",l:"Pressing",ph:"First, 1978"},
+           {k:"sleeve",l:"Sleeve",ph:"VG+"}]},
+  {id:"custom", name:"Something else", maker:"Maker",
+   cond:["Mint","Excellent","Good","Fair","Poor"],
+   fields:[]}
+];
+const CB_TYPE=id=>CB_TYPES.find(x=>x.id===id)||CB_TYPES[CB_TYPES.length-1];
+/* Owned is the silent default; everything else earns a badge on the tile. */
+const CB_STATUS=[["owned","Owned"],["wanted","Wanted"],["ordered","On order"],
+                 ["loaned","Lent out"],["sold","Sold"],["gifted","Given away"]];
+const CB_STATUS_LBL=v=>{ const s=CB_STATUS.find(x=>x[0]===v); return s?s[1]:"Owned"; };
+/* Sold and given-away things are still records — you want the history — but
+   they are not part of what the shelf is worth, and an insurer would say so. */
+const CB_GONE={sold:1,gifted:1};
+const CB_WANT={wanted:1,ordered:1};
+
+/* ---------------- normalise ----------------
+   Runs from migrate(), which boot() calls BEFORE any const in this block has
+   been evaluated. Only the declaration is hoisted that early, so — exactly as
+   nNormalise documents — this function touches nothing outside itself. It also
+   has to be idempotent and survive whatever is in the store, including
+   nothing. */
+function cbNormalise(d){
+  const rid=()=>Math.random().toString(36).slice(2,9);
+  const str=(v,n)=>typeof v==="string"?v.slice(0,n||200):(v==null?"":String(v).slice(0,n||200));
+  /* Number(null) is 0, not NaN — so without the null/"" guard every price
+     that was never recorded came back as "0 Kč" on the next boot, and an item
+     with no valuation started claiming it had cost nothing. */
+  const num=v=>{ if(v==null||v==="") return null;
+                 const n=Number(v); return isFinite(n)&&n>=0?n:null; };
+  const TYPES={art:1,models:1,coins:1,books:1,music:1,custom:1};
+  const STAT={owned:1,wanted:1,ordered:1,loaned:1,sold:1,gifted:1};
+  const ISO=v=>(typeof v==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(v))?v:null;
+
+  d.cabinets=(Array.isArray(d.cabinets)?d.cabinets:[])
+    .filter(c=>c&&typeof c==="object")
+    .map(c=>({id:c.id||rid(),
+              name:str(c.name,80)||"Collection",
+              type:TYPES[c.type]?c.type:"custom",
+              makerLbl:str(c.makerLbl,40)||"Maker",
+              cur:str(c.cur,6)||"Kč",
+              createdAt:Number(c.createdAt)||Date.now(),
+              updatedAt:Number(c.updatedAt)||Number(c.createdAt)||Date.now()}));
+
+  const have={}; d.cabinets.forEach(c=>{ have[c.id]=1; });
+  d.cabItems=(Array.isArray(d.cabItems)?d.cabItems:[])
+    .filter(i=>i&&typeof i==="object"&&have[i.collId])   /* an item with no shelf is unreachable */
+    .map(i=>{
+      const made=Number(i.createdAt)||Date.now();
+      const x={};
+      if(i.x&&typeof i.x==="object")
+        Object.keys(i.x).slice(0,40).forEach(k=>{ const v=str(i.x[k],400); if(v) x[str(k,40)]=v; });
+      return {id:i.id||rid(),
+              collId:i.collId,
+              title:str(i.title,160)||"Untitled",
+              maker:str(i.maker,120),
+              year:str(i.year,40),                    /* text: "c.1890", "1968–72" are real answers */
+              acq:ISO(i.acq),
+              status:STAT[i.status]?i.status:"owned",
+              cond:str(i.cond,40),
+              loc:str(i.loc,120),
+              qty:Math.min(9999,Math.max(1,Math.round(Number(i.qty)||1))),
+              paid:num(i.paid), worth:num(i.worth),
+              from:str(i.from,160),
+              valuedAt:ISO(i.valuedAt),
+              tags:Array.isArray(i.tags)?i.tags.filter(x2=>typeof x2==="string").map(s=>s.slice(0,40)).slice(0,20):[],
+              notes:str(i.notes,8000),
+              photos:Array.isArray(i.photos)?i.photos.filter(p=>typeof p==="string").slice(0,40):[],
+              x:x,
+              createdAt:made, updatedAt:Number(i.updatedAt)||made};
+    });
+  return d;
+}
+
+/* ---------------- the picture store ----------------
+   The first use of IndexedDB anywhere in this app. It is deliberately tiny:
+   one database, one object store, five operations, and every one of them
+   resolves rather than rejects on failure. A browser in private mode, a
+   locked-down iOS webview or a user who has blocked site data will all refuse
+   to open a database, and the answer to that must be "the module works, it
+   just has no pictures" — never a broken screen. Callers check for null.
+
+   Blobs, not base64: a data URL is a third larger for no benefit once the
+   bytes are out of JSON, and a Blob can be handed to URL.createObjectURL and
+   drawn without ever being decoded into a string. */
+const CB_DB="pottingbench-cabinet", CB_STORE="pics";
+const CB_FULL_MAX=1600, CB_FULL_Q=0.82;   /* the item IS the picture — 640px is not enough */
+const CB_THUMB_MAX=320, CB_THUMB_Q=0.7;   /* covers a 2x tile without being a second full copy */
+const CB_MAX_PER_ITEM=12;
+
+let cbDbP=null;
+function cbDb(){
+  if(cbDbP) return cbDbP;
+  cbDbP=new Promise(res=>{
+    let req;
+    try{ req=indexedDB.open(CB_DB,1); }catch(e){ return res(null); }
+    if(!req) return res(null);
+    req.onupgradeneeded=()=>{
+      const db=req.result;
+      if(!db.objectStoreNames.contains(CB_STORE)){
+        const st=db.createObjectStore(CB_STORE,{keyPath:"id"});
+        st.createIndex("itemId","itemId",{unique:false});
+      }
+    };
+    req.onsuccess=()=>res(req.result);
+    req.onerror=()=>{ cbDiag("open",req.error); res(null); };
+    req.onblocked=()=>res(null);
+  });
+  return cbDbP;
+}
+function cbDiag(where,err){
+  if(typeof diagRecord==="function") try{ diagRecord("cabinet",where+": "+((err&&err.message)||err),err,false); }catch(e){}
+}
+/* One shape for every transaction, so no call site has to remember to attach
+   an onerror. `write` is the only flag that varies. */
+function cbTx(write,fn){
+  return cbDb().then(db=>{
+    if(!db) return null;
+    return new Promise(res=>{
+      let tx;
+      try{ tx=db.transaction(CB_STORE,write?"readwrite":"readonly"); }
+      catch(e){ cbDiag("tx",e); return res(null); }
+      const st=tx.objectStore(CB_STORE);
+      let out=null;
+      try{ out=fn(st); }catch(e){ cbDiag("op",e); }
+      tx.oncomplete=()=>res(out&&out.__req?out.__req.result:out);
+      tx.onerror=()=>{ cbDiag("txerr",tx.error); res(null); };
+      tx.onabort=()=>res(null);
+    });
+  });
+}
+const cbReq=r=>({__req:r});
+const cbPicGet =id=>cbTx(false,st=>cbReq(st.get(id)));
+const cbPicPut =rec=>cbTx(true, st=>{ st.put(rec); return rec.id; });
+const cbPicDel =id=>cbTx(true, st=>{ st.delete(id); return true; });
+const cbPicAll =()=>cbTx(false,st=>cbReq(st.getAll()));
+
+/* ---- shrinking ----
+   createImageBitmap where it exists (it decodes off the main thread, which on
+   a phone is the difference between a smooth pick and a visible stall) and an
+   <img> everywhere else. Both end at a canvas and a JPEG Blob. */
+async function cbDecode(file){
+  if(typeof createImageBitmap==="function"){
+    try{ return await createImageBitmap(file); }catch(e){ /* fall through */ }
+  }
+  return await new Promise((res,rej)=>{
+    const url=URL.createObjectURL(file), img=new Image();
+    img.onload=()=>{ URL.revokeObjectURL(url); res(img); };
+    img.onerror=()=>{ URL.revokeObjectURL(url); rej(new Error("that file could not be read as an image")); };
+    img.src=url;
+  });
+}
+function cbCanvasBlob(src,max,q){
+  const w=src.width||src.naturalWidth, h=src.height||src.naturalHeight;
+  const sc=Math.min(1,max/Math.max(w,h));
+  const c=document.createElement("canvas");
+  c.width=Math.max(1,Math.round(w*sc));
+  c.height=Math.max(1,Math.round(h*sc));
+  c.getContext("2d").drawImage(src,0,0,c.width,c.height);
+  return new Promise(res=>{
+    if(c.toBlob) c.toBlob(b=>res(b),"image/jpeg",q);
+    else res(cbDataUrlToBlob(c.toDataURL("image/jpeg",q)));
+  });
+}
+function cbDataUrlToBlob(u){
+  try{
+    const [head,b64]=String(u).split(",");
+    const mime=(head.match(/:(.*?);/)||[])[1]||"image/jpeg";
+    const bin=atob(b64), arr=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+    return new Blob([arr],{type:mime});
+  }catch(e){ return null; }
+}
+const cbBlobToDataUrl=b=>new Promise(res=>{
+  if(!b) return res("");
+  const r=new FileReader();
+  r.onload=()=>res(String(r.result||""));
+  r.onerror=()=>res("");
+  r.readAsDataURL(b);
+});
+
+/* ---- the object-URL cache ----
+   Thumbs are read once and kept as object URLs for the life of the page: a
+   grid of two hundred tiles must not open two hundred transactions every time
+   the sort changes. Revoked only when the picture is actually deleted, so no
+   render can pull a URL out from under an <img> that is still using it. */
+const cbThumbURL=new Map();
+let cbThumbsReady=false;
+async function cbLoadThumbs(){
+  if(cbThumbsReady) return;
+  cbThumbsReady=true;
+  const all=await cbPicAll();
+  if(!all) return;
+  all.forEach(p=>{
+    if(p&&p.thumb&&!cbThumbURL.has(p.id)){
+      try{ cbThumbURL.set(p.id,URL.createObjectURL(p.thumb)); }catch(e){}
+    }
+  });
+  /* Sweep pictures whose item is gone. Deleting an item deletes its pictures
+     directly, so this only ever catches the leftovers of an interrupted
+     delete or a state that arrived from another device — but a leak here is
+     megabytes, not bytes, so it is worth the one pass. */
+  const live={}; (S.cabItems||[]).forEach(i=>i.photos.forEach(id=>{ live[id]=1; }));
+  all.forEach(p=>{ if(p&&!live[p.id]) cbPicDrop(p.id); });
+}
+function cbPicDrop(id){
+  const u=cbThumbURL.get(id);
+  if(u){ try{ URL.revokeObjectURL(u); }catch(e){} cbThumbURL.delete(id); }
+  return cbPicDel(id);
+}
+const cbThumbSrc=id=>cbThumbURL.get(id)||"";
+
+/* Add a picture to an item: full and thumb written in one record, the id
+   appended to the item, and the caller re-rendered. Returns the id or null. */
+async function cbAddPic(item,file,count){
+  if(!item||!file) return null;
+  /* `count` is how many pictures the caller is ABOUT to have, which is not
+     item.photos.length while the editor is holding a staged list. */
+  if((count==null?item.photos.length:count)>=CB_MAX_PER_ITEM){
+    say(t("That is as many pictures as one item can hold. Delete one to add another."));
+    return null;
+  }
+  let src;
+  try{ src=await cbDecode(file); }
+  catch(e){ say(t("That file could not be read as an image.")); return null; }
+  const full=await cbCanvasBlob(src,CB_FULL_MAX,CB_FULL_Q);
+  const thumb=await cbCanvasBlob(src,CB_THUMB_MAX,CB_THUMB_Q);
+  if(src.close) try{ src.close(); }catch(e){}
+  if(!full||!thumb){ say(t("That image could not be saved.")); return null; }
+  const rec={id:uid(),itemId:item.id,full,thumb,caption:"",at:new Date().toISOString()};
+  const ok=await cbPicPut(rec);
+  if(!ok){ say(t("This device won't let the app store pictures. Everything else still works.")); return null; }
+  try{ cbThumbURL.set(rec.id,URL.createObjectURL(thumb)); }catch(e){}
+  return rec.id;
+}
+/* Every picture belonging to an item, in the item's own order. */
+async function cbItemPics(item){
+  if(!item) return [];
+  const out=[];
+  for(const id of item.photos){ const p=await cbPicGet(id); if(p) out.push(p); }
+  return out;
+}
+
+/* ---------------- reading the state ----------------
+   S is REASSIGNED wholesale by applyRemote(), import and reset, so nothing
+   here may cache a reference to S.cabinets. Every accessor reads it fresh —
+   the same discipline every Notes helper follows. */
+const cbColls=()=>(S.cabinets||[]);
+const cbAllItems=()=>(S.cabItems||[]);
+const cbCollById=id=>cbColls().find(c=>c.id===id)||null;
+/* The chosen shelf, or the first one. "" is a real value: it means every
+   collection at once, which is how you find everything by one maker when the
+   same painter turns up in two of them. */
+function cbCur(){
+  if(L.cbColl==="") return null;
+  return cbCollById(L.cbColl)||cbColls()[0]||null;
+}
+const cbScopeItems=()=>{
+  const c=cbCur();
+  return c?cbAllItems().filter(i=>i.collId===c.id):cbAllItems();
+};
+const cbItemById=id=>cbAllItems().find(i=>i.id===id)||null;
+const cbOpenItem=()=>cbItemById(L.cbItem);
+/* The collection an item belongs to, which is what decides its labels — the
+   "All collections" scope has no single answer, so ask the item. */
+const cbCollOf=i=>(i?cbCollById(i.collId):null)||cbColls()[0]||null;
+const cbTypeOf=i=>CB_TYPE((cbCollOf(i)||{}).type);
+const cbMakerLbl=c=>(c&&c.makerLbl)||"Maker";
+const cbCurOf=i=>((cbCollOf(i)||{}).cur)||"Kč";
+
+/* per-device view state, one entry per collection, so a coin list and a
+   painting grid each stay how you left them */
+function cbView(){
+  L.cbView=L.cbView||{};
+  const k=L.cbColl===""?"*":(cbCur()||{}).id||"*";
+  const c=cbCur();
+  if(!L.cbView[k]) L.cbView[k]={mode:(c&&c.type==="coins")||(c&&c.type==="books")?"list":"grid",
+                                sort:"acquired", group:(c&&c.type==="art")?"maker":""};
+  return L.cbView[k];
+}
+function cbSetView(patch){ Object.assign(cbView(),patch); saveLocal(); }
+
+function cbTouchItem(i){ if(i) i.updatedAt=Date.now(); touch(); }
+
+/* ---- money ----
+   No currency conversion and no pretence of it: an amount is shown in the
+   currency of its own collection, and the "all collections" total is only
+   offered when every shelf agrees on one. Quietly adding korunas to euros
+   would be worse than showing nothing. */
+function cbMoney(n,cur){
+  if(n==null||!isFinite(n)) return "";
+  const s=Number(n).toLocaleString(locale(),{maximumFractionDigits:Number.isInteger(+n)?0:2});
+  return s+" "+(cur||"Kč");
+}
+/* What the shelf is worth: what it is worth now, falling back to what it cost,
+   times how many there are — and never counting what has been sold or given
+   away, because that is what an insurer means by "the collection". */
+function cbWorthOf(i){
+  const v=(i.worth!=null?i.worth:i.paid);
+  if(v==null||CB_GONE[i.status]) return 0;
+  return v*(i.qty||1);
+}
+/* What the totals actually add up. A thing you want but have not got, and a
+   thing you had and sold, are both real records worth keeping — neither is
+   part of what the collection is worth today, so neither prints a figure in
+   the value column. A row that shows a number the total ignores is exactly
+   the sort of thing that gets a valuation document sent back. */
+const cbCounted=i=>!CB_GONE[i.status]&&!CB_WANT[i.status];
+function cbTotals(list){
+  let n=0,worth=0,paid=0,valued=0,gone=0,want=0;
+  list.forEach(i=>{
+    if(CB_GONE[i.status]){ gone++; return; }
+    if(CB_WANT[i.status]){ want++; return; }
+    /* everything below here is cbCounted(i) */
+    n+=i.qty||1;
+    const w=cbWorthOf(i); worth+=w; if(w) valued++;
+    if(i.paid!=null) paid+=i.paid*(i.qty||1);
+  });
+  return {n,worth,paid,valued,gone,want};
+}
+/* One currency for the whole scope, or nothing. */
+function cbScopeCur(){
+  const c=cbCur(); if(c) return c.cur;
+  const set=new Set(cbColls().map(x=>x.cur));
+  return set.size===1?[...set][0]:null;
+}
+
+/* ---- searching and ordering ---- */
+function cbMatches(i,q){
+  if(!q) return true;
+  const hay=[i.title,i.maker,i.year,i.loc,i.from,i.cond,i.notes,i.tags.join(" "),
+             Object.keys(i.x).map(k=>i.x[k]).join(" ")].join(" ").toLowerCase();
+  /* every word must appear somewhere — "spitfire airfix" finds the one kit,
+     not everything by Airfix plus everything called Spitfire */
+  return q.toLowerCase().split(/\s+/).filter(Boolean).every(w=>hay.includes(w));
+}
+/* "c.1890" and "1968–72" both have to sort somewhere sensible, so order on the
+   first run of digits and leave the text as the tie-break. */
+const cbYearNum=v=>{ const m=String(v||"").match(/\d{3,4}/); return m?+m[0]:null; };
+function cbSortItems(list,how){
+  const by=(f)=>(a,b)=>f(a,b);
+  const txt=(a,b)=>String(a||"").localeCompare(String(b||""),locale(),{sensitivity:"base"});
+  const arr=list.slice();
+  if(how==="title") arr.sort(by((a,b)=>txt(a.title,b.title)));
+  else if(how==="maker") arr.sort(by((a,b)=>txt(a.maker,b.maker)||txt(a.title,b.title)));
+  else if(how==="year") arr.sort(by((a,b)=>{
+    const x=cbYearNum(a.year), y=cbYearNum(b.year);
+    if(x==null&&y==null) return txt(a.title,b.title);
+    if(x==null) return 1; if(y==null) return -1;      /* undated sinks, both ways */
+    return y-x||txt(a.title,b.title); }));
+  else if(how==="value") arr.sort(by((a,b)=>cbWorthOf(b)-cbWorthOf(a)||txt(a.title,b.title)));
+  else arr.sort(by((a,b)=>{
+    /* newest first, on the date acquired where there is one and on the date
+       the record was made where there is not */
+    const x=a.acq?+new Date(a.acq):a.createdAt, y=b.acq?+new Date(b.acq):b.createdAt;
+    return y-x; }));
+  return arr;
+}
+/* Group key + the label it prints. Anything with no answer falls into one
+   named bucket at the bottom rather than a group called "". */
+function cbGroupOf(i,how){
+  if(how==="maker") return [i.maker||"￿", i.maker||t("No maker recorded")];
+  if(how==="year"){ const n=cbYearNum(i.year); return [n==null?"￿":String(9999-n).padStart(4,"0"), i.year||t("Undated")]; }
+  if(how==="status") return [i.status, t(CB_STATUS_LBL(i.status))];
+  if(how==="location") return [i.loc||"￿", i.loc||t("Not placed")];
+  return ["",""];
+}
+
+/* ---------------- rendering ---------------- */
+function cbRender(){
+  if(!$("#view-cabinet")) return;
+  cbLoadThumbs().then(()=>{ if(curView==="cabinet") cbPaint(); });
+  cbPaint();
+}
+function cbPaint(){
+  cbPaintShelf();
+  const c=cbCur();
+  /* No collections at all: the whole screen is one invitation, and the tools
+     above it would only be furniture for nothing. */
+  const none=!cbColls().length;
+  /* With no collections there is nothing for the shelf, the tools or the
+     totals to describe, so the whole card goes rather than standing there as
+     an empty frame with a lone + in it. The empty state below offers the
+     button instead. */
+  const card=$("#cbShelf").closest(".card");
+  if(card) card.hidden=none;
+  $("#cbSearch").closest(".card").querySelector(".cb-tools").hidden=none;
+  $("#cbSum").hidden=none;
+  if(none){
+    $("#cbBody").innerHTML="";
+    const e=$("#cbEmpty"); e.hidden=false;
+    e.innerHTML=`<b>Nothing on the shelves yet.</b><br>
+      A collection is one kind of thing — your paintings, or your model aeroplanes.
+      Make one, then start adding what is in it.<br>
+      <button class="btn primary mini" type="button" id="cbFirst" style="margin-top:12px">+ New collection</button>`;
+    const b=$("#cbFirst"); if(b) b.onclick=()=>cbOpenColl(null);
+    return;
+  }
+  const V=cbView();
+  $("#cbSort").value=V.sort; $("#cbGroup").value=V.group;
+  $("#cbModeGrid").setAttribute("aria-pressed",String(V.mode!=="list"));
+  $("#cbModeList").setAttribute("aria-pressed",String(V.mode==="list"));
+  $("#cbSearch").placeholder=c?t("Search")+" "+c.name+"…":t("Search every collection…");
+
+  const q=(L.cbQ||"").trim();
+  /* the query is remembered per device, so the box has to be refilled when the
+     view is re-entered — but never while it is being typed into */
+  const sb=$("#cbSearch");
+  if(sb&&document.activeElement!==sb&&sb.value!==(L.cbQ||"")) sb.value=L.cbQ||"";
+  $("#cbSearchX").hidden=!q;
+  let list=cbScopeItems().filter(i=>cbMatches(i,q));
+  list=cbFilterChips(list);
+  cbPaintFilters();
+  cbPaintSum(list);
+
+  const box=$("#cbBody");
+  if(!list.length){
+    box.innerHTML="";
+    const e=$("#cbEmpty"); e.hidden=false;
+    e.textContent=q||L.cbFilter?t("Nothing here matches that."):
+      t("This collection is empty. Add the first thing in it.");
+    return;
+  }
+  $("#cbEmpty").hidden=true;
+  const sorted=cbSortItems(list,V.sort);
+  box.innerHTML=V.group?cbGroupsHtml(sorted,V.group,V.mode):cbBlockHtml(sorted,V.mode);
+}
+
+function cbPaintShelf(){
+  const colls=cbColls(), el=$("#cbShelf");
+  const counts={}; cbAllItems().forEach(i=>{ counts[i.collId]=(counts[i.collId]||0)+1; });
+  let h="";
+  if(colls.length>1)
+    h+=`<button type="button" class="chip" data-cbcoll="" aria-pressed="${L.cbColl===""?"true":"false"}"
+          ><b>All</b> <span class="cb-shelf-n">${cbAllItems().length}</span></button>`;
+  const cur=cbCur();
+  h+=colls.map(c=>`<button type="button" class="chip" data-cbcoll="${esc(c.id)}"
+        aria-pressed="${cur&&cur.id===c.id&&L.cbColl!==""?"true":"false"}"
+        ><b data-no-i18n>${esc(c.name)}</b> <span class="cb-shelf-n">${counts[c.id]||0}</span></button>`).join("");
+  h+=`<button type="button" class="chip cb-shelf-add" data-cbnewcoll="1"
+        aria-label="New collection" title="New collection">+</button>`;
+  el.innerHTML=h;
+}
+
+/* ---- filter chips: status, and the tags actually in use ----
+   Only drawn when there is something to choose between. A row of one chip is
+   noise, and a row of forty is worse. */
+function cbPaintFilters(){
+  const items=cbScopeItems(), el=$("#cbFilters");
+  const stat={}; items.forEach(i=>{ stat[i.status]=(stat[i.status]||0)+1; });
+  const used=CB_STATUS.filter(s=>stat[s[0]]);
+  const tags={}; items.forEach(i=>i.tags.forEach(tg=>{ tags[tg]=(tags[tg]||0)+1; }));
+  const tagList=Object.keys(tags).sort((a,b)=>tags[b]-tags[a]).slice(0,12);
+  if(used.length<2&&!tagList.length){ el.hidden=true; el.innerHTML=""; return; }
+  const f=L.cbFilter||"";
+  let h="";
+  if(used.length>1)
+    h+=used.map(s=>`<button type="button" class="chip" data-cbfilter="s:${esc(s[0])}"
+        aria-pressed="${f==="s:"+s[0]?"true":"false"}">${esc(s[1])} <small>${stat[s[0]]}</small></button>`).join("");
+  h+=tagList.map(tg=>`<button type="button" class="chip" data-cbfilter="t:${esc(tg)}"
+        aria-pressed="${f==="t:"+tg?"true":"false"}"><span data-no-i18n>#${esc(tg)}</span> <small>${tags[tg]}</small></button>`).join("");
+  el.innerHTML=h; el.hidden=false;
+}
+function cbFilterChips(list){
+  const f=L.cbFilter||""; if(!f) return list;
+  if(f.startsWith("s:")) return list.filter(i=>i.status===f.slice(2));
+  if(f.startsWith("t:")) return list.filter(i=>i.tags.includes(f.slice(2)));
+  return list;
+}
+
+function cbPaintSum(list){
+  const T=cbTotals(list), cur=cbScopeCur(), el=$("#cbSum");
+  const bits=[`<span class="cb-sum-i"><b>${T.n}</b> <span data-no-i18n>${esc(cbItems(T.n))}</span></span>`];
+  if(cur&&T.worth) bits.push(`<span class="cb-sum-i">worth <b>${esc(cbMoney(T.worth,cur))}</b></span>`);
+  else if(!cur&&T.worth) bits.push(`<span class="cb-sum-i hint">mixed currencies — see each collection</span>`);
+  if(cur&&T.paid) bits.push(`<span class="cb-sum-i">paid <b>${esc(cbMoney(T.paid,cur))}</b></span>`);
+  if(T.want) bits.push(`<span class="cb-sum-i"><b>${T.want}</b> wanted</span>`);
+  if(T.gone) bits.push(`<span class="cb-sum-i"><b>${T.gone}</b> gone</span>`);
+  el.innerHTML=bits.join("");
+}
+
+function cbGroupsHtml(sorted,how,mode){
+  const map=new Map();
+  sorted.forEach(i=>{
+    const [k,label]=cbGroupOf(i,how);
+    if(!map.has(k)) map.set(k,{label,items:[]});
+    map.get(k).items.push(i);
+  });
+  const keys=[...map.keys()].sort((a,b)=>String(a).localeCompare(String(b),locale(),{sensitivity:"base"}));
+  const shut=L.cbShut||{};
+  return keys.map(k=>{
+    const g=map.get(k), cur=cbScopeCur(), T=cbTotals(g.items);
+    const open=!shut[how+"|"+k];
+    const meta=[g.items.length+" "+cbItems(g.items.length)]
+      .concat(cur&&T.worth?[cbMoney(T.worth,cur)]:[]).join(" · ");
+    return `<section class="cb-grp" data-open="${open?1:0}">
+      <button type="button" class="cb-grp-head" data-cbgrp="${esc(how+"|"+k)}" aria-expanded="${open}">
+        <h3 data-no-i18n>${esc(g.label)}</h3>
+        <span class="cb-grp-meta" data-no-i18n>${esc(meta)}</span>
+        <span class="cb-grp-caret" aria-hidden="true">▾</span>
+      </button>
+      ${cbBlockHtml(g.items,mode)}
+    </section>`;
+  }).join("");
+}
+
+/* Czech counts in three — 1 položka, 2-4 položky, 5+ položek — so a flat
+   "item"/"items" pair cannot be translated by the dictionary alone. pl3 is the
+   app's own helper for exactly this. */
+const cbItems=n=>L.lang==="cs"?pl3(n,"položka","položky","položek"):(n===1?"item":"items");
+const cbInitial=s=>String(s||"?").trim().charAt(0).toUpperCase()||"?";
+function cbBlockHtml(items,mode){
+  return mode==="list"
+    ? `<div class="cb-rows">${items.map(cbRowHtml).join("")}</div>`
+    : `<div class="cb-grid">${items.map(cbTileHtml).join("")}</div>`;
+}
+function cbBadge(i){
+  return i.status==="owned"?"":
+    `<span class="cb-badge" data-s="${esc(i.status)}">${esc(CB_STATUS_LBL(i.status))}</span>`;
+}
+function cbTileHtml(i){
+  const src=cbThumbSrc(i.photos[0]);
+  const sub=[i.maker,i.year].filter(Boolean).join(" · ");
+  return `<button type="button" class="cb-tile" data-cbitem="${esc(i.id)}">
+    <span class="cb-tile-img">
+      ${src?`<img src="${esc(src)}" alt="" loading="lazy">`
+           :`<span class="cb-tile-ph" aria-hidden="true">${esc(cbInitial(i.title))}</span>`}
+      ${cbBadge(i)}
+      ${i.photos.length>1?`<span class="cb-tile-n">${i.photos.length}</span>`:""}
+    </span>
+    <span class="cb-tile-txt">
+      <span class="cb-tile-t" data-no-i18n>${esc(i.title)}</span>
+      ${sub?`<span class="cb-tile-m" data-no-i18n>${esc(sub)}</span>`:""}
+    </span>
+  </button>`;
+}
+function cbRowHtml(i){
+  const src=cbThumbSrc(i.photos[0]);
+  const sub=[i.maker,i.year,i.cond].filter(Boolean).join(" · ");
+  const w=cbWorthOf(i);
+  return `<button type="button" class="cb-row" data-cbitem="${esc(i.id)}">
+    <span class="cb-row-img">
+      ${src?`<img src="${esc(src)}" alt="" loading="lazy">`
+           :`<span class="cb-row-ph" aria-hidden="true">${esc(cbInitial(i.title))}</span>`}
+    </span>
+    <span class="cb-row-txt">
+      <span class="cb-row-t" data-no-i18n>${esc(i.title)}${i.qty>1?` ×${i.qty}`:""}</span>
+      ${sub?`<span class="cb-row-m" data-no-i18n>${esc(sub)}</span>`:""}
+    </span>
+    <span class="cb-row-r">
+      ${w?`<span class="cb-row-v">${esc(cbMoney(w,cbCurOf(i)))}</span><br>`:""}
+      ${i.status!=="owned"?esc(CB_STATUS_LBL(i.status)):(i.loc?`<span data-no-i18n>${esc(i.loc)}</span>`:"")}
+    </span>
+  </button>`;
+}
+
+/* ---------------- one item ----------------
+   Two passes on purpose. The facts are in S and can be drawn synchronously;
+   the pictures live in IndexedDB and cannot. Painting the text first means
+   opening an item never shows an empty screen while a transaction settles,
+   and the picture frame fills in underneath a moment later. */
+function cbRenderItem(){
+  const i=cbOpenItem(), box=$("#cbItemBody");
+  if(!box) return;
+  if(!i){ box.innerHTML=`<p class="empty">That item is gone.</p>`; return; }
+  const c=cbCollOf(i), T=cbTypeOf(i), cur=cbCurOf(i);
+
+  const facts=[];
+  const add=(l,v)=>{ if(v!=null&&v!=="") facts.push([l,v]); };
+  add(t(cbMakerLbl(c)), i.maker);
+  add(t("Year"), i.year);
+  add(t("Acquired"), i.acq?cbNiceDate(i.acq):"");
+  if(i.status!=="owned") add(t("Status"), t(CB_STATUS_LBL(i.status)));
+  add(t("Condition"), i.cond);
+  if(i.qty>1) add(t("How many"), String(i.qty));
+  /* the per-type fields, in the order the template declares them */
+  T.fields.forEach(f=>add(t(f.l), i.x[f.k]));
+  /* anything the person added themselves on a custom collection */
+  Object.keys(i.x).forEach(k=>{ if(!T.fields.some(f=>f.k===k)) add(k, i.x[k]); });
+  add(t("Where it is"), i.loc);
+  add(t("Bought from"), i.from);
+  add(t("Paid"), i.paid!=null?cbMoney(i.paid,cur):"");
+  add(t("Worth now"), i.worth!=null?cbMoney(i.worth,cur):"");
+  add(t("Valued on"), i.valuedAt?cbNiceDate(i.valuedAt):"");
+
+  box.innerHTML=`
+    <div class="cb-it-head">
+      <div style="flex:1;min-width:0">
+        <h2 data-no-i18n>${esc(i.title)}</h2>
+        ${i.maker?`<div class="cb-it-maker">${esc(t(cbMakerLbl(c)))}:
+          <button type="button" data-cbmaker="${esc(i.maker)}" data-no-i18n>${esc(i.maker)}</button></div>`:""}
+      </div>
+    </div>
+
+    <div class="card pad">
+      <div class="cb-shot" id="cbShot">
+        <span class="cb-shot-empty">${esc(t("No picture yet."))}</span>
+      </div>
+      <div class="cb-strip" id="cbStrip"></div>
+      <p class="cb-cap" id="cbShotCap" data-no-i18n></p>
+    </div>
+
+    ${facts.length?`<div class="card pad" style="margin-top:14px">
+      <dl class="cb-facts">${facts.map(([l,v])=>
+        `<dt>${esc(l)}</dt><dd data-no-i18n>${esc(v)}</dd>`).join("")}</dl>
+    </div>`:""}
+
+    ${i.tags.length?`<div class="card pad" style="margin-top:14px">
+      <div class="chips">${i.tags.map(tg=>
+        `<button type="button" class="chip" data-cbtag="${esc(tg)}" data-no-i18n>#${esc(tg)}</button>`).join("")}</div>
+    </div>`:""}
+
+    ${i.notes?`<div class="card pad" style="margin-top:14px">
+      <p class="cb-note" data-no-i18n>${esc(i.notes)}</p>
+    </div>`:""}
+
+    <p class="hint" style="margin:14px 2px 0" data-no-i18n>${esc(
+      (c?c.name+" · ":"")+t("added")+" "+cbNiceDate(new Date(i.createdAt).toISOString().slice(0,10)))}</p>`;
+
+  cbPaintShots(i);
+}
+function cbNiceDate(iso){
+  if(!iso) return "";
+  const d=new Date(iso+"T12:00:00");
+  if(isNaN(+d)) return iso;
+  return d.toLocaleDateString(locale(),{day:"numeric",month:"long",year:"numeric"});
+}
+
+/* which picture of the open item is in the big frame */
+let cbShotIx=0;
+async function cbPaintShots(i){
+  const pics=await cbItemPics(i);
+  if(cbOpenItem()!==i||curView!=="cabitem") return;      /* moved on while we waited */
+  const shot=$("#cbShot"), strip=$("#cbStrip"), cap=$("#cbShotCap");
+  if(!shot||!strip) return;
+  cbShotIx=Math.min(cbShotIx,Math.max(0,pics.length-1));
+  const cur=pics[cbShotIx];
+  if(cur){
+    const url=URL.createObjectURL(cur.full||cur.thumb);
+    shot.innerHTML=`<img src="${esc(url)}" alt="${esc(i.title)}" data-cblb="${esc(cur.id)}">`;
+    /* revoked as soon as it has been decoded — one full-size URL at a time */
+    const img=shot.querySelector("img");
+    img.onload=img.onerror=()=>{ try{ URL.revokeObjectURL(url); }catch(e){} };
+    cap.textContent=cur.caption||"";
+  }else{
+    shot.innerHTML=`<span class="cb-shot-empty">${esc(t("No picture yet. Add one below."))}</span>`;
+    cap.textContent="";
+  }
+  strip.innerHTML=pics.map((p,ix)=>{
+    const u=cbThumbSrc(p.id);
+    return `<button type="button" class="cb-thumb" data-cbshot="${ix}" aria-current="${ix===cbShotIx}"
+        aria-label="${esc(t("Picture"))} ${ix+1}">${u?`<img src="${esc(u)}" alt="">`:""}</button>`;
+  }).join("")
+   +`<label class="cb-thumb cb-thumb-add cb-pick-lbl" title="${esc(t("Add a picture"))}">+
+      <input type="file" accept="image/*" id="cbShotAdd"></label>`;
+  const inp=$("#cbShotAdd");
+  if(inp) inp.onchange=async e=>{
+    const f=e.target.files&&e.target.files[0]; e.target.value="";
+    if(!f) return;
+    const id=await cbAddPic(i,f);
+    if(id){ i.photos.push(id); cbTouchItem(i); cbShotIx=i.photos.length-1; cbPaintShots(i); }
+  };
+}
+
+/* ---------------- the lightbox ---------------- */
+let cbLbPics=[], cbLbIx=0, cbLbURL="";
+async function cbLightbox(item,startId){
+  cbLbPics=await cbItemPics(item);
+  cbLbIx=Math.max(0,cbLbPics.findIndex(p=>p.id===startId));
+  if(!cbLbPics.length) return;
+  cbLbPaint();
+  const d=$("#cbLbDlg"); if(d&&!d.open) d.showModal();
+}
+function cbLbPaint(){
+  const p=cbLbPics[cbLbIx]; if(!p) return;
+  if(cbLbURL){ try{ URL.revokeObjectURL(cbLbURL); }catch(e){} }
+  cbLbURL=URL.createObjectURL(p.full||p.thumb);
+  const img=$("#cbLbImg");
+  img.src=cbLbURL;
+  img.alt=(cbOpenItem()||{}).title||"";
+  $("#cbLbCap").textContent=p.caption||"";
+  const many=cbLbPics.length>1;
+  $("#cbLbPrev").hidden=!many; $("#cbLbNext").hidden=!many;
+}
+function cbLbClose(){
+  const d=$("#cbLbDlg"); if(d&&d.open) d.close();
+  if(cbLbURL){ try{ URL.revokeObjectURL(cbLbURL); }catch(e){} cbLbURL=""; }
+}
+function cbLbStep(n){
+  if(!cbLbPics.length) return;
+  cbLbIx=(cbLbIx+n+cbLbPics.length)%cbLbPics.length;
+  cbLbPaint();
+}
+
+/* ---------------- the item editor ----------------
+   Pictures are STAGED, not written as they are picked. The dialog holds a
+   desired final list — existing ids and not-yet-saved files mixed together in
+   one order — and only Save turns it into writes. Cancel therefore really
+   cancels: nothing has touched the database, and a picture dropped in by
+   mistake leaves nothing behind. It also means a brand-new item can be given
+   its pictures before it has an id, which the obvious implementation cannot.  */
+let cbEditId=null, cbDlgPics=[], cbDlgKv=[];
+
+function cbOpenItemDlg(id){
+  const c=cbCur()||cbCollById((cbItemById(id)||{}).collId)||cbColls()[0];
+  if(!c){ cbOpenColl(null); return; }
+  const i=id?cbItemById(id):null;
+  cbEditId=id||null;
+  cbDlgFreePics();
+  cbDlgPics=i?i.photos.map(pid=>({id:pid})):[];
+  const T=CB_TYPE(c.type);
+
+  $("#cbItemDlgTitle").textContent=i?t("Edit item"):t("New item")+" — "+c.name;
+  $("#cbfMakerLbl").textContent=cbMakerLbl(c);
+  $("#cbfTitle").value=i?i.title:"";
+  $("#cbfMaker").value=i?i.maker:"";
+  $("#cbfYear").value=i?i.year:"";
+  $("#cbfAcq").value=i?(i.acq||""):pToday();
+  $("#cbfLoc").value=i?i.loc:"";
+  $("#cbfQty").value=i?i.qty:1;
+  $("#cbfPaid").value=i&&i.paid!=null?i.paid:"";
+  $("#cbfWorth").value=i&&i.worth!=null?i.worth:"";
+  $("#cbfFrom").value=i?i.from:"";
+  $("#cbfValued").value=i?(i.valuedAt||""):"";
+  $("#cbfTags").value=i?i.tags.join(", "):"";
+  $("#cbfNotes").value=i?i.notes:"";
+  $("#cbfWarn").hidden=true;
+
+  $("#cbfStatus").innerHTML=CB_STATUS.map(s=>
+    `<option value="${esc(s[0])}">${esc(t(s[1]))}</option>`).join("");
+  $("#cbfStatus").value=i?i.status:"owned";
+  $("#cbfCond").innerHTML=`<option value=""></option>`+T.cond.map(v=>
+    `<option value="${esc(v)}">${esc(t(v))}</option>`).join("");
+  /* a condition typed on another device, or carried over from a collection
+     whose type has since changed, must not silently vanish on the next save */
+  if(i&&i.cond&&!T.cond.includes(i.cond))
+    $("#cbfCond").insertAdjacentHTML("beforeend",`<option value="${esc(i.cond)}">${esc(i.cond)}</option>`);
+  $("#cbfCond").value=i?i.cond:"";
+
+  /* the per-type fields */
+  $("#cbfExtra").innerHTML=T.fields.map(f=>{
+    const v=i?(i.x[f.k]||""):"";
+    const inner=f.opts
+      ? `<select id="cbx_${esc(f.k)}"><option value=""></option>`
+        +f.opts.map(o=>`<option value="${esc(o)}"${o===v?" selected":""}>${esc(t(o))}</option>`).join("")+`</select>`
+      : `<input id="cbx_${esc(f.k)}" maxlength="400" value="${esc(v)}" placeholder="${esc(f.ph||"")}">`;
+    return `<div class="field"${f.wide?' style="grid-column:1/-1"':""}>
+      <label for="cbx_${esc(f.k)}">${esc(f.l)}</label>${inner}</div>`;
+  }).join("");
+
+  /* a "something else" collection gets to invent its own fields */
+  const isCustom=T.id==="custom";
+  $("#cbfCustom").hidden=!isCustom;
+  cbDlgKv=isCustom&&i?Object.keys(i.x).map(k=>[k,i.x[k]]):[];
+  cbPaintKv();
+
+  cbFillDatalists(c);
+  cbPaintDlgPics();
+  $("#cbItemDlg").showModal();
+  setTimeout(()=>{ const f=$("#cbfTitle"); if(f) f.focus(); },30);
+}
+/* Makers and places already used, so the second painting by the same artist is
+   picked from a list rather than retyped — and therefore actually groups. */
+function cbFillDatalists(c){
+  const pool=cbAllItems().filter(i=>!c||i.collId===c.id);
+  const uniq=(arr)=>[...new Set(arr.filter(Boolean))].sort((a,b)=>
+    a.localeCompare(b,locale(),{sensitivity:"base"})).slice(0,300);
+  $("#cbMakerList").innerHTML=uniq(pool.map(i=>i.maker)).map(v=>`<option value="${esc(v)}">`).join("");
+  $("#cbLocList").innerHTML=uniq(cbAllItems().map(i=>i.loc)).map(v=>`<option value="${esc(v)}">`).join("");
+}
+function cbPaintKv(){
+  $("#cbfKvRows").innerHTML=cbDlgKv.map((kv,ix)=>
+    `<div class="cb-kv">
+      <input value="${esc(kv[0])}" data-cbk="${ix}" maxlength="40" placeholder="Field">
+      <input value="${esc(kv[1])}" data-cbv="${ix}" maxlength="400" placeholder="Value">
+      <button type="button" class="btn mini" data-cbkvx="${ix}" aria-label="Remove">×</button>
+    </div>`).join("");
+}
+function cbDlgFreePics(){
+  cbDlgPics.forEach(p=>{ if(p.url){ try{ URL.revokeObjectURL(p.url); }catch(e){} } });
+  cbDlgPics=[];
+}
+function cbPaintDlgPics(){
+  const el=$("#cbfPics");
+  el.innerHTML=cbDlgPics.map((p,ix)=>{
+    const src=p.url||cbThumbSrc(p.id);
+    return `<span class="cb-thumb" style="cursor:default">
+      ${src?`<img src="${esc(src)}" alt="">`:""}
+      <button type="button" class="cb-pick-x" data-cbpicx="${ix}" aria-label="Remove picture">×</button>
+      ${ix===0?`<span class="cb-pick-cov">${esc(t("Cover"))}</span>`
+              :`<button type="button" class="cb-pick-cov" data-cbpiccov="${ix}"
+                   style="left:auto;right:1px;border:0;cursor:pointer">${esc(t("Cover"))}</button>`}
+    </span>`;
+  }).join("")
+   +`<label class="cb-thumb cb-thumb-add cb-pick-lbl" title="${esc(t("Add a picture"))}">+
+      <input type="file" accept="image/*" multiple id="cbfPicAdd"></label>`;
+  const n=cbDlgPics.length;
+  $("#cbfPicsHint").textContent=n
+    ? t("The first picture is the cover.")+" "+n+"/"+CB_MAX_PER_ITEM
+    : t("Photograph it from the front, and add a close-up of any damage — that is what an insurer asks for.");
+  const inp=$("#cbfPicAdd");
+  if(inp) inp.onchange=e=>{
+    const files=[...(e.target.files||[])]; e.target.value="";
+    files.forEach(f=>{
+      if(cbDlgPics.length>=CB_MAX_PER_ITEM) return;
+      let url=""; try{ url=URL.createObjectURL(f); }catch(err){}
+      cbDlgPics.push({file:f,url});
+    });
+    cbPaintDlgPics();
+  };
+}
+
+async function cbSaveItemDlg(){
+  const title=$("#cbfTitle").value.trim();
+  if(!title){ cbWarn("#cbfWarn",t("It needs a title — even “Untitled, blue” is better than nothing.")); return; }
+  const c=cbCur()||cbCollById((cbItemById(cbEditId)||{}).collId)||cbColls()[0];
+  if(!c) return;
+  const T=CB_TYPE(c.type);
+  let i=cbEditId?cbItemById(cbEditId):null;
+  const fresh=!i;
+  if(!i){
+    i={id:uid(),collId:c.id,title:"",maker:"",year:"",acq:null,status:"owned",cond:"",loc:"",
+       qty:1,paid:null,worth:null,from:"",valuedAt:null,tags:[],notes:"",photos:[],x:{},
+       createdAt:Date.now(),updatedAt:Date.now()};
+  }
+  const numOrNull=sel=>{ const v=$(sel).value.trim(); if(v==="") return null;
+                         const n=Number(v); return isFinite(n)&&n>=0?n:null; };
+  i.title=title.slice(0,160);
+  i.maker=$("#cbfMaker").value.trim().slice(0,120);
+  i.year=$("#cbfYear").value.trim().slice(0,40);
+  i.acq=$("#cbfAcq").value||null;
+  i.status=$("#cbfStatus").value||"owned";
+  i.cond=$("#cbfCond").value||"";
+  i.loc=$("#cbfLoc").value.trim().slice(0,120);
+  i.qty=Math.min(9999,Math.max(1,Math.round(Number($("#cbfQty").value)||1)));
+  i.paid=numOrNull("#cbfPaid");
+  i.worth=numOrNull("#cbfWorth");
+  i.from=$("#cbfFrom").value.trim().slice(0,160);
+  i.valuedAt=$("#cbfValued").value||null;
+  i.notes=$("#cbfNotes").value.slice(0,8000);
+  i.tags=[...new Set($("#cbfTags").value.split(",").map(s=>s.trim().slice(0,40)).filter(Boolean))].slice(0,20);
+  const x={};
+  T.fields.forEach(f=>{ const el=$("#cbx_"+f.k); const v=el?el.value.trim().slice(0,400):"";
+                        if(v) x[f.k]=v; });
+  if(T.id==="custom") cbDlgKv.forEach(([k,v])=>{ k=String(k||"").trim().slice(0,40);
+                        v=String(v||"").trim().slice(0,400); if(k&&v) x[k]=v; });
+  i.x=x;
+
+  if(fresh) (S.cabItems=S.cabItems||[]).push(i);
+
+  /* pictures: remove what was taken out, write what was added, keep the order
+     the row is in. Done after the record exists so a new item's pictures carry
+     its real id. */
+  const wanted=cbDlgPics.slice();
+  const keep={}; wanted.forEach(p=>{ if(p.id) keep[p.id]=1; });
+  const dropped=i.photos.filter(id=>!keep[id]);
+  const order=[];
+  for(const p of wanted){
+    if(p.id){ order.push(p.id); continue; }
+    const nid=await cbAddPic(i,p.file,order.length);
+    if(nid) order.push(nid);
+    if(p.url){ try{ URL.revokeObjectURL(p.url); }catch(e){} p.url=""; }
+  }
+  i.photos=order;
+  for(const id of dropped) await cbPicDrop(id);
+
+  cbDlgPics=[];
+  cbTouchItem(i);
+  $("#cbItemDlg").close();
+  if(curView==="cabitem"&&L.cbItem===i.id){ cbShotIx=0; cbRenderItem(); }
+  else cbRender();
+}
+function cbWarn(sel,msg){ const el=$(sel); if(!el) return; el.textContent=msg; el.hidden=false; }
+
+/* ---------------- the collection editor ---------------- */
+let cbEditCollId=null;
+function cbOpenColl(id){
+  const c=id?cbCollById(id):null;
+  cbEditCollId=id||null;
+  $("#cbCollDlgTitle").textContent=c?t("Edit collection"):t("New collection");
+  $("#cbcType").innerHTML=CB_TYPES.map(x=>
+    `<option value="${esc(x.id)}">${esc(t(x.name))}</option>`).join("");
+  $("#cbcType").value=c?c.type:"art";
+  $("#cbcName").value=c?c.name:"";
+  $("#cbcMakerLbl").value=c?c.makerLbl:CB_TYPE("art").maker;
+  $("#cbcCur").value=c?c.cur:cbDefaultCur();
+  $("#cbCollDel").hidden=!c;
+  $("#cbcWarn").hidden=true;
+  cbTypeHint();
+  $("#cbCollDlg").showModal();
+  setTimeout(()=>{ const f=$("#cbcName"); if(f) f.focus(); },30);
+}
+const cbDefaultCur=()=>{
+  try{ return (S.hours&&S.hours.settings&&S.hours.settings.currency)||"Kč"; }catch(e){ return "Kč"; }
+};
+function cbTypeHint(){
+  const T=CB_TYPE($("#cbcType").value);
+  $("#cbcTypeHint").textContent=T.fields.length
+    ? t("Adds fields for")+": "+T.fields.map(f=>t(f.l)).join(", ").toLowerCase()
+    : t("No extra fields — you name your own on each item.");
+}
+function cbSaveColl(){
+  const name=$("#cbcName").value.trim();
+  if(!name){ cbWarn("#cbcWarn",t("Give the collection a name.")); return; }
+  let c=cbEditCollId?cbCollById(cbEditCollId):null;
+  const fresh=!c;
+  if(!c) c={id:uid(),createdAt:Date.now(),updatedAt:Date.now()};
+  c.name=name.slice(0,80);
+  c.type=$("#cbcType").value;
+  c.makerLbl=($("#cbcMakerLbl").value.trim()||CB_TYPE(c.type).maker).slice(0,40);
+  c.cur=($("#cbcCur").value.trim()||cbDefaultCur()).slice(0,6);
+  c.updatedAt=Date.now();
+  if(fresh){ (S.cabinets=S.cabinets||[]).push(c); L.cbColl=c.id; saveLocal(); }
+  touch();
+  $("#cbCollDlg").close();
+  cbRender();
+}
+async function cbDeleteColl(){
+  const c=cbEditCollId?cbCollById(cbEditCollId):null; if(!c) return;
+  const items=cbAllItems().filter(i=>i.collId===c.id);
+  const ok=await ask(items.length
+    ? c.name+" "+t("and everything in it")+" — "+items.length+" "+t("items and their pictures. This cannot be undone.")
+    : t("Delete this collection?"));
+  if(!ok) return;
+  for(const i of items) for(const pid of i.photos) await cbPicDrop(pid);
+  S.cabItems=cbAllItems().filter(i=>i.collId!==c.id);
+  S.cabinets=cbColls().filter(x=>x.id!==c.id);
+  if(L.cbColl===c.id){ L.cbColl=(cbColls()[0]||{}).id||""; saveLocal(); }
+  touch();
+  $("#cbCollDlg").close();
+  cbRender();
+}
+async function cbDeleteItem(id){
+  const i=cbItemById(id); if(!i) return;
+  if(!await ask(i.title+" — "+t("this deletes the record and its pictures."))) return;
+  for(const pid of i.photos) await cbPicDrop(pid);
+  S.cabItems=cbAllItems().filter(x=>x.id!==id);
+  touch();
+  cbRender(); show("cabinet");
+}
+
+/* ---------------- a small menu ----------------
+   The header has two buttons that each hide three or four rarely-used actions.
+   A <dialog> for that is heavy and askOpen() only offers yes/no, so this is
+   the app's .appmenu shape rebuilt as something that can hang off any button. */
+let cbMenuEl=null;
+function cbMenuClose(){ if(cbMenuEl){ cbMenuEl.remove(); cbMenuEl=null; } }
+function cbMenu(btn,items){
+  cbMenuClose();
+  const m=document.createElement("div");
+  m.className="cb-menu"; m.setAttribute("role","menu");
+  m.innerHTML=items.map((it,ix)=>it.sep
+    ? `<hr>`
+    : `<button type="button" role="menuitem" data-cbmi="${ix}"${it.danger?' class="danger"':""}>${esc(it.label)}</button>`
+  ).join("");
+  document.body.appendChild(m);
+  const r=btn.getBoundingClientRect();
+  m.style.top=(window.scrollY+r.bottom+6)+"px";
+  /* keep it on screen on a narrow phone, where the button is near the edge */
+  const w=m.offsetWidth||200;
+  m.style.left=Math.max(8,Math.min(window.innerWidth-w-8,r.left))+"px";
+  m.addEventListener("click",e=>{
+    const b=e.target.closest("[data-cbmi]"); if(!b) return;
+    const it=items[+b.dataset.cbmi];
+    cbMenuClose();
+    if(it&&it.go) it.go();
+  });
+  cbMenuEl=m;
+  setTimeout(()=>{
+    const off=()=>{ cbMenuClose(); document.removeEventListener("click",off); };
+    document.addEventListener("click",off);
+  },0);
+}
+
+/* ---------------- export ----------------
+   Three shapes, because they answer three different questions. The CSV is for
+   a spreadsheet; the report is for an insurer or a valuer and is meant to be
+   printed; the picture bundle is the backup the app's own JSON export cannot
+   be, since the pictures live outside the state document. */
+function cbCsvCell(v){
+  const s=String(v==null?"":v);
+  return /[",\n;]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
+}
+function cbExportCsv(){
+  const list=cbSortItems(cbScopeItems(),cbView().sort);
+  if(!list.length) return say(t("There is nothing here to export yet."));
+  /* every per-type field used anywhere in the scope becomes a column, so one
+     file can hold two kinds of collection without losing either */
+  const extra=[...new Set(list.flatMap(i=>Object.keys(i.x)))];
+  const head=["Collection","Title","Maker","Year","Acquired","Status","Condition","Quantity",
+              "Where","Bought from","Paid","Worth","Currency","Valued on","Tags","Photos","Notes"].concat(extra);
+  const rows=list.map(i=>{
+    const c=cbCollOf(i)||{};
+    return [c.name,i.title,i.maker,i.year,i.acq,CB_STATUS_LBL(i.status),i.cond,i.qty,
+            i.loc,i.from,i.paid,i.worth,c.cur,i.valuedAt,i.tags.join(" "),i.photos.length,i.notes]
+      .concat(extra.map(k=>i.x[k]||""));
+  });
+  /* a BOM, because this opens in Excel and Czech names must not arrive mangled */
+  const csv="﻿"+[head,...rows].map(r=>r.map(cbCsvCell).join(",")).join("\r\n");
+  const c=cbCur();
+  cbDownload(csv,"text/csv",(c?cbSlug(c.name):"cabinet")+"-"+ymd(Date.now())+".csv");
+}
+const cbSlug=s=>String(s||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"collection";
+
+async function cbDownload(data,mime,name){
+  try{
+    if(window.claude&&typeof window.claude.use==="function"){
+      const d=await window.claude.use("downloads");
+      if(d){ await d.save({filename:name,data}); return say(t("Exported.")+" "+name); }
+    }
+  }catch(e){}
+  try{
+    const url=URL.createObjectURL(new Blob([data],{type:mime}));
+    const a=document.createElement("a");
+    a.href=url; a.download=name; a.style.display="none";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+    return say(t("Exported.")+" "+name);
+  }catch(e){}
+  say(t("This device won't let a page save files."));
+}
+
+/* The picture bundle. Base64 is unavoidable here — it has to survive as JSON —
+   so it is offered rather than done automatically, with the size said out loud
+   first. */
+async function cbExportBundle(){
+  const list=cbScopeItems();
+  const ids=list.flatMap(i=>i.photos);
+  if(!ids.length) return cbExportJson(list,[]);
+  const ok=await ask(ids.length+" "+t("pictures will be written into the file, which may make it very large.")
+    +" "+t("Carry on?"),t("Export"));
+  if(!ok) return;
+  const pics=[];
+  for(const id of ids){
+    const p=await cbPicGet(id); if(!p) continue;
+    pics.push({id:p.id,itemId:p.itemId,caption:p.caption||"",at:p.at,
+               full:await cbBlobToDataUrl(p.full||p.thumb)});
+  }
+  cbExportJson(list,pics);
+}
+function cbExportJson(list,pics){
+  const c=cbCur();
+  const colls=c?[c]:cbColls();
+  const payload={app:"potting-bench-cabinet",ver:(typeof BUILD==="object"?BUILD.ver:""),
+    exported:new Date().toISOString(),collections:colls,items:list,pictures:pics};
+  cbDownload(JSON.stringify(payload,null,1),"application/json",
+    (c?cbSlug(c.name):"cabinet")+"-"+ymd(Date.now())+".json");
+}
+
+/* ---- the valuation report ----
+   Printed by the browser. @media print hides the app and gives the dialog the
+   paper, which is how it becomes a PDF without a library. */
+function cbReport(){
+  const V=cbView();
+  const list=cbSortItems(cbScopeItems(),V.sort==="acquired"?"maker":V.sort);
+  if(!list.length) return say(t("There is nothing here to report on yet."));
+  const c=cbCur(), cur=cbScopeCur();
+  const T=cbTotals(list);
+  const groups=new Map();
+  list.forEach(i=>{
+    const k=(cbCollOf(i)||{}).name||"—";
+    if(!groups.has(k)) groups.set(k,[]);
+    groups.get(k).push(i);
+  });
+  const money=n=>cur?esc(cbMoney(n,cur)):"—";
+  let body=`<h1 data-no-i18n>${esc(c?c.name:t("All collections"))}</h1>
+    <p class="cb-rep-sub">${esc(t("Valuation record"))} · ${esc(new Date().toLocaleDateString(locale(),
+      {day:"numeric",month:"long",year:"numeric"}))} · <span data-no-i18n>${T.n} ${esc(cbItems(T.n))}</span>
+      ${cur&&T.worth?" · "+esc(cbMoney(T.worth,cur)):""}</p>
+    <div class="cb-rep-scroll"><table><thead><tr>
+      <th></th><th>${esc(t("Title"))}</th><th>${esc(t("Maker"))}</th><th>${esc(t("Year"))}</th>
+      <th>${esc(t("Acquired"))}</th><th>${esc(t("Condition"))}</th><th>${esc(t("Where"))}</th>
+      <th style="text-align:right">${esc(t("Value"))}</th>
+    </tr></thead><tbody>`;
+  const many=groups.size>1;
+  for(const [name,items] of groups){
+    if(many) body+=`<tr class="cb-rep-grp"><td colspan="8" data-no-i18n>${esc(name)}</td></tr>`;
+    items.forEach(i=>{
+      const src=cbThumbSrc(i.photos[0]);
+      body+=`<tr>
+        <td>${src?`<img src="${esc(src)}" alt="">`:""}</td>
+        <td data-no-i18n><b>${esc(i.title)}</b>${i.qty>1?` ×${i.qty}`:""}
+          ${i.status!=="owned"?`<br><small>${esc(CB_STATUS_LBL(i.status))}</small>`:""}</td>
+        <td data-no-i18n>${esc(i.maker)}</td>
+        <td data-no-i18n>${esc(i.year)}</td>
+        <td>${esc(i.acq||"")}</td>
+        <td data-no-i18n>${esc(i.cond)}</td>
+        <td data-no-i18n>${esc(i.loc)}</td>
+        <td style="text-align:right">${cbCounted(i)&&cbWorthOf(i)?money(cbWorthOf(i)):""}</td>
+      </tr>`;
+    });
+    if(many){
+      const gt=cbTotals(items);
+      body+=`<tr class="cb-rep-tot"><td colspan="7" style="text-align:right">${esc(t("Subtotal"))}</td>
+        <td style="text-align:right">${gt.worth?money(gt.worth):""}</td></tr>`;
+    }
+  }
+  body+=`</tbody><tfoot><tr class="cb-rep-tot">
+      <td colspan="7" style="text-align:right">${esc(t("Total"))}</td>
+      <td style="text-align:right">${T.worth?money(T.worth):"—"}</td>
+    </tr></tfoot></table></div>
+    <p class="cb-rep-sub" style="margin-top:14px">${esc(t("Values are the owner's own record and are not a professional appraisal."))}
+      ${T.valued<T.n?" "+esc(T.n-T.valued+" "+t("items have no value recorded.")):""}</p>`;
+  $("#cbRepBody").innerHTML=body;
+  $("#cbRepDlg").showModal();
+}
+
+/* ---------------- wiring ---------------- */
+(function cbWire(){
+  const on=(sel,ev,fn)=>{ const el=$(sel); if(el) el.addEventListener(ev,fn); };
+
+  on("#cbNewBtn","click",()=>{ if(!cbColls().length) cbOpenColl(null); else cbOpenItemDlg(null); });
+  on("#cbCollBtn","click",e=>{
+    e.stopPropagation();
+    const c=cbCur();
+    cbMenu(e.currentTarget,[
+      {label:t("New collection"), go:()=>cbOpenColl(null)},
+      ...(c?[{label:t("Edit")+" "+c.name, go:()=>cbOpenColl(c.id)}]:[])
+    ]);
+  });
+  on("#cbExportBtn","click",e=>{
+    e.stopPropagation();
+    cbMenu(e.currentTarget,[
+      {label:t("Valuation report…"), go:cbReport},
+      {label:t("Spreadsheet (CSV)"),  go:cbExportCsv},
+      {label:t("Backup with pictures"), go:cbExportBundle}
+    ]);
+  });
+
+  /* the shelf, the filter chips and the group headers */
+  on("#cbShelf","click",e=>{
+    const nu=e.target.closest("[data-cbnewcoll]");
+    if(nu) return cbOpenColl(null);
+    const b=e.target.closest("[data-cbcoll]"); if(!b) return;
+    L.cbColl=b.dataset.cbcoll; L.cbFilter=""; saveLocal(); cbPaint();
+  });
+  on("#cbFilters","click",e=>{
+    const b=e.target.closest("[data-cbfilter]"); if(!b) return;
+    L.cbFilter=(L.cbFilter===b.dataset.cbfilter)?"":b.dataset.cbfilter;
+    saveLocal(); cbPaint();
+  });
+  on("#cbBody","click",e=>{
+    const g=e.target.closest("[data-cbgrp]");
+    if(g){
+      L.cbShut=L.cbShut||{};
+      const k=g.dataset.cbgrp;
+      if(L.cbShut[k]) delete L.cbShut[k]; else L.cbShut[k]=1;
+      saveLocal(); cbPaint(); return;
+    }
+    const it=e.target.closest("[data-cbitem]");
+    if(it){ L.cbItem=it.dataset.cbitem; saveLocal(); cbShotIx=0; cbRenderItem(); show("cabitem"); }
+  });
+
+  /* search: debounced so a long list is not re-laid-out on every keystroke */
+  let cbQT=null;
+  on("#cbSearch","input",e=>{
+    L.cbQ=e.target.value;
+    clearTimeout(cbQT); cbQT=setTimeout(()=>{ saveLocal(); cbPaint(); },140);
+  });
+  on("#cbSearch","keydown",e=>{
+    if(e.key!=="Escape") return;
+    e.stopPropagation();                       /* the app menu also listens for Escape */
+    L.cbQ=""; e.target.value=""; saveLocal(); cbPaint();
+  });
+  on("#cbSearchX","click",()=>{ L.cbQ=""; $("#cbSearch").value=""; saveLocal(); cbPaint(); });
+
+  on("#cbSort","change",e=>{ cbSetView({sort:e.target.value}); cbPaint(); });
+  on("#cbGroup","change",e=>{ cbSetView({group:e.target.value}); cbPaint(); });
+  on("#cbModeGrid","click",()=>{ cbSetView({mode:"grid"}); cbPaint(); });
+  on("#cbModeList","click",()=>{ cbSetView({mode:"list"}); cbPaint(); });
+
+  /* one item */
+  on("#cbBack","click",()=>{ cbRender(); show("cabinet"); });
+  on("#cbItemEdit","click",()=>{ if(L.cbItem) cbOpenItemDlg(L.cbItem); });
+  on("#cbItemDel","click",()=>{ if(L.cbItem) cbDeleteItem(L.cbItem); });
+  on("#cbItemBody","click",e=>{
+    const s=e.target.closest("[data-cbshot]");
+    if(s){ cbShotIx=+s.dataset.cbshot; cbPaintShots(cbOpenItem()); return; }
+    const big=e.target.closest("[data-cblb]");
+    if(big){ cbLightbox(cbOpenItem(),big.dataset.cblb); return; }
+    /* the maker's name and a tag are both links back into a filtered list —
+       "everything else by this artist" is the question this module exists for */
+    const mk=e.target.closest("[data-cbmaker]");
+    if(mk){ L.cbColl=""; L.cbQ=mk.dataset.cbmaker; L.cbFilter="";
+            cbSetView({group:"maker"}); saveLocal();
+            $("#cbSearch").value=L.cbQ; cbRender(); show("cabinet"); return; }
+    const tg=e.target.closest("[data-cbtag]");
+    if(tg){ L.cbFilter="t:"+tg.dataset.cbtag; saveLocal(); cbRender(); show("cabinet"); }
+  });
+
+  /* the item dialog */
+  on("#cbItemForm","submit",e=>{ e.preventDefault(); cbSaveItemDlg(); });
+  on("#cbItemCancel","click",()=>{ cbDlgFreePics(); $("#cbItemDlg").close(); });
+  on("#cbItemDlg","close",()=>cbDlgFreePics());
+  on("#cbfPics","click",e=>{
+    const x=e.target.closest("[data-cbpicx]");
+    if(x){ const ix=+x.dataset.cbpicx; const p=cbDlgPics[ix];
+           if(p&&p.url){ try{ URL.revokeObjectURL(p.url); }catch(err){} }
+           cbDlgPics.splice(ix,1); cbPaintDlgPics(); return; }
+    const cv=e.target.closest("[data-cbpiccov]");
+    if(cv){ const ix=+cv.dataset.cbpiccov;
+            cbDlgPics.unshift(cbDlgPics.splice(ix,1)[0]); cbPaintDlgPics(); }
+  });
+  on("#cbfKvAdd","click",()=>{ cbDlgKv.push(["",""]); cbPaintKv(); });
+  on("#cbfKvRows","click",e=>{
+    const x=e.target.closest("[data-cbkvx]"); if(!x) return;
+    cbDlgKv.splice(+x.dataset.cbkvx,1); cbPaintKv();
+  });
+  on("#cbfKvRows","input",e=>{
+    const k=e.target.closest("[data-cbk]"), v=e.target.closest("[data-cbv]");
+    if(k) cbDlgKv[+k.dataset.cbk][0]=k.value;
+    if(v) cbDlgKv[+v.dataset.cbv][1]=v.value;
+  });
+
+  /* the collection dialog */
+  on("#cbCollForm","submit",e=>{ e.preventDefault(); cbSaveColl(); });
+  on("#cbCollCancel","click",()=>$("#cbCollDlg").close());
+  on("#cbCollDel","click",cbDeleteColl);
+  on("#cbcType","change",e=>{
+    cbTypeHint();
+    /* the maker label follows the type until the person overrides it: picking
+       "Books" should say Author without being asked twice */
+    const lbl=$("#cbcMakerLbl"), was=CB_TYPES.map(x=>x.maker);
+    if(!lbl.value.trim()||was.includes(lbl.value.trim())) lbl.value=CB_TYPE(e.target.value).maker;
+  });
+
+  /* the lightbox */
+  on("#cbLbClose","click",cbLbClose);
+  on("#cbLbDlg","close",()=>{ if(cbLbURL){ try{ URL.revokeObjectURL(cbLbURL); }catch(e){} cbLbURL=""; } });
+  on("#cbLbPrev","click",()=>cbLbStep(-1));
+  on("#cbLbNext","click",()=>cbLbStep(1));
+  on("#cbLbDlg","keydown",e=>{
+    if(e.key==="ArrowLeft"){ e.preventDefault(); cbLbStep(-1); }
+    if(e.key==="ArrowRight"){ e.preventDefault(); cbLbStep(1); }
+  });
+  on("#cbLbCap2","click",async()=>{
+    const p=cbLbPics[cbLbIx]; if(!p) return;
+    const v=await cbPrompt(t("Caption"),p.caption||"");
+    if(v==null) return;
+    p.caption=v.slice(0,300);
+    await cbPicPut(p);
+    $("#cbLbCap").textContent=p.caption;
+    if(curView==="cabitem") cbPaintShots(cbOpenItem());
+  });
+  on("#cbLbDel","click",async()=>{
+    const p=cbLbPics[cbLbIx], i=cbOpenItem(); if(!p||!i) return;
+    if(!await ask(t("Delete this picture?"))) return;
+    await cbPicDrop(p.id);
+    i.photos=i.photos.filter(x=>x!==p.id);
+    cbTouchItem(i);
+    cbLbPics.splice(cbLbIx,1);
+    if(!cbLbPics.length){ cbLbClose(); }
+    else { cbLbIx=Math.min(cbLbIx,cbLbPics.length-1); cbLbPaint(); }
+    cbShotIx=0; cbPaintShots(i);
+  });
+
+  /* the report */
+  on("#cbRepClose","click",()=>$("#cbRepDlg").close());
+  on("#cbRepPrint","click",()=>{ try{ window.print(); }catch(e){} });
+})();
+
+/* A one-line text prompt. window.prompt is refused in the artifact sandbox for
+   the same reason confirm() is, so this is askOpen's shape with an input. */
+function cbPrompt(label,value){
+  return new Promise(res=>{
+    const d=document.createElement("dialog");
+    d.innerHTML=`<form method="dialog"><h3 class="dlg-head">${esc(label)}</h3>
+      <div class="dlg-body"><div class="field">
+        <label for="cbPromptI" class="cb-sr">${esc(label)}</label>
+        <input id="cbPromptI" maxlength="300"></div></div>
+      <div class="dlg-foot">
+        <button class="btn mini" type="button" value="">${esc(t("Cancel"))}</button>
+        <button class="btn primary mini" type="submit">${esc(t("Save"))}</button>
+      </div></form>`;
+    document.body.appendChild(d);
+    const inp=d.querySelector("#cbPromptI"); inp.value=value||"";
+    let done=false;
+    const finish=v=>{ if(done) return; done=true;
+                      try{ d.close(); }catch(e){} d.remove(); res(v); };
+    d.querySelector("button[type=button]").onclick=()=>finish(null);
+    d.querySelector("form").onsubmit=e=>{ e.preventDefault(); finish(inp.value); };
+    d.addEventListener("cancel",e=>{ e.preventDefault(); finish(null); });
+    d.showModal();
+    setTimeout(()=>{ inp.focus(); inp.select(); },30);
+  });
+}
+
+/* Escape closes the little menu, exactly as it closes the app menu. */
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") cbMenuClose(); });
+
+/* Cabinet, in Czech. Appended at the end of the script, like every other
+   dictionary block — it is the one place a concurrent edit cannot collide.
+   Anything missing here simply stays English, which is the whole point of
+   English being its own key. */
+Object.assign(CS,{
+  "Cabinet":"Vitrína",
+  /* the two header buttons carry their own caret, so the caret is part of the
+     key — "Collection" on its own is never what the walker sees */
+  "Collection ▾":"Sbírka ▾", "Export ▾":"Export ▾",
+  "Value":"Cena", "Where":"Kde",
+  "Collection":"Sbírka", "Collections":"Sbírky", "All collections":"Všechny sbírky",
+  "New collection":"Nová sbírka", "Edit collection":"Upravit sbírku",
+  "Delete this collection?":"Smazat tuhle sbírku?",
+  "and everything in it":"a všechno v ní",
+  "items and their pictures. This cannot be undone.":"položek i s fotkami. Tohle už nevrátíš.",
+  "this deletes the record and its pictures.":"tímhle zmizí záznam i jeho fotky.",
+  "Give the collection a name.":"Pojmenuj sbírku.",
+  "What sort of thing":"Co to je za věci",
+  "Call the maker":"Autorovi říkat",
+  
+  "Adds fields for":"Přidá kolonky pro",
+  "No extra fields — you name your own on each item.":"Žádné kolonky navíc — u každé položky si je pojmenuješ sám.",
+  "Your own fields":"Vlastní kolonky", "+ Add a field":"+ Přidat kolonku",
+  "Field":"Kolonka",
+
+  "Art & paintings":"Umění a obrazy", "Scale models":"Modely",
+  "Coins, stamps & notes":"Mince, známky a bankovky", "Books":"Knihy",
+  "Records & music":"Desky a hudba", 
+
+  "New item":"Nová položka", "Edit item":"Upravit položku", "+ Add item":"+ Přidat položku",
+  "Item":"Položka", "item":"položka", "items":"položek",
+  "That item is gone.":"Ta položka už neexistuje.",
+  "It needs a title — even “Untitled, blue” is better than nothing.":"Musí mít název — i „Bez názvu, modrý“ je lepší než nic.",
+
+  "Artist":"Autor", "Manufacturer":"Výrobce", "Issuer":"Emitent", "Author":"Autor", "Maker":"Autor",
+  "No maker recorded":"Bez autora",
+  "Year made":"Rok vzniku", "Undated":"Bez datace",
+  "Acquired":"Získáno", "Condition":"Zachovalost",
+   "Where it is":"Kde je", "Not placed":"Bez umístění",
+  "Bought from":"Koupeno od", "Paid":"Zaplaceno", "Worth now":"Nynější cena",
+  "Valued on":"Oceněno dne", "About it":"Něco o tom",
+  "Where it has been":"Kudy prošlo",
+  "Who made it":"Kdo to udělal",
+  "Dealer, auction, gift…":"Obchodník, aukce, dar…",
+  "oil, framed, favourite — separated by commas":"olej, zarámované, oblíbené — čárkami",
+  "Where it came from, what happened to it, why you wanted it.":"Odkud to je, co se s tím dělo, proč jsi to chtěl.",
+
+  "Owned":"Vlastním", "Wanted":"Chci", "On order":"Objednáno",
+  "Lent out":"Půjčeno", "Sold":"Prodáno", "Given away":"Darováno",
+  "wanted":"chci", "gone":"pryč", "worth":"hodnota", "paid":"zaplaceno", "added":"přidáno",
+
+  
+  "No grouping":"Bez seskupení", "By maker":"Podle autora", "By year":"Podle roku",
+  "By status":"Podle stavu", "By location":"Podle umístění", "By tag":"Podle štítku",
+  "Newest added":"Naposledy přidané",
+  "Search this collection…":"Hledat v téhle sbírce…",
+  "Search every collection…":"Hledat ve všech sbírkách…",
+  "Nothing here matches that.":"Tomu tady nic neodpovídá.",
+  "This collection is empty. Add the first thing in it.":"Sbírka je prázdná. Přidej první věc.",
+  "Nothing on the shelves yet.":"Zatím nic na policích.",
+
+  "Photos":"Fotky", "Picture":"Fotka", "Cover":"Hlavní",
+  "Add a picture":"Přidat fotku", "Delete this picture?":"Smazat tuhle fotku?",
+  "No picture yet.":"Zatím bez fotky.", "No picture yet. Add one below.":"Zatím bez fotky. Přidej ji níž.",
+  "The first picture is the cover.":"První fotka je hlavní.",
+  "Photograph it from the front, and add a close-up of any damage — that is what an insurer asks for.":"Vyfoť to zepředu a přidej detail případného poškození — přesně tohle chce pojišťovna.",
+  "That is as many pictures as one item can hold. Delete one to add another.":"Víc fotek jedna položka neunese. Smaž jednu, ať můžeš přidat další.",
+  "That file could not be read as an image.":"Ten soubor se nepodařilo přečíst jako obrázek.",
+  "That image could not be saved.":"Ten obrázek se nepodařilo uložit.",
+  "This device won't let the app store pictures. Everything else still works.":"Tohle zařízení aplikaci nedovolí ukládat fotky. Všechno ostatní funguje dál.",
+  "Caption":"Popisek",
+
+  "Valuation report…":"Zpráva o ocenění…", "Spreadsheet (CSV)":"Tabulka (CSV)",
+  "Backup with pictures":"Záloha i s fotkami", "Valuation record":"Záznam o ocenění",
+  "There is nothing here to export yet.":"Zatím tu není co vyvézt.",
+  "There is nothing here to report on yet.":"Zatím tu není o čem psát zprávu.",
+  "pictures will be written into the file, which may make it very large.":"fotek se zapíše do souboru, který tím může být hodně velký.",
+  "Carry on?":"Pokračovat?",
+  "This device won't let a page save files.":"Tohle zařízení nedovolí stránce ukládat soubory.",
+  "Print / save as PDF":"Vytisknout / uložit jako PDF",
+  "Collection report":"Zpráva o sbírce",
+  "Subtotal":"Mezisoučet",
+  "Values are the owner's own record and are not a professional appraisal.":"Ceny jsou vlastní evidence majitele, nejde o znalecký posudek.",
+  "items have no value recorded.":"položek nemá zapsanou cenu.",
+  "mixed currencies — see each collection":"různé měny — koukni do jednotlivých sbírek",
+
+  "Technique":"Technika", "Frame":"Rám", "Signed":"Signováno",
+  "Edition":"Edice", "Provenance":"Původ",
+  "Scale":"Měřítko", "Kit number":"Číslo stavebnice", "Subject":"Předloha",
+  "Build state":"Stav stavby", "Markings":"Kamufláž", "Aftermarket":"Doplňky",
+  "Unbuilt":"Nepostaveno", "In progress":"Rozestavěno", "On display":"Vystaveno",
+  "Country":"Země", "Denomination":"Nominál", "Mint mark":"Značka mincovny",
+  "Metal":"Kov", "Certification":"Certifikace", "Catalogue no.":"Katalogové č.",
+  "Publisher":"Nakladatel", "Binding":"Vazba", "Pages":"Stran", "Inscribed":"Věnování",
+  "Label":"Vydavatelství", "Speed":"Otáčky", "Pressing":"Lis", "Sleeve":"Obal",
+
+  "Excellent":"Výborný", "Fair":"Ucházející",
+  "Restored":"Restaurováno", "Damaged":"Poškozeno",
+  "Sealed":"Nerozbalené", "Complete":"Kompletní", "Started":"Načaté", "Missing parts":"Chybí díly",
+  "Uncirculated":"Neběžel", "Extremely fine":"Velmi pěkný", "Very fine":"Pěkný",
+  "As new":"Jako nové", "Reading copy":"Čtecí výtisk",
+  "Mint (M)":"Mint (M)", "Near mint (NM)":"Téměř mint (NM)", "Very good+":"Velmi dobrý+", "Very good":"Velmi dobrý"
 });
 
 </script>
