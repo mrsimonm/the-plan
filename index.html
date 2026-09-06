@@ -4263,7 +4263,7 @@ html[data-shell="rail"] body{
                   <div class="grid2">
                     <div class="field"><label for="cycWater">Water every</label>
                       <select id="cycWater"></select></div>
-                    <div class="field"><label for="cycFeed">Feed every</label>
+                    <div class="field"><label for="cycFeed">Fertiliser dose</label>
                       <select id="cycFeed"></select></div>
                   </div>
                   <p class="hint" id="cycPreview" style="margin:2px 0 9px"></p>
@@ -8673,7 +8673,7 @@ function seed(){return{
   actionDaysOn:true, actionDays:[3,0],          // Wednesday & Sunday
   /* the cycle: one fertiliser day a week, and the defaults a plant joins on */
   feedDayOn:true, feedDay:0,                    // Sunday
-  cycleDefault:{water:1, feed:2},               // every beat, every 2nd is a feed
+  cycleDefault:{water:1, dose:100},             // every beat, full dose on fertiliser day
   cuttings:[], photos:[], products:[], formulas:[], schedules:[], subjects:[], routines:[], events:[], tasks:[],
   issues:[],
   notes:[], notebooks:[],
@@ -8788,14 +8788,23 @@ function migrate(d){
      so it must never switch itself on under someone. */
   if(typeof d.feedDayOn!=="boolean") d.feedDayOn=true;
   { const fd=+d.feedDay; d.feedDay=Number.isInteger(fd)&&fd>=0&&fd<=6?fd:0; }
-  d.cycleDefault=Object.assign({water:1,feed:2},d.cycleDefault||{});
+  d.cycleDefault=Object.assign({water:1,dose:100},d.cycleDefault||{});
   d.cycleDefault.water=Math.max(1,Math.min(12,+d.cycleDefault.water||1));
-  d.cycleDefault.feed=Math.max(0,Math.min(12,+d.cycleDefault.feed||0));
+  if(d.cycleDefault.dose==null&&d.cycleDefault.feed!=null)
+    d.cycleDefault.dose=+d.cycleDefault.feed>0?(+d.cycleDefault.feed>=2?50:100):0;
+  delete d.cycleDefault.feed;
+  d.cycleDefault.dose=[0,25,50,100].indexOf(+d.cycleDefault.dose)>=0?+d.cycleDefault.dose:100;
   d.subjects.forEach(x=>{
-    const c=Object.assign({on:false,water:1,feed:2,off:0},x.cycle||{});
+    const c=Object.assign({on:false,water:1,dose:100,off:0},x.cycle||{});
     c.on=!!c.on;
     c.water=Math.max(1,Math.min(12,+c.water||1));
-    c.feed=Math.max(0,Math.min(12,+c.feed||0));
+    /* the short-lived "every Mth watering is a feed" field becomes a dose: a
+       plant that was fed every 2nd watering is now fed every fertiliser day at
+       half strength, which is the same fertiliser spread evenly instead of in
+       bursts, and what the whole model was changed to say */
+    if(c.dose==null&&c.feed!=null) c.dose=+c.feed>0?(+c.feed>=2?50:100):0;
+    delete c.feed;
+    c.dose=DOSES.indexOf(+c.dose)>=0?+c.dose:100;
     c.off=Math.max(0,Math.min(11,+c.off||0));
     x.cycle=c;
   });
@@ -9613,8 +9622,8 @@ function feedDue(){
     if(p.module!=="plants"||!cycleOn(p)) return;
     const wr=routineOf(p.id,"water"); if(!wr) return;
     const lastW=lastEvent(wr.id);
-    const nx=cycleNext(p, lastW?sod(+new Date(lastW.at))+DAY:today);
-    if(nx&&nx.feed&&sod(nx.at)<=today) due.push({p,r:wr,fm:plantFormula(p)});
+    const nx=cycleNext(p, lastW?addDays(+new Date(lastW.at),1):today);
+    if(nx&&nx.feed&&sod(nx.at)<=today) due.push({p,r:wr,fm:plantFormula(p),dose:nx.dose});
   });
   if(!due.length) return null;
   const groups={};
@@ -9623,8 +9632,20 @@ function feedDue(){
   /* pot size × what the substrate holds; 1 L is a fair guess without a size */
   let known=0;
   const vol=best.reduce((n,d)=>{ const w=plantWater(d.p); if(!w.guess) known++; return n+w.litres; },0);
+  /* Doses differ within one day's feeding now — a Monstera at full and a ZZ at
+     half are both due this Sunday — and you cannot pour two concentrations from
+     one can. Split the volume by dose so the mixing screen can say what to make
+     and, more usefully, that the weaker cans are the strong one watered down. */
+  const byDose={};
+  best.forEach(x=>{ const dz=x.dose==null?100:+x.dose;
+    const w=plantWater(x.p);
+    const g=byDose[dz]||(byDose[dz]={dose:dz,list:[],vol:0});
+    g.list.push(x); g.vol+=w.litres; });
+  const doses=Object.values(byDose)
+    .map(g=>Object.assign(g,{vol:Math.max(0.5,Math.round(g.vol*2)/2)}))
+    .sort((a,b)=>b.dose-a.dose);
   return {list:best, fm:best[0].fm, vol:Math.max(0.5,Math.round(vol*2)/2),
-          sized:known, others:due.length-best.length};
+          sized:known, others:due.length-best.length, doses};
 }
 let pendingPlants=null;
 /* the app shows its working — the same numbers it used, not a description of them */
@@ -9673,6 +9694,11 @@ function renderDue(){
       <small>${esc(d.list.map(x=>x.p.name).join(", "))}${
         d.others?` · ${d.others} more on a different formula`:""}${
         d.sized<n?` · ${n-d.sized} without a pot size, guessed at 1 L`:""}</small></p>
+    ${d.doses&&d.doses.length>1?`<p class="hint" style="margin:2px 0 9px">${
+      d.doses.map(g=>`<b>${oneDp(g.vol)} L</b> ${esc(doseLabel(g.dose).toLowerCase())} — ${
+        esc(g.list.map(x=>x.p.name).join(", "))}`).join("<br>")}<br>${esc(L.lang==="cs"
+        ? "Namíchej tu nejsilnější a slabší z ní udělej doředěním — je to táž receptura, jen řidší."
+        : "Mix the strongest, then water it down for the weaker ones — it is the same formula, just thinner.")}</p>`:""}
     <div class="btn-row"><button class="btn" id="dueSetup">Set it up</button></div>
   </div>`;
 }
@@ -21934,15 +21960,15 @@ function buildAgenda(until){
       if(r.kind!=="water") { if(r.kind==="feed") return; }
       if(r.kind==="water"){
         const last=lastEvent(r.id);
-        const warm=lastFeedAt(p);
         /* an overdue watering is reported once from where it actually stands,
            then the series carries on from today as if it were done now */
-        const first=cycleNext(p,last?sod(+new Date(last.at))+DAY:today);
+        const first=cycleNext(p,last?addDays(+new Date(last.at),1):today);
         if(first&&first.at<today){
-          items.push({at:first.at,p,r,type:first.feed?"feed":"water",feed:first.feed,overdue:true});
+          items.push({at:first.at,p,r,type:first.feed?"feed":"water",
+                      feed:first.feed,dose:first.dose,overdue:true});
         }
-        cycleSchedule(p,today,until,warm).forEach(x=>
-          items.push({at:x.at,p,r,type:x.feed?"feed":"water",feed:x.feed}));
+        cycleSchedule(p,today,until).forEach(x=>
+          items.push({at:x.at,p,r,type:x.feed?"feed":"water",feed:x.feed,dose:x.dose}));
         return;
       }
     }
@@ -36002,8 +36028,8 @@ function renderCareDays(){
         </div>
         <div class="cd-job">
           <span class="cd-k">${esc(t("Feed"))}</span>
-          <select class="cd-sel" data-cycf="${p.id}">${CYC_FEED_OPTS.map(n=>
-            `<option value="${n}"${+c.feed===n?" selected":""}>${esc(cycFeedLabel(n))}</option>`).join("")}</select>
+          <select class="cd-sel" data-cycf="${p.id}">${DOSES.map(n=>
+            `<option value="${n}"${+c.dose===n?" selected":""}>${esc(doseLabel(n))}</option>`).join("")}</select>
         </div>
         ${spray.map(r=>`<div class="cd-job">
           <span class="cd-k">${esc(r.name)}</span>
@@ -36052,12 +36078,15 @@ $("#cdList").addEventListener("change",e=>{
   const el=w||f; if(!el) return;
   const p=subject(el.dataset[w?"cycw":"cycf"]); if(!p) return;
   const c=cycleOf(p);
-  p.cycle=Object.assign({},c,w?{water:Math.max(1,+el.value||1)}:{feed:Math.max(0,+el.value||0)});
-  /* the phase has to stay inside the new count, or a plant on "every 4th" moved
-     to "every 2nd" keeps an offset of 3 and simply never comes round — and if
-     the plant is fed, prefer the phase that can actually reach fertiliser day */
-  const nw=Math.max(1,+p.cycle.water||1), nf=Math.max(0,+p.cycle.feed||0);
-  const fp=nf>0?phaseForFeedDay(nw):null;
+  p.cycle=Object.assign({},c, w
+    ? {water:Math.max(1,+el.value||1)}
+    : {dose:DOSES.indexOf(+el.value)>=0?+el.value:100});
+  /* A once-a-week plant sits on ONE weekday for good, so which one decides
+     whether it is ever fed at all. Put it on the fertiliser day whenever it is
+     fed — that, plus there being only two rhythms now, is what makes it
+     impossible to set up a plant that quietly never gets fertiliser. */
+  const nw=Math.max(1,+p.cycle.water||1), nd=Math.max(0,+p.cycle.dose||0);
+  const fp=nd>0?phaseForFeedDay(nw):null;
   p.cycle.off=fp!=null?fp:(Math.max(0,+p.cycle.off||0)%nw);
   touch(); renderCareDays(); renderAgenda(); renderSubjects(); renderGarden(); renderDue(); renderCycle();
 });
@@ -36065,10 +36094,10 @@ $("#cdList").addEventListener("click",e=>{
   const on=e.target.closest("[data-cycon]"), off=e.target.closest("[data-cycoff]");
   if(on||off){
     const p=subject((on||off).dataset[on?"cycon":"cycoff"]); if(!p) return;
-    const def=S.cycleDefault||{water:1,feed:2};
+    const def=S.cycleDefault||{water:1,dose:100};
     if(on){
-      const w=+def.water||1, f=+def.feed||0, fp=f>0?phaseForFeedDay(w):null;
-      p.cycle=Object.assign({},cycleOf(p),{on:true,water:w,feed:f,off:fp!=null?fp:0});
+      const w=+def.water||1, dz=+def.dose||0, fp=dz>0?phaseForFeedDay(w):null;
+      p.cycle=Object.assign({},cycleOf(p),{on:true,water:w,dose:dz,off:fp!=null?fp:0});
     } else p.cycle=Object.assign({},cycleOf(p),{on:false});
     touch(); renderCareDays(); renderAgenda(); renderSubjects(); renderGarden(); renderDue(); renderCycle();
     return;
@@ -36995,7 +37024,19 @@ function nextActionDay(from){
   return start;
 }
 
-const CYCLE_DEF={on:false, water:1, feed:2, off:0};
+/* Dose, not frequency. The question "how often is this plant fed" answers
+   itself once the fertiliser day exists — a plant is fed when its watering
+   lands on that day, and never otherwise. What is left to decide per plant is
+   how STRONG that feed is, which is the botanically real dial anyway: a fern
+   or a ZZ wants feeding often and weakly, not seldom and hard. The app's own
+   care sheets have been saying "feed at half strength" all along. */
+const DOSES=[0,25,50,100];
+const doseLabel=n=>{ const cs=L.lang==="cs";
+  return n>=100?(cs?"plná dávka":"full dose")
+       : n>=50 ?(cs?"poloviční dávka":"half dose")
+       : n>0   ?(cs?"čtvrtinová dávka":"quarter dose")
+       :        (cs?"nehnojit":"never fed"); };
+const CYCLE_DEF={on:false, water:1, dose:100, off:0};
 const cycleOf=p=>Object.assign({},CYCLE_DEF,(p&&p.cycle)||{});
 /* The cycle rides on the action days, so with those switched off there is no
    beat to count and the plant falls back to its own interval. Better than
@@ -37010,34 +37051,33 @@ const feedDay=()=>{ const d=+S.feedDay; return Number.isInteger(d)&&d>=0&&d<=6?d
    month would begin counting from zero and put the feed in the wrong place.
    With no feed ever logged we warm up from 90 days back, which is enough beats
    for the count to settle into the same phase it would really be in. */
-function cycleSchedule(p,fromTs,untilTs,lastFeed){
+/* The plant's waterings between two dates, each marked with the dose it carries.
+
+   There is no counter here and nothing to warm up, which is the whole gain of
+   moving from "every Mth watering is a feed" to a dose: feeding is a property
+   of the DAY, not of a running tally, so any window can be computed on its own
+   without knowing what came before it. The starving case that the counter
+   version needed a safety valve for cannot arise, because there is no longer a
+   feed that can be owed and never paid.
+
+   With no fertiliser day set at all, every watering carries the dose — which
+   is a real regime (constant weak feed) rather than an error. */
+function cycleSchedule(p,fromTs,untilTs){
   if(!cycleOn(p)) return [];
   const c=cycleOf(p);
   const N=Math.max(1,Math.min(12,+c.water||1));
-  const M=Math.max(0,Math.min(12,+c.feed||0));
+  const dose=Math.max(0,Math.min(100,+c.dose||0));
   const off=((+c.off||0)%N+N)%N;
   const from=sod(fromTs), until=sod(untilTs);
-  const warm=Math.min(from, lastFeed?sod(lastFeed):from-90*DAY);
   const out=[];
-  let ts=nextActionDay(warm), since=0, steps=0;
+  let ts=nextActionDay(from), steps=0;
   while(ts<=until && steps++<CYC_MAX_STEPS){
     const ord=actionOrdinal(ts);
     /* is this beat one of this plant's? */
     if(((ord-1-off)%N+N)%N===0){
-      since++;
-      let feed=false;
-      if(M>0 && since>=M){
-        const onFeedDay=!feedDayOn()||new Date(ts).getDay()===feedDay();
-        /* The fertiliser day is a hard rule right up to the point where obeying
-           it would mean never feeding the plant at all. A plant on every 2nd
-           beat can sit permanently on the days that are NOT the fertiliser day,
-           and then a pure rule starves it in silence — the worst kind of
-           failure, because nothing on any screen ever says so. So after three
-           times round without a chance, it feeds anyway. Care days flags the
-           plant so the phase can be fixed properly. */
-        if(onFeedDay || since>=M*3){ feed=true; since=0; }
-      }
-      if(ts>=from) out.push({at:ts, feed});
+      const onFeedDay=!feedDayOn()||new Date(ts).getDay()===feedDay();
+      const feed=dose>0&&onFeedDay;
+      out.push({at:ts, feed, dose:feed?dose:0});
     }
     ts=nextActionDay(addDays(ts,1));
   }
@@ -37066,76 +37106,71 @@ function phaseForFeedDay(N){
 function cycleReachesFeedDay(p){
   if(!cycleOn(p)) return true;
   const c=cycleOf(p);
-  if(!(+c.feed>0)||!feedDayOn()) return true;
+  if(!(+c.dose>0)||!feedDayOn()) return true;
   const start=sod(Date.now());
-  return cycleSchedule(p,start,start+120*DAY,null)
+  return cycleSchedule(p,start,start+120*DAY)
     .some(x=>new Date(x.at).getDay()===feedDay());
 }
 
-/* the newest logged feed for a plant, which is what the counter warms up from */
-function lastFeedAt(p){
-  let best=null;
-  (S.events||[]).forEach(e=>{
-    if(e.subjectId!==p.id) return;
-    if((e.kind||e.type)!=="feed") return;
-    const t2=+new Date(e.at);
-    if(best==null||t2>best) best=t2;
-  });
-  return best;
-}
-/* the next watering for a plant on the cycle, and whether it is the feed */
+/* the next watering for a plant on the cycle, and what it carries */
 function cycleNext(p,after){
   const from=sod(after!=null?after:Date.now());
-  const s=cycleSchedule(p,from,from+400*DAY,lastFeedAt(p));
+  const s=cycleSchedule(p,from,from+400*DAY);
   return s.length?s[0]:null;
 }
 
 /* in words, for every screen that has to explain what a plant is doing */
 function cycleLine(p){
   const c=cycleOf(p), cs=L.lang==="cs";
-  const N=Math.max(1,+c.water||1), M=Math.max(0,+c.feed||0);
-  const beat=N===1
-    ? (cs?"každý akční den":"every action day")
-    : (cs?`každý ${N}. akční den`:`every ${ord(N)} action day`);
-  if(!M) return cs?`Zálivka ${beat}, bez hnojení.`:`Water ${beat}, never fed.`;
-  const fed=M===1
-    ? (cs?"a hnojí se pokaždé":"and fed every time")
-    : (cs?`a každá ${M}. zálivka je hnojení`:`and every ${ord(M)} watering is a feed`);
-  return cs?`Zálivka ${beat} ${fed}.`:`Water ${beat}, ${fed}.`;
+  const N=Math.max(1,+c.water||1), dose=Math.max(0,+c.dose||0);
+  /* the same words the control uses — a sentence that says "every 2nd action
+     day" under a dropdown reading "once a week" reads as two different settings */
+  const beat=cycWaterLabel(N);
+  if(!dose) return cs?`Zálivka ${beat}, bez hnojení.`:`Water ${beat}, never fed.`;
+  const where=feedDayOn()
+    ? (cs?`a v ${dowName(feedDay())} s hnojivem (${doseLabel(dose)})`
+         :`and fed on ${dowName(feedDay())} at ${doseLabel(dose)}`)
+    : (cs?`a pokaždé s hnojivem (${doseLabel(dose)})`
+         :`and fed every time at ${doseLabel(dose)}`);
+  return cs?`Zálivka ${beat} ${where}.`:`Water ${beat}, ${where}.`;
 }
 const ord=n=>{ if(L.lang==="cs") return n+".";
   const s=["th","st","nd","rd"], v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); };
 
 
 /* ---------------- the cycle: settings ---------------- */
-const CYC_WATER_OPTS=[1,2,3,4,5,6];
-const CYC_FEED_OPTS=[0,1,2,3,4,5,6];
-const cycWaterLabel=n=>L.lang==="cs"
-  ? (n===1?"každý akční den":`každý ${n}. akční den`)
-  : (n===1?"every action day":`every ${ord(n)} action day`);
-const cycFeedLabel=n=>n===0
-  ? (L.lang==="cs"?"nikdy":"never")
-  : (n===1 ? (L.lang==="cs"?"každou zálivku":"every watering")
-           : (L.lang==="cs"?`každou ${n}. zálivku`:`every ${ord(n)} watering`));
+/* Two rhythms, not six. Every plant in the collection is happy on one of them,
+   and a control offering choices nobody uses is a control that makes the two
+   that matter harder to find. `1` takes every watering day, `2` every other —
+   with the usual two watering days a week that is simply twice a week or once,
+   which is how it gets labelled whenever the arithmetic actually says so. */
+const CYC_WATER_OPTS=[1,2];
+function cycWaterLabel(n){
+  const cs=L.lang==="cs", a=actionDays().length;
+  if(a===2) return n===1?(cs?"dvakrát týdně":"twice a week")
+                        :(cs?"jednou týdně":"once a week");
+  return n===1?(cs?"každý akční den":"every action day")
+              :(cs?"každý druhý akční den":"every other action day");
+}
+const cycDoseLabel=n=>doseLabel(n);
 
 /* what the current defaults actually produce, in days — the sentence that
    makes "every 2nd of every 3rd" mean something you can picture */
-function cycPreviewLine(w,f){
+function cycPreviewLine(w,dose){
   const days=actionDays(), cs=L.lang==="cs";
   if(!days.length||!actionOn()) return cs
     ? "Zapni nejdřív akční dny — cyklus se počítá podle nich."
     : "Turn action days on first — the cycle counts against them.";
-  const perWeek=days.length;
-  /* average days between waterings: a week has `perWeek` beats, this plant
-     takes every wth of them */
-  const gapW=(7/perWeek)*w;
+  const gapW=(7/days.length)*w;
   const bits=[cs?`zálivka zhruba po ${oneDp(gapW)} dnech`:`a drink about every ${oneDp(gapW)} days`];
-  if(f>0){
-    const gapF=gapW*f;
-    bits.push(cs?`hnojení zhruba po ${oneDp(gapF)} dnech`:`a feed about every ${oneDp(gapF)} days`);
-  } else bits.push(cs?"nikdy se nehnojí":"never fed");
-  const fd=feedDayOn()?` · ${cs?"vždy v":"always on a"} ${dowName(feedDay())}`:"";
-  return bits.join(" · ")+fd+".";
+  /* Feeding frequency is not a separate setting any more, so it is stated as
+     what it actually is: whatever the fertiliser day gives this rhythm. */
+  if(!dose) bits.push(cs?"nikdy se nehnojí":"never fed");
+  else if(feedDayOn()) bits.push(cs
+    ? `${doseLabel(dose)} každé ${dowName(feedDay())}`
+    : `${doseLabel(dose)} every ${dowName(feedDay())}`);
+  else bits.push(cs?`${doseLabel(dose)} při každé zálivce`:`${doseLabel(dose)} every watering`);
+  return bits.join(" · ")+".";
 }
 
 function renderCycle(){
@@ -37158,12 +37193,12 @@ function renderCycle(){
                       :`Fertiliser only on ${dowName(feedDay())}. Any other day it is just a watering.`);
   $("#feedDayHint").classList.toggle("bad",!!clash);
 
-  const def=S.cycleDefault||{water:1,feed:2};
+  const def=S.cycleDefault||{water:1,dose:100};
   $("#cycWater").innerHTML=CYC_WATER_OPTS.map(n=>
     `<option value="${n}"${+def.water===n?" selected":""}>${esc(cycWaterLabel(n))}</option>`).join("");
-  $("#cycFeed").innerHTML=CYC_FEED_OPTS.map(n=>
-    `<option value="${n}"${+def.feed===n?" selected":""}>${esc(cycFeedLabel(n))}</option>`).join("");
-  $("#cycPreview").textContent=cycPreviewLine(+def.water||1,+def.feed||0);
+  $("#cycFeed").innerHTML=DOSES.map(n=>
+    `<option value="${n}"${+def.dose===n?" selected":""}>${esc(doseLabel(n))}</option>`).join("");
+  $("#cycPreview").textContent=cycPreviewLine(+def.water||1,+def.dose||0);
 
   const plants=subjectsIn("plants"), on=plants.filter(cycleOn).length;
   $("#cycCount").textContent=!plants.length
@@ -37182,16 +37217,17 @@ $("#feedDayPicker").addEventListener("click",e=>{
 });
 ["#cycWater","#cycFeed"].forEach(id=>$(id).addEventListener("change",()=>{
   S.cycleDefault={water:Math.max(1,+$("#cycWater").value||1),
-                  feed:Math.max(0,+$("#cycFeed").value||0)};
+                  dose:DOSES.indexOf(+$("#cycFeed").value)>=0?+$("#cycFeed").value:100};
   touch(); renderCycle();
 }));
 $("#cycApplyAll").addEventListener("click",async()=>{
   const plants=subjectsIn("plants");
   if(!plants.length){ say(L.lang==="cs"?"Zatím žádné rostliny.":"No plants to put on it yet."); return; }
-  const w=Math.max(1,+$("#cycWater").value||1), f=Math.max(0,+$("#cycFeed").value||0);
+  const w=Math.max(1,+$("#cycWater").value||1);
+  const dz=DOSES.indexOf(+$("#cycFeed").value)>=0?+$("#cycFeed").value:100;
   if(!await ask(L.lang==="cs"
-    ? `Dát všech ${plants.length} ${pl3(plants.length,"rostlinu","rostliny","rostlin")} na ${cycWaterLabel(w)} a hnojit ${cycFeedLabel(f)}?\n\nJejich vlastní intervaly zůstanou uložené — když cyklus vypneš, vrátí se.`
-    : `Put all ${plural(plants.length,"plant")} on ${cycWaterLabel(w)}, feeding ${cycFeedLabel(f)}?\n\nTheir own intervals stay saved — turn the cycle off and they come back.`,
+    ? `Dát všech ${plants.length} ${pl3(plants.length,"rostlinu","rostliny","rostlin")} na ${cycWaterLabel(w)}, hnojivo ${doseLabel(dz)}?\n\nJejich vlastní intervaly zůstanou uložené — když cyklus vypneš, vrátí se.`
+    : `Put all ${plural(plants.length,"plant")} on ${cycWaterLabel(w)}, ${doseLabel(dz)}?\n\nTheir own intervals stay saved — turn the cycle off and they come back.`,
     L.lang==="cs"?"Nastavit":"Set them")) return;
   /* Dealt round-robin by phase so a collection on "every other beat" splits in
      half instead of every plant landing on the same one and leaving the other
@@ -37199,10 +37235,10 @@ $("#cycApplyAll").addEventListener("click",async()=>{
      time, not a list. */
   /* Phase matters more than spreading when a plant is fed: land it where the
      fertiliser day is reachable first, and only deal the rest round-robin. */
-  const fp=f>0?phaseForFeedDay(w):null;
+  const fp=dz>0?phaseForFeedDay(w):null;
   plants.slice().sort((a,b)=>String(a.spot||"").localeCompare(String(b.spot||"")))
     .forEach((p,i)=>{ p.cycle=Object.assign({},cycleOf(p),
-      {on:true,water:w,feed:f,off:fp!=null?fp:i%w}); });
+      {on:true,water:w,dose:dz,off:fp!=null?fp:i%w}); });
   touch(); renderCycle(); renderAll();
   say(L.lang==="cs"?`${plants.length} na cyklu.`:`${plural(plants.length,"plant")} on the cycle.`,"Done");
 });
@@ -37213,7 +37249,7 @@ $("#cycStagger").addEventListener("click",()=>{
      plant off the fertiliser-day phase to balance a load would cost it its feed */
   on.slice().sort((a,b)=>String(a.spot||"").localeCompare(String(b.spot||"")))
     .forEach((p,i)=>{ const c=cycleOf(p);
-      if(+c.feed>0) return;
+      if(+c.dose>0) return;
       p.cycle=Object.assign({},c,{off:i%Math.max(1,+c.water||1)}); });
   touch(); renderCycle(); renderAll();
   say(L.lang==="cs"?"Rozloženo.":"Spread across the beats.","Done");
@@ -37244,6 +37280,20 @@ Object.assign(CS,{
   "Stagger them":"Rozložit je", "Take them all off":"Sundat je z toho",
   "cycle":"cyklus", "Off the cycle":"Pryč z cyklu", "Put on the cycle":"Dát na cyklus",
   "a feed":"hnojení", "No plants yet.":"Zatím žádné rostliny."
+});
+
+
+/* ---- the cycle, second pass: two rhythms and a dose ---- */
+Object.assign(CS,{
+  "Fertiliser dose":"Dávka hnojiva",
+  "Put all":"Dát všech",
+  "Water every":"Zalévat",
+  "twice a week":"dvakrát týdně", "once a week":"jednou týdně",
+  "every action day":"každý akční den", "every other action day":"každý druhý akční den",
+  "full dose":"plná dávka", "half dose":"poloviční dávka",
+  "quarter dose":"čtvrtinová dávka", "never fed":"nehnojit",
+  "Mix the strongest, then water it down for the weaker ones — it is the same formula, just thinner.":
+    "Namíchej tu nejsilnější a slabší z ní udělej doředěním — je to táž receptura, jen řidší."
 });
 
 </script>
