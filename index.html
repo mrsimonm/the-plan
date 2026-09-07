@@ -3270,6 +3270,11 @@ dialog:has(> form > .dlg-foot) > form > .dlg-foot{flex:0 0 auto}
 /* why a project is contributing nothing today */
 .povw-why{font-size:11.5px; color:var(--amber); margin:3px 0 0; white-space:normal}
 
+/* the project list's action row */
+.povw-acts{margin-top:8px; gap:6px}
+.povw-name.linkish{text-align:left; text-decoration:none; color:inherit; font-weight:600}
+.povw-name.linkish:hover{text-decoration:underline}
+
 .pindays{margin:0 0 11px}
 .pinrow{display:flex; align-items:center; gap:10px; margin-bottom:6px}
 .pinrow .pin-k{flex:0 0 52px; font-size:12px; color:var(--ink-2)}
@@ -3838,6 +3843,16 @@ html[data-layout="phone"] .ppl-search-row{ flex-wrap:nowrap }
    an empty screen: it takes the width, and the calendar takes it with it. */
 html[data-layout="wide"] main{ max-width:1440px; padding:18px 28px 64px }
 html[data-layout="wide"] .wb-grid{ min-width:0 }
+/* Plachta is exempt from the min-width:0 above AND from the phone rule
+   further up, and it has to be said with more specificity than either:
+   both of those are html[data-layout=…] .wb-grid, which outranks the plain
+   .wb-plachta .wb-grid rule near the top of the sheet. Under any named layout
+   the plachta grid was therefore collapsing to the scrollport's width — and a
+   sticky box is clamped to its containing block, so the hour gutter travelled
+   one viewport and slid away, leaving the whole rest of the canvas with no
+   hour labels. Exactly the failure the comment on that top rule describes;
+   the layout rules reintroduced it from below. */
+html[data-layout] .wb-plachta .wb-grid{ min-width:max-content }
 
 /* Two panes. A list and the thing you opened from it stop being two pages that
    replace each other and become two columns that coexist: pick a plant on the
@@ -13525,10 +13540,11 @@ function renderProjectsOverview(){
        doesn't show", because the strip is easy to miss on a tall window. Say
        so, and offer the single tap that fixes it. */
     const parked=onToday&&!(p.usualTime||(p.dayTime&&p.dayTime[today]));
-    return `<div class="povw" style="--pc:${c}">
+    return `<div class="povw" style="--pc:${c}" data-ppcard="${esc(p.id)}">
       <div class="povw-top">
         <i class="povw-dot"></i>
-        <b class="povw-name">${esc(p.name||t("Untitled project"))}</b>
+        <button type="button" class="povw-name linkish" data-ppedit="${esc(p.id)}"
+          title="${esc(t("Edit"))}">${esc(p.name||t("Untitled project"))}</button>
         <span class="povw-state${finished?" done":late?" late":""}">${esc(state)}</span>
         <span class="povw-hrs">${pFmtH(spent)} / ${pFmtH(total)}h</span>
       </div>
@@ -13545,6 +13561,11 @@ function renderProjectsOverview(){
       </div>
       <div class="povw-span" aria-hidden="true">
         <i style="left:${l}%; width:${Math.max(1.5,r-l)}%"></i></div>
+      <div class="btn-row povw-acts">
+        <button type="button" class="btn mini" data-ppedit="${esc(p.id)}">${esc(t("Edit"))}</button>
+        <button type="button" class="btn mini" data-pptl="${esc(p.id)}">${esc(t("Show in timeline"))}</button>
+        <button type="button" class="btn mini danger" data-ppdel="${esc(p.id)}">${esc(t("Delete"))}</button>
+      </div>
       ${tasks.length?`<ul class="povw-tasks">${tasks.map(tk=>{
         const s=(tk.steps||[]), sd=s.filter(x=>x.done).length;
         return `<li class="${tk.done?"done":""}">
@@ -29471,6 +29492,19 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
     return true;
   };
   window.ppOpenProject = function (id) { var p = byId(id); if (p) openP(p); };
+  /* The same delete the Gantt's dialog performs — undo snapshot, remove,
+     drop its schedule cache, persist, repaint, say so — reachable from
+     outside, so the planner's project list can offer it without opening the
+     editor first. The caller confirms; this only does the work. */
+  window.ppDeleteProject = function (id) {
+    var p = byId(id); if (!p) return false;
+    var name = p.name;
+    snap(tr("deleting") + " " + name);
+    PS.projects = PS.projects.filter(function (x) { return x.id !== id; });
+    touchP(p); persist(); repaintAll();
+    toast(tr("Deleted") + " \u201c" + name + "\u201d.", tr("Undo"), undo);
+    return true;
+  };
   /* Lets the planner's Add row create a Project without leaving the planner.
      The dialog is body-level, so it opens fine while this view is hidden. */
   window.ppNewProject = function () { openP(null); };
@@ -38520,6 +38554,32 @@ function ppWhyNotOn(p,iso){
    so it is drawn on the clock instead of waiting in the strip. Placed on the
    project itself rather than on today only — the complaint is never "it is
    missing from Tuesday", it is "it is missing from the calendar". */
+/* The project list used to be display-only: it drew every project and let
+   you do nothing to any of them, which reads as "can't interact, can't
+   delete" — because you couldn't. Each card now edits, jumps to its bars on
+   the timeline, or deletes, and the delete is the Gantt's own with undo. */
+document.addEventListener("click",async function(e){
+  const q=k=>e.target.closest&&e.target.closest("[data-"+k+"]");
+  const ed=q("ppedit"), tl=q("pptl"), del=q("ppdel");
+  if(ed){ if(window.ppOpenProject) ppOpenProject(ed.dataset.ppedit); return; }
+  if(tl){
+    /* through the pill, so the timeline opens exactly as it does by hand —
+       scroll-anchored, zoom normalised — rather than a second code path */
+    const pill=document.querySelector('#pScopeSeg [data-pscope="timeline"]');
+    if(pill) pill.click();
+    setTimeout(()=>{ if(window.ppOpenProject) ppOpenProject(tl.dataset.pptl); },350);
+    return;
+  }
+  if(del){
+    const id=del.dataset.ppdel;
+    const p=((S.projplan&&S.projplan.projects)||[]).find(x=>x.id===id); if(!p) return;
+    if(!await ask(t('Delete "{t}"?').replace("{t}",p.name)+" "+t("You can bring it back with Undo."),t("Delete"))) return;
+    if(window.ppDeleteProject) ppDeleteProject(id);
+    try{ if(window.ppClearExt) ppClearExt(); }catch(e2){}
+    try{ renderPlanner(); }catch(e2){}
+    return;
+  }
+});
 document.addEventListener("click",function(e){
   const b=e.target.closest&&e.target.closest("[data-ppgive]"); if(!b) return;
   const id=b.dataset.ppgive;
@@ -38549,4 +38609,8 @@ Object.assign(CS,{
   "Waiting in the parking lot — it has no time of day.":"Čeká na parkovišti — nemá denní čas.",
   "Put it on the clock":"Dát na hodiny"
 });
+
+
+Object.assign(CS,{ "Show in timeline":"Ukázat na časové ose",
+  "You can bring it back with Undo.":"Zpět to vrátíš přes Zpět." });
 </script>
