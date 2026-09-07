@@ -6447,6 +6447,24 @@ html[data-shell="rail"] body{
         <button class="btn mini" type="button" id="plCareToggle">Adjust</button>
       </div>
       <div id="plCareDetail" hidden style="margin-top:12px">
+        <!-- A plant on the cycle is not scheduled by these intervals at all, so
+             showing them here was the app describing a plant by numbers that
+             drive nothing. Same three controls as Care days, so the two screens
+             cannot disagree about what a plant is doing. -->
+        <div id="plCycleWrap" hidden>
+          <span class="eyebrow" style="display:block; margin-bottom:8px">On the cycle</span>
+          <div class="pinrow"><span class="pin-k">Water</span>
+            <select class="cd-sel" id="plCycWater"></select></div>
+          <div class="pinrow"><span class="pin-k">Feed</span>
+            <select class="cd-sel" id="plCycDose"></select></div>
+          <div class="pinrow" id="plCycWhenRow"><span class="pin-k">Fertilise</span>
+            <select class="cd-sel" id="plCycWhen"></select></div>
+          <p class="hint" id="plCycLine" style="margin:8px 0 0"></p>
+          <div class="btn-row" style="margin-top:9px">
+            <button class="btn mini" type="button" id="plCycOff">Take it off the cycle</button>
+          </div>
+        </div>
+        <div id="plIntervalWrap">
         <div class="grid2">
           <div class="field"><label for="plWater">Water every (days)</label>
             <input id="plWater" type="number" min="1" max="90" value="3" inputmode="numeric"></div>
@@ -6466,6 +6484,10 @@ html[data-shell="rail"] body{
           <div class="pinrow"><span class="pin-k">Spray</span>
             <div class="daypick" data-pinkind="spray"></div></div>
           <p class="hint" id="plPinHint" style="margin:8px 0 0"></p>
+        </div>
+        <div class="btn-row" style="margin-bottom:11px">
+          <button class="btn mini" type="button" id="plCycOn">Put it on the cycle</button>
+        </div>
         </div>
         <div class="grid2">
           <div class="field"><label for="plLight">Light</label><select id="plLight"></select></div>
@@ -23114,6 +23136,17 @@ $("#plCareDetail").addEventListener("click",e=>{
 function plCareSummary(){
   const w=$("#plWater").value||"?", f=$("#plFeed").value||"?";
   const li=$("#plLight").value, parts=[];
+  /* On the cycle the intervals below are not what schedules this plant, so the
+     folded one-liner must not quote them — it was reading "water every 3 d ·
+     feed every 7 d" for a plant that actually drinks twice a week and is fed on
+     Sundays, which is the app describing itself rather than the plant. */
+  if(plCycle&&plCycle.on){
+    const bits=[cycleLine({cycle:plCycle})];
+    if(li!==""&&LIGHTS[+li]) bits.push(LIGHTS[+li].toLowerCase());
+    $("#plCareSummary").textContent=bits.join(" · ");
+    $("#plSnapHint").textContent="";
+    return;
+  }
   /* a pinned job reads out as its days, not as an interval it no longer uses */
   parts.push(plPins.water.length
     ? (L.lang==="cs"?`Zálivka: ${dowList(plPins.water)}`:`Water on ${dowList(plPins.water)}`)
@@ -23145,6 +23178,54 @@ function plPotHint(){
     ? `${cm} cm ≈ ${w.L.toFixed(1)} l${sub}${nd} → ${amount} na zalití.`
     : `${cm} cm ≈ ${w.L.toFixed(1)} L${sub}${nd} → ${amount} a watering.`;
 }
+/* the cycle being edited in the dialog, mirrored the same way plPins is: held
+   here while it is open and written onto the plant only on save */
+let plCycle=null;
+function renderPlCycle(){
+  const on=!!(plCycle&&plCycle.on);
+  $("#plCycleWrap").hidden=!on;
+  $("#plIntervalWrap").hidden=on;
+  if(!on) return;
+  $("#plCycWater").innerHTML=CYC_WATER_OPTS.map(n=>
+    `<option value="${n}"${+plCycle.water===n?" selected":""}>${esc(cycWaterLabel(n))}</option>`).join("");
+  $("#plCycDose").innerHTML=DOSES.map(n=>
+    `<option value="${n}"${+plCycle.dose===n?" selected":""}>${esc(doseLabel(n))}</option>`).join("");
+  $("#plCycWhen").innerHTML=FEED_WHENS.map(x=>
+    `<option value="${x}"${(plCycle.when||"feedday")===x?" selected":""}>${esc(feedWhenLabel(x))}</option>`).join("");
+  /* the same rule the Care days row uses: only ask when the answer can differ */
+  $("#plCycWhenRow").hidden=!(+plCycle.dose>0&&feedDayOn());
+  $("#plCycLine").textContent=cycleLine({cycle:plCycle});
+}
+$("#plCycWater").addEventListener("change",e=>{
+  const was=+plCycle.water; plCycle.water=Math.max(1,+e.target.value||1);
+  if(plCycle.water===3&&was!==3) plCycle.when="always";
+  if(plCycle.water!==3&&was===3) plCycle.when="feedday";
+  const fp=+plCycle.dose>0?phaseForFeedDay(plCycle.water):null;
+  plCycle.off=fp!=null?fp:(Math.max(0,+plCycle.off||0)%plCycle.water);
+  renderPlCycle(); plCareSummary();
+});
+$("#plCycDose").addEventListener("change",e=>{
+  plCycle.dose=DOSES.indexOf(+e.target.value)>=0?+e.target.value:100;
+  const fp=+plCycle.dose>0?phaseForFeedDay(+plCycle.water||1):null;
+  if(fp!=null) plCycle.off=fp;
+  renderPlCycle(); plCareSummary();
+});
+$("#plCycWhen").addEventListener("change",e=>{
+  plCycle.when=FEED_WHENS.indexOf(e.target.value)>=0?e.target.value:"feedday";
+  renderPlCycle(); plCareSummary();
+});
+$("#plCycOn").addEventListener("click",()=>{
+  const def=S.cycleDefault||{water:1,dose:100,when:"feedday"};
+  const w=+def.water||1, dz=+def.dose||0;
+  const fp=dz>0?phaseForFeedDay(w):null;
+  plCycle={on:true,water:w,dose:dz,when:def.when||"feedday",off:fp!=null?fp:0};
+  renderPlCycle(); plCareSummary();
+});
+$("#plCycOff").addEventListener("click",()=>{
+  plCycle=Object.assign({},plCycle,{on:false});
+  renderPlCycle(); plCareSummary();
+});
+
 function openPlant(p){
   editingPlant=p;
   $("#plantDlgTitle").textContent=p?"Edit plant":"New plant";
@@ -23169,7 +23250,8 @@ function openPlant(p){
   $("#plSpray").value=spr?spr.every:"";
   plPins={water:(wr&&wr.days||[]).slice(), feed:(fr&&fr.days||[]).slice(),
           spray:(spr&&spr.days||[]).slice()};
-  renderPlPins();
+  plCycle=p?Object.assign({},cycleOf(p)):Object.assign({},CYCLE_DEF);
+  renderPlPins(); renderPlCycle();
   $("#plSched").innerHTML='<option value="">None</option>'+S.schedules.map(x=>
     `<option value="${x.id}"${p&&p.schedId===x.id?" selected":""}>${esc(x.name)}</option>`).join("");
   $("#plWeek").value=p?(p.week||1):1;
@@ -23219,6 +23301,8 @@ $("#plantForm").addEventListener("submit",async e=>{
      instead of every one landing on whichever day comes round next */
   if(!editingPlant) d.anchor=leastLoadedActionDay();
   const sid=editingPlant?editingPlant.id:uid();
+  /* the cycle is a property of the plant, so it saves with the rest of the form */
+  d.cycle=Object.assign({},plCycle||CYCLE_DEF);
   if(editingPlant) Object.assign(editingPlant,d); else S.subjects.push(Object.assign({id:sid},d));
   const set=(kind,label,every)=>{
     const days=(plPins[kind]||[]).slice();
@@ -23250,6 +23334,9 @@ $("#plantForm").addEventListener("submit",async e=>{
   /* renderGarden was missing: a plant saved from the garden did not appear on
      it until the next reload, which read as the save having failed */
   touch(); renderSubjects(); renderAgenda(); renderGarden();
+  if(typeof renderCareDays==="function") try{ renderCareDays(); }catch(e){}
+  if(typeof renderCycle==="function") try{ renderCycle(); }catch(e){}
+  renderDue();
   if(pvId===sid) renderPlant();          // the plant's own page must follow the edit
   $("#plantDlg").close();
 });
@@ -37352,6 +37439,14 @@ Object.assign(CS,{
   "every watering":"při každé zálivce",
   "only on the fertiliser day":"jen v den hnojení",
   "Fertilise":"Hnojit"
+});
+
+
+/* ---- the cycle inside the plant editor ---- */
+Object.assign(CS,{
+  "On the cycle":"Na cyklu",
+  "Take it off the cycle":"Sundat z cyklu",
+  "Put it on the cycle":"Dát na cyklus"
 });
 
 </script>
