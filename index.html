@@ -14922,7 +14922,7 @@ function renderGarden(){
         const ph=latestPhoto(p.id), w=worstState(p.id);
         const sub=[p.species&&p.species!==p.name?p.species:null,p.spot||null].filter(Boolean).join(" · ");
         return `<button type="button" class="tile" data-open-plant="${p.id}">
-          ${ph?`<img class="tile-img" src="${safeImg(ph.data)}" alt="">`
+          ${ph?`<img class="tile-img" src="${safeImg(photoSrc(ph))}"${photoUp(ph)} alt="">`
             :`<span class="tile-ph">${p.species&&speciesFind(p.species)?picto(p.species):"🌿"}</span>`}
           <span class="tile-b">
             <b>${esc(p.name)}</b>
@@ -14946,6 +14946,9 @@ function renderGarden(){
       : `<div class="card pad" style="grid-column:1/-1"><p class="hint" style="margin:0">
         No plants yet. Tap <b>+ Plant</b> and pick what it is — the app fills in how often it wants
         watering, how much light it likes, and whether it's safe around animals.</p></div>`;
+  /* the tiles are painted from thumbnails so the grid appears at once; the real
+     photographs replace them as their links resolve */
+  upgradePhotos($("#gardenGrid"));
 }
 $("#gardenDue").addEventListener("click",async e=>{
   const go=e.target.closest("[data-go]"), gc=e.target.closest("[data-gocut]");
@@ -15145,7 +15148,7 @@ function renderPlant(){
 
   $("#pvBody").innerHTML=`
     <div class="card" style="overflow:hidden">
-      ${hero?`<img class="pv-hero" src="${safeImg(photoSrc(hero))}" alt="${esc(p.name)}">`
+      ${hero?`<img class="pv-hero" src="${safeImg(photoSrc(hero))}"${photoUp(hero)} alt="${esc(p.name)}">`
             :`<div class="pv-hero-empty"><span>No photos yet</span>
                <span class="photo-row" style="width:100%; max-width:320px">${photoButtons("btn mini")}</span></div>`}
       <div class="pad">
@@ -15322,6 +15325,9 @@ function renderPlant(){
     <div class="btn-row" style="padding-bottom:8px">
       <button class="btn danger" data-del-plant="${p.id}">Delete this plant</button>
     </div>`;
+  /* same as the garden: the hero shows the thumbnail immediately and is
+     replaced by the photograph itself once its link comes back */
+  upgradePhotos($("#pvBody"));
 }
 function openPlantPage(id){ pvId=id; renderPlant(); show("plant"); }
 
@@ -15590,6 +15596,34 @@ const makeThumb=dataUrl=>shrinkDataUrl(dataUrl,THUMB_MAX,THUMB_Q);
    not. Every place that draws a photo goes through here, so a device that
    received only thumbs shows pictures rather than empty frames. */
 const photoSrc=ph=>(ph&&(ph.data||ph.thumb))||"";
+/* Marks an <img> that is currently showing a thumbnail because this device has
+   never held the original. upgradePhotos() then swaps in the real photograph.
+
+   The thumbnail exists to travel inside the state document, so it is 128px and
+   coarse on purpose — a library of them has to fit in a 1 MB Firestore
+   document alongside everything else, and making them "good enough to look at"
+   is exactly how that budget gets spent. It was never meant to be the picture
+   you actually see; it was meant to be recognisable while the picture loads.
+   Before Storage existed there was nothing better to show, so the coarse
+   version WAS the photograph on the second device. There is now. */
+const photoUp=ph=>(ph&&ph.id&&!ph.data&&ph.thumb)?` data-fullphoto="${esc(ph.id)}"`:"";
+function upgradePhotos(root){
+  if(!(window.PSYNC&&PSYNC.canPhotos&&PSYNC.canPhotos())) return;
+  (root||document).querySelectorAll("img[data-fullphoto]").forEach(img=>{
+    if(img.dataset.upgraded) return;
+    img.dataset.upgraded="1";                 // once per element, never a loop
+    const id=img.dataset.fullphoto;
+    PSYNC.pullPhoto(id).then(src=>{
+      if(!src||src===img.getAttribute("src")) return;
+      /* decode before swapping: assigning a src that turns out to be missing
+         would replace a perfectly good thumbnail with a broken-image icon,
+         which is worse than the coarse picture it was showing */
+      const probe=new Image();
+      probe.onload=()=>{ img.src=src; };
+      probe.src=src;
+    }).catch(()=>{});
+  });
+}
 /* Existing shots predate thumbs. Backfilled quietly, in batches, so opening
    the app after an update does not lock up decoding a hundred images at once.
    A failure is recorded rather than retried in a loop: data that will not
