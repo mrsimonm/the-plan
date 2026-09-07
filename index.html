@@ -3267,6 +3267,9 @@ dialog:has(> form > .dlg-foot) > form > .dlg-foot{flex:0 0 auto}
   color:var(--ink-3); cursor:pointer; padding:0 4px; white-space:nowrap}
 .photo-best input{margin:0; accent-color:var(--accent)}
 
+/* why a project is contributing nothing today */
+.povw-why{font-size:11.5px; color:var(--amber); margin:3px 0 0; white-space:normal}
+
 .pindays{margin:0 0 11px}
 .pinrow{display:flex; align-items:center; gap:10px; margin-bottom:6px}
 .pinrow .pin-k{flex:0 0 52px; font-size:12px; color:var(--ink-2)}
@@ -13511,6 +13514,11 @@ function renderProjectsOverview(){
     const subDone=tasks.reduce((n,tk)=>n+(tk.steps||[]).filter(s=>s.done).length,0);
     const c=ppSafeColor(p.color);
     const l=pct(p.start||today), r=pct(end);
+    /* A project that is doing nothing today says so, and says why. Without
+       this the only signal was absence from the calendar, which is exactly
+       what "I added it and it never showed up" looks like. */
+    const onToday=typeof ppOnDay==="function"?ppOnDay(p,today):true;
+    const why=onToday?"":(typeof ppWhyNotOn==="function"?ppWhyNotOn(p,today):"");
     return `<div class="povw" style="--pc:${c}">
       <div class="povw-top">
         <i class="povw-dot"></i>
@@ -13518,6 +13526,7 @@ function renderProjectsOverview(){
         <span class="povw-state${finished?" done":late?" late":""}">${esc(state)}</span>
         <span class="povw-hrs">${pFmtH(spent)} / ${pFmtH(total)}h</span>
       </div>
+      ${why?`<div class="povw-why">${esc(t("Not on today's calendar"))} — ${esc(why)}</div>`:""}
       <div class="povw-bar" title="${pFmtH(spent)}h ${esc(t("of"))} ${pFmtH(total)}h">
         <i style="width:${donePct}%"></i></div>
       <div class="povw-meta">
@@ -38424,4 +38433,61 @@ async function pbMigrate(){
   return {moved,left};
 }
 
+
+/* ---------------- why a project is not on the calendar ----------------
+   Five separate, entirely legitimate reasons a project can contribute nothing
+   to a given day, and until now every one of them looked identical from the
+   outside: you add a project, you look at the planner, and it simply is not
+   there. Nothing says the start date is next week, or that you restricted it
+   to Tuesdays, or that this day was painted to zero.
+
+   That is not a scheduling bug — the schedule is right in every case. It is a
+   silence bug, and it is worse than a wrong number, because a wrong number
+   sends you looking and a silence sends you away. */
+function ppWhyNotOn(p,iso){
+  if(!p) return "";
+  const cs=L.lang==="cs";
+  const start=p.start||iso;
+  if(iso<start){
+    const d=pParseISO(start);
+    return cs?`Začíná až ${d.getDate()}.${d.getMonth()+1}.`
+             :`Starts ${d.getDate()}.${d.getMonth()+1}.`;
+  }
+  const total=Math.max(0,+p.total||0);
+  if(!total) return cs?"Nemá zadané hodiny.":"No hours set.";
+  /* an explicit zero painted onto this day beats every other explanation */
+  const painted=p.days&&Object.prototype.hasOwnProperty.call(p.days,iso);
+  if(painted&&!(+p.days[iso]>0))
+    return cs?"Tenhle den máš vymalovaný na nulu.":"This day is painted to zero.";
+  const dow=Array.isArray(p.dow)&&p.dow.length?p.dow:null;
+  if(dow){
+    const wd=pParseISO(iso).getDay();
+    if(dow.indexOf(wd)<0)
+      return cs?`Jen ${dowList(dow.slice())}.`:`Only on ${dowList(dow.slice())}.`;
+  }
+  const we=(S.projplan&&S.projplan.weekendsOff);
+  if(we){ const wd=pParseISO(iso).getDay();
+    if(wd===0||wd===6) return cs?"O víkendech nepracuješ.":"You do not work weekends."; }
+  /* nothing above explains it, so the budget has simply run out by this day */
+  const st=(window.ppProjectStatus?ppProjectStatus(iso):[]).find(x=>x.id===p.id);
+  if(st&&st.left<=0.001) return cs?"Hotovo — hodiny jsou vyčerpané.":"Finished — the hours are used up.";
+  if(st&&st.end&&iso>st.end){
+    const d=pParseISO(st.end);
+    return cs?`Skončil ${d.getDate()}.${d.getMonth()+1}.`:`Ended ${d.getDate()}.${d.getMonth()+1}.`;
+  }
+  return cs?"Na tenhle den nic nepadá.":"Nothing falls on this day.";
+}
+/* is this project doing anything at all today? */
+function ppOnDay(p,iso){
+  const list=window.ppProjectsOn?ppProjectsOn(iso):[];
+  return list.some(x=>x.id===p.id);
+}
+
+
+
+Object.assign(CS,{
+  "Not on today's calendar":"Dnes není v kalendáři",
+  "No hours set.":"Nemá zadané hodiny.",
+  "Nothing falls on this day.":"Na tenhle den nic nepadá."
+});
 </script>
