@@ -3807,7 +3807,25 @@ html[data-layout="phone"] .ppl-search-row:has(input:not(:placeholder-shown)) > .
 /* the page title repeats the app header two lines above it — on a phone that
    line is worth more as calendar */
 html[data-layout="phone"] #view-planner > .sec-head{ display:none }
-html[data-layout="phone"] .wb-parking{ padding-top:5px; padding-bottom:5px; min-height:0 }
+html[data-layout="phone"] .wb-parking{ padding-top:3px; padding-bottom:3px; min-height:0; gap:5px }
+/* On a short phone the whole day fits inside the board at 12px rows and the
+   board still runs ~50px below the bottom of the screen, so 21–23 need a page
+   scroll — reported as "I can only see up to 20". Rows cannot go smaller
+   without the labels overlapping, so the room comes from above the board.
+   The single-day head band repeats the date the ‹ Mon 7 September › line
+   already shows, one line above it; it goes. The hour gutter carries a
+   head-sized spacer that is ALSO a .wb-head, so this one rule collapses both
+   and the hours stay aligned. Week and Plachta keep their heads: there the
+   band is the only thing naming each column. */
+html[data-layout="phone"] .wb-one .wb-head{ display:none }
+html[data-layout="phone"] .wb-one .wb-allday{ min-height:0 }
+/* …and the all-day strip under it is a reserved 17px row even when the day
+   has nothing all-day. On a 640px-tall phone those 20px are the difference
+   between 23:00 on screen and 23:00 cut off. It collapses when the ONE column
+   is empty — the gutter's spacer with it, so the hours keep their alignment —
+   and comes back the moment a chip needs it. */
+html[data-layout="phone"] .wb-one .wb-grid:not(:has(.wb-col .wb-allday > *)) .wb-allday{ display:none }
+html[data-layout="phone"] .wb-scroll{ margin-top:4px; padding-top:2px; padding-bottom:2px }
 /* the board's room: the chrome above it is ~230px now, not 300; layoutFit()
    measures the real remainder and sets the hour pitch to match */
 html[data-layout="phone"] .wb-scroll{ max-height:calc(100dvh - 230px); min-height:260px }
@@ -32668,11 +32686,17 @@ function layoutMode(){
 /* How tall an hour is, given the room the board will actually have. The board
    sits under the page's own chrome, so the budget is the viewport minus what
    is above it, and never less than a legible 16px per hour. */
+/* The smallest an hour may be. 16px kept every row a comfortable tap target
+   but on a short phone it meant 24 hours needed 384px in a room of ~300, so
+   the day ran off the bottom of the board and the last three hours were only
+   reachable by a scroll inside a scroll. Being able to SEE 23:00 matters more
+   than a fat row; 12px keeps the labels legible and a block still tappable. */
+const WB_PXH_MIN=12;
 function layoutPxh(mode){
   if(mode!=="phone") return 34;
   const land=window.innerWidth>window.innerHeight;
   const budget=Math.max(240,(window.innerHeight||800)-(land?150:330));
-  return Math.max(16,Math.min(34,Math.round(budget/24)));
+  return Math.max(WB_PXH_MIN,Math.min(34,Math.round(budget/24)));
 }
 let layoutCur="", layoutOrient="", layoutFitting=false, layoutMeasured=0;
 /* The estimate above is a guess at how much chrome sits above the board. Once
@@ -32689,7 +32713,7 @@ function layoutFit(){
   if(top<=0||top>window.innerHeight) return;          /* scrolled away — nothing to measure */
   const room=window.innerHeight-top-14;
   if(room<160) return;
-  const want=Math.max(16,Math.min(34,Math.floor(room/24)));
+  const want=Math.max(WB_PXH_MIN,Math.min(34,Math.floor(room/24)));
   layoutMeasured=want;
   if(want===WB_PXH) return;
   layoutFitting=true;
