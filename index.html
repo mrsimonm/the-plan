@@ -9110,7 +9110,19 @@ const ESC_MAP={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;","`":"&
 const esc=s=>String(s??"").replace(/[&<>"'`]/g,c=>ESC_MAP[c]);
 /* Photos must be genuine base64 image data URLs before they are allowed into
    a src — an imported value like x" onerror=… must render as nothing at all. */
-const safeImg=d=>/^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(d||"")?d:"";
+/* Two shapes are allowed through, and nothing else.
+
+   A base64 image data URL, as before — the guard exists so that an imported
+   value like  x" onerror=…  renders as nothing at all rather than as script.
+
+   And an object URL for a Blob THIS PAGE created, which is what the device's
+   photo store hands back. It is matched against the page's own origin rather
+   than on the "blob:" prefix alone, so a "blob:" string arriving inside
+   imported data cannot satisfy it: the browser mints these, and one from
+   anywhere else will not carry this origin. */
+const SAFE_BLOB=new RegExp("^blob:"+String(location.origin).replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"/[0-9a-f-]+$","i");
+const safeImg=d=>/^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(d||"")
+  ? d : (SAFE_BLOB.test(d||"") ? d : "");
 /* Record ids become DOM/attribute data, so anything imported is squeezed to
    id-safe characters at the trust boundary, not at 118 render sites. */
 const cleanId=v=>String(v??"").replace(/[^\w:-]/g,"");
@@ -15434,6 +15446,11 @@ async function takePhoto(e){
     S.photos=S.photos||[];
     const subjectId=pvId||bcId;
     const shot={id:uid(),subjectId,at:new Date().toISOString(),data,thumb,h:null,by:L.me};
+    /* The picture goes to IndexedDB and its base64 copy is dropped from the
+       state — but only once the device has confirmed the write. If it refuses
+       (private mode, site data blocked) the base64 stays exactly where it was
+       and everything still works, just against the old 5 MB ceiling. */
+    if(await pbSave(shot.id,data)){ delete shot.data; shot.local=true; }
     S.photos.push(shot); photosTouched();
     /* spent: the tick is for one picture, and leaving it on would quietly turn
        the library setting into whatever was last ticked */
@@ -15544,6 +15561,7 @@ $("#shotDel").addEventListener("click",async()=>{
   const goneId=shotId;
   if(window.PSYNC&&PSYNC.canPhotos&&PSYNC.canPhotos())
     PSYNC.dropPhoto(goneId).catch(e=>console.warn("photo delete",e));
+  try{ pbForget(goneId); }catch(e){}     // and the copy on this device
   S.photos=S.photos.filter(y=>y.id!==shotId);
   photosTouched(); touch();
   if(pvId) renderPlant();
@@ -15665,7 +15683,15 @@ const makeThumb=dataUrl=>shrinkDataUrl(dataUrl,THUMB_MAX,THUMB_Q);
 /* The original when this device holds it, the travelling thumb when it does
    not. Every place that draws a photo goes through here, so a device that
    received only thumbs shows pictures rather than empty frames. */
-const photoSrc=ph=>(ph&&(ph.data||ph.thumb))||"";
+/* Best available, cheapest first: the blob held on this device, then the
+   base64 copy for anything not yet moved, then the travelling thumbnail.
+   upgradePhotos() fills in the first of those, and the account's copy for a
+   device that never held the picture. */
+const photoSrc=ph=>{
+  if(!ph) return "";
+  const local=ph.id?pbLocalSrc(ph.id):"";
+  return local||ph.data||ph.thumb||"";
+};
 /* Marks an <img> that is currently showing a thumbnail because this device has
    never held the original. upgradePhotos() then swaps in the real photograph.
 
@@ -15676,14 +15702,27 @@ const photoSrc=ph=>(ph&&(ph.data||ph.thumb))||"";
    you actually see; it was meant to be recognisable while the picture loads.
    Before Storage existed there was nothing better to show, so the coarse
    version WAS the photograph on the second device. There is now. */
-const photoUp=ph=>(ph&&ph.id&&!ph.data&&ph.thumb)?` data-fullphoto="${esc(ph.id)}"`:"";
+const photoUp=ph=>(ph&&ph.id&&!ph.data&&!pbLocalSrc(ph.id)&&ph.thumb)
+  ? ` data-fullphoto="${esc(ph.id)}"` : "";
 function upgradePhotos(root){
-  if(!(window.PSYNC&&PSYNC.canPhotos&&PSYNC.canPhotos())) return;
+  /* The device's own copy is not a sync feature. Gating the whole pass on
+     being signed in meant a phone that HELD the photograph would still show
+     the 128px thumbnail — offline, or simply signed out — while the full
+     picture sat in its own database untouched. Only the fallback to the
+     account needs an account. */
+  const canRemote=!!(window.PSYNC&&PSYNC.canPhotos&&PSYNC.canPhotos());
   (root||document).querySelectorAll("img[data-fullphoto]").forEach(img=>{
     if(img.dataset.upgraded) return;
     img.dataset.upgraded="1";                 // once per element, never a loop
     const id=img.dataset.fullphoto;
-    PSYNC.pullPhoto(id).then(src=>{
+    /* The device's own copy first. It is instant, it works with no signal, and
+       it costs nobody any traffic — going to the account for a picture already
+       sitting on this phone would be paying for it twice. */
+    pbLoad(id).then(local=>{
+      if(local){ img.src=local; return null; }
+      return canRemote?PSYNC.pullPhoto(id):null;
+    }).then(src=>{
+      if(src===null) return;
       if(!src||src===img.getAttribute("src")) return;
       /* decode before swapping: assigning a src that turns out to be missing
          would replace a perfectly good thumbnail with a broken-image icon,
@@ -15718,6 +15757,10 @@ async function backfillThumbs(){
 const photosFor=sid=>(S.photos||[]).filter(p=>p.subjectId===sid)
   .sort((a,b)=>a.at.localeCompare(b.at));
 const latestPhoto=sid=>{ const l=photosFor(sid); return l.length?l[l.length-1]:null; };
+/* Only what is still held as base64 in the state, because that is what the
+   5 MB localStorage ceiling actually applies to. Photographs moved to the
+   device store are bounded by free disk instead and must not count towards a
+   warning about a limit they no longer live under. */
 function photoBytes(){ return (S.photos||[]).reduce((n,p)=>n+(p.data?p.data.length:0),0); }
 
 /* ---------------- species ---------------- */
@@ -23561,6 +23604,7 @@ function deletePlant(gone){
   S.subjects=S.subjects.filter(x=>x.id!==gone);
   S.routines=S.routines.filter(r=>r.subjectId!==gone);
   S.events=S.events.filter(e=>e.subjectId!==gone);
+  (S.photos||[]).forEach(x=>{ if(x.subjectId===gone) try{ pbForget(x.id); }catch(e){} });
   S.photos=(S.photos||[]).filter(x=>x.subjectId!==gone); photosTouched();
   S.issues=(S.issues||[]).filter(x=>x.subjectId!==gone);
   S.tasks=(S.tasks||[]).filter(t=>t.subjectId!==gone);
@@ -28213,6 +28257,16 @@ async function boot(){
   applyTheme();
   /* thumbnails for shots taken before they existed — idle work, never blocking */
   setTimeout(()=>{ try{ backfillThumbs(); }catch(e){} },2500);
+  /* Learn what the device already holds, then move anything still living as
+     base64 in the state across. Deferred and sequential: the first paint must
+     not wait on a database, and a library being moved a picture at a time
+     should not compete with it. */
+  setTimeout(()=>{
+    pbLoadSizes()
+      .then(()=>pbMigrate())
+      .then(r=>{ if(r&&r.moved) console.info("[potting-bench] moved",r.moved,"photos to the device store"); })
+      .catch(()=>{});
+  },1200);
   await initSync();
   S=await loadShared();
   if(!S.users||!S.users.length) S.users=seed().users;   // repair empty, never reset a solo setup
@@ -32054,7 +32108,11 @@ var PSYNC = (() => {
   }
 
   /* Every shot this device holds that the account has not got a copy of. */
-  const needsUpload=()=>(S.photos||[]).filter(x=>x&&x.data&&!x.remote);
+  /* `local` marks a photograph whose bytes are in the device store rather than
+     in the state — it is still a picture this device holds and still has to go
+     up. Keying this on `data` alone stopped every moved photograph from ever
+     being uploaded. */
+  const needsUpload=()=>(S.photos||[]).filter(x=>x&&(x.data||x.local)&&!x.remote);
 
   /* Push originals up. Called after a successful state save, so the metadata
      that names them is already there when they land. */
@@ -32066,7 +32124,13 @@ var PSYNC = (() => {
     let done=0, failed=0;
     try{
       for(const ph of queue){
-        const blob=dataUrlToBlob(ph.data);
+        /* from the device store when that is where the bytes are, otherwise
+           from the base64 still in the state */
+        let blob=null;
+        if(ph.data) blob=dataUrlToBlob(ph.data);
+        else if(ph.local&&typeof pbGet==="function"){
+          const rec=await pbGet(ph.id); blob=rec&&rec.blob||null;
+        }
         /* Not a data URL we can post — mark it so the queue does not spin on
            the same broken record every time a photo is added. */
         if(!blob){ ph.remoteFailed=true; continue; }
@@ -37987,7 +38051,7 @@ function photoUsage(){
   const byDay={};
   all.forEach(p=>{
     if(!p) return;
-    const ob=b64Bytes(p.data), tb=b64Bytes(p.thumb);
+    const ob=p.data?b64Bytes(p.data):(pbSizes.get(p.id)||0), tb=b64Bytes(p.thumb);
     originals+=ob; thumbs+=tb;
     if(p.data) withData++; else if(p.thumb) thumbOnly++;
     if(p.remoteFailed) refused++;
@@ -38224,5 +38288,140 @@ Object.assign(CS,{
   "17 cm, standard mix":"17 cm, běžný substrát",
   "Spider mite, cleared after 3 weeks":"Sviluška, vyřešeno za tři týdny"
 });
+
+
+/* ============================================================================
+   THE SHOT STORE — where a photograph actually lives on this device
+
+   Photographs were kept in localStorage, as base64, inside the state document.
+   That was right when a photograph had nowhere else to go, and it carries a
+   limit nobody would choose: localStorage is capped near 5 MB per site on
+   every browser, whatever the device. A phone with a terabyte free still gets
+   5 MB. At the quality settings this app now offers that is eight photographs.
+
+   Cabinet solved this already and its comment says why: IndexedDB, bounded by
+   real free space rather than a fixed cap, and Blobs rather than base64, which
+   is a third smaller for nothing given up. This is the same store for the
+   bench, in a database of its own so that Cabinet's is never touched.
+
+   Every operation resolves rather than rejects. A browser in private mode or
+   with site data blocked refuses to open a database at all, and the answer to
+   that has to be "photographs stay where they were" — never a broken screen
+   and never a lost picture. Callers check for null.
+   ========================================================================== */
+const PB_DB="pottingbench-shots", PB_STORE="shots";
+let pbDbP=null;
+function pbDb(){
+  if(pbDbP) return pbDbP;
+  pbDbP=new Promise(res=>{
+    let req;
+    try{ req=indexedDB.open(PB_DB,1); }catch(e){ return res(null); }
+    if(!req) return res(null);
+    req.onupgradeneeded=()=>{
+      const db=req.result;
+      if(!db.objectStoreNames.contains(PB_STORE)) db.createObjectStore(PB_STORE,{keyPath:"id"});
+    };
+    req.onsuccess=()=>res(req.result);
+    req.onerror=()=>res(null);
+    req.onblocked=()=>res(null);
+  });
+  return pbDbP;
+}
+function pbTx(write,fn){
+  return pbDb().then(db=>{
+    if(!db) return null;
+    return new Promise(res=>{
+      let tx;
+      try{ tx=db.transaction(PB_STORE,write?"readwrite":"readonly"); }catch(e){ return res(null); }
+      const st=tx.objectStore(PB_STORE);
+      let out=null;
+      try{ out=fn(st); }catch(e){}
+      tx.oncomplete=()=>res(out&&out.__req?out.__req.result:out);
+      tx.onerror=()=>res(null);
+      tx.onabort=()=>res(null);
+    });
+  });
+}
+const pbReq=r=>({__req:r});
+const pbGet=id=>pbTx(false,st=>pbReq(st.get(id)));
+const pbPut=rec=>pbTx(true,st=>{ st.put(rec); return true; }).then(v=>v!==null);
+const pbDel=id=>pbTx(true,st=>{ st.delete(id); return true; });
+const pbKeys=()=>pbTx(false,st=>pbReq(st.getAllKeys())).then(k=>k||[]);
+
+/* Object URLs for the blobs on this device. Kept for the life of the page:
+   a photograph is looked at repeatedly and re-creating the URL each time
+   would leak one per look. Revoked only when the picture is deleted. */
+const pbURL=new Map();
+function pbLocalSrc(id){ return pbURL.get(id)||""; }
+async function pbLoad(id){
+  if(pbURL.has(id)) return pbURL.get(id);
+  const rec=await pbGet(id);
+  if(!rec||!rec.blob) return "";
+  let u="";
+  try{ u=URL.createObjectURL(rec.blob); }catch(e){ return ""; }
+  pbURL.set(id,u);
+  return u;
+}
+function pbForget(id){
+  const u=pbURL.get(id);
+  if(u){ try{ URL.revokeObjectURL(u); }catch(e){} pbURL.delete(id); }
+  pbSizes.delete(id);
+  return pbDel(id);
+}
+/* Write one photograph's full-size bytes to the device. Returns true if the
+   device accepted it — false means keep holding it the old way. */
+async function pbSave(id,dataUrl){
+  const blob=(typeof dataUrlToBlobG==="function")?dataUrlToBlobG(dataUrl):null;
+  if(!blob) return false;
+  const ok=await pbPut({id,blob,at:Date.now()});
+  if(ok){ pbSizes.set(id,blob.size); try{ pbURL.set(id,URL.createObjectURL(blob)); }catch(e){} }
+  return ok;
+}
+/* data: URL -> Blob without fetch(): a URL this large goes through the network
+   stack for no reason, and some browsers cap it. */
+function dataUrlToBlobG(d){
+  const m=/^data:(image\/[a-z+.-]+);base64,/i.exec(d||"");
+  if(!m) return null;
+  let bin; try{ bin=atob(d.slice(d.indexOf(",")+1)); }catch(e){ return null; }
+  const buf=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) buf[i]=bin.charCodeAt(i);
+  return new Blob([buf],{type:m[1]});
+}
+
+/* Blob sizes, so the usage figures can still tell you what the photographs
+   cost once the bytes have left the state document. Read once on boot; kept
+   current by every save and delete, which is cheaper than re-reading the
+   store each time the settings panel is drawn. */
+const pbSizes=new Map();
+async function pbLoadSizes(){
+  const db=await pbDb(); if(!db) return;
+  const recs=await pbTx(false,st=>pbReq(st.getAll()));
+  (recs||[]).forEach(r=>{ if(r&&r.id&&r.blob) pbSizes.set(r.id,r.blob.size); });
+}
+
+/* ---- moving what is already here ----
+   Runs once on boot. Each photograph is written to the store and only then
+   dropped from the state: a failure at any point leaves that picture exactly
+   where it was, still working, to be tried again next time. Nothing is ever
+   deleted on the strength of a write that has not been confirmed. */
+let pbMigrating=false;
+async function pbMigrate(){
+  if(pbMigrating) return {moved:0,left:0};
+  pbMigrating=true;
+  let moved=0, left=0;
+  try{
+    const db=await pbDb();
+    if(!db){ pbMigrating=false; return {moved:0,left:(S.photos||[]).filter(p=>p&&p.data).length}; }
+    for(const p of (S.photos||[])){
+      if(!p||!p.data) continue;
+      const ok=await pbSave(p.id,p.data);
+      if(ok){ delete p.data; p.local=true; moved++; }
+      else left++;
+    }
+    if(moved){ touch(); try{ if(pvId) renderPlant(); renderGarden(); renderSubjects(); }catch(e){} }
+  }catch(e){}
+  pbMigrating=false;
+  return {moved,left};
+}
 
 </script>
