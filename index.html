@@ -31848,7 +31848,11 @@ var PSYNC = (() => {
         'arrives with the change, and the full picture is fetched the first ' +
         'time you open it.</p>' +
         '<p class="hint" id="psyncPhotoState" style="margin-top:6px"></p>' +
-        '<button class="btn" id="psyncOut">Sign out of sync</button></div>';
+        '<div class="btn-row"><button class="btn primary" id="psyncNow">Sync now</button>' +
+        '<button class="btn" id="psyncTest">Check photo sharing</button>' +
+        '<button class="btn" id="psyncOut">Sign out of sync</button></div>' +
+        '<pre id="psyncTestOut" hidden style="white-space:pre-wrap; font-size:11.5px; ' +
+        'margin:9px 0 0; color:var(--ink-2)"></pre></div>';
       panel.querySelector("b").textContent = user.email || "your account";
       /* Says plainly whether the originals have actually gone up. Without it,
          a refused upload — the exact failure a missing storage rule causes —
@@ -31866,6 +31870,21 @@ var PSYNC = (() => {
           : all.length ? `All ${all.length} photo${all.length===1?"":"s"} on this device are shared.`
           : "No photos on this device yet.";
       })();
+      panel.querySelector("#psyncNow").onclick = async (ev) => {
+        const btn=ev.currentTarget, out=panel.querySelector("#psyncTestOut");
+        btn.disabled=true; out.hidden=false; out.textContent="Syncing…";
+        try{ out.textContent=await syncNow(); }
+        catch(e){ out.textContent="Sync failed: "+((e&&e.message)||e); }
+        btn.disabled=false;
+        try{ renderPanel(); }catch(e){}
+      };
+      panel.querySelector("#psyncTest").onclick = async (ev) => {
+        const btn=ev.currentTarget, out=panel.querySelector("#psyncTestOut");
+        btn.disabled=true; out.hidden=false; out.textContent="Checking…";
+        try{ out.textContent=(await selfTest()).join("\n"); }
+        catch(e){ out.textContent="The check itself failed: "+((e&&e.message)||e); }
+        btn.disabled=false;
+      };
       panel.querySelector("#psyncOut").onclick = async () => {
         if(!confirm(t("Sign this device out of sync? Your data stays on this device."))) return;
         try{ await signOut(); }catch(e){}
@@ -32005,6 +32024,86 @@ var PSYNC = (() => {
     return url;
   }
 
+  /* A real round trip against the live bucket, run from the device that is
+     having the problem. Photo sharing has now failed twice in ways that looked
+     identical from the outside — thumbnails sync whatever happens, so both
+     devices show the right pictures and nothing says the photographs never
+     moved. Reading a number off a screen cannot tell those apart. Actually
+     uploading a test object, loading it back, and deleting it can.
+
+     Deliberately does not touch a single real photo. */
+  async function selfTest(){
+    const steps=[];
+    const say=(k,v)=>{ steps.push(k+": "+v); return v; };
+    if(!uid) { say("signed in","NO — sign in first"); return steps; }
+    say("signed in","yes");
+    if(!store){ say("storage sdk","NOT LOADED"); return steps; }
+    say("storage sdk","ok");
+    let blob;
+    try{
+      const c=document.createElement("canvas"); c.width=8; c.height=8;
+      const g=c.getContext("2d"); g.fillStyle="#4a7c3f"; g.fillRect(0,0,8,8);
+      const url=encodeBest(c,0.6);
+      blob=dataUrlToBlob(url);
+      say("made test image",blob?(blob.type+", "+blob.size+" bytes"):"FAILED");
+      if(!blob) return steps;
+    }catch(e){ say("made test image","FAILED — "+e.message); return steps; }
+    const ref=photoRef("__selftest");
+    try{
+      await ref.put(blob,{contentType:blob.type});
+      say("upload","OK");
+    }catch(e){
+      say("upload","FAILED — "+((e&&e.code)||e.message));
+      if(e&&e.code==="storage/unauthorized")
+        steps.push("→ the storage rules are not published for this account");
+      return steps;
+    }
+    let url=null;
+    try{ url=await ref.getDownloadURL(); say("get link","OK"); }
+    catch(e){ say("get link","FAILED — "+((e&&e.code)||e.message)); return steps; }
+    const shown=await new Promise(res=>{
+      const im=new Image();
+      im.onload=()=>res("OK "+im.naturalWidth+"x"+im.naturalHeight);
+      im.onerror=()=>res("FAILED — the picture would not load");
+      im.src=url;
+    });
+    say("show the picture",shown);
+    try{ await ref.delete(); say("tidy up","done"); }catch(e){ say("tidy up","left behind"); }
+    return steps;
+  }
+
+  /* Force a full exchange right now, instead of waiting for the debounce.
+
+     Order matters and is the same order attach() uses on sign-in: take what is
+     on the server FIRST, then send. Pushing first would publish this device's
+     state over an edit made elsewhere that this device has not seen yet, which
+     is the one thing a "sync now" button must never do — it would look like it
+     fixed things and would in fact have destroyed the other person's work. */
+  async function syncNow(){
+    if(!uid) return "Not signed in.";
+    let pulled=false;
+    try{
+      const snap=await stateDoc().get();
+      if(snap.exists){
+        const d=snap.data()||{};
+        if(d.device!==deviceId && (d.rev||0)>=lastRev){ applyRemote(d); pulled=true; }
+        else lastRev=Math.max(lastRev,d.rev||0);
+      }
+    }catch(e){ return "Could not read from the server: "+((e&&e.code)||e.message); }
+    try{ touch(); await push(); }
+    catch(e){ return "Could not save: "+((e&&e.code)||e.message); }
+    let photos="";
+    try{
+      const before=needsUpload().length;
+      if(before){ await pushPhotos();
+        const after=needsUpload().length;
+        photos=" "+(before-after)+" of "+before+" photo"+(before===1?"":"s")+" uploaded.";
+        if(after) photos+=" "+after+" still waiting.";
+      }else photos=" No photos waiting.";
+    }catch(e){ photos=" Photos failed: "+((e&&e.code)||e.message); }
+    return (pulled?"Took the newer version from the server, then saved.":"Saved.")+photos;
+  }
+
   /* Deleting a photo has to delete the object too, or the account slowly fills
      with shots nothing references and nobody can see. A missing object is a
      success: it means the job was already done. */
@@ -32014,7 +32113,7 @@ var PSYNC = (() => {
     catch(e){ if(!(e&&e.code==="storage/object-not-found")) throw e; }
   }
 
-  return { start, renderPanel, pushPhotos, pullPhoto, dropPhoto,
+  return { start, renderPanel, pushPhotos, pullPhoto, dropPhoto, selfTest, syncNow,
            pendingPhotos:()=>needsUpload().length,
            canPhotos:()=>!!(uid&&store) };
 })();
