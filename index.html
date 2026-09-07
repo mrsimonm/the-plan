@@ -31835,9 +31835,28 @@ var PSYNC = (() => {
       panel.innerHTML =
         '<div class="field"><label>Signed in</label>' +
         '<p class="hint">Syncing as <b></b>. Changes appear on your other ' +
-        'devices within a second or two. Photos stay on the device that took them.</p>' +
+        'devices within a second or two. Photos travel too: the small version ' +
+        'arrives with the change, and the full picture is fetched the first ' +
+        'time you open it.</p>' +
+        '<p class="hint" id="psyncPhotoState" style="margin-top:6px"></p>' +
         '<button class="btn" id="psyncOut">Sign out of sync</button></div>';
       panel.querySelector("b").textContent = user.email || "your account";
+      /* Says plainly whether the originals have actually gone up. Without it,
+         a refused upload — the exact failure a missing storage rule causes —
+         looks identical to everything working, because the thumbnails sync
+         either way and the app looks right on both devices. */
+      (function(){
+        const el=panel.querySelector("#psyncPhotoState"); if(!el) return;
+        const all=(S.photos||[]).filter(x=>x&&x.data);
+        const waiting=all.filter(x=>!x.remote&&!x.remoteFailed).length;
+        const denied=all.filter(x=>x.remoteFailed==="denied").length;
+        const shared=all.filter(x=>x.remote).length;
+        el.textContent = denied
+          ? `${denied} photo${denied===1?"":"s"} refused by the server — the storage rules may not be published.`
+          : waiting ? `${shared} shared · ${waiting} still to upload.`
+          : all.length ? `All ${all.length} photo${all.length===1?"":"s"} on this device are shared.`
+          : "No photos on this device yet.";
+      })();
       panel.querySelector("#psyncOut").onclick = async () => {
         if(!confirm(t("Sign this device out of sync? Your data stays on this device."))) return;
         try{ await signOut(); }catch(e){}
