@@ -3262,6 +3262,11 @@ dialog:has(> form > .dlg-foot) > form > .dlg-foot{flex:0 0 auto}
 .pu-list{max-height:210px; overflow-y:auto}
 .bar-fill.bad{background:var(--crit)}
 
+/* the per-shot full-quality tick, sitting with the photo buttons */
+.photo-best{display:inline-flex; align-items:center; gap:5px; font-size:11.5px;
+  color:var(--ink-3); cursor:pointer; padding:0 4px; white-space:nowrap}
+.photo-best input{margin:0; accent-color:var(--accent)}
+
 .pindays{margin:0 0 11px}
 .pinrow{display:flex; align-items:center; gap:10px; margin-bottom:6px}
 .pinrow .pin-k{flex:0 0 52px; font-size:12px; color:var(--ink-2)}
@@ -4297,6 +4302,11 @@ html[data-shell="rail"] body{
                     <button class="btn mini" type="button" id="cycOffAll">Take them all off</button>
                   </div>
                   <p class="hint" id="cycCount" style="margin:9px 0 0"></p>
+                </div>
+                <div class="field" style="margin-top:15px; border-top:1px solid var(--glass-border); padding-top:14px">
+                  <label for="photoQ">Photo quality</label>
+                  <select id="photoQ"></select>
+                  <p class="hint" id="photoQHint" style="margin:8px 0 0"></p>
                 </div>
               </div>
             </div>
@@ -8719,6 +8729,7 @@ function seed(){return{
   actionDaysOn:true, actionDays:[3,0],          // Wednesday & Sunday
   /* the cycle: one fertiliser day a week, and the defaults a plant joins on */
   feedDayOn:true, feedDay:0,                    // Sunday
+  photoQuality:"standard",                      // how hard photographs are squeezed
   cycleDefault:{water:1, dose:100, when:"feedday"},   // every beat, full dose on fertiliser day
   cuttings:[], photos:[], products:[], formulas:[], schedules:[], subjects:[], routines:[], events:[], tasks:[],
   issues:[],
@@ -8833,6 +8844,7 @@ function migrate(d){
      default on every existing plant — the mode changes when a plant is fed,
      so it must never switch itself on under someone. */
   if(typeof d.feedDayOn!=="boolean") d.feedDayOn=true;
+  if(["small","standard","high","best"].indexOf(d.photoQuality)<0) d.photoQuality="standard";
   { const fd=+d.feedDay; d.feedDay=Number.isInteger(fd)&&fd>=0&&fd<=6?fd:0; }
   d.cycleDefault=Object.assign({water:1,dose:100,when:"feedday"},d.cycleDefault||{});
   d.cycleDefault.when=["feedday","always"].indexOf(d.cycleDefault.when)>=0?d.cycleDefault.when:"feedday";
@@ -15098,9 +15110,16 @@ const TOUCH=matchMedia("(pointer: coarse)").matches;
    caught by one delegated listener further down. */
 const photoPick=(cls,cap,label)=>`<label class="${cls} photo-pick"><input type="file" accept="image/*"${
   cap?' capture="environment"':""} class="photo-input">${label}</label>`;
-const photoButtons=(cls)=>TOUCH
+/* The buttons, plus a tick that lifts THIS shot to full quality without moving
+   the whole library up a level. It sits with the buttons because that is the
+   moment the decision is made — a leaf worth recording properly is known about
+   before the shutter, not afterwards. */
+const photoButtons=(cls)=>(TOUCH
   ? photoPick(cls,true,t("Take a photo"))+photoPick(cls,false,t("Choose one"))
-  : photoPick(cls,false,t("+ Photo"));
+  : photoPick(cls,false,t("+ Photo")))
+  +(photoQualityKey()==="best" ? "" :
+    `<label class="photo-best"><input type="checkbox" id="photoBestOnce"${
+      photoOnceBest?" checked":""}> ${esc(t("full quality"))}</label>`);
 function since(p){
   if(!p.since) return "";
   const d=Math.floor((Date.now()-fromYmd(p.since))/DAY);
@@ -15411,6 +15430,9 @@ async function takePhoto(e){
     const subjectId=pvId||bcId;
     const shot={id:uid(),subjectId,at:new Date().toISOString(),data,thumb,h:null,by:L.me};
     S.photos.push(shot); photosTouched();
+    /* spent: the tick is for one picture, and leaving it on would quietly turn
+       the library setting into whatever was last ticked */
+    photoOnceBest=false;
     touch();
     if(pvId) renderPlant();
     if(bcId) renderBatch();
@@ -15420,6 +15442,7 @@ async function takePhoto(e){
   }catch(err){ say("Couldn't use that image: "+err.message); }
 }
 document.addEventListener("change",e=>{
+  if(e.target&&e.target.id==="photoBestOnce"){ photoOnceBest=!!e.target.checked; return; }
   const el=e.target;
   if(!el||!el.classList||!el.classList.contains("photo-input")) return;
   /* the one in the plant dialog has no subject to attach to yet, and pvId may
@@ -15531,7 +15554,32 @@ const PLANT_ACTIONS=["Fungicide spray","Insecticide spray","Neem oil treatment",
 /* ---------------- photos ---------------- */
 /* No file store on this page, so shots are shrunk hard and kept inline.
    640px on the long edge at q0.65 lands around 35 kB — a few dozen is fine. */
-const PHOTO_MAX=640, PHOTO_Q=0.65;
+/* How hard a photograph is squeezed on the way in.
+
+   Every level is a genuine trade and the numbers are the argument, so the
+   setting shows them rather than saying "better" and "worse". A photograph
+   costs three things: room on the phone that took it (base64 in localStorage,
+   which browsers cap near 5 MB and where overrunning is a hard stop), room in
+   the account, and traffic to whoever opens it later.
+
+   The thumbnail is NOT affected by any of this and stays 128px. It rides in
+   the state document, which has a 1 MB limit of its own, and that budget is
+   what decides how many plants can sync at all. Quality belongs to the
+   picture; the thumbnail is a name tag. */
+const PHOTO_LEVELS={
+  small:   {max:640,  q:0.62, label:"Small",    approx:20},
+  standard:{max:1280, q:0.72, label:"Standard", approx:60},
+  high:    {max:1920, q:0.80, label:"High",     approx:150},
+  best:    {max:2560, q:0.88, label:"Best",     approx:380}
+};
+const PHOTO_ORDER=["small","standard","high","best"];
+const photoLevel=k=>PHOTO_LEVELS[k]||PHOTO_LEVELS.standard;
+const photoQualityKey=()=>PHOTO_ORDER.indexOf(S.photoQuality)>=0?S.photoQuality:"standard";
+/* Ticked for one shot when this particular picture is worth keeping properly —
+   a new leaf unfurling, damage worth a record — without moving the whole
+   library up a level. */
+let photoOnceBest=false;
+const PHOTO_MAX=640, PHOTO_Q=0.65;   // legacy constants: the floor, still used for thumbs
 /* WebP where the browser has it, JPEG where it has not.
 
    At matched visual quality WebP runs about a quarter to a third smaller than
@@ -15553,17 +15601,21 @@ function encodeBest(canvas,q){
   }
   return canvas.toDataURL("image/jpeg",q);
 }
-function shrinkImage(file){
+function shrinkImage(file,levelKey){
+  /* a per-shot "full quality" tick beats the library setting, then resets */
+  const lv=photoLevel(levelKey||(photoOnceBest?"best":photoQualityKey()));
   return new Promise((res,rej)=>{
     const url=URL.createObjectURL(file), img=new Image();
     img.onload=()=>{
-      const sc=Math.min(1,PHOTO_MAX/Math.max(img.width,img.height));
+      /* never ENLARGE: a small original blown up to the level's pixel budget
+         costs bytes for detail that is not in the file */
+      const sc=Math.min(1,lv.max/Math.max(img.width,img.height));
       const c=document.createElement("canvas");
       c.width=Math.max(1,Math.round(img.width*sc));
       c.height=Math.max(1,Math.round(img.height*sc));
       c.getContext("2d").drawImage(img,0,0,c.width,c.height);
       URL.revokeObjectURL(url);
-      try{ res(encodeBest(c,PHOTO_Q)); }catch(err){ rej(err); }
+      try{ res(encodeBest(c,lv.q)); }catch(err){ rej(err); }
     };
     img.onerror=()=>{ URL.revokeObjectURL(url); rej(new Error("that file could not be read as an image")); };
     img.src=url;
@@ -20389,6 +20441,7 @@ function renderStats(){
 
 function renderAll(){ renderMixSel(); renderDue(); renderHow(); renderMix(); renderShelf(); renderSubjects(); renderCuttings(); renderPlan(); renderLog(); renderTaskBar(); renderTaskBarFull("#gardenTaskBar"); renderTaskBarFull("#planTaskBar"); renderGarden(); renderLibrary(); renderActionDays(); renderPropGuide(); renderStats();
   if(typeof renderCycle==="function") try{ renderCycle(); }catch(e){}
+  if(typeof renderPhotoQ==="function") try{ renderPhotoQ(); }catch(e){}
   if(typeof renderHealth==="function") try{ renderHealth(); }catch(e){}
   /* the planner sat outside this list historically — after an import or reset
      its DOM stayed stale until you navigated to it. Caches cleared too, since
@@ -23457,6 +23510,7 @@ $("#plantForm").addEventListener("submit",async e=>{
   touch(); renderSubjects(); renderAgenda(); renderGarden();
   if(typeof renderCareDays==="function") try{ renderCareDays(); }catch(e){}
   if(typeof renderCycle==="function") try{ renderCycle(); }catch(e){}
+  if(typeof renderPhotoQ==="function") try{ renderPhotoQ(); }catch(e){}
   renderDue();
   if(pvId===sid) renderPlant();          // the plant's own page must follow the edit
   $("#plantDlg").close();
@@ -37761,6 +37815,31 @@ $("#cycStagger").addEventListener("click",()=>{
   touch(); renderCycle(); renderAll();
   say(L.lang==="cs"?"Rozloženo.":"Spread across the beats.","Done");
 });
+/* ---------------- photo quality ---------------- */
+function renderPhotoQ(){
+  if(!$("#photoQ")) return;
+  const cur=photoQualityKey();
+  $("#photoQ").innerHTML=PHOTO_ORDER.map(k=>{
+    const lv=PHOTO_LEVELS[k];
+    return `<option value="${k}"${k===cur?" selected":""}>${esc(t(lv.label))} — ${
+      lv.max}px, ${L.lang==="cs"?"asi":"about"} ${lv.approx} kB</option>`;
+  }).join("");
+  const lv=photoLevel(cur), n=(S.photos||[]).length;
+  const cs=L.lang==="cs";
+  /* the honest consequence, in the units that actually run out: room on this
+     phone, which is the hard limit, not the account */
+  const per=Math.round(lv.approx*1.34);            // base64 costs a third more
+  const fits=Math.floor(4200/per);
+  $("#photoQHint").textContent=cs
+    ? `${lv.max} px, ${lv.approx} kB na fotku. Na telefonu se jich vejde zhruba ${fits}, než dojde místo. Náhledy zůstávají malé vždycky — ty se posílají při každém uložení.`
+    : `${lv.max} px, about ${lv.approx} kB each. Roughly ${fits} fit on a phone before it runs out of room. Thumbnails stay small whatever you pick — those are the ones sent on every save.`;
+}
+$("#photoQ").addEventListener("change",e=>{
+  const v=e.target.value;
+  S.photoQuality=PHOTO_ORDER.indexOf(v)>=0?v:"standard";
+  touch(); renderPhotoQ();
+});
+
 $("#cycOffAll").addEventListener("click",async()=>{
   const on=subjectsIn("plants").filter(cycleOn);
   if(!on.length){ say(L.lang==="cs"?"Nic na cyklu.":"Nothing is on the cycle."); return; }
@@ -37920,4 +37999,12 @@ Object.assign(CS,{
   "Could not read the photo figures.":"Údaje o fotkách se nepodařilo načíst."
 });
 
+
+
+/* ---- photo quality ---- */
+Object.assign(CS,{
+  "Photo quality":"Kvalita fotek",
+  "Small":"Malá", "Standard":"Standardní", "High":"Vysoká", "Best":"Nejlepší",
+  "full quality":"plná kvalita"
+});
 </script>
