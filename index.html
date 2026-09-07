@@ -1196,7 +1196,8 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
   color:var(--ink-2); flex:0 0 auto}
 .wb-pchip.lift{box-shadow:var(--shadow-lift); opacity:.9; cursor:grabbing; z-index:6}
 /* the same project drawn as a grid block: its own colour, the chip's gestures */
-.wb-blk.wb-proj{background:color-mix(in srgb,var(--pc) 24%,var(--surface));
+.wb-blk.wb-proj{background:var(--surface-2);
+  background:color-mix(in srgb,var(--pc) 24%,var(--surface));
   border-left:3px solid var(--pc); cursor:grab; touch-action:none; user-select:none}
 .wb-blk.wb-proj:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
 .wb-pchip.sizing::after,.wb-blk.sizing::after{content:attr(data-live); position:absolute; top:-16px; left:50%;
@@ -1240,6 +1241,10 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
    no backdrop-filter here; dozens of these sit on one grid and blur is a
    per-fixed-surface cost, not a per-repeated-element one) */
 .wb-blk{position:absolute; border-radius:var(--r-xs); overflow:hidden; padding:2px 6px; z-index:1;
+  /* the plain colour first: a browser without color-mix() drops the line
+     after it and keeps this one, so a block is still a block and not a
+     transparent rectangle with some text floating in it */
+  background:var(--surface-2);
   background:color-mix(in srgb, var(--accent) 16%, var(--glass-fill)); border:1px solid var(--glass-border); border-left:3px solid var(--accent);
   box-shadow:0 1px 3px rgba(46,46,42,.08); cursor:grab;
   -webkit-tap-highlight-color:transparent; touch-action:none; user-select:none}
@@ -4800,6 +4805,13 @@ html[data-shell="rail"] body{
       <div class="pad" style="padding-bottom:9px"><span class="eyebrow">All projects</span></div>
       <div id="pProjOverview"></div>
       <p class="empty" id="pProjOverviewEmpty" hidden>No projects yet. Add one in the Timeline view and it'll be summarised here.</p>
+      <!-- When a project is "not showing" on one machine and fine on another,
+           the only useful thing is what THAT machine says about it. This asks
+           it, step by step, in words that can be pasted into a message. -->
+      <div class="btn-row" style="margin-top:8px">
+        <button type="button" class="btn mini" id="pProjCheck">Check why a project is missing</button></div>
+      <pre id="pProjCheckOut" hidden style="white-space:pre-wrap; font-size:11px; margin:8px 0 0;
+        color:var(--ink-2); user-select:text; -webkit-user-select:text"></pre>
     </div>
 
     <div class="card">
@@ -38613,4 +38625,57 @@ Object.assign(CS,{
 
 Object.assign(CS,{ "Show in timeline":"Ukázat na časové ose",
   "You can bring it back with Undo.":"Zpět to vrátíš přes Zpět." });
+
+
+/* ---------------- why is a project missing on THIS machine? ----------------
+   A project that draws on one device and not another is a question about
+   that device, and reasoning about it from a different one has been wrong
+   every time. So the device answers for itself: the build it runs, the
+   browser, what it supports, whether the project is in the state, whether the
+   scheduler puts it on today, where the placer put it, and whether the DOM
+   element exists and is actually painted. One tap, pasteable. */
+function ppSelfCheck(){
+  const out=[], say=x=>out.push(x);
+  const iso=(typeof pToday==="function")?pToday():"";
+  say("build "+BUILD.ver+"."+BUILD.n+" ("+BUILD.at+")");
+  say("browser "+navigator.userAgent);
+  say("layout "+(document.documentElement.dataset.layout||"?")+" · viewport "+innerWidth+"x"+innerHeight
+      +" · scope "+(typeof pScope!=="undefined"?pScope:"?")+" · today "+iso+" · lang "+L.lang);
+  say("signed in to sync: "+((window.PSYNC&&PSYNC.canPhotos&&PSYNC.canPhotos())?"yes":"no")
+      +" · projects linked to planner: "+(S.planner&&S.planner.linkProjects!==false));
+  const sup=q=>{ try{ return CSS.supports(q)?"yes":"NO"; }catch(e){ return "?"; } };
+  say("css support — color-mix: "+sup("color: color-mix(in srgb, red, blue)")
+      +" · :has(): "+sup("selector(:has(a))")+" · dvh: "+sup("height: 1dvh")
+      +" · sticky: "+sup("position: sticky"));
+  const projs=(S.projplan&&S.projplan.projects)||[];
+  say("projects in state: "+projs.length);
+  let items=[], placed=[];
+  try{ items=pBudgetOf(iso).items; placed=pPlaceProjects(items,iso); }catch(e){ say("placer error: "+e.message); }
+  const pv=document.querySelector("#view-planner");
+  projs.forEach(p=>{
+    const on=(window.ppProjectsOn?ppProjectsOn(iso):[]).find(x=>x.id===p.id);
+    const pl=placed.find(x=>x.kind==="proj"&&x.id===p.id);
+    const el=pv&&[...pv.querySelectorAll(".wb-blk,.wb-pchip")].find(e=>e.textContent.includes(p.name));
+    let dom="NOT IN DOM";
+    if(el){ const cs=getComputedStyle(el), r=el.getBoundingClientRect();
+      dom=(el.offsetParent!==null?"drawn":"HIDDEN")+" "+Math.round(r.width)+"x"+Math.round(r.height)
+         +" bg="+cs.backgroundColor+" display="+cs.display+" opacity="+cs.opacity+" vis="+cs.visibility; }
+    say("• "+p.name+" | start "+p.start+" | usual "+(p.usualTime||"none")
+      +" | today: "+(on?on.hours+"h":"not scheduled"+(typeof ppWhyNotOn==="function"?" ("+ppWhyNotOn(p,iso)+")":""))
+      +" | placed: "+(pl?(pl.unassigned?"parking lot":pl.time):"n/a")
+      +" | element: "+dom);
+  });
+  return out.join("\n");
+}
+(function(){
+  const b=document.getElementById("pProjCheck"), o=document.getElementById("pProjCheckOut");
+  if(!b||!o) return;
+  b.addEventListener("click",()=>{
+    o.hidden=false;
+    try{ o.textContent=ppSelfCheck(); }catch(e){ o.textContent="The check itself failed: "+(e&&e.message||e); }
+    try{ const r=document.createRange(); r.selectNodeContents(o);
+         const sel=getSelection(); sel.removeAllRanges(); sel.addRange(r); }catch(e){}
+  });
+})();
+Object.assign(CS,{ "Check why a project is missing":"Zjistit, proč projekt chybí" });
 </script>
