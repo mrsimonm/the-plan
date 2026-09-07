@@ -15448,23 +15448,32 @@ function openShot(id){
   setTimeout(()=>$("#shotH").focus(),40);
   /* A device that has only ever seen the thumbnail gets the real photograph
      now, because opening it is the moment somebody actually wants to look.
-     Fetching the whole library up front would spend the other person's data
-     on shots they may never open, and the thumbnail was already enough to
-     recognise the plant by. Once fetched it is kept, so this happens once. */
+     Pulling the whole library up front would spend the other person's data on
+     shots they may never open, and the thumbnail was already enough to
+     recognise the plant by.
+
+     What comes back is a URL, and it goes straight into the tag's src. The
+     browser fetches it as an image, which is not a cross-origin read and so
+     needs no CORS policy on the bucket — trying to read the bytes with fetch()
+     instead is exactly what broke this the first time round. */
   if(!x.data&&x.thumb&&window.PSYNC&&PSYNC.canPhotos&&PSYNC.canPhotos()){
-    const dlg=$("#shotDlg");
+    const dlg=$("#shotDlg"), img=$("#shotImg");
+    dlg.classList.remove("shot-thumbonly");
     dlg.classList.add("shot-loading");
-    PSYNC.pullPhoto(id).then(data=>{
-      dlg.classList.remove("shot-loading");
+    const settle=ok=>{ dlg.classList.remove("shot-loading");
+                       if(!ok) dlg.classList.add("shot-thumbonly"); };
+    PSYNC.pullPhoto(id).then(src=>{
       /* the dialog may have been closed, or moved on to another shot, while
          the photo was in the air — only paint it if it is still the one open */
-      if(data&&shotId===id&&dlg.open) $("#shotImg").src=data;
-      if(data){ if(pvId) renderPlant(); renderSubjects(); }
-    }).catch(e=>{
-      dlg.classList.remove("shot-loading");
-      dlg.classList.add("shot-thumbonly");
-      console.warn("photo pull",e);
-    });
+      if(!src||shotId!==id||!dlg.open){ settle(true); return; }
+      /* wait for the picture itself, not just the URL: swapping src and
+         declaring victory would clear the spinner over a broken frame if the
+         object is missing or the token has been revoked */
+      const probe=new Image();
+      probe.onload=()=>{ if(shotId===id&&dlg.open) img.src=src; settle(true); };
+      probe.onerror=()=>settle(false);
+      probe.src=src;
+    }).catch(e=>{ settle(false); console.warn("photo pull",e); });
   }
 }
 $("#shotForm").addEventListener("submit",async e=>{
@@ -31925,9 +31934,6 @@ var PSYNC = (() => {
     for(let i=0;i<bin.length;i++) buf[i]=bin.charCodeAt(i);
     return new Blob([buf],{type:m[1]});
   }
-  const blobToDataUrl=b=>new Promise((ok,fail)=>{
-    const r=new FileReader(); r.onload=()=>ok(r.result); r.onerror=fail; r.readAsDataURL(b);
-  });
 
   /* Every shot this device holds that the account has not got a copy of. */
   const needsUpload=()=>(S.photos||[]).filter(x=>x&&x.data&&!x.remote);
@@ -31971,19 +31977,32 @@ var PSYNC = (() => {
     if(done) try{ if(pvId) renderPlant(); renderGarden(); }catch(e){}
   }
 
-  /* Fetch one original on demand and keep it. Returns the data URL, or null. */
+  /* A URL for one original, on demand.
+
+     This hands back a URL to put in an <img>, NOT the bytes — and that is the
+     whole point. Reading the bytes with fetch() is a cross-origin read, and a
+     Storage bucket serves no CORS policy for this site, so the fetch is blocked
+     by the browser before it ever reaches Google: upload succeeded, download
+     died with a bare "Failed to fetch", and the second device sat there showing
+     the thumbnail it already had. An <img> is not a cross-origin READ — the
+     browser renders the picture without letting script inspect it — so pointing
+     the tag at the URL simply works, with no bucket configuration at all.
+
+     Nothing is written into the state. The URL would bloat the synced document
+     and go stale on its own schedule, and it buys nothing: the objects are
+     uploaded immutable with a year's cache lifetime, so the second look at a
+     photo is served by the browser without another request. Kept in a Map for
+     this session so re-opening the same shot does not re-ask for the URL. */
+  const photoUrls=new Map();
   async function pullPhoto(id){
     if(!uid||!store) return null;
     const ph=(S.photos||[]).find(x=>x&&x.id===id);
     if(!ph) return null;
-    if(ph.data) return ph.data;
+    if(ph.data) return ph.data;              // this device took it; nothing to fetch
+    if(photoUrls.has(id)) return photoUrls.get(id);
     const url=await photoRef(id).getDownloadURL();
-    const res=await fetch(url);
-    if(!res.ok) throw new Error("http "+res.status);
-    const data=await blobToDataUrl(await res.blob());
-    ph.data=data; ph.remote=true;
-    try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){}
-    return data;
+    photoUrls.set(id,url);
+    return url;
   }
 
   /* Deleting a photo has to delete the object too, or the account slowly fills
