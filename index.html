@@ -3280,6 +3280,12 @@ dialog:has(> form > .dlg-foot) > form > .dlg-foot{flex:0 0 auto}
 .povw-name.linkish{text-align:left; text-decoration:none; color:inherit; font-weight:600}
 .povw-name.linkish:hover{text-decoration:underline}
 
+/* the project list's explanatory notices */
+.povw-notice{display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:9px 11px;
+  margin:0 0 9px; border:1px solid var(--amber); border-radius:var(--r-xs);
+  background:var(--amber-soft); color:var(--ink); font-size:12.5px}
+.povw-notice span{flex:1 1 240px; min-width:0}
+
 .pindays{margin:0 0 11px}
 .pinrow{display:flex; align-items:center; gap:10px; margin-bottom:6px}
 .pinrow .pin-k{flex:0 0 52px; font-size:12px; color:var(--ink-2)}
@@ -12884,7 +12890,7 @@ function pWireBoard(){
         /* Tasks and Events both open the same editor. A Quick Task has none by
            design, so it keeps the jump-to-day fallback rather than a dead tap. */
         if(tk&&tk.kind!=="quick"){ pOpenEditDialog(g.id); }
-        else { const d=g.day0; if(d){ pSelISO=d; pScope="day"; pWinShift=0; pDayPanel(); renderSchedule(); } }
+        else { const d=g.day0; if(d){ pSelISO=d; pScope="day"; pWinShift=0; pDayPanel(); renderSchedule(); renderProjectsOverview(); } }
       }
       return;
     }
@@ -13134,7 +13140,7 @@ function pWireBoard(){
   },{passive:false});
   board.addEventListener("click",e=>{
     const h=e.target.closest("[data-wbgo]");
-    if(h){ pSelISO=h.dataset.wbgo; pScope="day"; pWinShift=0; pDayPanel(); renderSchedule(); return; }
+    if(h){ pSelISO=h.dataset.wbgo; pScope="day"; pWinShift=0; pDayPanel(); renderSchedule(); renderProjectsOverview(); return; }
     /* data-wbaproj is gone with the parking lot's stand-in project chip. An
        unplaced Project now draws in its own day's all-day lane as a .wb-pchip,
        so a tap on one goes through the gesture engine's own tap branch — the
@@ -13227,7 +13233,7 @@ function ppGridBodyHtml(zoom,iso){
 }
 function pWireProjGrid(){
   $("#pScheduleBody").querySelectorAll("[data-pgcell]").forEach(el=>el.addEventListener("click",()=>{
-    pScope="day"; pSelISO=el.dataset.pgcell; pWinShift=0; pDayPanel(); renderSchedule();
+    pScope="day"; pSelISO=el.dataset.pgcell; pWinShift=0; pDayPanel(); renderSchedule(); renderProjectsOverview();
   }));
 }
 function renderSchedule(){
@@ -13504,8 +13510,34 @@ function pFillProjectSelect(){
 function renderProjectsOverview(){
   const host=$("#pProjOverview"); if(!host) return;
   const projs=((S.projplan&&S.projplan.projects)||[]);
-  $("#pProjOverviewEmpty").hidden=projs.length>0;
-  if(!projs.length){ host.innerHTML=""; return; }
+  /* The two ways a person ends up with "my projects don't show" that are
+     nothing to do with scheduling, and that no screen used to mention.
+
+     One: the account's link between projects and the calendar is switched
+     off. The list still drew every project, the calendar drew none of them,
+     and nothing connected the two facts.
+
+     Two: the projects were added in Hours. That screen has an Add form right
+     on it and is called Projects, and what it makes is a time-tracking
+     bucket — it has never been drawn on the calendar and was never meant to
+     be. A person who added three there and then looked at the planner had
+     no way to learn that except by being told. */
+  const notices=[];
+  if(S.planner&&S.planner.linkProjects===false){
+    notices.push(`<div class="povw-notice">
+      <span>${esc(t("Projects are switched off for the calendar, so none of them are drawn on it."))}</span>
+      <button type="button" class="btn mini primary" data-pplink="1">${esc(t("Switch them on"))}</button></div>`);
+  }
+  const hoursN=((S.hours&&S.hours.projects)||[]).filter(x=>x&&!x.archived).length;
+  if(!projs.length&&hoursN){
+    notices.push(`<div class="povw-notice">
+      <span>${esc(L.lang==="cs"
+        ? `Máš ${hoursN} ${pl3(hoursN,"projekt","projekty","projektů")} v Hodinách — ty měří čas a v kalendáři se nikdy nekreslí. Plánování na kalendář se zakládá tady, na časové ose.`
+        : `You have ${plural(hoursN,"project")} in Hours — those track time and are never drawn on the calendar. Work you want on the calendar is added here, in the Timeline.`)}</span>
+      <button type="button" class="btn mini primary" data-ppnewtl="1">${esc(t("Add a project to the timeline"))}</button></div>`);
+  }
+  $("#pProjOverviewEmpty").hidden=projs.length>0||notices.length>0;
+  if(!projs.length){ host.innerHTML=notices.join(""); return; }
   const status=window.ppProjectStatus?ppProjectStatus(pToday()):[];
   const byId={}; status.forEach(s=>{ byId[s.id]=s; });
   const today=pToday();
@@ -13517,7 +13549,7 @@ function renderProjectsOverview(){
   const totalDays=Math.max(1,Math.round((fromYmd(hi)-fromYmd(lo))/DAY)+1);
   const pct=iso=>Math.max(0,Math.min(100,Math.round((fromYmd(iso)-fromYmd(lo))/DAY/totalDays*1000)/10));
 
-  host.innerHTML=projs.map((p,i)=>{
+  host.innerHTML=notices.join("")+projs.map((p,i)=>{
     const st=byId[p.id]||{};
     const total=Math.max(0,+p.total||0);
     const left=Math.max(0,+st.left||0);
@@ -13814,6 +13846,12 @@ $("#pScopeSeg").addEventListener("click",e=>{
   if(to==="plachta") pPlachtaAnchor=pSelISO;
   else if(to==="timeline"){ L.ppView=pSelISO.slice(0,8)+"01"; ppGridISO=ymd(monthStart(+pParseISO(pSelISO))); }
   pScope=to; pWinShift=0; renderSchedule();
+  /* The project list under the board is drawn only by renderPlanner(), and a
+     scope change only called renderSchedule() — so after moving a project's
+     dates in the Timeline and switching to Day, the list below still showed
+     the old dates, and a notice that had become untrue stayed on screen.
+     The board was always fresh; the list under it was not. */
+  renderProjectsOverview();
 });
 
 /* ---------------- Plachta search ----------------
@@ -38572,7 +38610,17 @@ function ppWhyNotOn(p,iso){
    the timeline, or deletes, and the delete is the Gantt's own with undo. */
 document.addEventListener("click",async function(e){
   const q=k=>e.target.closest&&e.target.closest("[data-"+k+"]");
-  const ed=q("ppedit"), tl=q("pptl"), del=q("ppdel");
+  const ed=q("ppedit"), tl=q("pptl"), del=q("ppdel"), lk=q("pplink"), nt=q("ppnewtl");
+  if(lk){ S.planner.linkProjects=true; const c=$("#pLinkProjects"); if(c) c.checked=true;
+    touch(); try{ renderPlanner(); }catch(e2){} return; }
+  if(nt){
+    /* into the Timeline first, then the same dialog its own + New project
+       opens — so what gets made is a calendar project, not another bucket */
+    const pill=document.querySelector('#pScopeSeg [data-pscope="timeline"]');
+    if(pill) pill.click();
+    setTimeout(()=>{ if(window.ppNewProject) ppNewProject(); },350);
+    return;
+  }
   if(ed){ if(window.ppOpenProject) ppOpenProject(ed.dataset.ppedit); return; }
   if(tl){
     /* through the pill, so the timeline opens exactly as it does by hand —
@@ -38678,4 +38726,12 @@ function ppSelfCheck(){
   });
 })();
 Object.assign(CS,{ "Check why a project is missing":"Zjistit, proč projekt chybí" });
+
+
+Object.assign(CS,{
+  "Projects are switched off for the calendar, so none of them are drawn on it.":
+    "Projekty jsou pro kalendář vypnuté, takže se v něm žádný nekreslí.",
+  "Switch them on":"Zapnout",
+  "Add a project to the timeline":"Přidat projekt na časovou osu"
+});
 </script>
