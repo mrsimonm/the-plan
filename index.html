@@ -3751,6 +3751,76 @@ html[data-layout="phone"] .pcal-head .segsm button{ padding:7px 11px; font-size:
 html[data-layout="phone"] .ppl-search{ margin-bottom:8px }
 html[data-layout="phone"] .ppl-search-row{ flex-wrap:nowrap }
 
+/* ---------------- the planner on a phone, made to fit ----------------
+   Measured at 375x812 and 360x640 before this block existed:
+
+   The head row was one non-wrapping strip that scrolled sideways — pills,
+   then the day controls, 771px wide in a 327px box. The pills clipped their
+   last entry, and the ‹ › date controls started at x=357, past the right
+   edge, on a strip nobody knows scrolls. "The controls are not visible."
+
+   The board was a 340px window over a 460px day, because everything above
+   it — page title, two control rows, parking lot — stacked to ~300px before
+   the first hour, and the board's room was a fixed guess of 300px.
+
+   And the update toast, fixed to the bottom, sat on the board: on the small
+   phone it covered the 09:00 block outright. "You can't see half the stuff."
+
+   Rules below the earlier phone block, so they win by order as well. */
+html[data-layout="phone"] .pcal-head{ flex-wrap:wrap; overflow:visible; gap:6px 8px; margin-bottom:6px }
+/* the scope switch keeps one line and scrolls INSIDE itself if it must,
+   never clipping — .seg's overflow:hidden is what cut "Timeline" off */
+html[data-layout="phone"] .pcal-head #pScopeSeg{ flex:1 1 100%; overflow-x:auto; overflow-y:hidden;
+  scrollbar-width:none; scroll-snap-type:x proximity }
+html[data-layout="phone"] .pcal-head #pScopeSeg::-webkit-scrollbar{ display:none }
+html[data-layout="phone"] .pcal-head #pScopeSeg button{ flex:0 0 auto; padding:7px 10px; font-size:12.5px;
+  min-height:36px; scroll-snap-align:start; white-space:nowrap }
+/* the day / zoom / view controls drop to their own full-width line under
+   the pills, centred, instead of running off the side */
+/* Three tidy rows. The head holds six direct children on a Day view: the
+   pills, the ‹ date › group, a loose Now button, a second .pcal-nav holding
+   ↶ ↷, Select, and ⛶. Giving every .pcal-nav a full line (the first attempt)
+   put ‹ date › and ↶ ↷ on rows of their own with the loose buttons wrapping
+   around them — a 130px jumble. Only the date group gets a line; the rest
+   form one centred row under it. The Timeline's own zoom and view controls
+   take a line each when they are shown. */
+html[data-layout="phone"] .pcal-head{ justify-content:center }
+html[data-layout="phone"] .pcal-head #pBoardNav,
+html[data-layout="phone"] .pcal-head #pTimelineZoom,
+html[data-layout="phone"] .pcal-head #pViewToggle{ flex:1 1 100%; justify-content:center }
+html[data-layout="phone"] .pcal-head .pcal-nav{ flex:0 0 auto; gap:4px 6px }
+html[data-layout="phone"] .pcal-head .pcal-nav > *,
+html[data-layout="phone"] .pcal-head > .btn{ white-space:nowrap; flex:0 0 auto }
+html[data-layout="phone"] .pcal-head .btn.mini{ padding:6px 9px; min-height:34px }
+html[data-layout="phone"] .pcal-head #pBoardLabel{ white-space:nowrap; font-size:13px }
+/* search + Upcoming/Past: the earlier phone rule forced one line, which is
+   the truncation; let the field take the line and the switch sit under it */
+html[data-layout="phone"] .ppl-search-row{ flex-wrap:wrap }
+html[data-layout="phone"] .ppl-search-row > input{ flex:1 1 100%; min-width:0 }
+/* Upcoming/Past only filters search RESULTS, so until something is typed it
+   is a 56px switch with nothing to switch. On a phone that is board room. It
+   appears the moment the field is focused or holds text — the same rule the
+   add form's second row already follows. */
+html[data-layout="phone"] .ppl-search-row > .seg{ flex:1 1 100%; min-width:0; display:none }
+html[data-layout="phone"] .ppl-search-row:focus-within > .seg,
+html[data-layout="phone"] .ppl-search-row:has(input:not(:placeholder-shown)) > .seg{ display:flex }
+/* the page title repeats the app header two lines above it — on a phone that
+   line is worth more as calendar */
+html[data-layout="phone"] #view-planner > .sec-head{ display:none }
+html[data-layout="phone"] .wb-parking{ padding-top:5px; padding-bottom:5px; min-height:0 }
+/* the board's room: the chrome above it is ~230px now, not 300; layoutFit()
+   measures the real remainder and sets the hour pitch to match */
+html[data-layout="phone"] .wb-scroll{ max-height:calc(100dvh - 230px); min-height:260px }
+/* The update toast. Fixed to the bottom it sits on whatever is at the bottom
+   of the viewport, and once the page has scrolled that is the middle of the
+   board — reserving room under the board cannot help. Under the header it
+   covered the scope pills. So on a phone it docks at the very top edge as a
+   slim full-width bar: it hides the app header for exactly as long as it takes
+   to press Reload, and never an hour of anyone's day. */
+html[data-layout="phone"] #pbUpd{ top:0; bottom:auto; left:0; right:0; transform:none; max-width:none;
+  border-radius:0 0 12px 12px; border-top:0; padding:8px 10px 8px 14px; font-size:13px; justify-content:space-between }
+
+
 /* ---------------- phone, turned sideways ----------------
    844x390: wide and very short. The chrome has to give up almost all of its
    vertical room so the board keeps what is left. */
