@@ -32037,6 +32037,25 @@ var PSYNC = (() => {
     const say=(k,v)=>{ steps.push(k+": "+v); return v; };
     if(!uid) { say("signed in","NO — sign in first"); return steps; }
     say("signed in","yes");
+    /* What this device actually holds. The round trip below proves the plumbing
+       works; this says whether anything has been put through it. The two
+       failures so far were both invisible because thumbnails sync regardless,
+       so the counts are the part that distinguishes "the server refused us"
+       from "we never asked it to do anything". */
+    const all=(S.photos||[]);
+    const withData=all.filter(x=>x&&x.data).length;
+    const thumbOnly=all.filter(x=>x&&!x.data&&x.thumb).length;
+    const shared=all.filter(x=>x&&x.remote).length;
+    const waiting=all.filter(x=>x&&x.data&&!x.remote&&!x.remoteFailed).length;
+    const refused=all.filter(x=>x&&x.remoteFailed).length;
+    say("photos on this device", all.length+" ("+withData+" full, "+thumbOnly+" thumbnail-only)");
+    say("marked as uploaded", shared+(waiting?", "+waiting+" still waiting":"")
+        +(refused?", "+refused+" refused":""));
+    /* A thumbnail-only record is one this device learned about from the other
+       one. If there are none, nothing has arrived — which is a state-sync
+       problem, upstream of anything to do with photographs. */
+    if(!all.length) steps.push("→ no photos here at all");
+    else if(!thumbOnly&&!withData) steps.push("→ records exist but carry neither picture");
     if(!store){ say("storage sdk","NOT LOADED"); return steps; }
     say("storage sdk","ok");
     let blob;
