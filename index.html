@@ -6097,7 +6097,7 @@ html[data-shell="rail"] body{
       <p class="hint" style="margin:5px 0 0">Untick a day and the project skips it.</p></div>
     <div class="f"><label for="ppFU">Usual time</label>
       <input id="ppFU" type="time" class="mono-input">
-      <p class="hint" style="margin:5px 0 0">Optional. Blocks start here instead of waiting in the parking lot.</p></div>
+      <p class="hint" style="margin:5px 0 0">When it lands on the calendar each day. Clear it and the project waits in the parking lot instead of being drawn on the hours.</p></div>
     <div class="f"><label>Color</label><div class="swatch" id="ppSwatch"></div></div>
     <div class="acts">
       <button type="button" class="btn danger" id="ppPdDel">Delete project</button>
@@ -13519,6 +13519,12 @@ function renderProjectsOverview(){
        what "I added it and it never showed up" looks like. */
     const onToday=typeof ppOnDay==="function"?ppOnDay(p,today):true;
     const why=onToday?"":(typeof ppWhyNotOn==="function"?ppWhyNotOn(p,today):"");
+    /* Working today, but with no hour of its own, so it is drawn in the
+       all-day strip rather than on the clock. That is a legitimate state and
+       not an error — but it is the one that gets reported as "my project
+       doesn't show", because the strip is easy to miss on a tall window. Say
+       so, and offer the single tap that fixes it. */
+    const parked=onToday&&!(p.usualTime||(p.dayTime&&p.dayTime[today]));
     return `<div class="povw" style="--pc:${c}">
       <div class="povw-top">
         <i class="povw-dot"></i>
@@ -13527,6 +13533,8 @@ function renderProjectsOverview(){
         <span class="povw-hrs">${pFmtH(spent)} / ${pFmtH(total)}h</span>
       </div>
       ${why?`<div class="povw-why">${esc(t("Not on today's calendar"))} — ${esc(why)}</div>`:""}
+      ${parked?`<div class="povw-why">${esc(t("Waiting in the parking lot — it has no time of day."))}
+        <button type="button" class="btn mini" data-ppgive="${esc(p.id)}">${esc(t("Put it on the clock"))}</button></div>`:""}
       <div class="povw-bar" title="${pFmtH(spent)}h ${esc(t("of"))} ${pFmtH(total)}h">
         <i style="width:${donePct}%"></i></div>
       <div class="povw-meta">
@@ -29010,13 +29018,43 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ try{ re
     document.getElementById("ppFS").value = p ? p.start : (typeof pToday === "function" ? pToday() : today());
     document.getElementById("ppFT").value = p ? p.total : 40;
     document.getElementById("ppFH").value = p ? p.hours : 4;
-    document.getElementById("ppFU").value = (p && p.usualTime) || "";
+    /* A NEW project gets a usual time by default, an existing one keeps
+       whatever it has — including deliberately nothing.
+
+       Without a time a project is "unassigned": it waits in the parking lot
+       instead of being drawn on the hour grid. That is the right model — the
+       app must never invent a slot for work you did not place — but as a
+       DEFAULT for something just created it reads as the project not having
+       been added at all. Which is exactly how it was reported: "I add a
+       project and it does not show." It was showing, in the all-day strip,
+       which is easy to miss on a tall window.
+
+       So a new one starts on the calendar, at a stated, visible, editable
+       time. Clearing the field still parks it, which is the escape hatch for
+       work that genuinely has no hour of its own. */
+    document.getElementById("ppFU").value = p ? (p.usualTime || "") : ppDefaultUsual();
     ppDowSel = (p && Array.isArray(p.dow) && p.dow.length) ? p.dow.slice() : [0,1,2,3,4,5,6];
     ppDowDraw();
     col = p ? p.color : PAL[PS.projects.length % PAL.length];
     markCol(); calc();
     document.getElementById("ppPdDel").style.display = p ? "" : "none";
     pd.showModal();
+  }
+  /* Two hours after they get up, clamped to something sane. Derived from the
+     planner's own sleep setting rather than hard-coded, so a person who works
+     nights is not handed nine in the morning. */
+  window.ppDefaultUsualTime = ppDefaultUsual;
+  function ppDefaultUsual(){
+    var wake = 9;
+    try{
+      var sl = (typeof S!=="undefined" && S && S.planner && S.planner.sleepWeekday) || null;
+      if(sl && /^\d{2}:\d{2}$/.test(String(sl.from||""))){
+        var h = Number(String(sl.from).slice(0,2));
+        wake = (h + (Number(sl.hours)||8) + 2) % 24;
+      }
+    }catch(e){}
+    if(!(wake>=5 && wake<=21)) wake = 9;
+    return String(Math.floor(wake)).padStart(2,"0") + ":00";
   }
   document.getElementById("ppAdd").addEventListener("click", function () { openP(null); });
   document.getElementById("ppEmptyAdd").addEventListener("click", function () { openP(null); });
@@ -38478,6 +38516,21 @@ function ppWhyNotOn(p,iso){
   return cs?"Na tenhle den nic nepadá.":"Nothing falls on this day.";
 }
 /* is this project doing anything at all today? */
+/* One tap: give a parked project the same default hour a new one would get,
+   so it is drawn on the clock instead of waiting in the strip. Placed on the
+   project itself rather than on today only — the complaint is never "it is
+   missing from Tuesday", it is "it is missing from the calendar". */
+document.addEventListener("click",function(e){
+  const b=e.target.closest&&e.target.closest("[data-ppgive]"); if(!b) return;
+  const id=b.dataset.ppgive;
+  const p=((S.projplan&&S.projplan.projects)||[]).find(x=>x.id===id); if(!p) return;
+  p.usualTime=(typeof ppDefaultUsualTime==="function")?ppDefaultUsualTime():"09:00";
+  touch();
+  try{ if(window.ppClearExt) ppClearExt(); }catch(e2){}
+  try{ renderPlanner(); }catch(e2){}
+  say((L.lang==="cs"?"Na kalendáři v ":"On the calendar at ")+p.usualTime+".","Done");
+});
+
 function ppOnDay(p,iso){
   const list=window.ppProjectsOn?ppProjectsOn(iso):[];
   return list.some(x=>x.id===p.id);
@@ -38489,5 +38542,11 @@ Object.assign(CS,{
   "Not on today's calendar":"Dnes není v kalendáři",
   "No hours set.":"Nemá zadané hodiny.",
   "Nothing falls on this day.":"Na tenhle den nic nepadá."
+});
+
+
+Object.assign(CS,{
+  "Waiting in the parking lot — it has no time of day.":"Čeká na parkovišti — nemá denní čas.",
+  "Put it on the clock":"Dát na hodiny"
 });
 </script>
