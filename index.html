@@ -3825,6 +3825,21 @@ html[data-layout="phone"] .wb-one .wb-allday{ min-height:0 }
    is empty — the gutter's spacer with it, so the hours keep their alignment —
    and comes back the moment a chip needs it. */
 html[data-layout="phone"] .wb-one .wb-grid:not(:has(.wb-col .wb-allday > *)) .wb-allday{ display:none }
+/* ---- the parking lot, folded ----
+   Two rows of chips that scroll inside themselves read as a clipped mess on a
+   phone. Folded, the lot is ONE row: the chips that fit, then a red "+N" for
+   the ones that did not. pParkFold() decides which chips those are by
+   measuring — the row must be free to wrap while it measures, so the fold
+   lifts the height cap and simply hides the overflow chips. Tapping the
+   number opens the lot to every chip; tapping again folds it. */
+html[data-layout="phone"] .wb-parking.folded,
+html[data-layout="phone"] .wb-parking.open{ max-height:none; overflow:hidden }
+html[data-layout="phone"] .wb-park-hid{ display:none }
+.wb-park-more{ appearance:none; border:0; font:inherit; cursor:pointer; flex:0 0 auto;
+  margin-left:auto; min-height:26px; padding:2px 9px; border-radius:999px;
+  background:var(--crit); color:#fff; font-size:11.5px; font-weight:700; letter-spacing:.02em;
+  -webkit-tap-highlight-color:transparent }
+.wb-parking.open .wb-park-more{ background:var(--sunk); color:var(--ink-2) }
 html[data-layout="phone"] .wb-scroll{ margin-top:4px; padding-top:2px; padding-bottom:2px }
 /* the board's room: the chrome above it is ~230px now, not 300; layoutFit()
    measures the real remainder and sets the hour pitch to match */
@@ -12457,10 +12472,52 @@ function pBoardHtml(days,opts){
     <div class="wb-scroll"><div class="wb-grid">${gutter}${cols}</div></div></div>`;
 }
 
+/* ---- the parking lot on a phone: one row, then "+N" ----
+   Simon, on his phone: "the parking lot chips look weird. There should be a
+   basic row of the basic info, and then a number in red: how many other
+   things haven't fit. I can click on it and it will expand it."
+   The row is measured, not guessed: every chip that lands below the first
+   line is hidden and counted, then the count is put at the end of the line —
+   and if the badge itself is what tips onto a second line, the last chip goes
+   too. Runs after every board paint (the 30s tick included), so the
+   open/folded choice lives in a variable rather than in the DOM it replaces. */
+let pParkOpen=false;
+function pParkFold(){
+  const park=document.querySelector("#pWeekBoard .wb-parking"); if(!park) return;
+  park.querySelectorAll(".wb-park-more").forEach(b=>b.remove());
+  const chips=[...park.querySelectorAll(".wb-traychip")];
+  chips.forEach(c=>c.classList.remove("wb-park-hid"));
+  park.classList.remove("folded","open");
+  if(document.documentElement.getAttribute("data-layout")!=="phone"||!chips.length) return;
+  const more=document.createElement("button");
+  more.type="button"; more.className="wb-park-more";
+  more.addEventListener("click",e=>{
+    e.stopPropagation(); pParkOpen=!pParkOpen; pParkFold();
+    if(typeof layoutFit==="function"){ setTimeout(layoutFit,0); setTimeout(layoutFit,140); }
+  });
+  if(pParkOpen){
+    park.classList.add("open");
+    more.textContent="▴"; more.title=t("Show fewer"); more.setAttribute("aria-label",t("Show fewer"));
+    park.appendChild(more); return;
+  }
+  park.classList.add("folded");
+  const line=park.querySelector(".eyebrow")||chips[0];
+  const rowTop=line.offsetTop, below=c=>c.offsetTop>rowTop+4;
+  let hidden=0;
+  chips.forEach(c=>{ if(below(c)){ c.classList.add("wb-park-hid"); hidden++; } });
+  if(!hidden) return;                                   /* it all fits: no badge */
+  park.appendChild(more);
+  const vis=chips.filter(c=>!c.classList.contains("wb-park-hid"));
+  more.textContent="+"+hidden;
+  while(below(more)&&vis.length){ vis.pop().classList.add("wb-park-hid"); hidden++; more.textContent="+"+hidden; }
+  more.title=t("Show all parked"); more.setAttribute("aria-label",t("Show all parked"));
+}
+
 /* ---- the board's gesture engine ---- */
 function pWireBoard(){
   const board=document.getElementById("pWeekBoard");
   if(!board) return;
+  pParkFold();
   /* ---- the quick row's own gestures ----
      Kept apart from the hour grid's engine on purpose: the only two things a
      Quick Task can do are move to another day and be ticked, and routing it
@@ -13239,7 +13296,7 @@ function pWireBoard(){
        It opens with no time, so what you make stays parked until you drag it
        onto an hour; the day is whichever the board is centred on. */
     const row=e.target.closest(".wb-parking");
-    if(row&&!e.target.closest(".wb-traychip")){
+    if(row&&!e.target.closest(".wb-traychip")&&!e.target.closest(".wb-park-more")){
       const days=pDaysFor(pScope,pSelISO);
       pOpenSlotDialog(days.includes(pSelISO)?pSelISO:days[0],null,1);
     }
@@ -24528,7 +24585,7 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "Linked time":"Propojený čas","Plant care counts here":"Péče o rostliny se počítá sem",
 "Tracked hours count here":"Měřené hodiny se počítají sem",
 "Projects count here":"Projekty se počítají sem",
-"Unscheduled":"Nenaplánované","Parking lot":"Parkoviště","Still not done":"Pořád nesplněno","Duplicate":"Duplikovat",
+"Unscheduled":"Nenaplánované","Parking lot":"Parkoviště","Show all parked":"Ukázat vše zaparkované","Show fewer":"Ukázat méně","Still not done":"Pořád nesplněno","Duplicate":"Duplikovat",
 "New — parked":"Nové — na parkovišti","Add project":"Přidat projekt",
 "An event happens at a set time — it sits on the clock.":"Událost se děje v daný čas — sedí na hodinách.","A task is something to get done — it can wait in the parking lot.":"Úkol je něco, co je potřeba udělat — může počkat na parkovišti.",
 "Wind-down":"Zklidnění","Wind-down either side":"Zklidnění před a po","{h}h before bed and {h}h after waking, kept clear.":"{h}h před spaním a {h}h po probuzení, volno.",
