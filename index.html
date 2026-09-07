@@ -3249,6 +3249,19 @@ dialog:has(> form > .dlg-foot) > form > .dlg-foot{flex:0 0 auto}
 .shot-thumbonly .dlg-head::after{content:" · only the small copy is on this device";
   font-weight:400; font-size:11.5px; color:var(--ink-3)}
 
+/* photo usage, in the sync panel */
+.pu-row{display:flex; align-items:baseline; gap:9px; padding:4px 0;
+  border-top:1px solid var(--line-soft); font-size:12.5px}
+.pu-row:first-child{border-top:0}
+.pu-row.head{border-top:0; padding-top:0}
+.pu-row span:first-child{flex:1 1 auto; min-width:0; color:var(--ink-2);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.pu-row b{flex:0 0 auto; font-variant-numeric:tabular-nums}
+.pu-row .pu-b{flex:0 0 auto; color:var(--ink-3); font-size:11.5px;
+  font-variant-numeric:tabular-nums; text-align:right; min-width:62px}
+.pu-list{max-height:210px; overflow-y:auto}
+.bar-fill.bad{background:var(--crit)}
+
 .pindays{margin:0 0 11px}
 .pinrow{display:flex; align-items:center; gap:10px; margin-bottom:6px}
 .pinrow .pin-k{flex:0 0 52px; font-size:12px; color:var(--ink-2)}
@@ -31881,7 +31894,7 @@ var PSYNC = (() => {
         'devices within a second or two. Photos travel too: the small version ' +
         'arrives with the change, and the full picture is fetched the first ' +
         'time you open it.</p>' +
-        '<p class="hint" id="psyncPhotoState" style="margin-top:6px"></p>' +
+        '<div id="psyncPhotoState" style="margin-top:10px"></div>' +
         '<div class="btn-row"><button class="btn primary" id="psyncNow">Sync now</button>' +
         '<button class="btn" id="psyncTest">Check photo sharing</button>' +
         '<button class="btn" id="psyncOut">Sign out of sync</button></div>' +
@@ -31894,15 +31907,8 @@ var PSYNC = (() => {
          either way and the app looks right on both devices. */
       (function(){
         const el=panel.querySelector("#psyncPhotoState"); if(!el) return;
-        const all=(S.photos||[]).filter(x=>x&&x.data);
-        const waiting=all.filter(x=>!x.remote&&!x.remoteFailed).length;
-        const denied=all.filter(x=>x.remoteFailed==="denied").length;
-        const shared=all.filter(x=>x.remote).length;
-        el.textContent = denied
-          ? `${denied} photo${denied===1?"":"s"} refused by the server — the storage rules may not be published.`
-          : waiting ? `${shared} shared · ${waiting} still to upload.`
-          : all.length ? `All ${all.length} photo${all.length===1?"":"s"} on this device are shared.`
-          : "No photos on this device yet.";
+        try{ el.innerHTML=photoUsageHTML(); }
+        catch(e){ el.textContent="Could not read the photo figures."; }
       })();
       panel.querySelector("#psyncNow").onclick = async (ev) => {
         const btn=ev.currentTarget, out=panel.querySelector("#psyncTestOut");
@@ -32014,7 +32020,8 @@ var PSYNC = (() => {
           await photoRef(ph.id).put(blob,{contentType:blob.type,
             cacheControl:"public, max-age=31536000, immutable",
             customMetadata:{subjectId:String(ph.subjectId||""),at:String(ph.at||"")}});
-          ph.remote=true; delete ph.remoteFailed; done++;
+          ph.remote=true; ph.remoteAt=new Date().toISOString();
+          delete ph.remoteFailed; done++;
         }catch(e){
           /* Left un-marked on a transient failure so the next save retries it.
              Only a refusal is recorded, because that one will not fix itself. */
@@ -37812,6 +37819,105 @@ Object.assign(CS,{
   "On the cycle":"Na cyklu",
   "Take it off the cycle":"Sundat z cyklu",
   "Put it on the cycle":"Dát na cyklus"
+});
+
+
+/* ---------------- what the photos are costing ----------------
+   Two different numbers, and conflating them would mislead:
+
+   The originals are held once on the device that took them and once in the
+   account. They are fetched only when somebody opens a photo, and cached for a
+   year after that, so they cost storage rather than traffic.
+
+   The thumbnails are the ones to watch. They live INSIDE the state document,
+   which means every one of them is re-sent on every single save, to every
+   device, for the life of the library — and the whole document has to stay
+   under Firestore's 1 MB limit or syncing stops dead. That figure is the real
+   budget, and it is the one nothing was showing. */
+const b64Bytes=d=>{
+  if(!d) return 0;
+  const i=d.indexOf(","); if(i<0) return 0;
+  const s=d.length-i-1, pad=(d.endsWith("==")?2:d.endsWith("=")?1:0);
+  return Math.max(0,Math.round(s*3/4)-pad);
+};
+const kb=n=>n<1024?`${n} B`:n<1024*1024?`${(n/1024).toFixed(0)} kB`:`${(n/1048576).toFixed(2)} MB`;
+
+function photoUsage(){
+  const all=(S.photos||[]);
+  let originals=0, thumbs=0, withData=0, thumbOnly=0, shared=0, waiting=0, refused=0;
+  const byDay={};
+  all.forEach(p=>{
+    if(!p) return;
+    const ob=b64Bytes(p.data), tb=b64Bytes(p.thumb);
+    originals+=ob; thumbs+=tb;
+    if(p.data) withData++; else if(p.thumb) thumbOnly++;
+    if(p.remoteFailed) refused++;
+    else if(p.remote) shared++;
+    else if(p.data) waiting++;
+    /* Grouped by the day the photo was UPLOADED where that is known, and by
+       the day it was taken for everything from before uploading was recorded —
+       which is almost always the same day, and is the honest fallback. */
+    const when=p.remoteAt||p.at;
+    if(when&&p.remote){
+      const k=ymd(new Date(when));
+      const g=byDay[k]||(byDay[k]={n:0,bytes:0});
+      g.n++; g.bytes+=ob||Math.round(tb*15);   // a thumb-only record: estimate
+    }
+  });
+  const days=Object.entries(byDay).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,14);
+  /* the state document is everything except the photo originals, and the
+     thumbnails are by far the largest part of it */
+  let docBytes=0;
+  try{ const {photos,...rest}=S; rest.photoThumbs=all.filter(x=>x&&x.thumb)
+        .map(x=>({id:x.id,subjectId:x.subjectId,at:x.at,h:x.h,by:x.by,thumb:x.thumb}));
+       docBytes=JSON.stringify(rest).length; }catch(e){}
+  return {count:all.length, withData, thumbOnly, originals, thumbs,
+          shared, waiting, refused, days, docBytes};
+}
+
+/* the panel's usage block — plain, and honest about which number matters */
+function photoUsageHTML(){
+  const u=photoUsage();
+  if(!u.count) return '<p class="hint" style="margin:0">No photos yet.</p>';
+  const pct=Math.min(100,Math.round(u.docBytes/10485.76));   // % of the 1 MB doc limit
+  const rows=u.days.length
+    ? u.days.map(([d,g])=>{
+        const dt=fromYmd(d);
+        return `<div class="pu-row"><span>${esc(new Date(dt).toLocaleDateString(locale(),
+          {weekday:"short",day:"numeric",month:"short"}))}</span>`
+          +`<b>${g.n}</b><span class="pu-b">${esc(kb(g.bytes))}</span></div>`;
+      }).join("")
+    : `<p class="hint" style="margin:0">${esc(t("Nothing uploaded yet."))}</p>`;
+  return `
+    <div class="statrow q" style="margin-bottom:10px">
+      ${statCell(u.count,"photos")}
+      ${statCell(kb(u.originals),"on this device")}
+      ${statCell(u.shared,"shared",u.shared?"good":"none")}
+      ${statCell(u.waiting||u.refused||"—", u.refused?"refused":"waiting",
+                 u.refused?"bad":u.waiting?"":"none")}
+    </div>
+    <div class="pu-row head"><span>${esc(t("Thumbnails in every save"))}</span>
+      <b>${esc(kb(u.thumbs))}</b><span class="pu-b">${u.thumbOnly} ${esc(t("thumb-only"))}</span></div>
+    <div class="bar" style="margin:7px 0 4px"><i class="bar-fill${pct>80?" bad":""}" style="width:${pct}%"></i></div>
+    <p class="hint" style="margin:0 0 11px">${esc(kb(u.docBytes))} ${esc(t("of the 1 MB sync limit"))} (${pct}%).
+      ${pct>80?esc(t("Getting close — delete some older photos.")):""}</p>
+    <span class="eyebrow" style="display:block;margin-bottom:6px">${esc(t("Uploaded by day"))}</span>
+    <div class="pu-list">${rows}</div>`;
+}
+
+
+/* ---- photo usage figures ---- */
+Object.assign(CS,{
+  "photos":"fotek", "on this device":"na tomhle zařízení",
+  "shared":"sdíleno", "waiting":"čeká", "refused":"odmítnuto",
+  "Thumbnails in every save":"Náhledy v každém uložení",
+  "thumb-only":"jen náhled",
+  "of the 1 MB sync limit":"z limitu 1 MB pro synchronizaci",
+  "Getting close — delete some older photos.":"Blíží se to — smaž pár starších fotek.",
+  "Uploaded by day":"Nahráno po dnech",
+  "Nothing uploaded yet.":"Zatím nic nahráno.",
+  "No photos yet.":"Zatím žádné fotky.",
+  "Could not read the photo figures.":"Údaje o fotkách se nepodařilo načíst."
 });
 
 </script>
