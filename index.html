@@ -3242,6 +3242,13 @@ dialog:has(> form > .dlg-foot) > form > .dlg-foot{flex:0 0 auto}
 .cd-name .chipinfo{flex:0 0 auto}
 .hint.bad{color:var(--crit)}
 
+/* a shot whose original is still coming down from the account */
+.shot-loading #shotImg{opacity:.45; filter:blur(1px); transition:opacity .2s, filter .2s}
+.shot-loading .dlg-head::after{content:" · fetching the full photo…"; font-weight:400;
+  font-size:11.5px; color:var(--ink-3)}
+.shot-thumbonly .dlg-head::after{content:" · only the small copy is on this device";
+  font-weight:400; font-size:11.5px; color:var(--ink-3)}
+
 .pindays{margin:0 0 11px}
 .pinrow{display:flex; align-items:center; gap:10px; margin-bottom:6px}
 .pinrow .pin-k{flex:0 0 52px; font-size:12px; color:var(--ink-2)}
@@ -9438,6 +9445,12 @@ async function push(){
     await ART.publish(files);
     if(sentPhotos) photosDirty=false;
     setSync("saved","shared");
+    /* Originals follow the state rather than leading it, so the record that
+       names a photo is already in the account when the photo itself lands —
+       a device syncing in between sees a thumbnail, never a dangling object.
+       Deliberately not awaited: a slow upload must not hold up the next edit. */
+    if(window.PSYNC&&PSYNC.canPhotos&&PSYNC.canPhotos())
+      PSYNC.pushPhotos().catch(e=>console.warn("PSYNC photos",e));
   }catch(err){
     const c=err&&err.code;
     dirty=wasDirty;                               // the write did not land
@@ -15433,6 +15446,26 @@ function openShot(id){
   $("#shotH").value=x.h||"";
   $("#shotDlg").showModal();
   setTimeout(()=>$("#shotH").focus(),40);
+  /* A device that has only ever seen the thumbnail gets the real photograph
+     now, because opening it is the moment somebody actually wants to look.
+     Fetching the whole library up front would spend the other person's data
+     on shots they may never open, and the thumbnail was already enough to
+     recognise the plant by. Once fetched it is kept, so this happens once. */
+  if(!x.data&&x.thumb&&window.PSYNC&&PSYNC.canPhotos&&PSYNC.canPhotos()){
+    const dlg=$("#shotDlg");
+    dlg.classList.add("shot-loading");
+    PSYNC.pullPhoto(id).then(data=>{
+      dlg.classList.remove("shot-loading");
+      /* the dialog may have been closed, or moved on to another shot, while
+         the photo was in the air — only paint it if it is still the one open */
+      if(data&&shotId===id&&dlg.open) $("#shotImg").src=data;
+      if(data){ if(pvId) renderPlant(); renderSubjects(); }
+    }).catch(e=>{
+      dlg.classList.remove("shot-loading");
+      dlg.classList.add("shot-thumbonly");
+      console.warn("photo pull",e);
+    });
+  }
 }
 $("#shotForm").addEventListener("submit",async e=>{
   e.preventDefault();
@@ -15447,6 +15480,14 @@ $("#shotForm").addEventListener("submit",async e=>{
 $("#shotDel").addEventListener("click",async()=>{
   const x=(S.photos||[]).find(y=>y.id===shotId); if(!x) return;
   if(!await ask("Delete this photo?")) return;
+  /* Take the shared copy with it. Without this the account slowly fills with
+     objects nothing references and nobody can see — paid-for storage holding
+     photographs that have already been deleted everywhere a person can look.
+     Failure is not fatal to the delete: the local record still goes, and a
+     leftover object is a tidiness problem, not a correctness one. */
+  const goneId=shotId;
+  if(window.PSYNC&&PSYNC.canPhotos&&PSYNC.canPhotos())
+    PSYNC.dropPhoto(goneId).catch(e=>console.warn("photo delete",e));
   S.photos=S.photos.filter(y=>y.id!==shotId);
   photosTouched(); touch();
   if(pvId) renderPlant();
@@ -15463,6 +15504,27 @@ const PLANT_ACTIONS=["Fungicide spray","Insecticide spray","Neem oil treatment",
 /* No file store on this page, so shots are shrunk hard and kept inline.
    640px on the long edge at q0.65 lands around 35 kB — a few dozen is fine. */
 const PHOTO_MAX=640, PHOTO_Q=0.65;
+/* WebP where the browser has it, JPEG where it has not.
+
+   At matched visual quality WebP runs about a quarter to a third smaller than
+   JPEG, and since every one of these bytes is now uploaded once and downloaded
+   by the other person, that is a straight cut to the data bill for no loss of
+   picture. The check is by result rather than by feature-detection: a browser
+   that cannot encode WebP does not throw, it silently hands back a PNG — which
+   would be several times LARGER than the JPEG we were trying to beat, and
+   would have quietly made the transfer worse instead of better. So the prefix
+   of what comes back is what decides. */
+let _webpOK=null;
+function encodeBest(canvas,q){
+  if(_webpOK!==false){
+    try{
+      const d=canvas.toDataURL("image/webp",q);
+      if(d.indexOf("data:image/webp")===0){ _webpOK=true; return d; }
+      _webpOK=false;
+    }catch(e){ _webpOK=false; }
+  }
+  return canvas.toDataURL("image/jpeg",q);
+}
 function shrinkImage(file){
   return new Promise((res,rej)=>{
     const url=URL.createObjectURL(file), img=new Image();
@@ -15473,7 +15535,7 @@ function shrinkImage(file){
       c.height=Math.max(1,Math.round(img.height*sc));
       c.getContext("2d").drawImage(img,0,0,c.width,c.height);
       URL.revokeObjectURL(url);
-      try{ res(c.toDataURL("image/jpeg",PHOTO_Q)); }catch(err){ rej(err); }
+      try{ res(encodeBest(c,PHOTO_Q)); }catch(err){ rej(err); }
     };
     img.onerror=()=>{ URL.revokeObjectURL(url); rej(new Error("that file could not be read as an image")); };
     img.src=url;
@@ -15505,7 +15567,10 @@ function shrinkDataUrl(dataUrl,max,q){
       c.width=Math.max(1,Math.round(img.width*sc));
       c.height=Math.max(1,Math.round(img.height*sc));
       c.getContext("2d").drawImage(img,0,0,c.width,c.height);
-      try{ res(c.toDataURL("image/jpeg",q)); }catch(err){ rej(err); }
+      /* Thumbnails ride inside the state document, so they are re-sent on every
+         save for the life of the library — by some distance the most repeatedly
+         transferred bytes in the app, and the ones worth shrinking hardest. */
+      try{ res(encodeBest(c,q)); }catch(err){ rej(err); }
     };
     img.onerror=()=>rej(new Error("thumbnail failed"));
     img.src=dataUrl;
@@ -31496,7 +31561,7 @@ function nOpenClip(prefill){
 var PSYNC = (() => {
   const SDK   = "https://www.gstatic.com/firebasejs/10.12.2/";
   const PARTS = ["firebase-app-compat.js","firebase-auth-compat.js",
-                 "firebase-firestore-compat.js"];
+                 "firebase-firestore-compat.js","firebase-storage-compat.js"];
   /* Which device is this? Written alongside every save so the listener can
      recognise the echo of our own write and not re-apply it. */
   const DEVICE_KEY = "pottingbench.deviceId";
@@ -31507,7 +31572,7 @@ var PSYNC = (() => {
                    localStorage.setItem(DEVICE_KEY, deviceId); }
   }catch(e){ deviceId = "anon" + Math.random().toString(36).slice(2); }
 
-  let ready=null, db=null, auth=null, uid=null, unsub=null, lastRev=0, started=false;
+  let ready=null, db=null, auth=null, store=null, uid=null, unsub=null, lastRev=0, started=false;
 
   function loadScript(src){
     return new Promise((ok, fail) => {
@@ -31528,6 +31593,7 @@ var PSYNC = (() => {
       if(!(firebase.apps && firebase.apps.length)) firebase.initializeApp(FIREBASE_CONFIG);
       auth = firebase.auth();
       db   = firebase.firestore();
+      store= firebase.storage();
       return true;
     })();
     return ready;
@@ -31535,6 +31601,8 @@ var PSYNC = (() => {
 
   const stateDoc = () =>
     db.collection("users").doc(uid).collection("state").doc("main");
+  const photoRef = id =>
+    store.ref().child("pottingbenchPhotos/"+uid+"/"+cleanId(id));
 
   /* Which account does the state currently on this device belong to?
      Written the moment an account's state is adopted or applied, so that a
@@ -31803,7 +31871,114 @@ var PSYNC = (() => {
     }
   }
 
-  return { start, renderPanel };
+
+  /* ---- photo originals ----------------------------------------------------
+     The state document carries thumbnails and always has: they are small, they
+     travel with the edit, and they are what makes a second device usable the
+     instant it syncs — without them every plant is an identical leaf icon.
+     What they are not is the photograph. A 1 MB Firestore document cannot hold
+     a library of shots, so the originals have always stopped at the device that
+     took them, and the other person could see that a photo existed but never
+     look at it.
+
+     So the originals go to Cloud Storage, one object per photo, under the
+     account that owns them. Two decisions worth stating:
+
+     Upload is eager, download is not. A shot is pushed as soon as it is taken,
+     because the whole point is that the other person can see it — but pulling a
+     whole library down onto every device would spend somebody's data plan on
+     photos they may never open. The thumbnail already shows what the plant
+     looks like; the original arrives when someone actually asks for it, and is
+     then kept.
+
+     A failed upload is remembered, not lost. `pending` survives in the state,
+     so a photo taken on a train uploads when there is signal rather than being
+     stranded on one phone forever. */
+  const PHOTO_MIME=/^data:(image\/[a-z+.-]+);base64,/i;   // jpeg, webp, png alike
+  let photoBusy=false;
+
+  /* data: URL -> Blob, without fetch(): a data URL that large goes through the
+     network stack for no reason, and some browsers cap it. */
+  function dataUrlToBlob(d){
+    const m=PHOTO_MIME.exec(d||""); if(!m) return null;
+    const bin=atob(d.slice(d.indexOf(",")+1));
+    const buf=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) buf[i]=bin.charCodeAt(i);
+    return new Blob([buf],{type:m[1]});
+  }
+  const blobToDataUrl=b=>new Promise((ok,fail)=>{
+    const r=new FileReader(); r.onload=()=>ok(r.result); r.onerror=fail; r.readAsDataURL(b);
+  });
+
+  /* Every shot this device holds that the account has not got a copy of. */
+  const needsUpload=()=>(S.photos||[]).filter(x=>x&&x.data&&!x.remote);
+
+  /* Push originals up. Called after a successful state save, so the metadata
+     that names them is already there when they land. */
+  async function pushPhotos(){
+    if(!uid||!store||photoBusy) return;
+    const queue=needsUpload();
+    if(!queue.length) return;
+    photoBusy=true;
+    let done=0, failed=0;
+    try{
+      for(const ph of queue){
+        const blob=dataUrlToBlob(ph.data);
+        /* Not a data URL we can post — mark it so the queue does not spin on
+           the same broken record every time a photo is added. */
+        if(!blob){ ph.remoteFailed=true; continue; }
+        if(blob.size>5*1024*1024){ ph.remoteFailed="too big"; continue; }
+        try{
+          /* A photo never changes once taken — the id is the content. So it is
+             marked immutable and cached for a year: a second device that looks
+             at the same shot twice pays for it once, and the browser and the
+             CDN serve every later look without touching the egress budget. */
+          await photoRef(ph.id).put(blob,{contentType:blob.type,
+            cacheControl:"public, max-age=31536000, immutable",
+            customMetadata:{subjectId:String(ph.subjectId||""),at:String(ph.at||"")}});
+          ph.remote=true; delete ph.remoteFailed; done++;
+        }catch(e){
+          /* Left un-marked on a transient failure so the next save retries it.
+             Only a refusal is recorded, because that one will not fix itself. */
+          if(e&&e.code==="storage/unauthorized"){ ph.remoteFailed="denied"; }
+          failed++;
+        }
+      }
+      if(done||failed) try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){}
+      if(done) setSync("saved","photos shared");
+    } finally { photoBusy=false; }
+    /* the plant page and the garden both draw photos, and a shot that has just
+       become shared should stop showing as pending without a reload */
+    if(done) try{ if(pvId) renderPlant(); renderGarden(); }catch(e){}
+  }
+
+  /* Fetch one original on demand and keep it. Returns the data URL, or null. */
+  async function pullPhoto(id){
+    if(!uid||!store) return null;
+    const ph=(S.photos||[]).find(x=>x&&x.id===id);
+    if(!ph) return null;
+    if(ph.data) return ph.data;
+    const url=await photoRef(id).getDownloadURL();
+    const res=await fetch(url);
+    if(!res.ok) throw new Error("http "+res.status);
+    const data=await blobToDataUrl(await res.blob());
+    ph.data=data; ph.remote=true;
+    try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){}
+    return data;
+  }
+
+  /* Deleting a photo has to delete the object too, or the account slowly fills
+     with shots nothing references and nobody can see. A missing object is a
+     success: it means the job was already done. */
+  async function dropPhoto(id){
+    if(!uid||!store) return;
+    try{ await photoRef(id).delete(); }
+    catch(e){ if(!(e&&e.code==="storage/object-not-found")) throw e; }
+  }
+
+  return { start, renderPanel, pushPhotos, pullPhoto, dropPhoto,
+           pendingPhotos:()=>needsUpload().length,
+           canPhotos:()=>!!(uid&&store) };
 })();
 
 /* ============================================================================

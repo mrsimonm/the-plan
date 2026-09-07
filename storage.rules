@@ -42,6 +42,26 @@ service firebase.storage {
       allow delete: if canManage(studentId);
     }
 
+    // pottingbenchPhotos/{userId}/{photoId}
+    // A plant photo, held for the account that took it. The sharing model is
+    // the same one the state document uses: two people who share a garden
+    // share an account, so "only this uid" is exactly the right rule and no
+    // cross-account grant is wanted. Kept out of the teachbench* trees on
+    // purpose — this bucket serves two apps and their access rules have
+    // nothing in common.
+    //
+    // Thumbnails do NOT live here. They ride inside the state document, which
+    // is what lets a second device show recognisable plants instantly without
+    // fetching anything. This is only ever the full-size original.
+    match /pottingbenchPhotos/{userId}/{photoId} {
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow write: if signedIn() && request.auth.uid == userId
+        && request.resource != null
+        && request.resource.size < 5 * 1024 * 1024          // 5 MB cap
+        && request.resource.contentType.matches('image/.*'); // images only
+      allow delete: if signedIn() && request.auth.uid == userId;
+    }
+
     // teachbenchMessages/{studentId}/{messageId}/{fileName}
     // A photo attached to a chat message — a page of a book, a screenshot
     // of an exercise. Same limits as homework: the picture is there to be
