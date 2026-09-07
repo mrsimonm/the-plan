@@ -15084,6 +15084,9 @@ const LIB_ITEMS=[
   {v:"shelf",  ic:"🧴", t:"Shelf",       d:"Your bottles, and the order they go in"},
   {v:"academy",ic:"📖", t:"Academy",     d:"Watering, feeding, spraying, propagation"},
   {v:"health", ic:"🩺", t:"Health",      d:"Pests, diseases and what you did about them"},
+  /* Not a view: it hands over to the Cabinet, which is a different app in the
+     switcher. Marked so the click handler knows not to call show(). */
+  {v:"__plantbook", ic:"📗", t:"My plant collection", d:"The book of your plants — what they cost, where they came from", app:true},
   {v:"log",    ic:"📋", t:"History",     d:"Everything either of you has done"}
 ];
 function renderLibrary(){
@@ -15098,7 +15101,9 @@ function renderLibrary(){
     ho?` · ${ho} ${L.lang==="cs"?"otevřených problémů":"open problem"+(ho===1?"":"s")}`:""}`;
 }
 $("#libMenu").addEventListener("click",e=>{
-  const b=e.target.closest("[data-go]"); if(b) show(b.dataset.go);
+  const b=e.target.closest("[data-go]"); if(!b) return;
+  if(b.dataset.go==="__plantbook"){ openPlantBook(); return; }
+  show(b.dataset.go);
 });
 
 /* ---------------- one plant, in full ---------------- */
@@ -34414,6 +34419,25 @@ const CB_TYPES=[
            {k:"grade",l:"Grade",ph:"PSA 10, BGS 9.5…"},
            {k:"cert",l:"Cert number",ph:"12345678"},
            {k:"illus",l:"Illustrator",ph:"Mitsuhiro Arita"}]},
+  /* Plants. Unlike every other type here, this one has a living original: the
+     Potting Bench already knows these plants, waters them and records what has
+     gone wrong with them. So the collection is not where a plant is kept — it
+     is the book about the plants, the thing you show someone, with the
+     provenance and the money and the story that the bench has no business
+     holding. The fields are therefore the ones the bench does NOT track, plus
+     a snapshot of the ones it does. */
+  {id:"plants", name:"Plants", maker:"Species",
+   cond:["Thriving","Healthy","Settling in","Struggling","Recovering","Lost"],
+   fields:[{k:"spot",l:"Where it lives",ph:"Living room, east window"},
+           {k:"rhythm",l:"Water & feed",ph:"Twice a week, fed Sunday"},
+           {k:"pot",l:"Pot",ph:"17 cm, standard mix"},
+           {k:"light",l:"Light",opts:["Full sun","Bright, some direct","Bright, indirect","Medium","Low"]},
+           {k:"hum",l:"Humidity",opts:["Dry air is fine","Average","Likes humidity"]},
+           {k:"height",l:"Height",ph:"66 cm"},
+           {k:"leaves",l:"Leaves logged",ph:"18"},
+           {k:"origin",l:"How it arrived",opts:["Bought","Cutting","Gift","Divided","Grown from seed","Rescued"]},
+           {k:"pets",l:"Pets",opts:["Not known to be toxic","Toxic to cats and dogs"]},
+           {k:"health",l:"Health history",ph:"Spider mite, cleared after 3 weeks",wide:true}]},
   {id:"custom", name:"Something else", maker:"Maker",
    /* "Mint condition", not "Mint": the bare word already exists in the CS
       dictionary as the herb "Máta" (Potting Bench's plant data), so the bare
@@ -34752,7 +34776,19 @@ function cbNormalise(d){
      with no valuation started claiming it had cost nothing. */
   const num=v=>{ if(v==null||v==="") return null;
                  const n=Number(v); return isFinite(n)&&n>=0?n:null; };
-  const TYPES={art:1,models:1,coins:1,books:1,music:1,custom:1,pokemon:1};
+  /* Derived from CB_TYPES rather than written out again. As a hand-kept copy
+     this silently downgraded every collection of a type added after it was
+     written: the type fell back to "custom" on the next boot, the code that
+     looks a collection up BY type then found nothing, and made a second one.
+     Two "My plants" collections, one of them wrong, and nothing said so.
+     The fallback list is only for the case where this runs before CB_TYPES
+     has been evaluated, and it is the reason this must never be the only
+     source of the answer. */
+  const TYPES={};
+  (typeof CB_TYPES!=="undefined"&&Array.isArray(CB_TYPES)?CB_TYPES:[])
+    .forEach(t=>{ if(t&&t.id) TYPES[t.id]=1; });
+  if(!TYPES.custom)
+    ["art","models","coins","books","music","pokemon","plants","custom"].forEach(k=>{TYPES[k]=1;});
   const STAT={owned:1,wanted:1,ordered:1,loaned:1,sold:1,gifted:1};
   const ISO=v=>(typeof v==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(v))?v:null;
 
@@ -35147,6 +35183,30 @@ function cbPaint(){
   $("#cbToIndex").hidden=!shelf;
   $("#cbCollBtn").hidden=!shelf;
   $("#cbNewBtn").hidden=!shelf;
+  /* The plant book is filled from the Potting Bench, so it gets a way to go
+     back for anything added since. Only ever on a plants collection — on a
+     shelf of records or coins the button would be meaningless. */
+  (function(){
+    let b=$("#cbRefreshPlants");
+    if(!b){
+      const host=$("#cbNewBtn")&&$("#cbNewBtn").parentElement;
+      if(!host) return;
+      b=document.createElement("button");
+      b.className="btn"; b.id="cbRefreshPlants"; b.type="button";
+      b.textContent=t("Update from the bench");
+      b.addEventListener("click",()=>{
+        const r=plantBookImport();
+        cbPaint();
+        say(r.added
+          ? (L.lang==="cs"?`Přidáno ${r.added}, aktualizováno ${r.updated}.`
+                          :`${plural(r.added,"plant")} added, ${r.updated} updated.`)
+          : (L.lang==="cs"?`Aktualizováno ${r.updated} rostlin. Nic nového.`
+                          :`${r.updated} updated. Nothing new to add.`),"Done");
+      });
+      host.insertBefore(b,$("#cbNewBtn"));
+    }
+    b.hidden=!(shelf&&c&&c.type==="plants");
+  })();
   $("#cbAddColl").hidden=shelf;
   $("#cbExportBtn").hidden=none;
   /* the heading carries the collection's own name on the shelf, which is why
@@ -38007,4 +38067,162 @@ Object.assign(CS,{
   "Small":"Malá", "Standard":"Standardní", "High":"Vysoká", "Best":"Nejlepší",
   "full quality":"plná kvalita"
 });
+
+/* ============================================================================
+   THE PLANT BOOK — the bridge from the Potting Bench into the Cabinet
+
+   The bench and the cabinet want different things from the same plant. The
+   bench is operational: when did this drink, what is eating it, when is it due
+   again. The cabinet is a record: where it came from, what it cost, what it is
+   worth, what it has been through — the things you would tell somebody, or an
+   insurer, and that the bench has no business holding.
+
+   So this does not mirror. It IMPORTS, and then leaves you alone. Everything
+   the bench knows is written once into the collection; everything you add
+   there afterwards — the price, the provenance, the story — is yours and is
+   never overwritten. Running it again refreshes only the fields the bench owns
+   and adds any plants that are new since last time.
+
+   That is the whole design decision. A live mirror would be tidier and would
+   fight the person using it: every time the bench watered something, the note
+   they had written about where the cutting came from would have to survive a
+   rewrite, and one day it would not.
+   ========================================================================== */
+const PLANT_BOOK_NAME="My plants";
+
+/* The bench's own summary of one plant, as the collection's fields want it. */
+function plantBookFields(p){
+  const rs=careRoutines(p.id);
+  const wr=rs.find(r=>r.kind==="water");
+  const rhythm=cycleOn(p) ? cycleLine(p)
+    : (wr&&+wr.every>0 ? (L.lang==="cs"?`zálivka po ${+wr.every} dnech`:`water every ${+wr.every} days`) : "");
+  const shots=photosFor(p.id).filter(x=>x.h);
+  const height=shots.length?String(shots[shots.length-1].h)+" cm":"";
+  const leaves=leafEventsFor(p.id).reduce((n,e)=>n+(+e.n>0?+e.n:1),0);
+  const sp=speciesFind(p.species);
+  const sub=SUBSTRATES[p.sub];
+  const pot=[p.pot?p.pot+" cm":"", sub?t(sub.label):""].filter(Boolean).join(", ");
+  const mine=issuesFor(p.id);
+  const open=mine.filter(issueOpen), past=mine.filter(i=>!issueOpen(i));
+  const health=[
+    open.length?(L.lang==="cs"?`teď: ${open.map(issueName).join(", ")}`
+                              :`now: ${open.map(issueName).join(", ")}`):"",
+    past.length?(L.lang==="cs"?`dřív: ${past.map(i=>`${issueName(i)} (${issueDays(i)} dní)`).join(", ")}`
+                              :`before: ${past.map(i=>`${issueName(i)}, ${issueDays(i)}d`).join(", ")}`):""
+  ].filter(Boolean).join(" · ");
+  return {
+    spot:p.spot||"", rhythm, pot, height,
+    light:p.light!=null&&LIGHTS[p.light]?LIGHTS[p.light]:"",
+    hum:p.hum!=null&&HUM[p.hum]?HUM[p.hum]:"",
+    leaves:leaves?String(leaves):"",
+    pets:sp?(sp.x?"Toxic to cats and dogs":"Not known to be toxic"):"",
+    health
+  };
+}
+/* Health as a condition grade — the bench knows this and a shelf wants it. */
+function plantBookCond(p){
+  const open=openIssuesFor(p.id);
+  if(open.some(i=>+i.severity>=3)) return "Struggling";
+  if(open.length) return "Recovering";
+  const since=p.since?Math.floor((Date.now()-fromYmd(p.since))/DAY):999;
+  if(since<60) return "Settling in";
+  const leaves=leafEventsFor(p.id).length;
+  return leaves>=3?"Thriving":"Healthy";
+}
+
+const plantBookColl=()=>cbColls().find(c=>c&&c.type==="plants")||null;
+
+/* Find the collection or make it. Returns the collection either way. */
+function plantBookEnsure(){
+  let c=plantBookColl();
+  if(c) return c;
+  const tpl=CB_TYPE("plants");
+  c={id:(typeof rid==="function"?rid():uid()),
+     name:PLANT_BOOK_NAME, type:"plants", makerLbl:tpl.maker, cur:"Kč",
+     createdAt:Date.now(), updatedAt:Date.now()};
+  (S.cabinets=S.cabinets||[]).push(c);
+  return c;
+}
+
+/* Write the bench's plants into the collection. Returns {added,updated}. */
+function plantBookImport(){
+  const c=plantBookEnsure();
+  const items=(S.cabItems=S.cabItems||[]);
+  const mine=items.filter(i=>i.collId===c.id);
+  /* matched on the bench's own id, kept in the item's custom fields, so a
+     renamed plant updates its own row instead of arriving as a second one */
+  const byPlant={};
+  mine.forEach(i=>{ const k=i.x&&i.x.benchId; if(k) byPlant[k]=i; });
+  let added=0, updated=0;
+  subjectsIn("plants").forEach(p=>{
+    const f=plantBookFields(p);
+    const ex=byPlant[p.id];
+    if(ex){
+      /* only the bench's own fields; the price, provenance and notes typed
+         into the collection are the owner's and are never touched */
+      ex.title=p.name;
+      ex.maker=p.species||ex.maker||"";
+      ex.loc=p.spot||ex.loc||"";
+      ex.cond=plantBookCond(p);
+      ex.x=Object.assign({},ex.x,f,{benchId:p.id});
+      ex.updatedAt=Date.now();
+      updated++;
+    }else{
+      items.push({id:(typeof rid==="function"?rid():uid()), collId:c.id,
+        title:p.name, maker:p.species||"", year:"",
+        acq:p.since||"", status:"owned", cond:plantBookCond(p),
+        loc:p.spot||"", qty:1, paid:null, worth:null, from:"", valuedAt:"",
+        tags:[], notes:p.detail||"", photos:[],
+        x:Object.assign({},f,{benchId:p.id}),
+        createdAt:Date.now(), updatedAt:Date.now()});
+      added++;
+    }
+  });
+  c.updatedAt=Date.now();
+  touch();
+  return {added,updated,total:subjectsIn("plants").length};
+}
+
+/* The bench's door into the book. */
+async function openPlantBook(){
+  const plants=subjectsIn("plants").length;
+  const existed=!!plantBookColl();
+  if(!existed&&!plants){
+    say(L.lang==="cs"?"Nejdřív přidej nějaké rostliny."
+                     :"Add some plants first and they will fill the book.");
+    return;
+  }
+  if(!existed){
+    const r=plantBookImport();
+    say(L.lang==="cs"?`Založeno „${PLANT_BOOK_NAME}“ s ${r.added} rostlinami.`
+                     :`Started "${PLANT_BOOK_NAME}" with ${plural(r.added,"plant")}.`,"Done");
+  }
+  const c=plantBookEnsure();
+  L.cbColl=c.id; L.cbPane="shelf"; saveLocal();
+  setApp("cabinet");
+  try{ cbRender(); }catch(e){}
+}
+
+
+/* ---- the plant book ---- */
+Object.assign(CS,{
+  "My plant collection":"Moje sbírka rostlin",
+  "The book of your plants — what they cost, where they came from":
+    "Kniha tvých rostlin — co stály a odkud jsou",
+  "My plants":"Moje rostliny",
+  "Update from the bench":"Načíst z pěstírny",
+  "Species":"Druh",
+  "Thriving":"Daří se", "Healthy":"Zdravá", "Settling in":"Zabydluje se",
+  "Struggling":"Trápí se", "Recovering":"Zotavuje se", "Lost":"Uhynulá",
+  "Where it lives":"Kde stojí", "Water & feed":"Zálivka a hnojení",
+  "Pot":"Květináč", "Height":"Výška", "Leaves logged":"Zapsaných listů",
+  "How it arrived":"Jak přišla", "Pets":"Zvířata", "Health history":"Historie zdraví",
+  "Bought":"Koupená", "Cutting":"Z řízku", "Gift":"Dárek",
+  "Divided":"Z dělení", "Grown from seed":"Ze semene", "Rescued":"Zachráněná",
+  "Living room, east window":"Obývák, východní okno",
+  "Twice a week, fed Sunday":"Dvakrát týdně, hnojení v neděli",
+  "17 cm, standard mix":"17 cm, běžný substrát",
+  "Spider mite, cleared after 3 weeks":"Sviluška, vyřešeno za tři týdny"
+});
+
 </script>
