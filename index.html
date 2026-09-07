@@ -924,7 +924,7 @@ input[type="time"].mono-input{width:88px}
   background:var(--surface-2); border:1px solid var(--line);
   font-size:10.5px; line-height:1.35}
 .wb-qchip .wb-tc{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-.wb-qchip.done{border-color:var(--ok); background:color-mix(in srgb,var(--ok) 16%,var(--surface-2))}
+.wb-qchip.done{border-color:var(--ok); background:color-mix(in srgb,var(--ok) 16%,var(--surface-2)); opacity:.72}
 .wb-qchip.done .wb-tc{text-decoration:line-through; text-decoration-thickness:1px}
 .wb-qchip.lift{opacity:.85; box-shadow:var(--shadow-lift)}
 /* The quick strip: the parking lot's twin, sitting directly above it. Quick
@@ -1108,7 +1108,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
 .wb-adtick:hover{border-color:var(--accent)}
 /* a ticked Quick Task: filled box, and the chip recedes without leaving the
    day — the point is to read back what you did, not to make it vanish */
-.wb-adtick.on{background:var(--accent); border-color:var(--accent); position:relative}
+.wb-adtick.on{background:var(--ok); border-color:var(--ok); position:relative}
 .wb-adtick.on::after{content:"✓"; position:absolute; inset:0; display:flex;
   align-items:center; justify-content:center; font-size:8px; line-height:1; color:#fff}
 /* A Quick Task has no clock slot, so it is never picked up. touch-action goes
@@ -1281,6 +1281,7 @@ html.pfocus .pfocus-btn{position:sticky; right:0}
    would otherwise carry. */
 .wb-blk.done{background:var(--ok); border-left-color:var(--ok)}
 .wb-blk.done b,.wb-blk.done span{color:#fff}
+.wb-blk.done b{text-decoration:line-through}
 .wb-blk.wb-blk{}
 .wb-blk.wb-blk b{}
 .wb-blk[data-wb^="block"]{border-left-style:dashed}
@@ -2004,8 +2005,22 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 .trow:active{background:var(--sunk)}
 .tbox{width:22px; height:22px; flex:0 0 auto; padding:0; cursor:pointer; line-height:1;
   border:1px solid var(--line); border-radius:6px; background:var(--surface-2);
-  color:var(--on-accent); font-size:13px; transition:background .12s, border-color .12s}
-.trow.done .tbox{background:var(--ok); border-color:var(--ok)}
+  color:var(--on-accent); font-size:13px;
+  transition:background .12s, border-color .12s, width .12s, height .12s, transform .12s}
+/* ---- a checked-off task, everywhere a task can be checked off ----
+   Simon: "they should stay there and maybe get smaller. They should get
+   greyed out so they are more transparent, and they should clearly look
+   checked. There should be a green check as well as a line coming through
+   it — some positive reinforcement." One `.tbox` markup is shared by the
+   Planner's tasks, subtasks and checklist rows, the Hours milestones, and
+   this day's task list — so one rule reaches all of them. The box shrinks
+   and turns into a soft green tint rather than a solid fill, because a
+   solid block reads as a fresh accent colour, not as "done"; the tint plus
+   a bold green tick reads as both at a glance, in every palette and in
+   dark mode, without a contrast check per theme. */
+.done .tbox:not(.plan){width:18px; height:18px; background:color-mix(in srgb, var(--ok) 18%, var(--surface-2));
+  border-color:var(--ok); color:var(--ok); font-weight:800; font-size:12px}
+.ptask.done, .trow.done, .hms.done, .pcl-item.done, .pstep.done{opacity:.68}
 .ttext{min-width:0; overflow-wrap:anywhere}
 .trow.done .ttext{text-decoration:line-through; color:var(--ink-3)}
 .tmeta{grid-column:2; font-size:11.5px; color:var(--ink-3); font-family:var(--font); font-variant-numeric:tabular-nums}
@@ -2823,10 +2838,13 @@ html{overscroll-behavior-y:none}
 .n-todo-box input{position:absolute; inset:0; opacity:0; margin:0; cursor:pointer}
 .n-todo-box i{width:17px; height:17px; border:1.5px solid var(--line-strong); border-radius:5px;
   background:var(--surface); transition:background .12s ease, border-color .12s ease}
-.n-todo-box input:checked + i{background:var(--accent); border-color:var(--accent)}
+.n-todo-box input:checked + i{background:var(--ok); border-color:var(--ok)}
 .n-todo-box input:checked + i::after{content:""; position:absolute; left:6px; top:2px;
   width:4px; height:9px; border:solid var(--on-accent); border-width:0 2px 2px 0; transform:rotate(42deg)}
 .n-todo-box input:focus-visible + i{outline:2px solid var(--accent); outline-offset:2px}
+/* checked off, same positive-reinforcement treatment as the Planner's tasks:
+   a green tick, a line through the text, faded so it reads as settled */
+.n-block[data-done="1"]{opacity:.68}
 .n-block[data-done="1"] .n-block-ta{text-decoration:line-through; color:var(--ink-3)}
 
 .n-block[data-type="quote"]{padding-left:30px}
