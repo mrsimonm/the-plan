@@ -39668,8 +39668,14 @@ const RB = (() => {
 /* ---------------------------------------------------------------- shape ---- */
 const SCHEMA = 1;
 const HOLD_MIN = 10;               /* a held slot is yours for ten minutes */
-const DEFAULT_HOURS = { 1:[["08:00","21:00"]], 2:[["08:00","21:00"]], 3:[["08:00","21:00"]],
-                        4:[["08:00","21:00"]], 5:[["08:00","21:00"]], 6:[["09:00","14:00"]], 0:[] };
+/* {from,to} objects, not [from,to] tuples: Firestore refuses to store an
+   array nested inside another array, and a week of days is already an
+   array of these. hoursFor() below reads either shape, so old fixtures
+   or already-written tuple data both still work; only new writes need
+   to use this one. */
+const DEFAULT_HOURS = { 1:[{from:"08:00",to:"21:00"}], 2:[{from:"08:00",to:"21:00"}],
+                        3:[{from:"08:00",to:"21:00"}], 4:[{from:"08:00",to:"21:00"}],
+                        5:[{from:"08:00",to:"21:00"}], 6:[{from:"09:00",to:"14:00"}], 0:[] };
 const KINDS = ["room","desk","hall","studio","other"];
 const EQUIP = ["projector","whiteboard","tv","video call","piano","sink",
                "air conditioning","step-free","blackout","sound system","kitchen"];
@@ -42132,7 +42138,7 @@ async function act(a, el){
       document.querySelectorAll(".rb-hrow").forEach(r=>{
         const d=+r.dataset.d;
         oh[d]= r.querySelector(".rb-h-on").checked
-          ? [[r.querySelector(".rb-h-from").value||"08:00", r.querySelector(".rb-h-to").value||"21:00"]]
+          ? [{from:r.querySelector(".rb-h-from").value||"08:00", to:r.querySelector(".rb-h-to").value||"21:00"}]
           : [];
       });
       await saveOrgHours(oh); closeDlg(); paint(); });
@@ -42346,8 +42352,8 @@ function startDemo(){
   db=DEMO_DB; orgId="demo"; myUid="demo-owner"; myEmail="you@example.com"; anon=false;
   demoAudit=[]; demoGuards=[];
   org=nOrg({ name:t("Sample venue"), slug:"sample", ownerUid:"demo-owner",
-    openingHours:{1:[["08:00","21:00"]],2:[["08:00","21:00"]],3:[["08:00","21:00"]],
-      4:[["08:00","21:00"]],5:[["08:00","21:00"]],6:[["09:00","14:00"]],0:[]},
+    openingHours:{1:[{from:"08:00",to:"21:00"}],2:[{from:"08:00",to:"21:00"}],3:[{from:"08:00",to:"21:00"}],
+      4:[{from:"08:00",to:"21:00"}],5:[{from:"08:00",to:"21:00"}],6:[{from:"09:00",to:"14:00"}],0:[]},
     settings:{slotMinutes:30, currency:"Kč", calendarVisibility:"all",
       invoicePrefix:"FV", invoiceNext:7, dueDays:14, vatRate:0,
       bankAccount:"123456789/0800", ico:"12345678",
@@ -42449,9 +42455,9 @@ function selfTest(){
   const ok_=(name,cond,detail)=>is(name, !!cond, true) || (detail&&!cond&&out.push("       "+detail));
   try{
     const d0=iso(addDays(Date.now(),3));                 /* a clear day ahead */
-    org=nOrg({name:"Test", ownerUid:"u1", openingHours:{1:[["08:00","20:00"]],
-      2:[["08:00","20:00"]],3:[["08:00","20:00"]],4:[["08:00","20:00"]],
-      5:[["08:00","20:00"]],6:[["09:00","13:00"]],0:[]},
+    org=nOrg({name:"Test", ownerUid:"u1", openingHours:{1:[{from:"08:00",to:"20:00"}],
+      2:[{from:"08:00",to:"20:00"}],3:[{from:"08:00",to:"20:00"}],4:[{from:"08:00",to:"20:00"}],
+      5:[{from:"08:00",to:"20:00"}],6:[{from:"09:00",to:"13:00"}],0:[]},
       settings:{slotMinutes:30, currency:"Kč"}},"o1");
     myUid="u1"; anon=false;
     tariffs=[ nTariff({name:"Staff", hourlyRate:0},"t0"),
