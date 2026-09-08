@@ -10925,9 +10925,18 @@ async function promoteCutting(c){
   const sp=cutSpecies(c);
   if(!await ask(`Potted on. Add it to your plants so it gets watered and fed like the rest?`,"Add it")) return;
   const sid=uid();
+  /* A plant you rooted yourself is the one thing in the collection that cost
+     nothing and is still worth something. Without this it arrived unmarked and
+     counted as "bought" at zero, so the value the collection grew for itself
+     could never appear — the propagation half of the worth card was reporting on
+     an empty set. The parent's name rides along as its provenance, and its
+     currency too, so a value typed in later is read in the right money. */
+  const parent=c.subjectId?subject(c.subjectId):null;
   S.subjects.push({id:sid,module:"plants",name:cutName(c)+" cutting",species:sp?sp.n:(c.species||""),
     light:sp?sp.l:null,hum:sp?sp.h:null,spot:"",detail:"",since:ymd(Date.now()),schedId:null,week:1,
-    anchor:leastLoadedActionDay()});
+    anchor:leastLoadedActionDay(),
+    acq:"grown", price:0, from:parent?parent.name:"", bought:ymd(Date.now()),
+    cur:parent?plantCur(parent):"CZK"});
   if(sp){
     S.routines.push({id:uid(),subjectId:sid,kind:"water",name:"Water",every:sp.w});
     S.routines.push({id:uid(),subjectId:sid,kind:"feed",name:"Feed",every:sp.f});
@@ -20741,7 +20750,8 @@ function renderLog(){
     const sc=e.schedId?schedById(e.schedId):null;
     const wk=(sc&&e.week&&weekCount(sc)>1)?weekName(sc,e.week):null;
     const detail=[fm?fm.name:(pr?pr.name:null), wk, e.strength&&e.strength!==100?e.strength+"%":null,
-                  e.volL?e.volL.toFixed(1)+" L":null, e.note||null].filter(Boolean).join(" · ");
+                  e.volL?(e.volEst?"≈":"")+(+e.volL).toFixed(1)+" L":null,
+                  e.note||null].filter(Boolean).join(" · ");
     html+=`<div class="ev">
       <span class="ev-type ${esc(e.kind||e.type||"log")}">${esc(rt?rt.name:evLabel(e))}</span>
       <span class="ev-main">${pl?esc(pl.name):"—"}</span>
@@ -24602,9 +24612,41 @@ $("#plantForm").addEventListener("submit",async e=>{
   if(pvId===sid) renderPlant();          // the plant's own page must follow the edit
   $("#plantDlg").close();
 });
+/* what the Bench is currently set to mix — the best available answer to "what
+   did you feed it with" for a plant that has no schedule of its own */
+function benchDefaultMix(){
+  if(L.mode==="product"&&L.productId&&prod(L.productId)) return {productId:L.productId};
+  const f=(L.formulaId&&formula(L.formulaId))||(S.formulas||[])[0];
+  return f?{formulaId:f.id}:{};
+}
+/* A feed ticked off in the Garden or through Batch care carries no volume —
+   there is no mixing dialog in the way to ask for one. Left at that, the
+   fertiliser totals only ever saw feeds logged through the Bench, which is a
+   small and unrepresentative slice of them: the card was quietly reporting on a
+   fraction of the feeding and looking like it reported on all of it.
+
+   So a feed with no volume of its own is given the plant's own pour — which the
+   app already works out from pot size and substrate for the mixing tier — and is
+   MARKED as an estimate, so the card can say how much of its total was measured
+   and how much was inferred. Correcting one in the Log clears the mark. An
+   estimate you can see and fix beats both a silent guess and an empty card. */
+function feedFillEstimate(ev,p){
+  if(+ev.volL>0||!p) return ev;
+  const w=plantWater(p);
+  if(!(w&&w.litres>0)) return ev;
+  ev.volL=Math.round(w.litres*100)/100;
+  ev.volEst=true;
+  if(ev.strength==null) ev.strength=100;
+  if(!ev.formulaId&&!ev.productId) Object.assign(ev,benchDefaultMix());
+  return ev;
+}
 function logEvent(subjectId,kind,extra){
-  S.events.push(Object.assign({id:uid(),subjectId,kind,type:kind,
-    at:new Date().toISOString(),by:L.me},extra||{}));
+  const e=Object.assign({id:uid(),subjectId,kind,type:kind,
+    at:new Date().toISOString(),by:L.me},extra||{});
+  /* one place, so every path that can log a feed gets the same treatment —
+     the quick Fed button, Batch care, and anything added later */
+  if(kind==="feed") feedFillEstimate(e,subject(subjectId));
+  S.events.push(e);
   touch();
 }
 $("#subjectList").addEventListener("click",async e=>{
@@ -38196,18 +38238,20 @@ function feedUse(ev){
 }
 /* totals per product across a window of the log */
 function fertTotals(sinceTs){
-  const by={}; let feeds=0, litres=0;
+  const by={}; let feeds=0, litres=0, est=0, estLitres=0;
   (S.events||[]).forEach(e=>{
     if((e.kind||e.type)!=="feed") return;
     if(sinceTs!=null&&+new Date(e.at)<sinceTs) return;
     feeds++; litres+=+e.volL||0;
+    if(e.volEst){ est++; estLitres+=+e.volL||0; }
     feedUse(e).forEach(u=>{
       const k=u.pid;
       if(!by[k]) by[k]={name:u.name,unit:u.unit,qty:0};
       by[k].qty+=u.qty;
     });
   });
-  return {rows:Object.keys(by).map(k=>by[k]).sort((a,b)=>b.qty-a.qty), feeds, litres};
+  return {rows:Object.keys(by).map(k=>by[k]).sort((a,b)=>b.qty-a.qty),
+          feeds, litres, est, estLitres};
 }
 
 /* ---- the two new statistics cards ---- */
@@ -38266,9 +38310,12 @@ function moneyStatsCard(){
       <span class="eyebrow" style="display:block;margin-bottom:7px">${esc(cs?"Zadarmo":"Came free")}</span>
       <div class="stack" style="gap:6px">
         ${grown.length?`<div class="arow">
-          <span class="arow-name">${esc(money(grownWorth))}</span>
-          <span class="arow-sub">${esc(cs?`${plural(grown.length,"plant")} z řízků — hodnota, kterou si sbírka vytvořila sama`
-            :`${plural(grown.length,"plant")} from cuttings — value the collection grew itself`)}</span>
+          <span class="arow-name">${esc(grownWorth>0?money(grownWorth):(cs?"—":"—"))}</span>
+          <span class="arow-sub">${esc(grownWorth>0
+            ? (cs?`${plural(grown.length,"plant")} z řízků — hodnota, kterou si sbírka vytvořila sama`
+                 :`${plural(grown.length,"plant")} from cuttings — value the collection grew itself`)
+            : (cs?`${plural(grown.length,"plant")} z řízků — zatím bez ocenění. Napiš jim „Hodnota teď“ a sečte se to sem.`
+                 :`${plural(grown.length,"plant")} from cuttings — not valued yet. Give them a "Worth now" and it totals up here.`))}</span>
         </div>`:""}
         ${free.length?`<div class="arow">
           <span class="arow-name">${esc(money(freeWorth))}</span>
@@ -38304,8 +38351,15 @@ function fertStatsCard(){
       <span class="eyebrow" style="display:block;margin-bottom:7px">${esc(cs?"Posledních 30 dní":"Last 30 days")}</span>
       ${barList(mRows)}
     </div>`:""}`;
-  return sCard("Fertiliser used", inner,
-    "Worked out from the volume, formula and strength of every feed you logged — not a separate tally to keep. Correct a feed's volume in the Log and these move with it.");
+  /* Say plainly how much of this is measured and how much inferred. A total
+     that hides the difference is the kind of number people plan around and
+     should not. */
+  const note=all.est
+    ? (all.est===all.feeds
+        ? `Every one of these feeds was ticked off without a volume, so the amounts come from each plant's own pour — its pot size and substrate. Open a feed in the Log to put the real figure in.`
+        : `${all.feeds-all.est} of ${all.feeds} feeds were measured on the Bench; the other ${all.est} ${all.est===1?"was":"were"} ticked off without a volume and ${all.est===1?"uses the plant's":"use each plant's"} own pour instead. Correct ${all.est===1?"it":"any of them"} in the Log.`)
+    : "Worked out from the volume, formula and strength of every feed you logged — not a separate tally to keep. Correct a feed's volume in the Log and these move with it.";
+  return sCard("Fertiliser used", inner, note);
 }
 
 /* ---- correcting a logged feed ----------------------------------------------
@@ -38343,6 +38397,8 @@ if($("#feedFixSave")) $("#feedFixSave").addEventListener("click",()=>{
   const v=+$("#feedFixVol").value||0, s=+$("#feedFixStr").value||100;
   fixingEv.volL=Math.max(0,v);
   fixingEv.strength=Math.min(200,Math.max(1,s));
+  /* a figure you typed in yourself is no longer an estimate */
+  delete fixingEv.volEst;
   touch(); $("#feedFixDlg").close(); fixingEv=null;
   renderLog(); renderStats();
 });
