@@ -4437,6 +4437,24 @@ html[data-shell="rail"] body{
               <p class="hint" style="margin:0">Both are per device — you can have them on and the other phone off.</p>
             </div>
           </div>
+          <!-- Money. The rate lives here rather than being fetched, because a
+               collection is valued a handful of times a year and a wrong number
+               you can see and correct beats a right one you cannot. -->
+          <div class="sec-head"><h2 style="font-size:18px">Money</h2></div>
+          <div class="card pad" style="margin-bottom:14px">
+            <div class="stack">
+              <div class="grid2">
+                <div class="field"><label for="curShow">Show totals in</label>
+                  <select id="curShow">
+                    <option value="CZK">Czech crowns (Kč)</option>
+                    <option value="EUR">Euros (€)</option>
+                  </select></div>
+                <div class="field"><label for="curRate">Crowns per euro</label>
+                  <input id="curRate" type="number" min="1" max="100" step="0.1" inputmode="decimal" value="25"></div>
+              </div>
+              <p class="hint" id="curHint" style="margin:0"></p>
+            </div>
+          </div>
           <div class="sec-head"><h2 style="font-size:18px">Action days</h2></div>
           <div class="card pad" style="margin-bottom:14px">
             <div class="stack">
@@ -6748,6 +6766,38 @@ html[data-shell="rail"] body{
     </div>
     <p class="hint" id="plPotHint" style="margin:-4px 0 0"></p>
 
+    <!-- Where it came from and what it cost. Folded like the care card, because
+         most edits are not about money — but a collection nobody ever priced is
+         one that cannot answer what it is worth. A gift or a rooted cutting is
+         still worth something; only "bought" ever counts as money spent. -->
+    <div class="card pad" id="plBuyCard" style="padding:11px 13px">
+      <div style="display:flex; align-items:center; gap:10px">
+        <span class="pline-v" id="plBuySummary" style="flex:1; min-width:0"></span>
+        <button class="btn mini" type="button" id="plBuyToggle">Add</button>
+      </div>
+      <div id="plBuyDetail" hidden style="margin-top:12px">
+        <div class="grid2">
+          <div class="field"><label for="plAcq">How you got it</label>
+            <select id="plAcq"></select></div>
+          <div class="field"><label for="plBought">When</label>
+            <input id="plBought" type="date"></div>
+        </div>
+        <div class="grid2" id="plPriceRow">
+          <div class="field"><label for="plPrice">What it cost</label>
+            <input id="plPrice" type="number" min="0" step="1" inputmode="decimal" placeholder="0"></div>
+          <div class="field"><label for="plCur">Currency</label>
+            <select id="plCur"></select></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label for="plFrom">Where from</label>
+            <input id="plFrom" placeholder="Shop, market, or who gave it to you"></div>
+          <div class="field"><label for="plWorth">Worth now</label>
+            <input id="plWorth" type="number" min="0" step="1" inputmode="decimal" placeholder="—"></div>
+        </div>
+        <p class="hint" id="plBuyHint" style="margin:2px 0 0"></p>
+      </div>
+    </div>
+
     <!-- everything below is filled from the species; you only open it to argue -->
     <div class="card pad" id="plCareCard" style="padding:11px 13px">
       <div style="display:flex; align-items:center; gap:10px">
@@ -7148,6 +7198,30 @@ html[data-shell="rail"] body{
   <div class="dlg-foot">
     <button class="btn" type="button" id="mcCancel">Cancel</button>
     <button class="btn primary" type="button" id="mcApply">Apply</button>
+  </div>
+</dialog>
+
+<!-- correcting a logged feed. The fertiliser totals are arithmetic on the
+     volume and the strength, so this edits those rather than the millilitres
+     they produce — one source of truth, and the amounts below update as you
+     type so you can see what you are actually changing. -->
+<dialog id="feedFixDlg">
+  <h3 class="dlg-head" id="feedFixTitle">Correct this feed</h3>
+  <div class="dlg-body">
+    <div class="grid2">
+      <div class="field"><label for="feedFixVol">Volume mixed (L)</label>
+        <input id="feedFixVol" type="number" min="0" step="0.05" inputmode="decimal"></div>
+      <div class="field"><label for="feedFixStr">Strength (%)</label>
+        <input id="feedFixStr" type="number" min="1" max="200" step="1" inputmode="numeric"></div>
+    </div>
+    <div class="field">
+      <label>That works out as</label>
+      <div class="stack" style="gap:6px" id="feedFixOut"></div>
+    </div>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn" type="button" id="feedFixCancel">Cancel</button>
+    <button class="btn primary" type="button" id="feedFixSave">Save</button>
   </div>
 </dialog>
 
@@ -20672,6 +20746,8 @@ function renderLog(){
       <span class="ev-type ${esc(e.kind||e.type||"log")}">${esc(rt?rt.name:evLabel(e))}</span>
       <span class="ev-main">${pl?esc(pl.name):"—"}</span>
       <span class="ev-who">${esc(userName(e.by))} · ${new Date(e.at).toLocaleTimeString(locale(),{hour:"2-digit",minute:"2-digit"})}
+        ${(e.kind||e.type)==="feed"&&+e.volL>0?`<button class="ev-del" data-fix-ev="${e.id}"
+          aria-label="Correct this feed" title="Correct this feed">✎</button>`:""}
         <button class="ev-del" data-del-ev="${e.id}" aria-label="Delete this entry" title="Delete this entry">×</button></span>
       ${detail?`<span class="ev-detail">${esc(detail)}</span>`:""}
     </div>`;
@@ -20680,6 +20756,8 @@ function renderLog(){
 }
 
 $("#logList").addEventListener("click",async e=>{
+  const fx=e.target.closest("[data-fix-ev]");
+  if(fx){ openFeedFix(fx.dataset.fixEv); return; }
   const b=e.target.closest("[data-del-ev]"); if(!b) return;
   const ev=S.events.find(x=>x.id===b.dataset.delEv); if(!ev) return;
   const pl=subject(ev.subjectId);
@@ -21363,11 +21441,16 @@ function renderStats(){
     :`<p class="hint" style="margin:0">${esc(t("Nothing recorded yet — mix your water on the Bench, then tap Record."))}</p>`,
     wl.length?"What you actually mixed, on the assumption that a mixed tank gets used — not a model of what the plants needed.":null);
 
-  host.innerHTML=nowCard+careCard+expertCards(D)+collCard+folCard+propCard+healthCard+attnCard+timerCard+waterCard;
+  /* worth sits with the collection it describes; fertiliser sits beside the
+     water it was mixed into, because the two answer the same question about
+     what the shelf actually consumes */
+  host.innerHTML=nowCard+careCard+expertCards(D)+collCard+moneyStatsCard()
+    +folCard+propCard+healthCard+attnCard+timerCard+fertStatsCard()+waterCard;
 }
 
 function renderAll(){ renderMixSel(); renderDue(); renderHow(); renderMix(); renderShelf(); renderSubjects(); renderCuttings(); renderPlan(); renderLog(); renderTaskBar(); renderTaskBarFull("#gardenTaskBar"); renderTaskBarFull("#planTaskBar"); renderGarden(); renderLibrary(); renderActionDays(); renderPropGuide(); renderStats();
   if(typeof renderCycle==="function") try{ renderCycle(); }catch(e){}
+  if(typeof renderMoneySettings==="function") try{ renderMoneySettings(); }catch(e){}
   if(typeof renderWaterLog==="function") try{ renderWaterLog(); }catch(e){}
   if(typeof renderPhotoQ==="function") try{ renderPhotoQ(); }catch(e){}
   if(typeof renderHealth==="function") try{ renderHealth(); }catch(e){}
@@ -24431,6 +24514,7 @@ function openPlant(p){
     `<option value="${x.id}"${p&&p.schedId===x.id?" selected":""}>${esc(x.name)}</option>`).join("");
   $("#plWeek").value=p?(p.week||1):1;
   $("#plantDelete").style.display=p?"":"none";
+  fillBuyCard(p);
   /* an existing plant opens folded too — you came to change one thing */
   $("#plCareDetail").hidden=true;
   $("#plCareToggle").textContent=t("Adjust");
@@ -24472,6 +24556,7 @@ $("#plantForm").addEventListener("submit",async e=>{
     spot:$("#plSpot").value.trim(),detail:$("#plMedium").value.trim(),
     pot:+$("#plPot").value||null,sub:$("#plSub").value||null,noDrain:$("#plNoDrain").checked,
     schedId:$("#plSched").value||null,week:Math.max(1,+$("#plWeek").value||1)};
+  Object.assign(d,buyFields());
   /* a new plant joins the emptiest action day, so 100 plants spread evenly
      instead of every one landing on whichever day comes round next */
   if(!editingPlant) d.anchor=leastLoadedActionDay();
@@ -37968,6 +38053,319 @@ $("#mcApply").addEventListener("click",async()=>{
 });
 
 
+/* ============================================================================
+   MONEY, AND WHAT THE COLLECTION IS WORTH
+
+   A plant is bought once, in a currency, at a price that never changes
+   afterwards: 450 Kč paid in Prague stays 450 Kč however the euro moves. So the
+   price is stored in the currency it was actually paid in and the rate is only
+   ever applied on the way to the screen. Totals then read in whichever currency
+   you are thinking in without rewriting a single stored figure — which also
+   means a wrong rate is a display bug you can fix, not corrupted history.
+
+   The rate is typed in rather than fetched. A collection gets valued a handful
+   of times a year, and a number you can see and correct beats a right one you
+   cannot reach.
+   ========================================================================= */
+const CURRENCIES={CZK:{sym:"Kč",after:true,dp:0}, EUR:{sym:"€",after:false,dp:2}};
+const moneyCfg=()=>Object.assign({show:"CZK",rate:25},S.money||{});
+const showCur=()=>CURRENCIES[moneyCfg().show]?moneyCfg().show:"CZK";
+const czPerEur=()=>{ const r=+moneyCfg().rate; return r>0?r:25; };
+/* everything converts through crowns — one hop, so changing the rate moves
+   every figure on every screen together instead of by different paths */
+const toCZK=(amt,cur)=>cur==="EUR"?(+amt||0)*czPerEur():(+amt||0);
+const fromCZK=(czk,cur)=>cur==="EUR"?czk/czPerEur():czk;
+function money(czk,cur){
+  const c=cur||showCur(), d=CURRENCIES[c]||CURRENCIES.CZK;
+  const n=fromCZK(+czk||0,c).toLocaleString(locale(),
+    {minimumFractionDigits:d.dp,maximumFractionDigits:d.dp});
+  return d.after?`${n} ${d.sym}`:`${d.sym}${n}`;
+}
+/* How a plant arrived. Only the money matters to the totals, but the kind is
+   what separates "the collection cost me this" from "the collection grew this
+   for itself", which is the more interesting of the two numbers. */
+const ACQ=["bought","gift","swap","grown"];
+const acqLabel=k=>{ const cs=L.lang==="cs";
+  return k==="gift" ?(cs?"dárek":"a gift")
+       : k==="swap" ?(cs?"výměna":"a swap")
+       : k==="grown"?(cs?"vypěstováno":"grown from a cutting")
+       :             (cs?"koupeno":"bought"); };
+const plantCur=p=>CURRENCIES[p&&p.cur]?p.cur:"CZK";
+/* money that actually left your pocket. Blank price = nothing paid, whatever
+   the kind — a swap where you also handed over 200 Kč really did cost 200 Kč. */
+const paidCZK=p=>toCZK(+p.price||0,plantCur(p));
+/* what it is worth today: your own estimate if you gave one, otherwise what you
+   paid, because a plant you have not re-valued is worth what it cost */
+const worthCZK=p=>{ const w=+p.worth||0;
+  return w>0?toCZK(w,plantCur(p)):paidCZK(p); };
+const isGrown=p=>p&&p.acq==="grown";
+
+/* ---- the settings row ---- */
+function renderMoneySettings(){
+  const m=moneyCfg(), cs=L.lang==="cs";
+  const sel=$("#curShow"); if(!sel) return;
+  sel.value=showCur();
+  $("#curRate").value=czPerEur();
+  const plants=subjectsIn("plants");
+  const priced=plants.filter(p=>+p.price>0||+p.worth>0).length;
+  $("#curHint").textContent=cs
+    ? `Ceny se ukládají v měně, ve které jsi platil — přepínač mění jen zobrazení. Oceněno ${priced} z ${plants.length} rostlin. 1 € = ${czPerEur()} Kč.`
+    : `Prices are stored in the currency you paid in — this only changes what totals are shown in. ${priced} of ${plants.length} plants priced. €1 = ${czPerEur()} Kč.`;
+}
+if($("#curShow")) $("#curShow").addEventListener("change",e=>{
+  S.money=Object.assign(moneyCfg(),{show:CURRENCIES[e.target.value]?e.target.value:"CZK"});
+  touch(); renderMoneySettings(); renderStats(); renderSubjects();
+});
+if($("#curRate")) $("#curRate").addEventListener("change",e=>{
+  const r=+e.target.value;
+  S.money=Object.assign(moneyCfg(),{rate:r>0?r:25});
+  touch(); renderMoneySettings(); renderStats(); renderSubjects();
+});
+
+/* ---- the plant dialog's Bought card ---- */
+function plBuySummary(){
+  const cs=L.lang==="cs";
+  const price=+$("#plPrice").value||0, worth=+$("#plWorth").value||0;
+  const cur=$("#plCur").value||"CZK", acq=$("#plAcq").value||"bought";
+  const bits=[];
+  if(price>0) bits.push(`${acqLabel(acq)} · ${money(toCZK(price,cur),cur)}`);
+  else bits.push(acqLabel(acq));
+  if(worth>0) bits.push(cs?`teď ${money(toCZK(worth,cur),cur)}`:`worth ${money(toCZK(worth,cur),cur)}`);
+  const when=$("#plBought").value;
+  if(when) bits.push(new Date(when).toLocaleDateString(locale(),{month:"short",year:"numeric"}));
+  $("#plBuySummary").textContent=(price>0||worth>0||when)
+    ? bits.join(" · ")
+    : (cs?"Zatím bez ceny":"No price recorded");
+  const hint=$("#plBuyHint");
+  if(hint) hint.textContent=cs
+    ? "Cenu nech prázdnou, když tě nic nestála. „Vypěstováno“ pak v přehledu počítá jako hodnota, kterou si sbírka vytvořila sama."
+    : "Leave the price blank if it cost you nothing. A plant grown from a cutting then counts in Stats as value the collection made itself.";
+}
+function fillBuyCard(p){
+  $("#plAcq").innerHTML=ACQ.map(k=>
+    `<option value="${k}"${p&&p.acq===k?" selected":""}>${esc(acqLabel(k))}</option>`).join("");
+  $("#plCur").innerHTML=Object.keys(CURRENCIES).map(c=>
+    `<option value="${c}"${plantCur(p)===c?" selected":""}>${esc(CURRENCIES[c].sym)} ${esc(c)}</option>`).join("");
+  $("#plPrice").value=p&&+p.price>0?p.price:"";
+  $("#plWorth").value=p&&+p.worth>0?p.worth:"";
+  $("#plBought").value=(p&&p.bought)||"";
+  $("#plFrom").value=(p&&p.from)||"";
+  $("#plBuyDetail").hidden=true;
+  $("#plBuyToggle").textContent=t(p&&(+p.price>0||+p.worth>0||p.bought)?"Edit":"Add");
+  plBuySummary();
+}
+$("#plBuyToggle").addEventListener("click",()=>{
+  const d=$("#plBuyDetail"), open=d.hidden;
+  d.hidden=!open;
+  $("#plBuyToggle").textContent=open?t("Hide"):t("Edit");
+});
+["#plPrice","#plWorth","#plCur","#plAcq","#plBought"].forEach(id=>
+  $(id).addEventListener("change",plBuySummary));
+/* read the card back off the form — called by the plant form's submit */
+const buyFields=()=>({
+  price:Math.max(0,+$("#plPrice").value||0),
+  worth:Math.max(0,+$("#plWorth").value||0),
+  cur:CURRENCIES[$("#plCur").value]?$("#plCur").value:"CZK",
+  bought:$("#plBought").value||"",
+  from:$("#plFrom").value.trim(),
+  acq:ACQ.indexOf($("#plAcq").value)>=0?$("#plAcq").value:"bought"
+});
+
+/* ============================================================================
+   FERTILISER USED
+
+   Derived, never stored. A feed already records the volume mixed, the formula
+   and the strength — the millilitres that left each bottle are arithmetic on
+   those three, using the very same analyse() the mixer uses to tell you what to
+   pour. Storing the result as well would give the app two answers that could
+   drift; deriving it means correcting a mis-logged volume corrects every total
+   that depends on it, and that every feed already in the log counts without
+   anyone re-entering anything.
+   ========================================================================= */
+function feedItems(ev){
+  if(ev.formulaId){ const f=formula(ev.formulaId); if(f&&Array.isArray(f.items)) return f.items; }
+  if(ev.productId){ const p=prod(ev.productId); if(p&&+p.dose>0) return [{pid:p.id,dose:+p.dose}]; }
+  return [];
+}
+/* what actually left the bottles for one logged feed */
+function feedUse(ev){
+  const vol=+ev.volL; if(!(vol>0)) return [];
+  const items=feedItems(ev); if(!items.length) return [];
+  return analyse(items,vol,(+ev.strength||100)/100).steps
+    .map(s=>({pid:s.p.id,name:s.p.name,qty:s.total,unit:s.unit}));
+}
+/* totals per product across a window of the log */
+function fertTotals(sinceTs){
+  const by={}; let feeds=0, litres=0;
+  (S.events||[]).forEach(e=>{
+    if((e.kind||e.type)!=="feed") return;
+    if(sinceTs!=null&&+new Date(e.at)<sinceTs) return;
+    feeds++; litres+=+e.volL||0;
+    feedUse(e).forEach(u=>{
+      const k=u.pid;
+      if(!by[k]) by[k]={name:u.name,unit:u.unit,qty:0};
+      by[k].qty+=u.qty;
+    });
+  });
+  return {rows:Object.keys(by).map(k=>by[k]).sort((a,b)=>b.qty-a.qty), feeds, litres};
+}
+
+/* ---- the two new statistics cards ---- */
+/* same template renderStats uses locally, repeated here because that one is a
+   closure inside it and these cards are built outside */
+const sCard=(eyebrow,inner,note)=>`<div class="card"><div class="pad">
+  <span class="eyebrow" style="display:block; margin-bottom:10px">${esc(t(eyebrow))}</span>
+  ${inner}${note?`<p class="hint" style="margin:11px 0 0">${esc(t(note))}</p>`:""}</div></div>`;
+/* money wants its value printed, not its raw number, so it gets its own bar row
+   rather than bending barList's numeric formatting */
+function moneyBars(rows){
+  const top=Math.max(...rows.map(r=>r[1]))||1;
+  return `<div class="sbars">${rows.map(([l,v,note])=>`
+    <div class="sbar">
+      <span class="sbar-l">${esc(l)}</span>
+      <span class="sbar-t"><i style="width:${Math.max(2,v/top*100)}%"></i></span>
+      <span class="sbar-n">${esc(money(v))}${note?`<em>${esc(note)}</em>`:""}</span>
+    </div>`).join("")}</div>`;
+}
+function moneyStatsCard(){
+  const cs=L.lang==="cs", plants=subjectsIn("plants");
+  const priced=plants.filter(p=>+p.price>0||+p.worth>0);
+  if(!plants.length) return "";
+  if(!priced.length) return sCard("What it's worth",
+    `<p class="hint" style="margin:0">${esc(cs
+      ? "Zatím žádné ceny. Otevři rostlinu a v kartě „Cena“ zapiš, co stála — přehled se dopočítá sám."
+      : "No prices yet. Open a plant and fill in its Bought card — this fills itself in from there.")}</p>`);
+  const spent=plants.reduce((a,p)=>a+paidCZK(p),0);
+  const worth=plants.reduce((a,p)=>a+worthCZK(p),0);
+  const grown=plants.filter(isGrown);
+  const grownWorth=grown.reduce((a,p)=>a+worthCZK(p),0);
+  const free=plants.filter(p=>p.acq&&p.acq!=="bought"&&!isGrown(p));
+  const freeWorth=free.reduce((a,p)=>a+worthCZK(p),0);
+  const gain=worth-spent;
+  /* by acquisition kind — where the collection actually came from */
+  const byKind=ACQ.map(k=>{
+    const set=plants.filter(p=>(p.acq||"bought")===k);
+    return [acqLabel(k), set.reduce((a,p)=>a+worthCZK(p),0), plural(set.length,"plant")];
+  }).filter(r=>r[1]>0);
+  const dearest=plants.filter(p=>worthCZK(p)>0)
+    .sort((a,b)=>worthCZK(b)-worthCZK(a)).slice(0,6)
+    .map(p=>[p.name, worthCZK(p), p.acq&&p.acq!=="bought"?acqLabel(p.acq):""]);
+  const inner=`<div class="statrow q">
+      ${statCell(money(worth),cs?"hodnota":"worth now")}
+      ${statCell(money(spent),cs?"utraceno":"spent")}
+      ${statCell((gain>=0?"+":"−")+money(Math.abs(gain)),cs?"rozdíl":"difference",gain>=0?"good":"bad")}
+      ${statCell(priced.length+"/"+plants.length,cs?"oceněno":"priced")}
+    </div>
+    ${byKind.length?`<div style="margin-top:15px">
+      <span class="eyebrow" style="display:block;margin-bottom:7px">${esc(cs?"Odkud se vzaly":"Where it came from")}</span>
+      ${moneyBars(byKind)}</div>`:""}
+    ${dearest.length?`<div style="margin-top:15px">
+      <span class="eyebrow" style="display:block;margin-bottom:7px">${esc(cs?"Nejcennější":"Most valuable")}</span>
+      ${moneyBars(dearest)}</div>`:""}
+    ${(grown.length||free.length)?`<div style="margin-top:15px">
+      <span class="eyebrow" style="display:block;margin-bottom:7px">${esc(cs?"Zadarmo":"Came free")}</span>
+      <div class="stack" style="gap:6px">
+        ${grown.length?`<div class="arow">
+          <span class="arow-name">${esc(money(grownWorth))}</span>
+          <span class="arow-sub">${esc(cs?`${plural(grown.length,"plant")} z řízků — hodnota, kterou si sbírka vytvořila sama`
+            :`${plural(grown.length,"plant")} from cuttings — value the collection grew itself`)}</span>
+        </div>`:""}
+        ${free.length?`<div class="arow">
+          <span class="arow-name">${esc(money(freeWorth))}</span>
+          <span class="arow-sub">${esc(cs?`${plural(free.length,"plant")} darem nebo výměnou`
+            :`${plural(free.length,"plant")} given or swapped`)}</span>
+        </div>`:""}
+      </div></div>`:""}`;
+  return sCard("What it's worth", inner,
+    priced.length<plants.length
+      ? "Only priced plants count. Anything with no price is left out of both totals rather than guessed at."
+      : "Worth is your own estimate where you gave one, and what you paid where you did not.");
+}
+function fertStatsCard(){
+  const cs=L.lang==="cs";
+  const all=fertTotals(null), month=fertTotals(Date.now()-30*DAY);
+  if(!all.rows.length) return sCard("Fertiliser used",
+    `<p class="hint" style="margin:0">${esc(cs
+      ? "Zatím nic. Zapiš krmení z Bench s objemem a recepturou a spotřeba se dopočítá sama."
+      : "Nothing yet. Log a feed from the Bench with a volume and a formula, and the amounts work themselves out.")}</p>`);
+  const rows=all.rows.map(r=>[r.name, Math.round(r.qty*10)/10, r.unit]);
+  const mRows=month.rows.map(r=>[r.name, Math.round(r.qty*10)/10, r.unit]);
+  const inner=`<div class="statrow q">
+      ${statCell(all.feeds,cs?"krmení":"feeds")}
+      ${statCell(oneDp(all.litres)+" L",cs?"namícháno":"mixed")}
+      ${statCell(all.rows.length,cs?"produktů":"products")}
+      ${statCell(oneDp(all.feeds?all.litres/all.feeds:0)+" L",cs?"průměr":"average")}
+    </div>
+    <div style="margin-top:15px">
+      <span class="eyebrow" style="display:block;margin-bottom:7px">${esc(cs?"Celkem spotřebováno":"Used in total")}</span>
+      ${barList(rows)}
+    </div>
+    ${mRows.length?`<div style="margin-top:15px">
+      <span class="eyebrow" style="display:block;margin-bottom:7px">${esc(cs?"Posledních 30 dní":"Last 30 days")}</span>
+      ${barList(mRows)}
+    </div>`:""}`;
+  return sCard("Fertiliser used", inner,
+    "Worked out from the volume, formula and strength of every feed you logged — not a separate tally to keep. Correct a feed's volume in the Log and these move with it.");
+}
+
+/* ---- correcting a logged feed ----------------------------------------------
+   The amounts above are arithmetic on the volume and the strength, so the way
+   to fix a wrong amount is to fix the volume that produced it. That keeps one
+   source of truth instead of an override that silently disagrees with the
+   figures it was derived from. */
+let fixingEv=null;
+function openFeedFix(id){
+  const ev=(S.events||[]).find(x=>x.id===id); if(!ev) return;
+  fixingEv=ev;
+  const pl=subject(ev.subjectId);
+  $("#feedFixTitle").textContent=`${t("Correct this feed")}${pl?` · ${pl.name}`:""}`;
+  $("#feedFixVol").value=+ev.volL||0;
+  $("#feedFixStr").value=+ev.strength||100;
+  renderFeedFix();
+  $("#feedFixDlg").showModal();
+}
+function renderFeedFix(){
+  if(!fixingEv) return;
+  const probe=Object.assign({},fixingEv,
+    {volL:+$("#feedFixVol").value||0, strength:+$("#feedFixStr").value||100});
+  const use=feedUse(probe);
+  $("#feedFixOut").innerHTML=use.length
+    ? use.map(u=>`<div class="arow">
+        <span class="arow-name">${esc(u.name)}</span>
+        <span class="arow-sub">${esc((Math.round(u.qty*100)/100)+" "+u.unit)}</span></div>`).join("")
+    : `<p class="hint" style="margin:0">${esc(t("No formula on this entry, so there is nothing to measure."))}</p>`;
+}
+["#feedFixVol","#feedFixStr"].forEach(id=>{
+  const el=$(id); if(el) el.addEventListener("input",renderFeedFix);
+});
+if($("#feedFixSave")) $("#feedFixSave").addEventListener("click",()=>{
+  if(!fixingEv) return;
+  const v=+$("#feedFixVol").value||0, s=+$("#feedFixStr").value||100;
+  fixingEv.volL=Math.max(0,v);
+  fixingEv.strength=Math.min(200,Math.max(1,s));
+  touch(); $("#feedFixDlg").close(); fixingEv=null;
+  renderLog(); renderStats();
+});
+if($("#feedFixCancel")) $("#feedFixCancel").addEventListener("click",()=>{
+  $("#feedFixDlg").close(); fixingEv=null;
+});
+
+Object.assign(CS,{
+  "What it's worth":"Co to má za hodnotu",
+  "Fertiliser used":"Spotřeba hnojiv",
+  "Money":"Peníze",
+  "Show totals in":"Zobrazovat v",
+  "Crowns per euro":"Korun za euro",
+  "How you got it":"Jak jsi k ní přišel",
+  "What it cost":"Kolik stála",
+  "Currency":"Měna",
+  "Where from":"Odkud",
+  "Worth now":"Hodnota teď",
+  "Correct this feed":"Oprava krmení",
+  "Used in total":"Celkem spotřebováno",
+  "Most valuable":"Nejcennější"
+});
+
 /* ---- Care days (pinned care days) ---- */
 Object.assign(CS,{
   "Care days":"Dny péče",
@@ -39472,6 +39870,13 @@ function plantBookImport(){
       ex.maker=p.species||ex.maker||"";
       ex.loc=p.spot||ex.loc||"";
       ex.cond=plantBookCond(p);
+      /* The bench now records a price of its own, and two places holding
+         different prices for one plant is worse than either alone. So the
+         bench fills a blank — and only a blank. Anything already typed here
+         stays the owner's, exactly as before. */
+      if(ex.paid==null&&paidCZK(p)>0) ex.paid=Math.round(paidCZK(p));
+      if(ex.worth==null&&+p.worth>0) ex.worth=Math.round(worthCZK(p));
+      if(!ex.from&&p.from) ex.from=p.from;
       ex.x=Object.assign({},ex.x,f,{benchId:p.id});
       ex.updatedAt=Date.now();
       updated++;
@@ -39479,7 +39884,10 @@ function plantBookImport(){
       items.push({id:(typeof rid==="function"?rid():uid()), collId:c.id,
         title:p.name, maker:p.species||"", year:"",
         acq:p.since||"", status:"owned", cond:plantBookCond(p),
-        loc:p.spot||"", qty:1, paid:null, worth:null, from:"", valuedAt:"",
+        loc:p.spot||"", qty:1,
+        paid:paidCZK(p)>0?Math.round(paidCZK(p)):null,
+        worth:+p.worth>0?Math.round(worthCZK(p)):null,
+        from:p.from||"", valuedAt:"",
         tags:[], notes:p.detail||"", photos:[],
         x:Object.assign({},f,{benchId:p.id}),
         createdAt:Date.now(), updatedAt:Date.now()});
