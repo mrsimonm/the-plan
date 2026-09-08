@@ -179,6 +179,174 @@ service cloud.firestore {
       }
     }
 
+    // ========================================================================
+    // ROOMS — a venue's own booking calendar.
+    //
+    // Five kinds of person, and the whole file turns on telling them apart:
+    //
+    //   owner    roomOrgs/{o}.ownerUid == uid    — everything, incl. deleting
+    //   admin    members/{uid}.role == "admin"   — everything but that
+    //   member   members/{uid} exists            — books for themselves
+    //   viewer   members/{uid}.role == "viewer"  — reads, never writes
+    //   guest    an anonymous uid with no member row — sees free/busy only
+    //
+    // The one thing rules cannot do is check whether two bookings overlap:
+    // that needs a read of the other rows mid-write, which only a transaction
+    // can do. So the client holds a per-room-per-day "guard" document and
+    // does the overlap check inside a Firestore transaction; these rules
+    // guard ownership, roles and reach. Losing that race writes a double
+    // booking, not a security hole.
+    // ========================================================================
+
+    function rbOrg(o)    { return get(/databases/$(database)/documents/roomOrgs/$(o)).data; }
+    function rbIsOwner(o){ return signedIn() && rbOrg(o).ownerUid == request.auth.uid; }
+    function rbMePath(o) { return /databases/$(database)/documents/roomOrgs/$(o)/members/$(request.auth.uid); }
+    function rbIsMember(o){ return signedIn() && exists(rbMePath(o)); }
+    function rbMe(o)     { return get(rbMePath(o)).data; }
+    function rbIsAdmin(o){ return rbIsOwner(o) || (rbIsMember(o) && rbMe(o).role == "admin"); }
+    // a viewer is a door display or a manager: it may look and nothing else
+    function rbCanBook(o){ return rbIsMember(o) && rbMe(o).role != "viewer"; }
+
+    // ---------- which venues an account belongs to ----------
+    // Strictly the account's own list. Nobody else can read who you book with.
+    match /roomUsers/{userId} {
+      allow read, write: if signedIn() && request.auth.uid == userId;
+    }
+
+    // ---------- the public directory behind a booking link ----------
+    // Deliberately readable by anyone signed in, including an anonymous
+    // guest: it maps a slug in a URL to a venue and carries nothing else.
+    match /roomSlugs/{slug} {
+      allow get: if signedIn();
+      allow list: if false;                         // not a directory to browse
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['orgId','name'])
+        && rbIsOwner(request.resource.data.orgId);
+      allow update, delete: if signedIn() && rbIsAdmin(resource.data.orgId);
+    }
+
+    // ---------- invite codes ----------
+    // Doc id is the SHA-256 of the code, exactly as accessCodes works above:
+    // one get by exact id means you already knew the code, and listing is
+    // closed, so codes cannot be enumerated into a way in.
+    match /roomInvites/{codeHash} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn() && rbIsAdmin(request.resource.data.orgId);
+      allow delete: if signedIn() && rbIsAdmin(resource.data.orgId);
+      allow update: if false;
+    }
+
+    // ---------- the venue ----------
+    match /roomOrgs/{orgId} {
+      // Any signed-in account may read the venue itself: a guest arriving on
+      // the public link needs its name, its currency and its slot size before
+      // it can show them anything at all.
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid;
+      allow update: if rbIsAdmin(orgId);
+      allow delete: if rbIsOwner(orgId);
+
+      // ---- members ----
+      // A member row is what grants a role, so nobody may write their own
+      // beyond the moment they redeem an invite — and the invite has to
+      // actually exist and name this venue and this role.
+      match /members/{uid} {
+        allow get: if signedIn() && (request.auth.uid == uid || rbIsMember(orgId));
+        allow list: if rbIsMember(orgId);
+        allow create: if signedIn() && request.auth.uid == uid
+          && exists(/databases/$(database)/documents/roomInvites/$(request.resource.data.inviteHash))
+          && get(/databases/$(database)/documents/roomInvites/$(request.resource.data.inviteHash)).data.orgId == orgId
+          && get(/databases/$(database)/documents/roomInvites/$(request.resource.data.inviteHash)).data.role == request.resource.data.role;
+        allow create, update, delete: if rbIsAdmin(orgId);
+        // your own name and phone are yours; your role and your tariff are not
+        allow update: if signedIn() && request.auth.uid == uid
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.tariffId == resource.data.tariffId;
+      }
+
+      // ---- the rooms and what they cost ----
+      // Readable by anyone signed in, because a guest has to see the rooms
+      // and their prices to ask for one. Written only by staff.
+      match /spaces/{id}  { allow read: if signedIn();  allow write: if rbIsAdmin(orgId); }
+      match /tariffs/{id} { allow read: if signedIn();  allow write: if rbIsAdmin(orgId); }
+      match /closures/{id}{ allow read: if signedIn();  allow write: if rbIsAdmin(orgId); }
+      match /series/{id}  { allow read: if rbIsMember(orgId); allow write: if rbCanBook(orgId); }
+
+      // ---- guests ----
+      // A guest's own record is keyed by their anonymous uid, so "only your
+      // own" is checkable. Staff see all of them; guests see none but theirs.
+      match /guests/{id} {
+        allow get: if rbIsMember(orgId) || (signedIn() && request.auth.uid == id);
+        allow list: if rbIsMember(orgId);
+        allow create, update: if rbIsAdmin(orgId)
+          || (signedIn() && request.auth.uid == id);
+        allow delete: if rbIsAdmin(orgId);
+      }
+
+      // ---- bookings ----
+      // The row that matters. A member may only write one that is theirs, may
+      // not confirm one on a room whose rules say it needs approving, and may
+      // not quietly re-price it. Staff may do all three, which is what being
+      // staff means. Everyone who is not a member reads only their own.
+      match /bookings/{id} {
+        allow get, list: if rbIsMember(orgId)
+          || (signedIn() && resource.data.bookerId == request.auth.uid);
+
+        allow create: if rbIsAdmin(orgId)
+          || (signedIn()
+              && request.resource.data.bookerId == request.auth.uid
+              && request.resource.data.state in ['held','requested','confirmed']
+              && request.resource.data.invoiceId == null);
+
+        // your own booking: you may fill it in, confirm it, or cancel it —
+        // you may not hand yourself somebody else's, and you may not touch
+        // one that has already been invoiced.
+        allow update: if rbIsAdmin(orgId)
+          || (signedIn()
+              && resource.data.bookerId == request.auth.uid
+              && request.resource.data.bookerId == request.auth.uid
+              && resource.data.invoiceId == null
+              && request.resource.data.state in ['held','requested','confirmed','cancelled']);
+
+        // Cancelling is a state, not a deletion: a booking that was made and
+        // called off is a thing that happened, and the venue may need to bill
+        // for it. Only staff may make one disappear.
+        allow delete: if rbIsAdmin(orgId)
+          || (signedIn() && resource.data.bookerId == request.auth.uid
+              && resource.data.state == 'held');
+      }
+
+      // ---- the guards: who has which minutes of which room ----
+      // Anyone signed in may read these, and they are written to carry no
+      // words at all — {id, from, to, state} — so an outsider on the public
+      // link learns that 14:00 is taken and never who has it or what for.
+      // Anyone who may book may write them, because the overlap check that
+      // makes them meaningful happens inside the client's transaction.
+      match /guards/{id} {
+        allow read: if signedIn();
+        allow write: if rbCanBook(orgId) || rbIsAdmin(orgId)
+          || (signedIn() && !exists(rbMePath(orgId)));   // a guest holding a slot
+      }
+
+      // ---- invoices and the audit trail ----
+      // Money is staff-only, except that you may read an invoice addressed
+      // to you. The audit log can be added to by anyone who can act, and
+      // altered by nobody at all — a log you can edit is not a log.
+      match /invoices/{id} {
+        allow get: if rbIsAdmin(orgId)
+          || (signedIn() && resource.data.billTo.id == request.auth.uid);
+        allow list: if rbIsAdmin(orgId);
+        allow write: if rbIsAdmin(orgId);
+      }
+      match /audit/{id} {
+        allow read: if rbIsAdmin(orgId);
+        allow create: if signedIn();
+        allow update, delete: if false;
+      }
+    }
+
     // ---------- potting bench: one person's own app state ----------
     // Cross-device sync for the main app (data and schedules; photos are
     // never uploaded). Strictly private: a document under users/{userId}
