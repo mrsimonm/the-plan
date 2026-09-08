@@ -4302,6 +4302,16 @@ html[data-shell="rail"] body{
               <div class="ps-ticks"></div><div class="ps-mark"></div>
               <input type="range" id="volSlide" min="0.5" max="20" step="0.1" aria-label="Water volume in litres">
             </div></div>
+            <!-- Simon: "every time I mix water... a button to record. It will
+                 record the amount I mixed because usually I use all the water
+                 I mix... include it in the statistics." A plain tally of the
+                 litre figure above, at the moment it's mixed — not tied to
+                 what it was mixed for, and not touched by anything else. -->
+            <div class="btn-row" style="margin-top:9px">
+              <button type="button" class="btn mini" id="waterLogBtn">Record water used</button>
+              <button type="button" class="btn mini" id="waterLogUndo" hidden>Undo</button>
+            </div>
+            <p class="hint" id="waterLogHint" style="margin:7px 0 0"></p>
           </div>
 
           <div class="card-sec field">
@@ -4353,6 +4363,15 @@ html[data-shell="rail"] body{
         <button class="btn primary" id="addSubject">+ Plant</button>
       </div></div>
     <div id="gardenTaskBar" class="task-bar-full"></div>
+    <!-- The care timer. One round of care can touch several plants, so it
+         belongs to a visit to the garden, not to any one of them — see the
+         comment above careStart() for why its data stays out of everything
+         else in the app. -->
+    <div class="card pad" style="margin:10px 0 14px; display:flex; align-items:center; gap:12px; flex-wrap:wrap">
+      <button type="button" class="btn mini primary" id="careTimerBtn">Start care</button>
+      <span id="careTimerClock" style="font-family:var(--font); font-variant-numeric:tabular-nums; font-size:16px; font-weight:700; min-width:44px">—</span>
+      <span class="hint" id="careTimerHint" style="flex:1 1 180px; margin:0"></span>
+    </div>
     <div class="stack">
       <div id="gardenDue"></div>
       <input type="text" id="gardenSearch" class="plant-search" placeholder="Search plants…" autocomplete="off">
@@ -6616,6 +6635,22 @@ html[data-shell="rail"] body{
   <div class="dlg-foot">
     <button class="btn" type="button" data-close>Cancel</button>
     <button class="btn primary" type="submit">Add</button>
+  </div>
+</form></dialog>
+
+<!-- End care: closing the dialog with Escape or a backdrop click leaves the
+     timer running rather than losing it — only Save or Skip actually stops
+     it, both explicit. -->
+<dialog id="careLogDlg"><form id="careLogForm">
+  <h3 class="dlg-head">What did you do?</h3>
+  <div class="dlg-body">
+    <div class="field"><label for="careLogNote">Label this round of care<small>Optional — shows up in the Potting Bench's own stats</small></label>
+      <input id="careLogNote" placeholder="Watered the east shelf, sprayed for mites…" autocomplete="off"></div>
+    <p class="hint" id="careLogDur" style="margin:0"></p>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn" type="button" id="careLogSkip">Skip</button>
+    <button class="btn primary" type="submit">Save</button>
   </div>
 </form></dialog>
 
@@ -15220,7 +15255,93 @@ function worstState(sid){
   });
   return worst;
 }
+/* ---- the care timer ----
+   Simon: "every time I take care of my plants, I want to have a timer. I can
+   say 'I'm starting care' and then 'I end care.' It will ask me what I have
+   done when I stop it... put it into the plant statistics. From now on,
+   let's not count it towards anything else or connect this data with the
+   other parts of the app. Just keep it purely in the potting bench."
+
+   So this is deliberately its own small island: S.gardenTimer is read and
+   written nowhere else in the file, it never calls logEvent or touch()es a
+   routine, and the stats card it feeds (renderStats) builds its numbers
+   straight from this log rather than from D, the object every other card
+   shares. A round of care is one session covering however many plants you
+   touch — it isn't tied to a single plant, because you rarely water just
+   one. */
+function careRunning(){ return !!(S.gardenTimer&&S.gardenTimer.running); }
+function careElapsedMs(){ return careRunning()?Math.max(0,Date.now()-new Date(S.gardenTimer.running).getTime()):0; }
+/* the running clock, mm:ss under an hour, h:mm:ss over — a round of watering
+   is minutes, not hours, so the common case stays the short, readable one */
+function careFmtClock(ms){
+  const s=Math.max(0,Math.round(ms/1000)), h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60;
+  return h?`${h}:${String(m).padStart(2,"0")}:${String(sec).padStart(2,"0")}`
+          :`${m}:${String(sec).padStart(2,"0")}`;
+}
+/* the same duration, read back later in the stats card — "42m" reads better
+   there than "0:42" does out of context */
+function careFmtMins(mins){
+  const m=Math.round(mins||0);
+  if(m<60) return `${m}${L.lang==="cs"?" min":"m"}`;
+  const h=Math.floor(m/60), r=m%60;
+  return r?`${h}${L.lang==="cs"?" h":"h"} ${r}${L.lang==="cs"?" min":"m"}`:`${h}${L.lang==="cs"?" h":"h"}`;
+}
+function careStart(){
+  S.gardenTimer=S.gardenTimer||{running:null,log:[]};
+  if(S.gardenTimer.running) return;
+  S.gardenTimer.running=new Date().toISOString();
+  touch(); renderCareTimer();
+}
+/* the instant "End care" was pressed, not the instant the dialog is
+   eventually submitted — you might spend a moment choosing a label, and that
+   time was not spent caring for anything */
+let careStopAt=null;
+function careOpenStopDlg(){
+  if(!careRunning()) return;
+  careStopAt=new Date().toISOString();
+  $("#careLogNote").value="";
+  $("#careLogDur").textContent=`${careFmtMins(Math.round((+new Date(careStopAt)-+new Date(S.gardenTimer.running))/60000))}${L.lang==="cs"?" péče":" of care"}`;
+  $("#careLogDlg").showModal();
+}
+function careFinish(label){
+  if(!careRunning()) return;
+  const start=S.gardenTimer.running, end=careStopAt||new Date().toISOString();
+  const mins=Math.max(0,Math.round((+new Date(end)-+new Date(start))/60000));
+  S.gardenTimer.log=S.gardenTimer.log||[];
+  S.gardenTimer.log.push({id:uid(),start,end,mins,label:(label||"").trim()});
+  S.gardenTimer.running=null; careStopAt=null;
+  touch(); renderCareTimer();
+}
+let careTick=null;
+function careStartTick(){
+  if(careTick) return;
+  careTick=setInterval(()=>{
+    if(curView!=="garden"||!careRunning()){ clearInterval(careTick); careTick=null; return; }
+    const el=$("#careTimerClock"); if(el) el.textContent=careFmtClock(careElapsedMs());
+  },1000);
+}
+function renderCareTimer(){
+  const btn=$("#careTimerBtn"), clock=$("#careTimerClock"), hint=$("#careTimerHint");
+  if(!btn) return;
+  const running=careRunning();
+  btn.textContent=t(running?"End care":"Start care");
+  btn.classList.toggle("primary",!running);
+  clock.textContent=running?careFmtClock(careElapsedMs()):"—";
+  const log=(S.gardenTimer&&S.gardenTimer.log)||[];
+  const last=log[log.length-1];
+  hint.textContent=running
+    ? t("Timing this round of care.")
+    : last
+      ? `${t("Last")}: ${careFmtMins(last.mins)}${last.label?" · "+last.label:""} · ${ago(last.end)}`
+      : t("Tap Start care when you begin, and End care when you're done.");
+  if(running) careStartTick();
+}
+$("#careTimerBtn").addEventListener("click",()=>{ careRunning()?careOpenStopDlg():careStart(); });
+$("#careLogForm").addEventListener("submit",e=>{ e.preventDefault(); careFinish($("#careLogNote").value); $("#careLogDlg").close(); });
+$("#careLogSkip").addEventListener("click",()=>{ careFinish(""); $("#careLogDlg").close(); });
+
 function renderGarden(){
+  renderCareTimer();
   const gname=userName(L.me);
   $("#gardenHi").textContent=gname&&gname!=="Me"?`${greeting()}, ${gname.split(" ")[0]}`:greeting();
   const today=sod(Date.now());
@@ -20662,6 +20783,12 @@ document.addEventListener("click",e=>{
   const b=e.target.closest("[data-chart]"); if(!b) return;
   L.chart=b.dataset.chart; saveLocal(); renderStats();
 });
+document.addEventListener("click",e=>{
+  const cd=e.target.closest("[data-caredel]");
+  if(cd){ S.gardenTimer.log=(S.gardenTimer.log||[]).filter(x=>x.id!==cd.dataset.caredel); touch(); renderStats(); return; }
+  const wd=e.target.closest("[data-waterdel]");
+  if(wd){ S.waterLog=(S.waterLog||[]).filter(x=>x.id!==wd.dataset.waterdel); touch(); renderStats(); return; }
+});
 function renderStats(){
   const host=$("#statsBody"); if(!host) return;
   const D=statsData();
@@ -20859,11 +20986,64 @@ function renderStats(){
       `<p class="hint" style="margin:0">${esc(t("Nothing is overdue. Good."))}</p>`}
      ${a.never?`<p class="hint" style="margin:11px 0 0">${a.never} ${esc(t("plants have never been logged at all."))}</p>`:""}`):"";
 
-  host.innerHTML=nowCard+careCard+expertCards(D)+collCard+folCard+propCard+healthCard+attnCard;
+  /* --- N. care timer — deliberately NOT built from D. See the comment
+     above careStart() for why: this counts towards nothing else, so it
+     reads straight from S.gardenTimer and nowhere near statsData(). --- */
+  const cl=(S.gardenTimer&&S.gardenTimer.log)||[];
+  const clMin=cl.reduce((a,x)=>a+(+x.mins||0),0);
+  const timerCard=card("Care timer",
+    cl.length?`<div class="statrow q">
+      ${statCell(cl.length,"sessions")}
+      ${statCell(careFmtMins(clMin),"total")}
+      ${statCell(careFmtMins(Math.round(clMin/cl.length)),"average")}
+    </div>
+    <div style="margin-top:15px">
+      <span class="eyebrow" style="display:block;margin-bottom:7px">${esc(t("Recent sessions"))}</span>
+      <div class="stack" style="gap:6px">
+        ${cl.slice().reverse().slice(0,8).map(x=>`<div class="arow">
+          <span class="arow-name">${esc(x.label||t("Care"))}</span>
+          <span class="arow-sub">${esc(careFmtMins(x.mins))} · ${esc(ago(x.end))}</span>
+          <button type="button" class="tdel" data-caredel="${x.id}" aria-label="${esc(t("Delete session"))}">×</button>
+        </div>`).join("")}
+      </div>
+    </div>`
+    :`<p class="hint" style="margin:0">${esc(t("Nothing timed yet — press Start care in the Garden when you begin."))}</p>`,
+    cl.length?"Its own log, on purpose: this is time spent, not what was done, and it counts towards nothing else in the app.":null);
+
+  /* --- N+1. water used — same rule: a plain record of what actually went
+     into the sprayer or the can, not a modelled figure like the expert
+     tier's "water delivered" (which is a guess from pot size). Nothing
+     else in the app reads S.waterLog either. --- */
+  const wl=(S.waterLog||[]).slice().sort((a,b)=>a.at.localeCompare(b.at));
+  const wlTotal=wl.reduce((a,x)=>a+(+x.litres||0),0);
+  const weekAgo=Date.now()-7*DAY;
+  const wlWeek=wl.filter(x=>+new Date(x.at)>=weekAgo).reduce((a,x)=>a+(+x.litres||0),0);
+  const waterCard=card("Water used",
+    wl.length?`<div class="statrow q">
+      ${statCell(oneDp(wlTotal)+" L","recorded")}
+      ${statCell(oneDp(wlWeek)+" L","this week")}
+      ${statCell(oneDp(wlTotal/wl.length)+" L","average")}
+      ${statCell(wl.length,"records")}
+    </div>
+    <div style="margin-top:15px">
+      <span class="eyebrow" style="display:block;margin-bottom:7px">${esc(t("Recent records"))}</span>
+      <div class="stack" style="gap:6px">
+        ${wl.slice().reverse().slice(0,8).map(x=>`<div class="arow">
+          <span class="arow-name">${oneDp(+x.litres||0)} L</span>
+          <span class="arow-sub">${esc(ago(x.at))}</span>
+          <button type="button" class="tdel" data-waterdel="${x.id}" aria-label="${esc(t("Delete record"))}">×</button>
+        </div>`).join("")}
+      </div>
+    </div>`
+    :`<p class="hint" style="margin:0">${esc(t("Nothing recorded yet — mix your water on the Bench, then tap Record."))}</p>`,
+    wl.length?"What you actually mixed, on the assumption that a mixed tank gets used — not a model of what the plants needed.":null);
+
+  host.innerHTML=nowCard+careCard+expertCards(D)+collCard+folCard+propCard+healthCard+attnCard+timerCard+waterCard;
 }
 
 function renderAll(){ renderMixSel(); renderDue(); renderHow(); renderMix(); renderShelf(); renderSubjects(); renderCuttings(); renderPlan(); renderLog(); renderTaskBar(); renderTaskBarFull("#gardenTaskBar"); renderTaskBarFull("#planTaskBar"); renderGarden(); renderLibrary(); renderActionDays(); renderPropGuide(); renderStats();
   if(typeof renderCycle==="function") try{ renderCycle(); }catch(e){}
+  if(typeof renderWaterLog==="function") try{ renderWaterLog(); }catch(e){}
   if(typeof renderPhotoQ==="function") try{ renderPhotoQ(); }catch(e){}
   if(typeof renderHealth==="function") try{ renderHealth(); }catch(e){}
   /* the planner sat outside this list historically — after an import or reset
@@ -22438,6 +22618,32 @@ $("#volSlide").addEventListener("input",async e=>{
 $("#volSlide").addEventListener("change",async()=>{
   clearTimeout(volMixT); volMixT=null; renderMix(); saveLocal();
 });
+/* ---- water used ----
+   Simon: "every time I mix water, I put some amount of litres in, and then
+   I will have a button to record. It will record the amount I mixed because
+   usually I use all the water I mix... include it in the statistics." A
+   plain tally, deliberately unconnected to what the mix was for or which
+   plant it went to — S.waterLog is read nowhere but here and in the stats
+   card that lists it. */
+function renderWaterLog(){
+  const hint=$("#waterLogHint"), undo=$("#waterLogUndo"); if(!hint) return;
+  const log=S.waterLog||[], last=log[log.length-1];
+  if(undo) undo.hidden=!leafUndoable(last);
+  hint.textContent=last
+    ? `${t("Last recorded")}: ${oneDp(+last.litres||0)} L · ${ago(last.at)}`
+    : t("Not recorded yet — mix your water, then tap Record.");
+}
+$("#waterLogBtn").addEventListener("click",()=>{
+  const v=+$("#vol").value; if(!(v>0)) return;
+  S.waterLog=S.waterLog||[];
+  S.waterLog.push({id:uid(),at:new Date().toISOString(),litres:Math.round(v*100)/100});
+  touch(); renderWaterLog();
+});
+$("#waterLogUndo").addEventListener("click",()=>{
+  const log=S.waterLog||[], last=log[log.length-1]; if(!leafUndoable(last)) return;
+  S.waterLog=log.filter(x=>x.id!==last.id);
+  touch(); renderWaterLog();
+});
 let strMixT=null;
 $("#strSlide").addEventListener("input",async e=>{
   L.strength=+e.target.value; renderStr();
@@ -23972,6 +24178,7 @@ $("#plantForm").addEventListener("submit",async e=>{
   touch(); renderSubjects(); renderAgenda(); renderGarden();
   if(typeof renderCareDays==="function") try{ renderCareDays(); }catch(e){}
   if(typeof renderCycle==="function") try{ renderCycle(); }catch(e){}
+  if(typeof renderWaterLog==="function") try{ renderWaterLog(); }catch(e){}
   if(typeof renderPhotoQ==="function") try{ renderPhotoQ(); }catch(e){}
   renderDue();
   if(pvId===sid) renderPlant();          // the plant's own page must follow the edit
@@ -24496,6 +24703,24 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "If a plant has no litre figure it assumes 1 L and tells you. A fifth is a rule of thumb, not your plants — override the slider whenever it's wrong, it won't argue. And it only ever suggests":"Když u rostliny žádné litry nejsou, počítá s 1 l a řekne ti to. Pětina je pravidlo palce, ne tvoje rostliny — kdykoli je to špatně, přejed posuvník ručně, aplikace se hádat nebude. A navrhuje vždycky jen",
 ", never waterings: how fast a pot dries out swings far too much to predict, which is why the guide keeps telling you to lift it instead.":", nikdy zálivky: jak rychle květináč vysychá, kolísá příliš na to, aby se to dalo předpovědět — proto ti průvodce pořád říká, ať ho radši zvedneš.",
 "Water":"Zálivka","Feed":"Hnojení","Spray":"Postřik","Care":"Péče",
+"Start care":"Začít péči","End care":"Ukončit péči","Last":"Naposled",
+"Timing this round of care.":"Měří se tato péče.",
+"Tap Start care when you begin, and End care when you're done.":"Ťukni na Začít péči, až začneš, a na Ukončit péči, až skončíš.",
+"Care timer":"Časovač péče","Recent sessions":"Poslední úseky","sessions":"úseků","average":"průměr","total":"celkem",
+"Nothing timed yet — press Start care in the Garden when you begin.":"Zatím nic naměřeno — v Zahradě ťukni na Začít péči.",
+"Its own log, on purpose: this is time spent, not what was done, and it counts towards nothing else in the app.":
+  "Záměrně samostatný záznam: jde o strávený čas, ne o to, co bylo uděláno, a nezapočítává se do ničeho jiného v appce.",
+"Delete session":"Smazat úsek",
+"Water used":"Spotřebovaná voda","recorded":"zaznamenáno","records":"záznamů","Recent records":"Poslední záznamy",
+"Delete record":"Smazat záznam","Last recorded":"Naposled zaznamenáno",
+"Not recorded yet — mix your water, then tap Record.":"Zatím nic zaznamenáno — namíchej vodu a ťukni na Zaznamenat.",
+"Record water used":"Zaznamenat spotřebovanou vodu",
+"What did you do?":"Co jsi dělal?","Label this round of care":"Popiš tuto péči",
+"Optional — shows up in the Potting Bench's own stats":"Nepovinné — objeví se ve statistikách Ponku",
+"Watered the east shelf, sprayed for mites…":"Zalil jsem východní polici, postříkal proti sviluškám…",
+"Nothing recorded yet — mix your water on the Bench, then tap Record.":"Zatím nic zaznamenáno — namíchej vodu na Ponku a ťukni na Zaznamenat.",
+"What you actually mixed, on the assumption that a mixed tank gets used — not a model of what the plants needed.":
+  "To, co jsi opravdu namíchal, s předpokladem, že namíchaná nádrž se použije celá — ne odhad podle potřeb rostlin.",
 "all":"vše","Mark done":"Označit hotovo",
 "Mark {n} {kind} as done?":"Označit {n}× {kind} jako hotové?",
 "Done":"Hotovo","Open":"Otevřít","task":"úkol","anytime":"kdykoli","late":"pozdě",
