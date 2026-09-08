@@ -3209,6 +3209,28 @@ dialog:has(> form > .dlg-foot) > form > .dlg-foot{flex:0 0 auto}
 .pline-v .pin-days{color:var(--ink-3); font-size:11.5px}
 .pline-v .pin-days::before{content:" · "}
 
+/* ---- manual care ----------------------------------------------------------
+   The same seven columns as .daypick, but every day has to carry a second fact:
+   how many of the plants currently ticked are ALREADY on that day. Without it
+   you are choosing days blind, and a Monday already carrying half the
+   collection looks exactly like an empty Saturday. */
+.mc-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; min-width:0}
+.mc-grid button{
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  padding:8px 0 6px; border:1px solid var(--line); border-radius:8px;
+  background:transparent; color:var(--ink-3); font-family:var(--font);
+  cursor:pointer; min-width:0; -webkit-tap-highlight-color:transparent;
+  transition:background .12s, color .12s, border-color .12s}
+.mc-grid button:hover{border-color:var(--ink-3); color:var(--ink-2)}
+.mc-grid button[aria-pressed="true"]{
+  background:var(--accent); border-color:var(--accent); color:var(--on-accent)}
+.mc-grid .mc-dow{font-size:11px; line-height:1.1; font-weight:600}
+/* the count keeps its line whether or not there is a number in it, so the seven
+   buttons stay one height and the row still reads as a calendar */
+.mc-grid .mc-pre{font-size:9.5px; line-height:1.1; min-height:11px;
+  font-variant-numeric:tabular-nums; opacity:.7}
+.mc-grid button.off-scheme:not([aria-pressed="true"]){opacity:.5}
+
 /* ---- pests, diseases and disorders ---------------------------------------
    The register's row is a card rather than a .pline because a problem carries
    more than a value: a status, an age, what kind of thing it is, and the last
@@ -5939,6 +5961,13 @@ html[data-shell="rail"] body{
           <span class="eyebrow">Your week</span></div>
         <div class="pad" style="padding-top:0" id="cdWeek"></div>
       </div>
+      <div class="card pad" style="display:flex; align-items:center; gap:12px; justify-content:space-between">
+        <div style="min-width:0">
+          <b style="font-size:13.5px">Manual care</b>
+          <p class="hint" style="margin:2px 0 0">Give a whole group of plants the same days at once.</p>
+        </div>
+        <button class="btn primary" id="openManualCare" style="flex:none">Set days</button>
+      </div>
       <input type="text" id="cdSearch" class="plant-search" placeholder="Search plants…" autocomplete="off">
       <div class="stack" id="cdList" style="gap:10px"></div>
       <p class="hint" style="margin:2px 2px 22px">A job with no days picked keeps running on its interval and
@@ -7073,6 +7102,52 @@ html[data-shell="rail"] body{
   <div class="dlg-foot">
     <button class="btn" type="button" id="batchCareCancel">Cancel</button>
     <button class="btn primary" type="button" id="batchCareApply">Log it</button>
+  </div>
+</dialog>
+
+<!-- manual care: the bulk form of the Care days picker. Pick a job, tick any
+     number of plants, tap the weekdays — every plant ticked is pinned to
+     exactly those days, whatever its own interval or cycle said before. The
+     small number under each day is how many of the ticked plants that day is
+     already carrying, so the week can be spread rather than guessed at. -->
+<dialog id="manualCareDlg">
+  <h3 class="dlg-head">Manual care</h3>
+  <div class="dlg-body">
+    <div class="field">
+      <label>Which job</label>
+      <div class="seg" id="mcJobSeg">
+        <button type="button" data-job="water" aria-pressed="true">Water</button>
+        <button type="button" data-job="feed" aria-pressed="false">Feed</button>
+        <button type="button" data-job="spray" aria-pressed="false">Spray</button>
+      </div>
+    </div>
+    <div class="field">
+      <div style="display:flex; align-items:center; justify-content:space-between">
+        <label style="margin:0">Which plants</label>
+        <button type="button" class="btn mini" id="mcSelectAll">Select all</button>
+      </div>
+      <div id="mcPlantList" class="stack" style="gap:0; max-height:32vh; overflow:auto"></div>
+    </div>
+    <div class="field">
+      <label>Which days</label>
+      <div class="mc-grid" id="mcDays"></div>
+      <p class="hint" id="mcDaysHint" style="margin:7px 0 0"></p>
+    </div>
+    <div class="field" id="mcFeedWrap">
+      <!-- nested in a div on purpose: `.field > label` is the uppercase eyebrow
+           rule, and a .lu sitting directly in a .field gets shouted at -->
+      <div>
+        <label class="lu" style="border:0; padding:6px 0">
+          <span class="sw"><input type="checkbox" id="mcFeedRide"><i></i></span>
+          <span class="lu-name">Every second watering also feeds<small>Puts the fertiliser on every other one of the days above</small></span>
+        </label>
+      </div>
+      <p class="hint" id="mcFeedHint" style="margin:2px 0 0"></p>
+    </div>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn" type="button" id="mcCancel">Cancel</button>
+    <button class="btn primary" type="button" id="mcApply">Apply</button>
   </div>
 </dialog>
 
@@ -23111,8 +23186,14 @@ const dowName=d=>L.lang==="cs"?DOW_CS[d]:DOW_LONG[d];
 /* Sunday is 0 to a computer and last to a person — order it their way for
    anything that gets read out loud */
 const dowOrder=(a,b)=>((a+6)%7)-((b+6)%7);
-const dowList=days=>days.slice().sort(dowOrder).map(dowName)
-  .join(L.lang==="cs"?" a ":" & ");
+/* Two days join with an ampersand; three or more take commas and keep the
+   ampersand for the last pair, because "Monday & Wednesday & Friday" is not a
+   list anyone writes. Manual care made this visible — picking days freely means
+   three and four are ordinary, where the action days were nearly always two. */
+const dowList=days=>{
+  const n=days.slice().sort(dowOrder).map(dowName), amp=L.lang==="cs"?" a ":" & ";
+  return n.length<3?n.join(amp):n.slice(0,-1).join(", ")+amp+n[n.length-1];
+};
 /* always sorted ascending — actionGap walks the list in order and reads a
    negative gap if it isn't */
 const actionDays=()=>{ const a=S.actionDays;
@@ -37728,6 +37809,164 @@ $("#cdSearch").addEventListener("input",e=>{
 $("#openCareDays").addEventListener("click",()=>show("careplan"));
 $("#cdBack").addEventListener("click",()=>show("plan"));
 
+/* ---------------- manual care ----------------
+   Care days edits one plant at a time, which is the right grain for a plant
+   that is genuinely its own case and the wrong one for "everything on the east
+   shelf gets watered on Mondays and Thursdays". Manual care is the bulk form of
+   the same edit: pick the job, tick the plants, tap the weekdays.
+
+   It invents no scheduling of its own. It writes the same routine.days that the
+   per-plant picker writes, so every screen that already understands a pinned
+   routine understands a group pinned here — there is no second answer to "when
+   is this due" for these screens to disagree over. */
+const MC_JOBS=["water","feed","spray"];
+let mcJob="water", mcDays=[];
+const mcJobLabel=k=>t(k==="water"?"Water":k==="feed"?"Feed":"Spray");
+const mcPlantIds=()=>[...$("#mcPlantList").querySelectorAll("input:checked")].map(c=>c.dataset.lp);
+
+/* Which weekdays this job already falls on, across the plants ticked right now.
+   A pinned routine answers exactly. An unpinned one is forecast over the coming
+   week instead, because "Wednesday, because that is an action day" is just as
+   much a day already spoken for as a pinned Wednesday is — and a picker that
+   only counted pinned plants would call a full action day empty. */
+function mcPresetCounts(ids){
+  const n=[0,0,0,0,0,0,0], today=sod(Date.now()), end=today+6*DAY;
+  ids.forEach(id=>{
+    const p=subject(id); if(!p) return;
+    const r=routineOf(id,mcJob); if(!r) return;
+    const days=fixedDays(r);
+    if(days){ days.forEach(d=>n[d]++); return; }
+    /* one plant counts once per weekday however often it comes round */
+    const seen={};
+    let at=routineDue(r,p,lastEvent(r.id));
+    for(let i=0;i<8&&at!=null&&at<=end;i++){
+      const d=new Date(at).getDay();
+      if(at>=today&&!seen[d]){ seen[d]=1; n[d]++; }
+      at=routineStep(r,p,at);
+    }
+  });
+  return n;
+}
+
+/* Every second watering, expressed as weekdays. Strict alternation is a
+   FORTNIGHTLY pattern whenever the number of watering days is odd, and a weekly
+   day-list cannot hold one — so this takes every other day of the week's own
+   list and the hint says plainly what that comes to. On the usual two days a
+   week it is exactly right: water Monday & Thursday, feed Monday. */
+const mcFeedDays=days=>days.slice().sort(dowOrder).filter((_,i)=>i%2===0);
+
+function mcRenderFeed(){
+  const cs=L.lang==="cs", show=mcJob==="water";
+  $("#mcFeedWrap").hidden=!show;
+  if(!show) return;
+  if(!$("#mcFeedRide").checked||!mcDays.length){ $("#mcFeedHint").textContent=""; return; }
+  const fd=mcFeedDays(mcDays);
+  $("#mcFeedHint").textContent=(cs?`Hnojivo v ${dowList(fd)}.`:`Fertiliser on ${dowList(fd)}.`)
+    + (mcDays.length%2
+        ? (cs?" Lichý počet zálivek v týdnu, takže se to opakuje každý týden, ne obden."
+             :" An odd number of watering days, so this repeats weekly rather than truly alternating.")
+        : "");
+}
+
+function mcRenderDays(){
+  const ids=mcPlantIds(), n=mcPresetCounts(ids), act=actionDays(), cs=L.lang==="cs";
+  $("#mcDays").innerHTML=PICK_ORDER.map(d=>{
+    const lit=mcDays.indexOf(d)>=0, off=actionOn()&&act.indexOf(d)<0;
+    return `<button type="button" class="${off?"off-scheme":""}" data-day="${d}"
+      aria-pressed="${lit}" aria-label="${esc(dowName(d))}" title="${esc(dowName(d))}"
+      ><span class="mc-dow">${esc(dowName(d).slice(0,2))}</span
+      ><span class="mc-pre">${n[d]||""}</span></button>`;
+  }).join("");
+  const job=mcJobLabel(mcJob).toLowerCase();
+  $("#mcDaysHint").textContent = !ids.length
+    ? (cs?"Zaškrtni rostliny — číslo pod dnem pak ukáže, kolik jich na něj už připadá."
+        :"Tick some plants — the number under each day then shows how many already fall on it.")
+    : mcDays.length
+      ? (cs?`${ids.length} rostlin: ${job} v ${dowList(mcDays)}. Jejich vlastní intervaly se přeskočí.`
+          :`${plural(ids.length,"plant")}: ${job} on ${dowList(mcDays)}. Their own intervals are ignored.`)
+      : (cs?"Žádný den — uložením se tyhle rostliny vrátí ke svým intervalům."
+          :"No days picked — applying now hands these plants back to their intervals.");
+  mcRenderFeed();
+}
+
+function mcSetJob(k){
+  mcJob=MC_JOBS.indexOf(k)>=0?k:"water";
+  $("#mcJobSeg").querySelectorAll("button[data-job]").forEach(b=>
+    b.setAttribute("aria-pressed",b.dataset.job===mcJob?"true":"false"));
+  mcRenderDays();
+}
+function openManualCare(){
+  const plants=subjectsIn("plants");
+  if(!plants.length){ say("Add a plant first — then you can set days for a group of them."); return; }
+  mcDays=[];
+  $("#mcPlantList").innerHTML=plants.map(p=>pickerPlantRowHtml(p,false)).join("");
+  $("#mcSelectAll").textContent="Select all";
+  $("#mcFeedRide").checked=false;
+  mcSetJob(mcJob);
+  applyLang($("#manualCareDlg"));
+  $("#manualCareDlg").showModal();
+}
+$("#openManualCare").addEventListener("click",openManualCare);
+$("#mcCancel").addEventListener("click",()=>$("#manualCareDlg").close());
+$("#mcJobSeg").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-job]"); if(!b) return;
+  mcSetJob(b.dataset.job);
+});
+$("#mcSelectAll").addEventListener("click",()=>{
+  const boxes=[...$("#mcPlantList").querySelectorAll("input[type=checkbox]")];
+  const all=boxes.length>0&&boxes.every(b=>b.checked);
+  boxes.forEach(b=>b.checked=!all);
+  $("#mcSelectAll").textContent=all?"Select all":"Deselect all";
+  mcRenderDays();
+});
+/* the counts under the days are a fact about the ticked plants, so they have to
+   move with the ticks rather than only when the dialog opens */
+$("#mcPlantList").addEventListener("change",mcRenderDays);
+$("#mcDays").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-day]"); if(!b) return;
+  e.preventDefault();
+  mcDays=toggleDay(mcDays,+b.dataset.day);
+  mcRenderDays();
+});
+$("#mcFeedRide").addEventListener("change",mcRenderFeed);
+
+/* the routine this plant uses for a job, made if it hasn't got one — a plant
+   that was never given a spray routine still has to be able to join a spray day */
+function mcRoutine(p,kind){
+  const r=routineOf(p.id,kind); if(r) return r;
+  const every=kind==="water"?(+p.waterEvery||3):kind==="feed"?(+p.feedEvery||7):14;
+  const made={id:uid(), subjectId:p.id, kind, days:[], every,
+    name:kind==="water"?"Water":kind==="feed"?"Feed":"Spray"};
+  S.routines.push(made);
+  return made;
+}
+$("#mcApply").addEventListener("click",async()=>{
+  const ids=mcPlantIds();
+  if(!ids.length){ say("Tick at least one plant first."); return; }
+  const days=mcDays.slice().sort((a,b)=>a-b);
+  const ride=mcJob==="water"&&$("#mcFeedRide").checked&&days.length>0;
+  const cs=L.lang==="cs", job=mcJobLabel(mcJob).toLowerCase();
+  const feedLine=ride?(cs?`\n\nHnojivo v ${dowList(mcFeedDays(days))}.`
+                         :`\n\nFertiliser on ${dowList(mcFeedDays(days))}.`):"";
+  const msg=days.length
+    ? (cs?`Nastavit ${ids.length} rostlinám ${job} na ${dowList(days)}?${feedLine}\n\nPřepíše to jejich vlastní intervaly a sundá je z cyklu.`
+        :`Set ${plural(ids.length,"plant")} to ${job} on ${dowList(days)}?${feedLine}\n\nThis overrides their own intervals and takes them off the cycle.`)
+    : (cs?`Zrušit pevné dny (${job}) u ${ids.length} rostlin?\n\nVrátí se ke svým intervalům.`
+        :`Clear the ${job} days on ${plural(ids.length,"plant")}?\n\nThey go back to their own intervals.`);
+  if(!await ask(msg,cs?"Nastavit":"Set")) return;
+  ids.forEach(id=>{
+    const p=subject(id); if(!p) return;
+    /* the cycle short-circuits pinned days entirely inside routineDue, so a
+       plant left on it would quietly ignore every day just picked for it */
+    if(days.length&&cycleOn(p)) p.cycle=Object.assign({},cycleOf(p),{on:false});
+    mcRoutine(p,mcJob).days=days.slice();
+    if(ride) mcRoutine(p,"feed").days=mcFeedDays(days);
+  });
+  touch();
+  $("#manualCareDlg").close();
+  renderCareDays(); renderAgenda(); renderSubjects(); renderGarden(); renderDue(); renderCycle();
+});
+
 
 /* ---- Care days (pinned care days) ---- */
 Object.assign(CS,{
@@ -37738,7 +37977,21 @@ Object.assign(CS,{
   "No plants yet. Add one and its days show up here.":
     "Zatím žádné rostliny. Přidej jednu a její dny se objeví tady.",
   "A job with no days picked keeps running on its interval and lands on the household's action days. Pick days and it stops drifting: it comes due on exactly those days, whatever the interval says. Tap the last lit day again to hand it back to the interval.":
-    "Úkon bez vybraných dnů běží dál podle intervalu a padá na akční dny domácnosti. Vyber dny a přestane se posouvat: bude na řadě přesně v ty dny, ať interval říká cokoli. Klepnutím na poslední svítící den ho vrátíš zpátky intervalu."
+    "Úkon bez vybraných dnů běží dál podle intervalu a padá na akční dny domácnosti. Vyber dny a přestane se posouvat: bude na řadě přesně v ty dny, ať interval říká cokoli. Klepnutím na poslední svítící den ho vrátíš zpátky intervalu.",
+  /* manual care */
+  "Manual care":"Ruční péče",
+  "Give a whole group of plants the same days at once.":
+    "Dej celé skupině rostlin stejné dny najednou.",
+  "Set days":"Nastavit dny",
+  "Which job":"Který úkon",
+  "Which plants":"Které rostliny",
+  "Which days":"Které dny",
+  "Every second watering also feeds":"Každá druhá zálivka i hnojí",
+  "Puts the fertiliser on every other one of the days above":
+    "Dá hnojivo na každý druhý z dnů výše",
+  "Tick at least one plant first.":"Zaškrtni nejdřív aspoň jednu rostlinu.",
+  "Add a plant first — then you can set days for a group of them.":
+    "Nejdřív přidej rostlinu — pak jim můžeš nastavovat dny po skupinách."
 });
 
 
