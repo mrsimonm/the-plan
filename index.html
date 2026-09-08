@@ -4453,6 +4453,30 @@ html[data-shell="rail"] body{
                   </div>
                   <p class="hint" id="cycCount" style="margin:9px 0 0"></p>
                 </div>
+                <!-- Simon: "I want to be able to set that I do something daily
+                     for all plants, and then I can just check one check mark
+                     that I do it daily for all plants, like spray." Spray has
+                     no cycle of its own — it's a plain interval, same as it is
+                     per plant — so this sets that one interval on every plant
+                     at once rather than opening each. -->
+                <div class="field" style="margin-top:15px; border-top:1px solid var(--glass-border); padding-top:14px">
+                  <label for="spBulkEvery">Spray for every plant</label>
+                  <p class="hint" style="margin:0 0 9px">One interval, applied to every plant at once. Each plant
+                    keeps its own after that, editable there like any other rhythm — this is a starting point,
+                    not a lock.</p>
+                  <select id="spBulkEvery">
+                    <option value="1">Daily</option>
+                    <option value="2">Every 2 days</option>
+                    <option value="3">Every 3 days</option>
+                    <option value="7">Weekly</option>
+                    <option value="14">Every 2 weeks</option>
+                  </select>
+                  <div class="btn-row" style="margin-top:9px">
+                    <button class="btn mini primary" type="button" id="spBulkApply">Set every plant</button>
+                    <button class="btn mini" type="button" id="spBulkOffAll">Turn spray off for all</button>
+                  </div>
+                  <p class="hint" id="spBulkCount" style="margin:9px 0 0"></p>
+                </div>
                 <div class="field" style="margin-top:15px; border-top:1px solid var(--glass-border); padding-top:14px">
                   <label for="photoQ">Photo quality</label>
                   <select id="photoQ"></select>
@@ -22978,10 +23002,31 @@ function renderDay(ag,today){
   html+= list.length||tk.length
     ? agendaRows(list,anchor===today)+taskRows(tk)
     : `<p class="empty">${anchor<today?"Nothing was logged this day.":"Nothing due."}</p>`;
+  /* Simon: "the possibility to do all and spray... so I can just press spray
+     on which are already in the list." One button per kind still due today —
+     Overdue and Today are both actionable rows already, so both feed it —
+     logs every one of them in a single tap instead of a Done per plant. */
+  if(anchor===today){
+    const byKind=pendingCareByKind(overdue.concat(list));
+    const kinds=Object.keys(byKind);
+    if(kinds.length) html+=`<div class="pad" style="border-top:1px solid var(--line-soft)">
+      <div class="btn-row" style="flex-wrap:wrap">
+        ${kinds.map(k=>`<button type="button" class="btn mini" data-agdoneall="${esc(k)}">${
+          esc(t(KIND_NAME[k]||k))} ${esc(t("all"))} (${byKind[k].length})</button>`).join("")}
+      </div></div>`;
+  }
   html+=`<div class="pad" style="border-top:1px solid var(--line-soft)">
     <button type="button" class="btn mini" data-open-day="${anchor}">Open this day</button></div>`;
   ag.innerHTML=html;
 }
+/* the items a "do all" button can act on: actionable rows only — not
+   something already ticked (.past), not a propagation check (.cut, which has
+   no routine to log against), and only ones with a routine behind them */
+const pendingCareByKind=items=>{
+  const by={};
+  items.filter(it=>!it.past&&!it.cut&&it.r).forEach(it=>(by[it.type]=by[it.type]||[]).push(it));
+  return by;
+};
 function renderWeek(ag,today){
   const a=weekStart(anchor), end=a+7*DAY-1;
   const {byDay,overdue}=groupByDay(
@@ -23054,6 +23099,24 @@ $("#agenda").addEventListener("click",async e=>{
     const r=S.routines.find(x=>x.id===done.dataset.agdone); if(!r) return;
     const asKind=done.dataset.agfeed?"feed":null;
     logRoutine(r,null,asKind);
+    renderPlan(); renderSubjects(); renderLog();
+    return;
+  }
+  const doneAll=e.target.closest("[data-agdoneall]");
+  if(doneAll){
+    /* recomputed fresh rather than trusting what was true when the button was
+       drawn — the same discipline every other agenda action here already
+       follows, and the list can only have shrunk since (nothing else adds a
+       due job for right now while this dialog is open) */
+    const today=sod(Date.now());
+    const src=historyItems(today,Date.now()).concat(buildAgenda(today+DAY-1));
+    const {byDay,overdue}=groupByDay(src);
+    const pending=(pendingCareByKind(overdue.concat(byDay[today]||[]))[doneAll.dataset.agdoneall])||[];
+    if(!pending.length) return;
+    const kind=doneAll.dataset.agdoneall;
+    if(!await ask(t("Mark {n} {kind} as done?").replace("{n}",pending.length).replace("{kind}",t(KIND_NAME[kind]||kind).toLowerCase()),
+                  t("Mark done"))) return;
+    pending.forEach(it=>logRoutine(it.r,null,it.feed?"feed":null));
     renderPlan(); renderSubjects(); renderLog();
     return;
   }
@@ -24433,6 +24496,8 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "If a plant has no litre figure it assumes 1 L and tells you. A fifth is a rule of thumb, not your plants — override the slider whenever it's wrong, it won't argue. And it only ever suggests":"Když u rostliny žádné litry nejsou, počítá s 1 l a řekne ti to. Pětina je pravidlo palce, ne tvoje rostliny — kdykoli je to špatně, přejed posuvník ručně, aplikace se hádat nebude. A navrhuje vždycky jen",
 ", never waterings: how fast a pot dries out swings far too much to predict, which is why the guide keeps telling you to lift it instead.":", nikdy zálivky: jak rychle květináč vysychá, kolísá příliš na to, aby se to dalo předpovědět — proto ti průvodce pořád říká, ať ho radši zvedneš.",
 "Water":"Zálivka","Feed":"Hnojení","Spray":"Postřik","Care":"Péče",
+"all":"vše","Mark done":"Označit hotovo",
+"Mark {n} {kind} as done?":"Označit {n}× {kind} jako hotové?",
 "Done":"Hotovo","Open":"Otevřít","task":"úkol","anytime":"kdykoli","late":"pozdě",
 "check":"kontrola","check the cuttings":"zkontrolovat řízky","Overdue":"Po termínu",
 "started":"založeno","going":"běží","took":"chytlo","Check in":"Ohlásit se",
@@ -38289,7 +38354,50 @@ function renderCycle(){
     : (L.lang==="cs"
         ? `${on} z ${plants.length} ${pl3(plants.length,"rostliny","rostlin","rostlin")} jede na cyklu.`
         : `${on} of ${plural(plants.length,"plant")} on the cycle.`);
+  renderSprayBulk();
 }
+/* ---- spray for every plant, in one tap ----
+   Same shape as the cycle's own "Put every plant on this": one interval,
+   applied to every plant's spray routine at once — created for a plant that
+   does not have one yet, updated for a plant that does. Left alone until
+   pressed, unlike the cycle, so a household that never sprays sees a count
+   of zero and nothing else. */
+function renderSprayBulk(){
+  if(!$("#spBulkCount")) return;
+  const n=subjectsIn("plants").filter(p=>routineOf(p.id,"spray")).length;
+  $("#spBulkCount").textContent = n
+    ? (L.lang==="cs"?`${n} ${pl3(n,"rostlina má","rostliny mají","rostlin má")} teď postřik nastavený.`
+                    :`${plural(n,"plant")} currently ${n===1?"has":"have"} a spray interval set.`)
+    : (L.lang==="cs"?"Zatím žádná rostlina nemá postřik nastavený."
+                    :"No plant has a spray interval set yet.");
+}
+$("#spBulkApply").addEventListener("click",async()=>{
+  const plants=subjectsIn("plants");
+  if(!plants.length){ say(L.lang==="cs"?"Zatím žádné rostliny.":"No plants to set it for yet."); return; }
+  const every=Math.max(1,+$("#spBulkEvery").value||1);
+  const lbl=$("#spBulkEvery").selectedOptions[0].textContent;
+  if(!await ask(L.lang==="cs"
+    ? `Nastavit postřik ${lbl.toLowerCase()} pro všech ${plants.length} ${pl3(plants.length,"rostlinu","rostliny","rostlin")}?\n\nKaždá rostlina si pak interval nese sama — dá se dál upravit zvlášť.`
+    : `Set spray to ${lbl.toLowerCase()} for all ${plural(plants.length,"plant")}?\n\nEach plant carries its own interval afterwards — edit any one of them separately whenever you like.`,
+    L.lang==="cs"?"Nastavit":"Set them")) return;
+  plants.forEach(p=>{
+    const ex=routineOf(p.id,"spray");
+    if(ex) ex.every=every;
+    else S.routines.push({id:uid(),subjectId:p.id,kind:"spray",name:"Spray",every,days:[]});
+  });
+  touch(); renderSprayBulk(); renderAll();
+  say(L.lang==="cs"?`${plants.length} nastaveno.`:`${plural(plants.length,"plant")} set.`,"Done");
+});
+$("#spBulkOffAll").addEventListener("click",async()=>{
+  const has=subjectsIn("plants").filter(p=>routineOf(p.id,"spray"));
+  if(!has.length){ say(L.lang==="cs"?"Žádná rostlina postřik nemá.":"No plant has spray set."); return; }
+  if(!await ask(L.lang==="cs"
+    ? `Vypnout postřik u ${has.length} ${pl3(has.length,"rostliny","rostlin","rostlin")}?`
+    : `Turn spray off for ${plural(has.length,"plant")}?`,
+    L.lang==="cs"?"Vypnout":"Turn off")) return;
+  has.forEach(p=>{ S.routines=S.routines.filter(r=>!(r.subjectId===p.id&&r.kind==="spray")); });
+  touch(); renderSprayBulk(); renderAll();
+});
 
 $("#feedDayOn").addEventListener("change",e=>{
   S.feedDayOn=e.target.checked; touch(); renderCycle(); renderAll();
