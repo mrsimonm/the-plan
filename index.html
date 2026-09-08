@@ -10329,6 +10329,52 @@ function foliageRate(evs){
   return `${monthly}${yearly}  —  ${basis}`;
 }
 
+/* ---- pruning ----
+   Simon: "when I prune, I want to count the amount of leaves I pruned away.
+   Make it work similarly to how the leaves grow new leaves." Same shape as a
+   new leaf — an ad-hoc tap, `n` leaves at once, a running total and a rate
+   once there is enough history to support one — so it reuses the leaf
+   feature's window/threshold/formatting math wholesale (leafWindowDays,
+   leafHasMonthly, leafPerMonth, leafNum, leafSpanWord, leafWord, csLeaves,
+   leafUndoable: none of those are actually about the word "leaf", only about
+   a count and a first-logged date, so a second event kind can share them
+   rather than re-deriving the same fortnight/quarter thresholds).
+
+   Unlike a new leaf, this IS something you did, not something the plant did
+   on its own — so, deliberately, pruning is left OUT of isLeafEv and every
+   place that filters leaves out of "care done" (the reward count, the
+   30-day care chart, the library's logged total, the calendar's history
+   rows). A prune counts there exactly like a watering does. */
+const isPruneEv=e=>e&&(e.kind||e.type)==="prune";
+const pruneEventsFor=sid=>S.events.filter(e=>isPruneEv(e)&&e.subjectId===sid)
+  .sort((a,b)=>b.at.localeCompare(a.at));          // newest first
+const pruneTotal=leafTotal;
+const pruneUndoable=leafUndoable;         // same rule: undo stays offered same-day only
+EV_LABEL.prune="Pruned";
+function pruneLine(evs){
+  if(!evs.length) return L.lang==="cs"
+    ? "Zatím nic. Ťukni na + Prořezáno, když nějaké listy odstraníš — z těch dat se počítá tempo níž."
+    : "Nothing logged yet. Tap + Pruned when you cut leaves away — "
+      +"those dates are what the rate below is built from.";
+  const n=pruneTotal(evs);
+  return L.lang==="cs"
+    ? `${n} ${csLeaves(n)} odstraněno · naposledy ${ago(evs[0].at)}`
+    : `${n} ${leafWord(n)} pruned · newest ${ago(evs[0].at)}`;
+}
+function pruneRate(evs){
+  if(!evs.length) return "";
+  const cs=L.lang==="cs";
+  const n=pruneTotal(evs), first=evs[evs.length-1].at;
+  const basis=`${n} ${leafWord(n)} ${cs?"za":"over"} ${leafSpanWord(leafWindowDays(first))}`;
+  if(!leafHasMonthly(first))
+    return `${basis} — ${cs?"na tempo je ještě brzy":"too early for a rate"}`;
+  const monthly=`${cs?"asi":"about"} ${leafNum(leafPerMonth(n,first))} `
+    +`${cs?"listů za měsíc":"a month"}`;
+  const yearly=leafHasYearly(first)
+    ? ` · ${leafNum(leafPerYear(n,first))} ${cs?"za rok":"a year"}` : "";
+  return `${monthly}${yearly}  —  ${basis}`;
+}
+
 const careRoutines=sid=>routinesFor(sid)
   .slice().sort((a,b)=>CARE_ORDER.indexOf(a.kind)-CARE_ORDER.indexOf(b.kind));
 function renderSubjects(){
@@ -15430,6 +15476,7 @@ function renderPlant(){
   const sp=speciesFind(p.species);
 
   const leaves=leafEventsFor(p.id);
+  const prunes=pruneEventsFor(p.id);
   const heights=shots.filter(x=>x.h);
   const span=(a,b)=>{ const d=Math.round((new Date(b)-new Date(a))/DAY);
     if(d<14) return `${d} day${d===1?"":"s"}`;
@@ -15512,6 +15559,15 @@ function renderPlant(){
         <p class="hint" style="margin:7px 0 0">${esc(foliageLine(leaves))}</p>
         ${leaves.length?`<div class="growth" style="margin-top:8px">${esc(foliageRate(leaves))}</div>`:""}
         ${vgSummary(leaves)?`<div class="growth vg-line" style="margin-top:4px">${esc(vgSummary(leaves))}</div>`:""}
+      </div>
+      <div class="pad foliage" style="border-top:1px solid var(--line-soft)">
+        <div class="lbl-row"><span class="eyebrow">${esc(t("Pruning"))}</span>
+          <span class="lbl-acts">
+            ${pruneUndoable(prunes[0])?`<button type="button" class="btn mini" data-pruneundo="${prunes[0].id}">${esc(t("Undo"))}</button>`:""}
+            <button type="button" class="btn mini" data-prune="${p.id}">${esc(t("+ Pruned"))}</button>
+          </span></div>
+        <p class="hint" style="margin:7px 0 0">${esc(pruneLine(prunes))}</p>
+        ${prunes.length?`<div class="growth" style="margin-top:8px">${esc(pruneRate(prunes))}</div>`:""}
       </div>
     </div>
 
@@ -15650,6 +15706,16 @@ $("#pvBody").addEventListener("click",async e=>{
   }
   if(lu){
     S.events=S.events.filter(x=>x.id!==lu.dataset.leafundo);
+    touch(); renderPlant(); renderLog(); return;
+  }
+  const pr=q("prune"), pru=q("pruneundo");
+  /* A prune IS work done — unlike a leaf, it stays inside "care done" (the
+     reward count, the 30-day chart, the log) — but like a leaf it has no
+     routine and nothing falls due because of it, so only this page and the
+     log need redrawing. */
+  if(pr){ logEvent(pr.dataset.prune,"prune",{n:1}); renderPlant(); renderLog(); return; }
+  if(pru){
+    S.events=S.events.filter(x=>x.id!==pru.dataset.pruneundo);
     touch(); renderPlant(); renderLog(); return;
   }
   if(q("seecuts")){ show("cuttings"); return; }
@@ -20311,6 +20377,27 @@ function statsData(){
     return {p, latest, n:r.length, recent, before,
             dir: d>10?"gaining" : d<-10?"reverting" : "holding"};
   }).filter(Boolean).sort((a,b)=>b.latest-a.latest);
+
+  /* Pruning: the same per-plant shape as the leaf aggregation just above —
+     total, first, last, and a rate once the window is old enough — because
+     it is built from the same window/threshold math (leafHasMonthly and
+     friends take a count and a date, nothing leaf-specific). Kept as its own
+     block within `fol` rather than folded into folPlants: a plant can be
+     growing fast and getting pruned hard in the same month, and merging the
+     two counts would hide that instead of showing it. */
+  const pruneBy={};
+  ev.filter(isPruneEv).forEach(e=>{
+    const f=pruneBy[e.subjectId]||(pruneBy[e.subjectId]={n:0,first:e.at,last:e.at});
+    f.n+=(+e.n>0?+e.n:1); f.last=e.at;
+  });
+  const prunePlants=Object.keys(pruneBy).map(id=>{
+    const p=subs.find(x=>x.id===id); if(!p) return null;
+    const f=pruneBy[id];
+    return {p, n:f.n, first:f.first, last:f.last,
+            ripe:leafHasMonthly(f.first), perMonth:leafPerMonth(f.n,f.first)};
+  }).filter(Boolean).sort((a,b)=>(b.ripe-a.ripe)||(b.perMonth-a.perMonth));
+  const pruneRipe=prunePlants.filter(x=>x.ripe);
+
   D.fol={plants:folPlants,
     tracked:folPlants.length,
     rated:ripe.length, ratedYear:ripeY.length,
@@ -20325,7 +20412,10 @@ function statsData(){
       perMonth:hRipe.reduce((a,x)=>a+x.perMonth,0)},
     vg:{plants:vgPlants, tracked:vgPlants.length,
       reverting:vgPlants.filter(x=>x.dir==="reverting").length,
-      gaining:vgPlants.filter(x=>x.dir==="gaining").length}};
+      gaining:vgPlants.filter(x=>x.dir==="gaining").length},
+    prune:{plants:prunePlants, tracked:prunePlants.length,
+      total:prunePlants.reduce((a,x)=>a+x.n,0),
+      perMonth:pruneRipe.reduce((a,x)=>a+x.perMonth,0)}};
 
   /* ---- health ----
      Two questions worth answering with numbers rather than a list: what is
@@ -20629,7 +20719,7 @@ function renderStats(){
   /* --- 3b. foliage --- */
   const fo=D.fol;
   const folCard=card("Foliage",
-    fo.tracked?`<div class="statrow q">
+    (fo.tracked||fo.height.tracked||fo.vg.tracked||fo.prune.tracked)?`${fo.tracked?`<div class="statrow q">
       ${statCell(fo.total,"leaves")}
       ${statCell(fo.rated?leafNum(fo.perMonth):"—","a month",fo.rated?"":"none")}
       ${statCell(fo.ratedYear?leafNum(fo.perYear):"—","a year",fo.ratedYear?"":"none")}
@@ -20641,7 +20731,7 @@ function renderStats(){
         [x.p.name, x.ripe?leafNum(x.perMonth):"—",
          `${x.n} ${L.lang==="cs"?"za":"over"} ${leafSpanWord(leafWindowDays(x.first))}`]),
         {unit:L.lang==="cs"?" /měs":" /mo"})}
-    </div>
+    </div>`:""}
     ${fo.height.tracked?`<div style="margin-top:15px">
       <span class="eyebrow" style="display:block;margin-bottom:7px">${esc(t("Putting on height"))}</span>
       ${barList(fo.height.plants.slice(0,6).map(x=>
@@ -20661,6 +20751,16 @@ function renderStats(){
       ${fo.vg.reverting?`<p class="hint" style="margin:9px 0 0">${
         L.lang==="cs"?`${fo.vg.reverting} ${pl3(fo.vg.reverting,"rostlina ustupuje","rostliny ustupují","rostlin ustupuje")} — dej je do světlejšího místa, než zezelenají nadobro.`
                      :`${plural(fo.vg.reverting,"plant")} reverting — more light, before it goes green for good.`}</p>`:""}
+    </div>`:""}
+    ${fo.prune.tracked?`<div style="margin-top:15px">
+      <span class="eyebrow" style="display:block;margin-bottom:7px">${esc(t("Most pruned"))}</span>
+      ${barList(fo.prune.plants.slice(0,6).map(x=>
+        [x.p.name, x.ripe?leafNum(x.perMonth):"—",
+         `${x.n} ${L.lang==="cs"?"za":"over"} ${leafSpanWord(leafWindowDays(x.first))}`]),
+        {unit:L.lang==="cs"?" /měs":" /mo"})}
+      <p class="hint" style="margin:9px 0 0">${
+        L.lang==="cs"?`${fo.prune.total} ${csLeaves(fo.prune.total)} odstraněno napříč ${fo.prune.tracked} ${pl3(fo.prune.tracked,"rostlinou","rostlinami","rostlinami")}.`
+                     :`${fo.prune.total} ${leafWord(fo.prune.total)} pruned across ${plural(fo.prune.tracked,"plant")}.`}</p>
     </div>`:""}`
     :`<p class="hint" style="margin:0">${esc(t(
         "No leaves logged yet. Open a plant and tap + New leaf when one opens."))}</p>`,
@@ -24741,6 +24841,7 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "No leaves logged yet. Open a plant and tap + New leaf when one opens — a rate appears from the very first one.":
   "Zatím žádné listy. Otevři rostlinu a ťukni na + Nový list, až se nějaký objeví — tempo se ukáže hned od prvního.",
 "+ New leaf":"+ Nový list","Undo":"Zpět",
+"Pruning":"Prořezávání","+ Pruned":"+ Prořezáno",
 "Each plant's rate runs from its own first logged leaf to today, so a quiet month pulls it down on its own. The month and year figures are those per-plant rates added up — early ones swing about until a few weeks are behind them.":
   "Tempo každé rostliny běží od jejího prvního zapsaného listu do dneška, takže tichý měsíc ho sám stáhne dolů. Měsíční a roční čísla jsou součtem těchto temp — ta čerstvá kolísají, dokud za nimi nejsou aspoň týdny.",
 "Propagation":"Množení","batches":"dávek","cuttings":"řízků","rooted":"zakořeněno","potted":"zasazeno","took":"ujalo se",
@@ -37732,6 +37833,7 @@ Object.assign(CS,{
   "Time-to-clear only counts problems you have actually closed — an open one is still getting longer, so averaging it in would flatter the figure.":
     "Doba do vyřešení počítá jen problémy, které jsi opravdu uzavřel — otevřený se pořád prodlužuje, a kdyby se počítal, číslo by lhalo ve tvůj prospěch.",
   "Putting on height":"Přirůstá na výšku", "Variegation":"Panašování",
+  "Most pruned":"Nejvíc prořezáváno",
   "gaining":"nabírá", "holding":"drží se", "reverting":"ustupuje",
   "Each plant's rate runs from its own first logged leaf to today, so a quiet month pulls it down on its own. A plant needs a fortnight behind it before it counts towards the monthly figure and a quarter before the yearly one — until then it shows a dash, because a leaf logged this morning is a data point, not a rate. Height works the same way and wants three weeks between two measurements: closer than that and the difference is mostly where you held the tape.":
     "Tempo každé rostliny se počítá od jejího prvního zapsaného listu do dneška, takže tichý měsíc ho stáhne sám od sebe. Rostlina potřebuje čtrnáct dní, než začne mluvit do měsíčního čísla, a čtvrt roku, než do ročního — do té doby ukazuje pomlčku, protože list zapsaný dnes ráno je údaj, ne tempo. Výška funguje stejně a chce tři týdny mezi dvěma měřeními: blíž u sebe je rozdíl hlavně v tom, kde jsi držel metr.",
