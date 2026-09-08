@@ -255,10 +255,13 @@ service cloud.firestore {
       match /members/{uid} {
         allow get: if signedIn() && (request.auth.uid == uid || rbIsMember(orgId));
         allow list: if rbIsMember(orgId);
+        // .get() with a default rather than a bare field read: a row that
+        // simply has no inviteHash must be denied, not error the request out.
         allow create: if signedIn() && request.auth.uid == uid
-          && exists(/databases/$(database)/documents/roomInvites/$(request.resource.data.inviteHash))
-          && get(/databases/$(database)/documents/roomInvites/$(request.resource.data.inviteHash)).data.orgId == orgId
-          && get(/databases/$(database)/documents/roomInvites/$(request.resource.data.inviteHash)).data.role == request.resource.data.role;
+          && request.resource.data.get('inviteHash', '') != ''
+          && exists(/databases/$(database)/documents/roomInvites/$(request.resource.data.get('inviteHash','x')))
+          && get(/databases/$(database)/documents/roomInvites/$(request.resource.data.get('inviteHash','x'))).data.orgId == orgId
+          && get(/databases/$(database)/documents/roomInvites/$(request.resource.data.get('inviteHash','x'))).data.role == request.resource.data.role;
         allow create, update, delete: if rbIsAdmin(orgId);
         // your own name and phone are yours; your role and your tariff are not
         allow update: if signedIn() && request.auth.uid == uid
