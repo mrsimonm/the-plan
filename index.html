@@ -5009,6 +5009,8 @@ html[data-shell="rail"] body{
           <span>Projects count here</span></label>
         <label class="plink-row"><input type="checkbox" id="pLinkRooms">
           <span>Rooms count here</span></label>
+        <label class="plink-row"><input type="checkbox" id="pLinkLessons">
+          <span>Teachbench lessons count here</span></label>
         <p class="hint" style="margin:6px 0 0">What the garden and the timer already claim from the same 24 hours.</p>
       </div>
     </div>
@@ -5631,6 +5633,22 @@ html[data-shell="rail"] body{
         <textarea id="tbLessonNotes" rows="4" placeholder="Paste a text, exercise or anything else."></textarea></div>
       <div class="field"><label for="tbLessonLink">Document link (optional)</label>
         <input type="text" id="tbLessonLink" placeholder="drive.google.com/…"></div>
+      <!-- The room this lesson is in. Hidden entirely unless Rooms has a
+           venue open, so a teacher who does not rent rooms never sees it,
+           and Rooms is never woken up just to draw an empty dropdown. -->
+      <div class="field" id="tbLessonRoomField" hidden>
+        <label for="tbLessonRoom">Room</label>
+        <div class="row" style="gap:8px">
+          <select id="tbLessonRoom" style="flex:1"></select>
+          <select id="tbLessonRoomMin" class="mono-input" style="flex:none">
+            <option value="45">45 min</option>
+            <option value="60" selected>60 min</option>
+            <option value="90">90 min</option>
+            <option value="120">120 min</option>
+          </select>
+        </div>
+        <p class="hint" id="tbLessonRoomHint" style="margin:6px 0 0">Booking a room here holds it in Rooms, with the same conflict check as booking it by hand.</p>
+      </div>
       <p class="pwarn" id="tbLessonWarn" hidden></p>
     </div>
     <div class="dlg-foot" id="tbLessonActions">
@@ -8090,6 +8108,45 @@ html[data-layout="phone"] .rb-item-r{width:100%; justify-content:flex-start}
   border-radius:var(--r-xs); padding:9px 12px; font-size:12.5px; color:var(--ink-2)}
 .rb-demo .btn{margin-left:auto}
 html[data-layout="phone"] .rb-nav-btn{font-size:12.5px; padding:7px 10px}
+
+/* ---- a rule being bent, said in amber rather than red: it is a decision
+        the venue is allowed to make, not an error ---- */
+.rb-override{background:color-mix(in srgb,var(--amber) 14%,var(--surface));
+  border:1px solid color-mix(in srgb,var(--amber) 38%,transparent);
+  border-radius:var(--r-xs); padding:10px 12px; margin-top:10px}
+.rb-override-h{display:block; font-size:12.5px; font-weight:600; margin-bottom:3px}
+.rb-override small{display:block; font-size:12px; color:var(--ink-2); line-height:1.45}
+
+/* ---- a room's picture ---- */
+.rb-sp-photo{display:block; width:100%; height:132px; object-fit:cover;
+  border-radius:var(--r-xs); margin-bottom:10px; background:var(--surface-2)}
+.rb-photo-row{display:flex; gap:12px; align-items:flex-start}
+.rb-photo-prev{width:104px; height:78px; flex:none; border-radius:var(--r-xs);
+  overflow:hidden; background:var(--surface-2);
+  border:1px solid var(--line); display:flex; align-items:center; justify-content:center}
+.rb-photo-prev img{width:100%; height:100%; object-fit:cover}
+.rb-photo-empty{font-size:11.5px; color:var(--ink-3)}
+.rb-photo-acts{display:flex; flex-direction:column; gap:7px; align-items:flex-start; min-width:0}
+.rb-photo-acts .hint{margin:0}
+
+/* ---- the day/week lens switch, and the day column that is today ---- */
+.rb-lens{flex:none}
+.rb-lens button{font-size:12px; padding:5px 11px}
+.rb-colh.is-today{color:var(--accent)}
+.rb-colh.is-today .rb-dot{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 45%,transparent)}
+
+/* ---- dragging and stretching ----
+   The grip is a wide, shallow target at the bottom edge: on a phone the
+   thing being grabbed is a fingertip's width, not a pixel line. */
+.rb-blk.rb-movable{touch-action:none}
+.rb-grip{position:absolute; left:0; right:0; bottom:0; height:12px; cursor:ns-resize;
+  display:block; border-radius:0 0 5px 5px}
+.rb-grip::after{content:""; position:absolute; left:50%; bottom:3px; width:20px; height:2px;
+  transform:translateX(-50%); border-radius:2px;
+  background:color-mix(in srgb,var(--ink-3) 55%,transparent)}
+.rb-blk.rb-dragging{opacity:.85; z-index:6; cursor:grabbing;
+  box-shadow:0 6px 18px rgba(0,0,0,.28)}
+html[data-layout="phone"] .rb-sp-photo{height:104px}
 </style>
 
 <script>
@@ -8469,6 +8526,16 @@ const TB = (() => {
       // Words jotted down while the lesson was actually happening, before
       // anyone has decided which of them deserve to become flashcards.
       caught: Array.isArray(fields.caught) ? fields.caught.slice(0, 200) : [],
+      // Which room this lesson is in, and the Rooms booking that holds it.
+      // The lesson stays the source of truth for date and time; the booking
+      // is the room's side of the same hour, kept in step by the editor.
+      // Both empty on every lesson that does not name a room, which is the
+      // normal case and costs a teacher who never uses Rooms nothing.
+      spaceId: String(fields.spaceId == null ? '' : fields.spaceId),
+      bookingId: String(fields.bookingId == null ? '' : fields.bookingId),
+      // Minutes, only meaningful once a room is named — a lesson on its own
+      // has never had a length in this app and does not gain one here.
+      roomMinutes: Math.max(0, Math.round(Number(fields.roomMinutes) || 0)),
     };
   }
 
@@ -8614,6 +8681,13 @@ const TB = (() => {
       // Only meaningful on a cancellation; carrying it otherwise would be
       // stale data confusing a later read, exactly as with originalDate.
       cancelledAt: state === 'cancelled' && typeof entry.cancelledAt === 'string' ? entry.cancelledAt : null,
+      // The room this lesson is in, and the Rooms booking holding it. This
+      // normaliser is the gate every save passes through, so a field missing
+      // here is a field that silently never persists — which is exactly what
+      // happened the first time these three were added only to createLesson.
+      spaceId: typeof entry.spaceId === 'string' ? entry.spaceId : '',
+      bookingId: typeof entry.bookingId === 'string' ? entry.bookingId : '',
+      roomMinutes: Math.max(0, Math.round(Number(entry.roomMinutes) || 0)),
       caught: asArray(entry.caught)
         .map((w) => (typeof w === 'string' ? w.trim() : ''))
         .filter(Boolean)
@@ -9691,6 +9765,7 @@ function migrate(d){
   if(d.planner.linkHours===undefined) d.planner.linkHours=true;
   if(d.planner.linkProjects===undefined) d.planner.linkProjects=true;
   if(d.planner.linkRooms===undefined) d.planner.linkRooms=true;
+  if(d.planner.linkLessons===undefined) d.planner.linkLessons=true;
   if(!Number.isFinite(+d.planner.carePace)||+d.planner.carePace<0) d.planner.carePace=3;
   d.hours=d.hours||{projects:[], sessions:[], running:null};
   if(!Array.isArray(d.hours.projects)) d.hours.projects=[];
@@ -11619,6 +11694,31 @@ function pItemsFor(iso){
      asked, and answers with nothing at all until a venue is actually open. */
   if(S.planner.linkRooms!==false&&window.RB&&RB.plannerItems){
     try{ RB.plannerItems(iso).forEach(r=>out.push(r)); }catch(e){}
+  }
+  /* Teachbench's own claim on the same day. The brief asked for this
+     alongside the Rooms feed and the plumbing is identical — except that
+     Teachbench is local, so there is nothing to load and nothing to wait
+     for. A lesson with no time still counts against the day's hours; it
+     just has no slot on the board, the same as an untimed task. */
+  /* `typeof TB`, not `window.TB`: TB is declared with const at the top level
+     of this script, and a const binding — unlike a var — never becomes a
+     property of window. Testing window.TB silently switched this whole feed
+     off while looking perfectly correct. */
+  if(S.planner.linkLessons!==false&&typeof TB!=="undefined"&&TB.loadData){
+    try{
+      const d=TB.loadData();
+      (d.lessons||[]).forEach(l=>{
+        if(l.date!==iso) return;
+        if(l.state==="cancelled") return;
+        const st=(d.students||[]).find(s=>s.id===l.studentId);
+        /* a lesson that holds a room already arrived through RB above, and
+           counting the same hour twice is exactly what this feed must not do */
+        if(l.bookingId && S.planner.linkRooms!==false && window.RB && RB.hasVenue && RB.hasVenue()) return;
+        out.push({ kind:"lesson", name:(st&&st.name?st.name:t("Lesson"))
+            + (l.plan?" · "+l.plan.slice(0,40):""),
+          hours:(l.roomMinutes||60)/60, time:l.time||"", id:l.id, overdue:false });
+      });
+    }catch(e){}
   }
   out.sort((a,b)=>{ if(a.time&&b.time) return a.time.localeCompare(b.time);
     if(a.time) return -1; if(b.time) return 1; return 0; });
@@ -14472,6 +14572,7 @@ function renderPlanner(){
   $("#pLinkHours").checked=S.planner.linkHours!==false;
   $("#pLinkProjects").checked=S.planner.linkProjects!==false;
   { const r=$("#pLinkRooms"); if(r) r.checked=S.planner.linkRooms!==false; }
+  { const r=$("#pLinkLessons"); if(r) r.checked=S.planner.linkLessons!==false; }
   $("#pCarePace").value=+S.planner.carePace||3;
   if(!$("#pAddDue").value) $("#pAddDue").value=pSelISO;
   pDayPanel(); renderSchedule();
@@ -14800,6 +14901,7 @@ $("#pLinkCare").addEventListener("change",e=>{ S.planner.linkCare=e.target.check
 $("#pLinkHours").addEventListener("change",e=>{ S.planner.linkHours=e.target.checked; touch(); renderPlanner(); });
 $("#pLinkProjects").addEventListener("change",e=>{ S.planner.linkProjects=e.target.checked; touch(); renderPlanner(); });
 $("#pLinkRooms").addEventListener("change",e=>{ S.planner.linkRooms=e.target.checked; touch(); renderPlanner(); });
+if($("#pLinkLessons")) $("#pLinkLessons").addEventListener("change",e=>{ S.planner.linkLessons=e.target.checked; touch(); renderPlanner(); });
 $("#pCarePace").addEventListener("change",e=>{ const n=+e.target.value;
   S.planner.carePace=Number.isFinite(n)&&n>=0?n:3; touch(); renderPlanner(); });
 /* The Weekday/Weekend pair IS the default every night without its own
@@ -22808,15 +22910,72 @@ function tbOpenLessonDialog(lessonId, newStudentId){
   $("#tbLessonWarn").hidden=true;
   $("#tbLessonDelete").hidden=!l;
   $("#tbLessonDelete").textContent="Delete…";
+  tbFillRoomPicker(l);
   $("#tbLessonDlg").showModal();
 }
+/* The room half of the lesson editor. Rooms is lazy — it loads nothing until
+   somebody opens its tab — so the field only appears once a venue is
+   actually open, and says how to get one when it is not. Asking Rooms to
+   boot from here would put a Firebase download in front of every teacher who
+   has never rented a room in their life. */
+function tbFillRoomPicker(l){
+  const wrap=$("#tbLessonRoomField"), sel=$("#tbLessonRoom");
+  if(!wrap||!sel) return;
+  const rooms=(window.RB&&RB.roomsForPicker)?RB.roomsForPicker():[];
+  if(!rooms.length){ wrap.hidden=true; sel.innerHTML=""; return; }
+  wrap.hidden=false;
+  sel.innerHTML='<option value="">No room</option>'+rooms.map(r=>
+    `<option value="${r.id}"${l&&l.spaceId===r.id?" selected":""}>${
+      r.name.replace(/[<>&]/g,"")}${r.capacity?" · "+r.capacity:""}</option>`).join("");
+  const mins=$("#tbLessonRoomMin");
+  if(mins) mins.value=String((l&&l.roomMinutes)||60);
+  const hint=$("#tbLessonRoomHint");
+  if(hint) hint.textContent=(l&&l.bookingId)
+    ? "This lesson holds a room. Changing the date, time or room moves the booking with it."
+    : "Booking a room here holds it in Rooms, with the same conflict check as booking it by hand.";
+}
 $("#tbLessonCancel").addEventListener("click",()=>{ $("#tbLessonDlg").close(); });
-$("#tbLessonForm").addEventListener("submit",e=>{
+$("#tbLessonForm").addEventListener("submit",async e=>{
   e.preventDefault();
   const date=$("#tbLessonDate").value;
   if(!date){ $("#tbLessonWarn").hidden=false; $("#tbLessonWarn").textContent="Please pick a date."; return; }
-  const fields={date, time:$("#tbLessonTime").value||null, plan:$("#tbLessonPlan").value, notes:$("#tbLessonNotes").value, link:$("#tbLessonLink").value.trim()};
+  const time=$("#tbLessonTime").value||null;
+  const fields={date, time, plan:$("#tbLessonPlan").value, notes:$("#tbLessonNotes").value, link:$("#tbLessonLink").value.trim()};
   const data=TB.loadData();
+  const prev = tbLessonEditId ? data.lessons.find(l=>l.id===tbLessonEditId) : null;
+
+  /* ---- the room, if this lesson names one ----
+     The booking is written BEFORE the lesson is saved, so a room that turns
+     out to be taken stops the save with the reason rather than leaving a
+     lesson claiming a room it never got. That is the whole point of putting
+     the room on the lesson: one place says where the hour happens. */
+  const roomSel=$("#tbLessonRoom");
+  const wantRoom=(roomSel && !$("#tbLessonRoomField").hidden) ? roomSel.value : (prev?prev.spaceId:"");
+  const roomMins=Math.max(5,Number(($("#tbLessonRoomMin")||{}).value)||60);
+  const oldBooking=prev?prev.bookingId:"";
+  let bookingId=oldBooking, spaceId=wantRoom||"";
+  if(window.RB && RB.linkLesson){
+    try{
+      if(wantRoom && time){
+        bookingId=await RB.linkLesson({ spaceId:wantRoom, date, time, minutes:roomMins,
+          bookingId:oldBooking||null, lessonId:tbLessonEditId||"",
+          title:(fields.plan||"Lesson").slice(0,60) });
+      }else if(oldBooking){
+        await RB.unlinkLesson(oldBooking);            /* room taken off the lesson */
+        bookingId=""; spaceId="";
+      }
+    }catch(err){
+      $("#tbLessonWarn").hidden=false;
+      $("#tbLessonWarn").textContent = err && err.why
+        ? err.why
+        : (err && err.message==="no-when")
+          ? "A room needs a time on the lesson as well as a date."
+          : "That room could not be held. The lesson has not been saved.";
+      return;
+    }
+  }
+  Object.assign(fields,{spaceId, bookingId, roomMinutes:wantRoom?roomMins:0});
+
   if(tbLessonEditId){
     data.lessons=data.lessons.map(l=>l.id===tbLessonEditId ? {...l, ...fields} : l);
   } else if(tbLessonNewStudentId){
@@ -22827,11 +22986,17 @@ $("#tbLessonForm").addEventListener("submit",e=>{
   tbLessonEditId=null; tbLessonNewStudentId=null;
   if(tbDetailStudentId) tbRenderStudentDetail();
   if(tbScope==="week") tbRenderWeek();
+  if(typeof renderPlanner==="function" && S.planner && S.planner.linkLessons!==false) renderPlanner();
 });
-$("#tbLessonDelete").addEventListener("click",()=>{
+$("#tbLessonDelete").addEventListener("click",async()=>{
   if(!tbLessonEditId) return;
   if($("#tbLessonDelete").textContent==="Delete…"){ $("#tbLessonDelete").textContent="Really delete this lesson?"; return; }
   const data=TB.loadData();
+  /* a deleted lesson gives its room back — leaving the booking behind would
+     block a slot for a lesson that is no longer happening */
+  const gone=data.lessons.find(l=>l.id===tbLessonEditId);
+  if(gone && gone.bookingId && window.RB && RB.unlinkLesson)
+    try{ await RB.unlinkLesson(gone.bookingId); }catch(e){ console.warn("rooms unlink",e); }
   data.lessons=data.lessons.filter(l=>l.id!==tbLessonEditId);
   TB.saveData(data);
   $("#tbLessonDlg").close();
@@ -40774,8 +40939,19 @@ const ORG_SETTINGS = {
   calendarVisibility:"all",        /* 'all' — a venue is a shared place; 'own' suits a clinic */
   slotMinutes:30, currency:"Kč", vatRate:0,
   invoicePrefix:"", invoiceNext:1, dueDays:14,
-  bankAccount:"", ico:"", dic:"", address:"", footerText:""
+  bankAccount:"", ico:"", dic:"", address:"", footerText:"",
+  /* a request nobody decides on cannot sit on the slot for ever: it expires
+     this many hours after it was asked for, and never later than the
+     booking's own start — an expired request is worth nothing to anybody */
+  requestExpiryHours:48,
+  /* the venue's own address on the mail it sends, and the master switch */
+  notifyFrom:"", notifyOn:true
 };
+/* The four things worth an email, and deliberately the only four: every one
+   is something a person is actually waiting on. The market's loudest
+   complaint about this whole category is notifications for every state
+   change, so there is no fifth. */
+const MAIL_KINDS = ["confirmed","decided","reminder","invoice"];
 
 /* --------------------------------------------------------------- state ---- */
 let fbReady=null, db=null, auth=null;
@@ -40842,6 +41018,49 @@ function makeCode(){
   return s.slice(0,4)+"-"+s.slice(4);
 }
 
+/* ------------------------------------------------------------- photos ----
+   A room's picture travels with the room: a guest on the public link has to
+   see it, so it cannot live in this device's IndexedDB the way plant photos
+   do. It goes on the space document as a downscaled JPEG data URI — one
+   picture well inside the 1 MiB a Firestore document allows, and no Storage
+   bucket, no second rules file, no upload state to get wrong.
+
+   Written small on purpose: 1000px on the long edge at q0.62 lands around
+   80–140 kB before base64, and a room photo is a thumbnail on a card, never
+   a wall print. Anything that still comes out too big is refused out loud. */
+const PHOTO_MAX_BYTES = 620000;         /* ~465 kB of JPEG once base64 is off */
+function shrinkToDataUrl(file, max, q){
+  return new Promise((res,rej)=>{
+    const url=URL.createObjectURL(file), img=new Image();
+    img.onload=()=>{
+      URL.revokeObjectURL(url);
+      try{
+        const sc=Math.min(1, max/Math.max(img.width,img.height));   /* never enlarge */
+        const c=document.createElement("canvas");
+        c.width =Math.max(1,Math.round(img.width *sc));
+        c.height=Math.max(1,Math.round(img.height*sc));
+        c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+        res(c.toDataURL("image/jpeg",q));
+      }catch(err){ rej(err); }
+    };
+    img.onerror=()=>{ URL.revokeObjectURL(url); rej(new Error("image")); };
+    img.src=url;
+  });
+}
+/* Step the quality down until it fits rather than refusing a big photo the
+   first time: a phone camera's 4 MB original is the normal case, not the
+   exception, and telling somebody to go and resize it themselves is the
+   kind of thing this app is supposed to spare them. */
+async function photoDataUrl(file){
+  let out=await shrinkToDataUrl(file,1000,0.62);
+  for(const [px,q] of [[820,0.55],[640,0.5],[480,0.45]]){
+    if(out.length<=PHOTO_MAX_BYTES) break;
+    out=await shrinkToDataUrl(file,px,q);
+  }
+  if(out.length>PHOTO_MAX_BYTES) throw new Error("photo-too-big");
+  return out;
+}
+
 /* ------------------------------------------------------------ firebase ---- */
 function loadScript(src){
   return new Promise((ok,fail)=>{
@@ -40899,6 +41118,12 @@ function nSpace(d,id){
     capacity:clamp(num(d.capacity,0),0,9999),
     equipment:Array.isArray(d.equipment)?d.equipment.map(String).slice(0,20):[],
     color:String(d.color||PALETTE[0]), description:String(d.description||""),
+    /* a downscaled JPEG as a data URI, kept on the room's own document.
+       A guest on the public link has to see it, so IndexedDB (where the
+       potting bench keeps plant photos) is the wrong shelf; and one small
+       picture inside the 1 MiB a Firestore document allows is far cheaper
+       than standing up a Storage bucket and a second set of rules. */
+    photo:String(d.photo||""),
     active:d.active!==false, sortOrder:num(d.sortOrder,0),
     hourlyRate:(d.hourlyRate==null||d.hourlyRate==="")?null:num(d.hourlyRate,null),
     prices:Array.isArray(d.prices)?d.prices.filter(Boolean).map(p=>({
@@ -40923,6 +41148,10 @@ function nMember(d,id){
     name:String(d.name||d.email||"Someone"), email:String(d.email||""),
     phone:String(d.phone||""), company:String(d.company||""),
     tariffId:d.tariffId||null, color:String(d.color||PALETTE[0]),
+    /* opt out of any of the four separately — the default is all four on,
+       because every one of them is something you are waiting to hear */
+    notify:(()=>{ const n=(d.notify&&typeof d.notify==="object")?d.notify:{}, o={};
+      MAIL_KINDS.forEach(k=>{ o[k]=n[k]!==false; }); return o; })(),
     active:d.active!==false, notes:String(d.notes||""), joinedAt:d.joinedAt||nowIso() };
 }
 function nGuest(d,id){
@@ -40953,7 +41182,20 @@ function nBooking(d,id){
     invoiceId:d.invoiceId||null, holdExpiresAt:d.holdExpiresAt||null,
     cancelledAt:d.cancelledAt||null, cancelledBy:d.cancelledBy||null,
     cancelReason:String(d.cancelReason||""), lateCancel:!!d.lateCancel,
+    /* what rule an admin walked through to make this booking, and why they
+       said they were doing it. Empty on every booking that broke no rule. */
     ruleOverride:String(d.ruleOverride||""), checkedInAt:d.checkedInAt||null,
+    /* set when the venue offered this slot instead of the one that was
+       asked for: it is the booker, not the venue, who says yes to it */
+    counterOf:d.counterOf||null, counterNote:String(d.counterNote||""),
+    /* the Teachbench lesson this booking IS, when a teacher named a room on
+       one. The lesson stays the source of truth for what is taught and when;
+       the booking is only the room's side of the same hour. */
+    lessonId:String(d.lessonId||""),
+    /* which of the four emails have already been queued for this booking,
+       so a second device — or a second sweep — cannot send them twice */
+    notified:(d.notified&&typeof d.notified==="object")?d.notified:{},
+    expiredAt:d.expiredAt||null,
     createdAt:d.createdAt||nowIso(), createdBy:String(d.createdBy||""), updatedAt:d.updatedAt||null };
 }
 function nSeries(d,id){
@@ -41247,6 +41489,120 @@ function audit(action, targetType, targetId, note){
     .catch(e=>console.warn("rooms audit",e));
 }
 
+/* ============================================================================
+   Mail — the four notifications, and the honest limit on them
+   ----------------------------------------------------------------------------
+   This app is a static page on GitHub Pages. It has no server, so it cannot
+   itself send an email, and pretending otherwise would be the worst kind of
+   silent failure: a venue believing its members had been told.
+
+   So the app does the half it genuinely can. Every notification is written
+   as a document in `roomMail`, in exactly the shape Firebase's official
+   "Trigger Email from Firestore" extension consumes ({to, message:{subject,
+   text}}). Install that extension against this collection and the mail goes
+   out; until then the documents pile up and the venue's own settings screen
+   shows the outbox, says how many are waiting, and says plainly why. Nothing
+   claims to have been sent that has not been.
+
+   Queueing is idempotent per booking per kind — `notified[kind]` is stamped
+   on the booking — so two devices watching the same venue cannot send the
+   same reminder twice.
+   ============================================================================ */
+const mailRef = () => db.collection("roomMail");
+/* A guest cannot write to roomMail (the rules only let members of the venue,
+   which is what stops a stranger using a venue's mail extension as a relay),
+   so anything a guest's action ought to send is queued instead by the next
+   admin device to run the sweep below. */
+function mayQueueMail(){ return !!(db && orgId && org && !anon && (isAdmin() || !!meMember)); }
+async function queueMail(kind, to, subject, text){
+  if(!mayQueueMail()) return false;
+  if(!(org.settings.notifyOn!==false)) return false;
+  if(!to || !/@/.test(String(to))) return false;
+  try{
+    await mailRef().add({ orgId, kind:String(kind), to:[String(to)],
+      replyTo:String(org.settings.notifyFrom||""),
+      message:{ subject:String(subject),
+                text:String(text)+"\n\n— "+((org&&org.name)||t("The venue")) },
+      createdAt:nowIso(), createdBy:myUid||"" });
+    return true;
+  }catch(e){ console.warn("rooms mail",e); return false; }
+}
+/* Who a booking's mail is addressed to, and whether they asked for this kind */
+function mailTargetFor(b, kind){
+  const who=b.onBehalfOf||b.bookerId;
+  const m=memberByUid(who);
+  if(m) return (m.notify&&m.notify[kind]===false) ? null : (m.email||null);
+  const g=guestById(who);
+  return g ? (g.email||null) : null;
+}
+const whenLine = b => `${dateLabel(b.date)} · ${b.time}–${toHHMM(toMin(b.time)+b.minutes)}`;
+/* Queue one of the four for a booking, then stamp it so nobody repeats it. */
+async function notifyBooking(b, kind){
+  if(!b || (b.notified&&b.notified[kind])) return;
+  const to=mailTargetFor(b,kind); if(!to) return;
+  const sp=spaceById(b.spaceId), room=(sp&&sp.name)||t("a room");
+  const venue=(org&&org.name)||t("The venue");
+  let subject="", text="";
+  if(kind==="confirmed"){
+    subject=t("Booked: {room}, {when}").replace("{room}",room).replace("{when}",whenLine(b));
+    text=t("Your booking is confirmed.")+"\n\n"+room+"\n"+whenLine(b)
+       + (num(b.price&&b.price.amount,0)>0 ? "\n"+money(b.price.amount,b.price.currency) : "");
+  }else if(kind==="decided"){
+    const no=b.state==="cancelled";
+    subject=(no?t("Not this time: {room}, {when}"):t("Approved: {room}, {when}"))
+      .replace("{room}",room).replace("{when}",whenLine(b));
+    text=(no ? t("The venue could not take this booking.")+(b.cancelReason?"\n\n"+b.cancelReason:"")
+             : t("The venue has approved your booking."))+"\n\n"+room+"\n"+whenLine(b);
+  }else if(kind==="reminder"){
+    subject=t("Tomorrow: {room}, {when}").replace("{room}",room).replace("{when}",whenLine(b));
+    text=t("A reminder that you have this room tomorrow.")+"\n\n"+room+"\n"+whenLine(b);
+  }else return;
+  if(await queueMail(kind, to, subject, text))
+    await saveBooking(b.id, { notified:Object.assign({}, b.notified||{}, {[kind]:nowIso()}) });
+}
+
+/* ----------------------------------------------------------- the sweep ----
+   Three housekeeping jobs a venue needs doing on a clock it does not have:
+   requests that nobody decided, tomorrow's reminders, and the notifications
+   a guest's own action could not queue. All three are things only staff may
+   write, so only a staff device runs this — and it runs on boot and then no
+   more than once every ten minutes, because it is not urgent and a venue may
+   have several screens open. */
+let lastSweep=0;
+async function sweep(force){
+  if(!org || !db || !isAdmin()) return;
+  if(!force && Date.now()-lastSweep < 10*60000) return;
+  lastSweep=Date.now();
+  const now=Date.now();
+  const hrs=clamp(num(org.settings.requestExpiryHours,48),0,24*30);
+
+  /* 1. requests nobody answered — dead at the deadline, or at the start */
+  if(hrs>0) for(const b of bookings.filter(x=>x.state==="requested")){
+    const asked=Date.parse(b.createdAt||"")||now;
+    const startsAt=fromYmd(b.date)+toMin(b.time)*60000;
+    const deadline=Math.min(asked+hrs*3600000, startsAt);
+    if(now < deadline) continue;
+    try{
+      await cancelBooking(b, t("Nobody answered in time, so the slot went back."));
+      await saveBooking(b.id,{expiredAt:nowIso()});
+      audit("expire","booking",b.id,"");
+      const fresh=Object.assign({},b,{state:"cancelled",
+        cancelReason:t("Nobody answered in time, so the slot went back.")});
+      await notifyBooking(fresh,"decided");
+    }catch(e){ console.warn("rooms expire",e); }
+  }
+
+  /* 2. anything confirmed that has never been told so — this is what covers
+        a guest, whose own device is not allowed to write to the outbox */
+  for(const b of bookings.filter(x=>x.state==="confirmed" && x.date>=today()))
+    try{ await notifyBooking(b,"confirmed"); }catch(e){}
+
+  /* 3. tomorrow, once */
+  const tom=iso(addDays(now,1));
+  for(const b of bookings.filter(x=>x.date===tom && x.state==="confirmed"))
+    try{ await notifyBooking(b,"reminder"); }catch(e){}
+}
+
 /* ----------------------------------------------------------- the hold ----
    Two people tap the same slot at the same moment. This is where that is
    decided, and it has to be decided in one atomic step or both of them get
@@ -41300,6 +41656,31 @@ async function settleHold(id, patch, state){
     });
   }catch(e){ console.warn("rooms settle",e); }
   audit(state,"booking",id,patch.title||"");
+  /* the booking is not in local state until the subscription catches up, so
+     the notification is built from what was just written rather than waiting */
+  if(state==="confirmed")
+    try{ await notifyBooking(nBooking(Object.assign({},patch,{state}), id), "confirmed"); }catch(e){}
+}
+/* Put a claim INTO the guard without going through the hold sheet: a booking
+   the venue itself creates — a counter-offer, or a booking dragged to a new
+   place on the grid. The overlap check has already been made by the caller;
+   this is the atomic part, and it refuses if the ground moved underneath. */
+async function claimFor(spaceId, date, id, from, to, state){
+  if(!db) throw new Error("offline");
+  const sp=spaceById(spaceId);
+  const bb=sp?sp.rules.bufferBeforeMin:0, ba=sp?sp.rules.bufferAfterMin:0;
+  const gRef=col("guards").doc(guardKey(spaceId,date));
+  await db.runTransaction(async tx=>{
+    const snap=await tx.get(gRef);
+    const now=nowIso();
+    const raw=(snap.exists && Array.isArray(snap.data().claims)) ? snap.data().claims : [];
+    const keep=raw.filter(c=>c && c.id!==id && c.state!=="cancelled"
+      && !(c.state==="held" && c.exp && c.exp<now));
+    if(keep.find(c=>overlaps(from-bb, to+ba, num(c.from,0), num(c.to,0))))
+      throw new Error("taken");
+    keep.push({id, from, to, state:state||"confirmed", exp:null, who:myUid||guestId||""});
+    tx.set(gRef,{spaceId, date, claims:keep, updatedAt:now},{merge:true});
+  });
 }
 /* Take a claim back out of the guard: a cancellation, or a hold somebody
    abandoned by closing the sheet. */
@@ -41329,6 +41710,62 @@ async function cancelBooking(b, reason){
   await releaseClaim(b.spaceId, b.date, b.id);
   audit("cancel","booking",b.id,reason||"");
   return {late};
+}
+/* ------------------------------------------------------ moving a booking --
+   Dragging on the board and pulling its bottom edge both end here. The check
+   is the ordinary one, so a drag cannot do anything a booking sheet could
+   not; the guard is rewritten in the same transaction-guarded way; and the
+   previous position is kept so the move can be taken back, because a
+   fingertip on a phone is exactly the input that needs an undo. */
+let rbUndo=null;
+async function moveBooking(id, spaceId, date, fromMin, minutes){
+  const b=bookings.find(x=>x.id===id); if(!b) return;
+  const step=(org&&org.settings.slotMinutes)||30;
+  minutes=Math.max(step, Math.round(minutes/step)*step);
+  fromMin=Math.round(fromMin/step)*step;
+  /* nothing actually changed — a nudge that landed back where it started */
+  if(b.spaceId===spaceId && b.date===date && toMin(b.time)===fromMin && b.minutes===minutes)
+    return paint();
+  const asAdmin=isAdmin();
+  const c=checkBooking({spaceId, date, fromMin, minutes,
+    bookerType:b.bookerType, bookerId:b.bookerId, asAdmin, ignoreId:b.id});
+  if(!c.ok){ paint(); say(c.why, t("It cannot go there")); return; }
+  const prev={ spaceId:b.spaceId, date:b.date, time:b.time, minutes:b.minutes };
+  await guard(async()=>{
+    /* the claim moves first: if somebody has taken the new slot in the
+       seconds since the board was drawn, this throws and nothing is written */
+    await claimFor(spaceId, date, b.id, fromMin, fromMin+minutes, b.state);
+    if(!(b.spaceId===spaceId && b.date===date)) await releaseClaim(b.spaceId, b.date, b.id);
+    /* the price follows the booking: a longer slot, or a dearer room, must
+       not keep the old number — that is how an invoice ends up wrong */
+    const price=b.invoiceId ? b.price
+      : quote(spaceId,date,fromMin,minutes,b.bookerType,b.onBehalfOf||b.bookerId,b.id);
+    await saveBooking(b.id,{ spaceId, date, time:toHHMM(fromMin), minutes, price });
+    audit("move","booking",b.id,`${prev.date} ${prev.time} → ${date} ${toHHMM(fromMin)}`);
+    rbUndo={ id:b.id, prev, at:Date.now() };
+    paint();
+    say(t("Moved to {when}.").replace("{when}",
+      (spaceById(spaceId)||{}).name+" · "+dateLabel(date)+" "+toHHMM(fromMin)), t("Done"));
+  });
+  paint();
+}
+async function undoMove(){
+  const u=rbUndo; if(!u) return;
+  const b=bookings.find(x=>x.id===u.id);
+  rbUndo=null;
+  if(!b) return paint();
+  const from=toMin(u.prev.time);
+  await guard(async()=>{
+    await claimFor(u.prev.spaceId, u.prev.date, b.id, from, from+u.prev.minutes, b.state);
+    if(!(b.spaceId===u.prev.spaceId && b.date===u.prev.date))
+      await releaseClaim(b.spaceId, b.date, b.id);
+    const price=b.invoiceId ? b.price
+      : quote(u.prev.spaceId,u.prev.date,from,u.prev.minutes,b.bookerType,b.onBehalfOf||b.bookerId,b.id);
+    await saveBooking(b.id,{ spaceId:u.prev.spaceId, date:u.prev.date,
+      time:u.prev.time, minutes:u.prev.minutes, price });
+    audit("undo-move","booking",b.id,"");
+  });
+  paint();
 }
 async function setState(b, state, extra){
   await col("bookings").doc(b.id).set(
@@ -41469,6 +41906,19 @@ async function issueInvoice(draft){
     await batch.commit();
   }
   audit("issue","invoice",id,number);
+  /* the one notification that is not about a booking, so it does not go
+     through notifyBooking's per-booking stamp */
+  try{
+    const who = draft.billTo.kind==="guest" ? guestById(draft.billTo.id) : memberByUid(draft.billTo.id);
+    const wants = !(who && who.notify && who.notify.invoice===false);
+    if(wants && draft.billTo.email)
+      await queueMail("invoice", draft.billTo.email,
+        t("Invoice {n} from {venue}").replace("{n}",number).replace("{venue}",(org&&org.name)||""),
+        t("Invoice {n} is attached to your account, for {total}, due {due}.")
+          .replace("{n}",number).replace("{total}",money(draft.total,draft.currency))
+          .replace("{due}",dateLabel(due))
+        + "\n\n" + draft.lines.map(l=>`${l.date} ${l.time} ${l.space} — ${money(l.amount,draft.currency)}`).join("\n"));
+  }catch(e){ console.warn("rooms invoice mail",e); }
   return id;
 }
 async function setInvoiceState(inv, state){
@@ -41673,6 +42123,10 @@ async function openOrg(id){
          meMember=m.exists?nMember(m.data(),m.id):null; }catch(e){ meMember=null; }
   }
   subscribe();
+  /* the housekeeping a venue with no server still needs doing: expired
+     requests, tomorrow's reminders, the mail a guest could not queue. Late
+     enough for the first snapshot to have landed, and quiet if it has not. */
+  setTimeout(()=>{ sweep().catch(e=>console.warn("rooms sweep",e)); }, 4000);
 }
 function leaveOrg(){
   stopSubs(); orgId=null; org=null; meMember=null;
@@ -41997,6 +42451,7 @@ function viewFind(){
           const price=quote(sp.id,date,r.slots[0],f.minutes,
             guestMode()?"guest":"member", guestMode()?guestId:myUid);
           return card(`
+            ${sp.photo?`<img class="rb-sp-photo" src="${H(sp.photo)}" alt="${H(sp.name)}">`:""}
             <div class="rb-sp-head">
               <span class="rb-dot" style="background:${H(sp.color)}"></span>
               <b>${H(sp.name)}</b>
@@ -42004,6 +42459,7 @@ function viewFind(){
               <span class="rb-meta">${price.amount>0?H(money(price.amount)+" · "+dur(f.minutes))
                                                     :H(t("free")+" · "+dur(f.minutes))}</span>
             </div>
+            ${sp.description?`<p class="hint" style="margin:6px 0 0">${H(sp.description)}</p>`:""}
             ${sp.equipment.length?`<div class="rb-tags sm">${sp.equipment.map(e=>
               `<span class="rb-tag static">${H(t(e))}</span>`).join("")}</div>`:""}
             <div class="rb-slots">${r.slots.slice(0,14).map(s=>
@@ -42021,75 +42477,123 @@ function viewFind(){
    Rooms as columns, hours as rows: the picture every venue already has on
    a whiteboard by the door. Buffers are drawn as hatching so nobody has to
    ask why 15:00 looks taken when the booking ended at 14:45. */
+/* One board, two lenses. The day lens puts the rooms side by side on one
+   date; the week lens puts one room's seven days side by side. They are the
+   same picture with the columns bound to a different axis, so they share one
+   column renderer rather than growing a second board that drifts out of step
+   with the first. Every column carries its own room AND its own date, which
+   is also what lets a booking be dragged across either axis. */
+const GRID_PX = 52/60;                              /* an hour is 52px tall */
+function gridColumns(){
+  const date=V().date||today();
+  const live_=spaces.filter(s=>s.active);
+  if(V().lens!=="week")
+    return live_.map(s=>({ space:s, date, label:s.name, sub:s.capacity?String(s.capacity):"",
+      dot:s.color }));
+  const sp=spaceById(V().gridSpace)||live_[0];
+  if(!sp) return [];
+  /* the week the chosen day sits in, Monday first the way the rest of the
+     app counts weeks */
+  const d0=fromYmd(date), dow=(new Date(d0).getDay()+6)%7;
+  const mon=addDays(d0,-dow);
+  return Array.from({length:7},(_,i)=>{ const dt=iso(addDays(mon,i));
+    return { space:sp, date:dt, label:dowName((new Date(fromYmd(dt))).getDay()).slice(0,3),
+      sub:dt.slice(8,10)+"."+dt.slice(5,7), dot:sp.color, today:dt===today() }; });
+}
+function gridColHtml(c, lo, hi){
+  const s=c.space, date=c.date, height=(hi-lo)*GRID_PX;
+  const cl=closureOn(s,date);
+  const shade=(()=>{ let o=""; let cur=lo;
+    hoursFor(s,date).forEach(w=>{ if(w.from>cur) o+=`<div class="rb-shut" style="top:${(cur-lo)*GRID_PX}px;height:${(w.from-cur)*GRID_PX}px"></div>`;
+                      cur=Math.max(cur,w.to); });
+    if(cur<hi) o+=`<div class="rb-shut" style="top:${(cur-lo)*GRID_PX}px;height:${(hi-cur)*GRID_PX}px"></div>`;
+    return o; })();
+  const hours=(()=>{ let o=""; for(let m=lo+60;m<hi;m+=60)
+    o+=`<div class="rb-hr" style="top:${(m-lo)*GRID_PX}px"></div>`; return o; })();
+  const nowLine=(date===today())
+    ? (new Date().getHours()*60+new Date().getMinutes()-lo)*GRID_PX : null;
+  const blocks=bookings.filter(b=>b.spaceId===s.id && b.date===date && live(b))
+    .sort((a,b)=>toMin(a.time)-toMin(b.time)).map(b=>{
+      const st=toMin(b.time), top=(st-lo)*GRID_PX, h=Math.max(16,b.minutes*GRID_PX);
+      const showName=canSeeAll()||isMineB(b);
+      const label=showName?(b.title||bookerLabel(b)):t("Booked");
+      const bb=s.rules.bufferBeforeMin, ba=s.rules.bufferAfterMin;
+      const buf=(bb||ba)?`<div class="rb-buf" style="top:${(st-bb-lo)*GRID_PX}px;
+        height:${(b.minutes+bb+ba)*GRID_PX}px"></div>`:"";
+      /* a booking can be dragged and stretched by whoever could have made
+         it — and never once it is on an invoice, because the hours on a
+         bill are not a thing to be nudged with a fingertip */
+      const movable=(isAdmin()||isMineB(b)) && !b.invoiceId
+                 && (b.state==="confirmed"||b.state==="requested"||b.state==="held");
+      return buf+`<button type="button" class="rb-blk rb-s-${H(b.state)}${isMineB(b)?" mine":""}${
+        movable?" rb-movable":""}"
+        style="top:${top}px;height:${h}px;--c:${H(s.color)}" data-rb="open-b" data-id="${H(b.id)}"
+        ${movable?`data-move="1" data-min="${b.minutes}" data-from="${st}"`:""}>
+        <b>${H(label)}</b><small>${H(toHHMM(st))}–${H(toHHMM(st+b.minutes))}</small>
+        ${movable?`<i class="rb-grip" data-grip="1" aria-hidden="true"></i>`:""}</button>`;
+    }).join("");
+  return `<div class="rb-col" data-sp="${H(s.id)}" data-date="${H(date)}"
+    data-lo="${lo}" style="height:${height}px">
+    ${shade}${hours}${cl?`<div class="rb-closed">${H(cl.reason||t("Closed"))}</div>`:""}${blocks}
+    ${nowLine!=null&&nowLine>=0&&nowLine<=height?`<div class="rb-now" style="top:${nowLine}px"></div>`:""}
+  </div>`;
+}
 function viewGrid(){
   const date=V().date||today();
-  const list=spaces.filter(s=>s.active);
-  if(!list.length) return card(empty("No rooms yet."));
-  /* the day's real span: the widest opening hours of any room, so a venue
-     that opens at seven does not stare at six empty rows */
+  const week=V().lens==="week";
+  const live_=spaces.filter(s=>s.active);
+  if(!live_.length) return card(empty("No rooms yet."));
+  const cols=gridColumns();
+  if(!cols.length) return card(empty("No rooms yet."));
+
+  /* the board's real span: the widest opening hours of any column, so a
+     venue that opens at seven does not stare at six empty rows */
   let lo=24*60, hi=0;
-  list.forEach(s=>hoursFor(s,date).forEach(w=>{ lo=Math.min(lo,w.from); hi=Math.max(hi,w.to); }));
-  bookings.filter(b=>b.date===date&&live(b)).forEach(b=>{
-    lo=Math.min(lo,toMin(b.time)); hi=Math.max(hi,toMin(b.time)+b.minutes); });
+  cols.forEach(c=>hoursFor(c.space,c.date).forEach(w=>{ lo=Math.min(lo,w.from); hi=Math.max(hi,w.to); }));
+  cols.forEach(c=>bookings.filter(b=>b.date===c.date&&b.spaceId===c.space.id&&live(b)).forEach(b=>{
+    lo=Math.min(lo,toMin(b.time)); hi=Math.max(hi,toMin(b.time)+b.minutes); }));
   if(hi<=lo){ lo=8*60; hi=20*60; }
   lo=Math.floor(lo/60)*60; hi=Math.ceil(hi/60)*60;
-  const PX=52/60;                                   /* an hour is 52px tall */
-  const height=(hi-lo)*PX;
-  const nowLine=(date===today())
-    ? (new Date().getHours()*60+new Date().getMinutes()-lo)*PX : null;
+  const height=(hi-lo)*GRID_PX;
 
-  const head=`<div class="rb-gridhead" style="--n:${list.length}"><div class="rb-gut"></div>${list.map(s=>
-    `<div class="rb-colh"><span class="rb-dot" style="background:${H(s.color)}"></span>${H(s.name)}
-     ${s.capacity?`<small>${s.capacity}</small>`:""}</div>`).join("")}</div>`;
-
+  const head=`<div class="rb-gridhead" style="--n:${cols.length}"><div class="rb-gut"></div>${
+    cols.map(c=>`<div class="rb-colh${c.today?" is-today":""}">
+      <span class="rb-dot" style="background:${H(c.dot)}"></span>${H(c.label)}
+      ${c.sub?`<small>${H(c.sub)}</small>`:""}</div>`).join("")}</div>`;
   const gut=`<div class="rb-gut" style="height:${height}px">${
     (()=>{ let o=""; for(let m=lo;m<=hi;m+=60)
-      o+=`<span style="top:${(m-lo)*PX}px">${H(toHHMM(m))}</span>`; return o; })()}</div>`;
+      o+=`<span style="top:${(m-lo)*GRID_PX}px">${H(toHHMM(m))}</span>`; return o; })()}</div>`;
 
-  const cols=list.map(s=>{
-    const cl=closureOn(s,date);
-    const open=hoursFor(s,date);
-    const shade=(()=>{ let o=""; let cur=lo;
-      open.forEach(w=>{ if(w.from>cur) o+=`<div class="rb-shut" style="top:${(cur-lo)*PX}px;height:${(w.from-cur)*PX}px"></div>`;
-                        cur=Math.max(cur,w.to); });
-      if(cur<hi) o+=`<div class="rb-shut" style="top:${(cur-lo)*PX}px;height:${(hi-cur)*PX}px"></div>`;
-      return o; })();
-    const hours=(()=>{ let o=""; for(let m=lo+60;m<hi;m+=60)
-      o+=`<div class="rb-hr" style="top:${(m-lo)*PX}px"></div>`; return o; })();
-    const blocks=bookings.filter(b=>b.spaceId===s.id && b.date===date && live(b))
-      .sort((a,b)=>toMin(a.time)-toMin(b.time)).map(b=>{
-        const st=toMin(b.time), top=(st-lo)*PX, h=Math.max(16,b.minutes*PX);
-        const showName=canSeeAll()||isMineB(b);
-        const label=showName?(b.title||bookerLabel(b)):t("Booked");
-        const bb=s.rules.bufferBeforeMin, ba=s.rules.bufferAfterMin;
-        const buf=(bb||ba)?`<div class="rb-buf" style="top:${(st-bb-lo)*PX}px;
-          height:${(b.minutes+bb+ba)*PX}px"></div>`:"";
-        return buf+`<button type="button" class="rb-blk rb-s-${H(b.state)}${isMineB(b)?" mine":""}"
-          style="top:${top}px;height:${h}px;--c:${H(s.color)}" data-rb="open-b" data-id="${H(b.id)}">
-          <b>${H(label)}</b><small>${H(toHHMM(st))}–${H(toHHMM(st+b.minutes))}</small></button>`;
-      }).join("");
-    return `<div class="rb-col" data-sp="${H(s.id)}" data-date="${H(date)}"
-      data-lo="${lo}" style="height:${height}px">
-      ${shade}${hours}${cl?`<div class="rb-closed">${H(cl.reason||t("Closed"))}</div>`:""}${blocks}
-      ${nowLine!=null&&nowLine>=0&&nowLine<=height?`<div class="rb-now" style="top:${nowLine}px"></div>`:""}
-    </div>`;
-  }).join("");
+  const weekLabel=(()=>{ if(!week) return dateLabel(date);
+    const a=cols[0].date, b=cols[6].date;
+    return a.slice(8,10)+"."+a.slice(5,7)+" – "+b.slice(8,10)+"."+b.slice(5,7)+"."; })();
 
   return `<div class="rb-daybar">
-      <button class="btn mini" type="button" data-rb="day" data-d="-1">‹</button>
+      <div class="seg rb-lens" role="group">
+        <button type="button" data-rb="lens" data-l="day"${week?"":' aria-pressed="true"'}>${H(t("Day"))}</button>
+        <button type="button" data-rb="lens" data-l="week"${week?' aria-pressed="true"':""}>${H(t("Week"))}</button>
+      </div>
+      <button class="btn mini" type="button" data-rb="day" data-d="${week?-7:-1}">‹</button>
       <button class="btn mini" type="button" data-rb="today">${H(t("Today"))}</button>
-      <b class="rb-dayl">${H(dateLabel(date))}</b>
-      <button class="btn mini" type="button" data-rb="day" data-d="1">›</button>
-      <input id="rbGridDate" type="date" value="${H(date)}" class="rb-datein">
+      <b class="rb-dayl">${H(weekLabel)}</b>
+      <button class="btn mini" type="button" data-rb="day" data-d="${week?7:1}">›</button>
+      ${week
+        ? `<select id="rbGridSpace" class="rb-datein">${live_.map(s=>
+            `<option value="${H(s.id)}"${s.id===cols[0].space.id?" selected":""}>${H(s.name)}</option>`).join("")}</select>`
+        : `<input id="rbGridDate" type="date" value="${H(date)}" class="rb-datein">`}
       ${isMember()?`<button class="btn mini" type="button" data-rb="new-series">${
         H(t("+ Repeats"))}</button>`:""}
+      ${rbUndo?`<button class="btn mini" type="button" data-rb="undo-move">${H(t("Undo the move"))}</button>`:""}
     </div>
     <div class="card rb-board"><div class="pad" style="padding:10px">
       <div class="rb-scroll"><div class="rb-inner">
         ${head}
-        <div class="rb-grid" style="--n:${list.length}">${gut}${cols}</div>
+        <div class="rb-grid" style="--n:${cols.length}">${gut}${
+          cols.map(c=>gridColHtml(c,lo,hi)).join("")}</div>
       </div></div>
-      ${hint("Tap an empty stretch to book it. Hatched edges are the turnaround the room needs between bookings.")}
+      ${hint(week
+        ? "One room, seven days. Tap an empty stretch to book it; drag a booking to move it, or pull its bottom edge to make it longer."
+        : "Tap an empty stretch to book it. Drag a booking to move it, or pull its bottom edge to make it longer. Hatched edges are the turnaround the room needs between bookings.")}
     </div></div>`;
 }
 
@@ -42106,12 +42610,18 @@ function bookingRow(b, opts){
       <small>${H((sp&&sp.name)||t("a room"))} · ${H(dateLabel(b.date))} ${H(toHHMM(st))}–${H(toHHMM(st+b.minutes))}
         ${o.who?" · "+H(bookerLabel(b)):""}${b.seriesId?" · "+H(t("part of a series")):""}</small>
       ${b.purpose?`<small class="rb-dim">${H(b.purpose)}</small>`:""}
+      ${b.counterOf&&b.state==="requested"?`<small class="rb-dim">${
+        H(t("The venue offered this instead of the time you asked for."))}${
+        b.counterNote?" "+H(b.counterNote):""}</small>`:""}
     </div>
     <div class="rb-item-r">
       ${stateChip(b)}
       ${price>0?`<span class="rb-price">${H(money(price,b.price.currency))}</span>`:""}
       ${b.invoiceId?`<span class="rb-chip rb-c-inv">${H(t("invoiced"))}</span>`:""}
     </div>
+    ${b.counterOf&&b.state==="requested"&&isMineB(b)?`
+      <button type="button" class="btn primary mini" data-rb="counter-yes" data-id="${H(b.id)}">${H(t("Take it"))}</button>
+      <button type="button" class="btn mini" data-rb="counter-no" data-id="${H(b.id)}">${H(t("No thanks"))}</button>`:""}
     <button type="button" class="btn mini" data-rb="open-b" data-id="${H(b.id)}">${H(t("Open"))}</button>
   </div>`;
 }
@@ -42147,6 +42657,24 @@ function viewMine(){
 }
 
 /* -------------------------------------------------------- 4. requests ----- */
+/* When a request runs out, said in the words an admin thinks in. A request
+   that blocks a slot and that nobody ever answers is worse than a refusal,
+   so this deadline is visible on the card rather than buried in settings. */
+function expiresAt(b){
+  const hrs=clamp(num(org&&org.settings.requestExpiryHours,48),0,24*30);
+  if(!hrs) return null;
+  const asked=Date.parse(b.createdAt||"")||Date.now();
+  return Math.min(asked+hrs*3600000, fromYmd(b.date)+toMin(b.time)*60000);
+}
+function expiryLine(b){
+  const at=expiresAt(b); if(at==null) return "";
+  const left=(at-Date.now())/3600000;
+  return left<=0
+    ? `<p class="hint bad" style="margin:6px 0 0">${H(t("Out of time — it goes back on the next sweep."))}</p>`
+    : `<p class="hint" style="margin:6px 0 0">${H(left<24
+        ? t("Goes back in {n} if nobody decides.").replace("{n}",dur(left*60))
+        : t("Goes back on {d} if nobody decides.").replace("{d}",dateLabel(iso(at))))}</p>`;
+}
 function viewRequests(){
   const reqs=pendingReqs().sort((a,b)=>(a.createdAt||"").localeCompare(b.createdAt||""));
   if(!reqs.length) return card(empty("Nothing waiting. Requests from guests land here."));
@@ -42168,9 +42696,15 @@ function viewRequests(){
       ${b.purpose?`<p class="hint" style="margin:4px 0 0">${H(b.purpose)}</p>`:""}
       ${clash.length?`<p class="hint bad" style="margin:6px 0 0">${H(t("Also wants this slot:"))}
         ${clash.map(c=>H(bookerLabel(c.b)+" "+toHHMM(c.from)+"–"+toHHMM(c.to))).join(", ")}</p>`:""}
+      ${expiryLine(b)}
+      ${b.counterOf?`<p class="hint" style="margin:6px 0 0">${
+        H(t("This is the time you offered. It is waiting for them, not for you."))}</p>`:""}
       <div class="btn-row" style="margin-top:9px">
-        <button class="btn primary mini" type="button" data-rb="approve" data-id="${H(b.id)}">${H(t("Approve"))}</button>
-        <button class="btn mini" type="button" data-rb="decline" data-id="${H(b.id)}">${H(t("Decline…"))}</button>
+        ${b.counterOf
+          ? `<button class="btn mini" type="button" data-rb="decline" data-id="${H(b.id)}">${H(t("Withdraw it…"))}</button>`
+          : `<button class="btn primary mini" type="button" data-rb="approve" data-id="${H(b.id)}">${H(t("Approve"))}</button>
+             <button class="btn mini" type="button" data-rb="counter" data-id="${H(b.id)}">${H(t("Offer another…"))}</button>
+             <button class="btn mini" type="button" data-rb="decline" data-id="${H(b.id)}">${H(t("Decline…"))}</button>`}
         <button class="btn mini" type="button" data-rb="open-b" data-id="${H(b.id)}">${H(t("Open"))}</button>
       </div>`);
   }).join("");
@@ -42213,6 +42747,7 @@ function viewSpaces(){
     + (spaces.length?spaces.map(sp=>{
         const im=ruleImpact(sp);
         return card(`
+          ${sp.photo?`<img class="rb-sp-photo" src="${H(sp.photo)}" alt="${H(sp.name)}">`:""}
           <div class="rb-sp-head">
             <span class="rb-dot" style="background:${H(sp.color)}"></span>
             <b>${H(sp.name)}</b>
@@ -42220,6 +42755,7 @@ function viewSpaces(){
             ${sp.capacity?`<span class="rb-meta">${H(plural(sp.capacity,"seat"))}</span>`:""}
             ${sp.hourlyRate!=null?`<span class="rb-meta">${H(money(sp.hourlyRate)+"/"+t("h"))}</span>`:""}
           </div>
+          ${sp.description?`<p class="hint" style="margin:6px 0 0">${H(sp.description)}</p>`:""}
           ${sp.equipment.length?`<div class="rb-tags sm">${sp.equipment.map(e=>
             `<span class="rb-tag static">${H(t(e))}</span>`).join("")}</div>`:""}
           <p class="hint" style="margin:7px 0 0">${H(rulesLine(sp))}</p>
@@ -42429,12 +42965,50 @@ function viewVenue(){
         <input id="rbvFoot" value="${H(s.footerText)}" placeholder="${H(t("Thank you."))}"></div>
       <div class="btn-row" style="margin-top:6px">
         <button class="btn primary mini" type="button" data-rb="save-venue">${H(t("Save"))}</button></div>`)
+  + card(`${eyebrow("Requests")}
+      <div class="field"><label for="rbvExpiry">${H(t("A request nobody answers goes back after (hours)"))}</label>
+        <input id="rbvExpiry" type="number" min="0" max="720" value="${num(s.requestExpiryHours,48)}"></div>
+      ${hint("A request holds the slot exactly as a booking does, so one that nobody ever decides on quietly costs the venue the room. Zero switches the expiry off and they wait for ever.")}
+      <div class="btn-row" style="margin-top:6px">
+        <button class="btn primary mini" type="button" data-rb="save-venue">${H(t("Save"))}</button></div>`)
+  + mailCard()
   + card(`${eyebrow("Your data")}
       <div class="btn-row">
         <button class="btn mini" type="button" data-rb="export-org">${H(t("Export everything (JSON)"))}</button>
         <button class="btn mini" type="button" data-rb="switch-org">${H(t("Switch venue"))}</button>
       </div>
       ${hint("The export is the whole venue as one file — rooms, people, bookings, invoices. Somewhere only this app can read is not somewhere your data should live.")}`);
+}
+
+/* --------------------------------------------------------- the outbox -----
+   The honest half of email. This app is a static page: it can compose a
+   notification and it can queue it, and it cannot put it on the wire. So it
+   says so here, counts what is waiting, and names the one thing that would
+   make it leave. A venue that thinks its members have been told when they
+   have not is worse off than one that was never offered the feature. */
+let mailWaiting=null;
+function mailCard(){
+  const s=org.settings;
+  return card(`${eyebrow("Email")}
+    <label class="rb-check"><input type="checkbox" id="rbvNotifyOn"${s.notifyOn!==false?" checked":""}>
+      <span>${H(t("Queue the four notifications"))}</span></label>
+    <div class="field" style="margin-top:9px"><label for="rbvNotifyFrom">${H(t("Reply-to address"))}</label>
+      <input id="rbvNotifyFrom" type="email" value="${H(s.notifyFrom||"")}"
+        placeholder="${H(t("bookings@your-venue.cz"))}"></div>
+    <p class="hint" style="margin:8px 0 0">${H(t("Booking confirmed · request approved or declined · a reminder the day before · an invoice issued. Members can turn any of the four off for themselves."))}</p>
+    <div class="rb-override" style="margin-top:12px">
+      <b class="rb-override-h">${H(t("Nothing leaves this app on its own"))}</b>
+      <small>${H(t("Potting Bench is a page, not a server, so it cannot send mail itself. Every notification is written into the roomMail collection in the exact shape Firebase's official “Trigger Email from Firestore” extension reads. Install that extension against roomMail and the queue empties itself from then on. Until then nothing is sent, and this card says how much is waiting."))}</small>
+      <p class="hint" style="margin:8px 0 0">${H(mailWaiting==null
+        ? t("Not counted yet.")
+        : mailWaiting===0 ? t("Nothing waiting.")
+        : t("{n} waiting to go out.").replace("{n}",mailWaiting))}</p>
+      <div class="btn-row" style="margin-top:8px">
+        <button class="btn mini" type="button" data-rb="mail-count">${H(t("Count the outbox"))}</button>
+      </div>
+    </div>
+    <div class="btn-row" style="margin-top:10px">
+      <button class="btn primary mini" type="button" data-rb="save-venue">${H(t("Save"))}</button></div>`);
 }
 
 /* ============================================================================
@@ -42476,6 +43050,17 @@ async function openBookSheet(spaceId, date, fromMin, minutes){
   const c=checkBooking({spaceId, date, fromMin, minutes, bookerType, bookerId, asAdmin});
   if(!c.ok){ refuse(c.why, spaceId, date, fromMin, minutes); return; }
 
+  /* An admin already walks through every rule — checkBooking's asAdmin flag
+     sees to that. What was missing is the record of it. Run the check a
+     second time as an ordinary member: if THAT refuses, the admin is bending
+     something, and the booking should say which rule and why. A venue that
+     cannot answer "why is the hall booked at 6am" from its own records is
+     one argument away from turning the rules off altogether. */
+  const plainType = bookerType==="admin" ? "member" : bookerType;
+  const bentFor = mins => asAdmin
+    ? checkBooking({spaceId, date, fromMin, minutes:mins, bookerType:plainType, bookerId})
+    : {ok:true};
+
   const needsApproval = !asAdmin && (sp.rules.approval==="all"
     || (sp.rules.approval==="guests" && bookerType==="guest"));
   const price=quote(spaceId,date,fromMin,minutes,bookerType,bookerId);
@@ -42510,6 +43095,12 @@ async function openBookSheet(spaceId, date, fromMin, minutes){
       <b>${price.amount>0?H(money(price.amount,price.currency)):H(t("No charge"))}</b>
       ${price.breakdown.map(b=>`<small>${H(b)}</small>`).join("")}
     </div>
+    <div id="rbOverride" class="rb-override"${bentFor(minutes).ok?" hidden":""}>
+      <b class="rb-override-h">${H(t("This breaks one of the room's own rules"))}</b>
+      <small id="rbOverrideWhy">${H(bentFor(minutes).why||"")}</small>
+      <div class="field" style="margin:8px 0 0"><label for="rbBWhy">${H(t("Why are you making it anyway?"))}</label>
+        <input id="rbBWhy" placeholder="${H(t("The head of school asked for it in person"))}" autocomplete="off"></div>
+    </div>
     ${needsApproval?`<p class="hint" style="margin:9px 0 0">${
       H(t("This one goes to the venue for approval — the slot is held for you meanwhile."))}</p>`:""}
     <p class="hint" id="rbBookMsg" style="margin:9px 0 0"></p>`,
@@ -42527,6 +43118,12 @@ async function openBookSheet(spaceId, date, fromMin, minutes){
         const box=body.querySelector("#rbPriceBox");
         if(box) box.innerHTML=`<b>${q.amount>0?H(money(q.amount,q.currency)):H(t("No charge"))}</b>`
           + q.breakdown.map(b=>`<small>${H(b)}</small>`).join("");
+        /* a longer booking can start breaking a rule a shorter one did not,
+           so the override box has to follow the length too */
+        const bent=bentFor(m), box2=body.querySelector("#rbOverride");
+        if(box2){ box2.hidden=bent.ok;
+          const w=body.querySelector("#rbOverrideWhy");
+          if(w) w.textContent=bent.why||""; }
       });
     });
 
@@ -42565,12 +43162,25 @@ async function openBookSheet(spaceId, date, fromMin, minutes){
       bId=await ensureGuest({name:nm, email:em, phone:fv("rbGPhone")});
     }
     const onBehalf=fv("rbBFor")||null;
+    /* if a rule is being bent, the reason is not optional: an override with
+       no reason on it is indistinguishable from a bug six months later */
+    const bent=bentFor(minsNow);
+    let override="";
+    if(!bent.ok){
+      const why=fv("rbBWhy");
+      if(!why){ const m=$("#rbBookMsg");
+        if(m){ m.textContent=t("Say why you are overriding the rule — it goes on the booking."); m.className="hint bad"; }
+        return; }
+      override=bent.why+" — "+why;
+    }
     const finalPrice=quote(spaceId,date,fromMin,minsNow,bookerType,onBehalf||bId,holdId);
     const state=needsApproval?"requested":"confirmed";
     await settleHold(holdId,{ spaceId, date, time:toHHMM(fromMin), minutes:minsNow,
       bookerType, bookerId:bId, bookerName:whoAmI(),
       onBehalfOf:onBehalf, title:fv("rbBTitle")||t("Booking"),
-      purpose:fv("rbBNote"), attendees:fn("rbBPeople",0), price:finalPrice }, state);
+      purpose:fv("rbBNote"), attendees:fn("rbBPeople",0), price:finalPrice,
+      ruleOverride:override }, state);
+    if(override) audit("override","booking",holdId,override);
     holdId=null; dlgCleanup=null;
     closeDlg();
     say(state==="requested"
@@ -42623,6 +43233,12 @@ function openBooking(id){
       ? `<div class="rb-price-box" style="margin-top:10px">${
           b.price.breakdown.map(x=>`<small>${H(x)}</small>`).join("")}</div>`:""}
     ${b.seriesId?`<p class="hint" style="margin:8px 0 0">${H(t("Part of a repeating booking."))}</p>`:""}
+    ${b.ruleOverride&&(isAdmin()||isMineB(b))?`<div class="rb-override" style="margin-top:10px">
+      <b class="rb-override-h">${H(t("A rule was overridden"))}</b>
+      <small>${H(b.ruleOverride)}</small></div>`:""}
+    ${b.counterOf&&b.state==="requested"?`<p class="hint" style="margin:8px 0 0">${
+      H(t("The venue offered this instead of the time you asked for."))}${
+      b.counterNote?" "+H(b.counterNote):""}</p>`:""}
     ${willBeLate?`<p class="hint bad" style="margin:8px 0 0">${
       H(t("Cancelling now is inside the {n}-hour window, so the price still stands.")
         .replace("{n}",sp.rules.cancelWindowHours))}</p>`:""}
@@ -42634,6 +43250,51 @@ function openBooking(id){
      ${isAdmin()&&num(b.price&&b.price.amount,0)>=0&&!b.invoiceId?`<button class="btn mini" type="button" data-rb="reprice" data-id="${H(b.id)}">${H(t("Change price…"))}</button>`:""}
      ${canEdit&&b.state!=="cancelled"?`<button class="btn danger mini" type="button" data-rb="cancel-b" data-id="${H(b.id)}">${H(t("Cancel…"))}</button>`:""}
      ${isAdmin()&&b.seriesId?`<button class="btn danger mini" type="button" data-rb="cancel-series" data-id="${H(b.seriesId)}" data-from="${H(b.date)}">${H(t("Cancel the rest…"))}</button>`:""}`);
+}
+
+/* ----------------------------------------------------- counter-proposing --
+   The admin's half of the offer. Everything free that day, in every room, at
+   the length that was asked for — pick one and the venue has said yes to it,
+   which is why the booker only has to accept rather than ask again. */
+function openCounter(id){
+  const b=bookings.find(x=>x.id===id); if(!b) return;
+  V().ctDate=b.date; saveV();
+  const draw=(date,mins)=>{
+    const res=searchRooms({date, minutes:mins});
+    if(!res.length) return `<option value="">${H(t("Nothing free that day"))}</option>`;
+    return res.map(r=>`<optgroup label="${H(r.space.name)}">${
+      r.slots.slice(0,24).map(s=>`<option value="${H(r.space.id)}|${s}">${
+        H(r.space.name+" · "+toHHMM(s)+"–"+toHHMM(s+mins))}</option>`).join("")}</optgroup>`).join("");
+  };
+  dlg(t("Offer another time"), `
+    <p class="hint" style="margin:0 0 10px">${H(bookerLabel(b))} ${H(t("asked for"))}
+      ${H((spaceById(b.spaceId)||{}).name||"")} · ${H(whenLine(b))}</p>
+    <div class="rb-find">
+      <div class="field"><label for="rbCtDate">${H(t("Which day"))}</label>
+        <input id="rbCtDate" type="date" value="${H(b.date)}"></div>
+      <div class="field"><label for="rbCtMin">${H(t("How long"))}</label>
+        <select id="rbCtMin">${[30,45,60,90,120,150,180,240].map(m=>
+          `<option value="${m}"${m===b.minutes?" selected":""}>${H(dur(m))}</option>`).join("")}</select></div>
+    </div>
+    <div class="field"><label for="rbCtSlot">${H(t("Offer them"))}</label>
+      <select id="rbCtSlot">${draw(b.date,b.minutes)}</select></div>
+    <div class="field"><label for="rbCtNote">${H(t("A word about why"))}</label>
+      <input id="rbCtNote" placeholder="${H(t("The hall is booked for the school play that afternoon"))}"></div>
+    ${hint("They get this as a request of their own to accept or turn down, and the slot you offer is held for them meanwhile. The one they asked for goes back.")}
+    <p class="hint" id="rbCtMsg" style="margin:8px 0 0"></p>`,
+    `<button class="btn" type="button" data-rbclose>${H(t("Cancel"))}</button>
+     <button class="btn primary" type="button" data-rb="counter-go" data-id="${H(b.id)}">${H(t("Offer it"))}</button>`,
+    null,
+    body=>{
+      const redraw=()=>{
+        const d=body.querySelector("#rbCtDate").value||b.date;
+        const m=num(body.querySelector("#rbCtMin").value,b.minutes);
+        V().ctDate=d; saveV();
+        body.querySelector("#rbCtSlot").innerHTML=draw(d,m);
+      };
+      body.querySelector("#rbCtDate").addEventListener("change",redraw);
+      body.querySelector("#rbCtMin").addEventListener("change",redraw);
+    });
 }
 
 /* ------------------------------------------------------- a repeat booking -- */
@@ -42702,6 +43363,7 @@ function seriesPreview(){
 }
 
 /* ------------------------------------------------------- the room editor -- */
+let spEditPhoto="";                 /* the photo the open editor is holding */
 function openSpaceEditor(id){
   const sp=id?spaceById(id):nSpace({name:"", color:PALETTE[spaces.length%PALETTE.length],
     rules:Object.assign({},SPACE_RULES)}, null);
@@ -42726,6 +43388,22 @@ function openSpaceEditor(id){
     <div class="field"><label>${H(t("What is in it"))}</label>
       <div class="rb-tags" id="rbSpEq">${EQUIP.map(e=>
         `<button type="button" class="rb-tag${sp.equipment.indexOf(e)>=0?" on":""}" data-eq="${H(e)}">${H(t(e))}</button>`).join("")}</div></div>
+    <div class="field"><label for="rbSpDesc">${H(t("Anything worth knowing about it"))}</label>
+      <textarea id="rbSpDesc" rows="2" placeholder="${
+        H(t("Second floor, no lift. The blinds actually black it out."))}">${H(sp.description)}</textarea></div>
+    <div class="field"><label>${H(t("A picture of it"))}</label>
+      <div class="rb-photo-row">
+        <div class="rb-photo-prev" id="rbSpPhotoPrev">${sp.photo
+          ? `<img src="${H(sp.photo)}" alt="">`
+          : `<span class="rb-photo-empty">${H(t("none yet"))}</span>`}</div>
+        <div class="rb-photo-acts">
+          <button type="button" class="btn mini" id="rbSpPhotoBtn">${H(t("Choose a photo"))}</button>
+          <button type="button" class="btn mini" id="rbSpPhotoClear"${sp.photo?"":" hidden"}>${H(t("Remove"))}</button>
+          <input type="file" id="rbSpPhotoFile" accept="image/*" hidden>
+          <small class="hint" id="rbSpPhotoMsg">${
+            H(t("Shown on the room's card and to anyone booking through the public link."))}</small>
+        </div>
+      </div></div>
     <div class="rb-find">
       <div class="field"><label for="rbSpMin">${H(t("Shortest booking"))}</label>
         <select id="rbSpMin">${[15,30,45,60,90,120].map(m=>
@@ -42774,6 +43452,36 @@ function openSpaceEditor(id){
         const b=e.target.closest("[data-eq]"); if(!b) return;
         b.classList.toggle("on");
       });
+      /* the picked photo lives on the dialog itself until Save, so cancelling
+         genuinely cancels and nothing is written on the way past */
+      const file=body.querySelector("#rbSpPhotoFile");
+      const prev=body.querySelector("#rbSpPhotoPrev");
+      const msg =body.querySelector("#rbSpPhotoMsg");
+      const clr =body.querySelector("#rbSpPhotoClear");
+      spEditPhoto=sp.photo||"";
+      body.querySelector("#rbSpPhotoBtn").addEventListener("click",()=>file.click());
+      clr.addEventListener("click",()=>{
+        spEditPhoto="";
+        prev.innerHTML=`<span class="rb-photo-empty">${H(t("none yet"))}</span>`;
+        clr.hidden=true;
+        msg.textContent=t("Shown on the room's card and to anyone booking through the public link.");
+      });
+      file.addEventListener("change",async()=>{
+        const f=file.files&&file.files[0]; if(!f) return;
+        msg.textContent=t("Shrinking it…");
+        try{
+          spEditPhoto=await photoDataUrl(f);
+          prev.innerHTML=`<img src="${H(spEditPhoto)}" alt="">`;
+          clr.hidden=false;
+          msg.textContent=t("{n} kB — saved with the room.")
+            .replace("{n}", Math.round(spEditPhoto.length*0.75/1024));
+        }catch(e){
+          msg.textContent = (e&&e.message==="photo-too-big")
+            ? t("That picture will not come down small enough. Try a smaller one.")
+            : t("That file could not be read as an image.");
+        }
+        file.value="";
+      });
     });
 }
 function readSpaceForm(id){
@@ -42785,6 +43493,8 @@ function readSpaceForm(id){
     capacity:fn("rbSpCap",0), hourlyRate:fv("rbSpRate")===""?null:fn("rbSpRate",null),
     color:sw?sw.dataset.c:(old?old.color:PALETTE[0]),
     equipment:[...document.querySelectorAll("#rbSpEq .rb-tag.on")].map(b=>b.dataset.eq),
+    description:(()=>{ const el=$("#rbSpDesc"); return el?el.value.trim():(old?old.description:""); })(),
+    photo:spEditPhoto,
     active:fc("rbSpActive"), sortOrder:old?old.sortOrder:spaces.length,
     prices:old?old.prices:[],
     rules:{ minMinutes:fn("rbSpMin",30), maxMinutes:fn("rbSpMax",480),
@@ -42868,7 +43578,13 @@ function openMemberEditor(id){
     <div class="field"><label for="rbMCompany">${H(t("Company (for the invoice)"))}</label>
       <input id="rbMCompany" value="${H(m.company)}"></div>
     <label class="rb-check"><input type="checkbox" id="rbMActive"${m.active?" checked":""}>
-      <span>${H(t("Can book"))}</span></label>`,
+      <span>${H(t("Can book"))}</span></label>
+    <div class="field" style="margin-top:12px"><label>${H(t("Email them about"))}</label>
+      ${MAIL_KINDS.map(k=>`<label class="rb-check"><input type="checkbox" data-notify="${k}"${
+        m.notify&&m.notify[k]!==false?" checked":""}>
+        <span>${H(t({confirmed:"a booking going through", decided:"a request being approved or declined",
+                     reminder:"a reminder the day before", invoice:"an invoice being issued"}[k]))}</span></label>`).join("")}
+      <p class="hint" style="margin:6px 0 0">${H(t("Nothing else is ever emailed. Notifications for every small change are the loudest complaint about every other booking system there is."))}</p></div>`,
     `<button class="btn" type="button" data-rbclose>${H(t("Cancel"))}</button>
      <button class="btn primary" type="button" data-rb="save-member" data-id="${H(id)}">${H(t("Save"))}</button>`);
 }
@@ -42907,6 +43623,9 @@ async function openInvite(){
         <select id="rbInvTariff"><option value="">${H(t("none"))}</option>
           ${tariffs.map(tf=>`<option value="${H(tf.id)}">${H(tf.name)}</option>`).join("")}</select></div>
     </div>
+    <div class="field"><label for="rbInvMail">${H(t("Email it to (optional)"))}</label>
+      <input id="rbInvMail" type="email" placeholder="${H(t("them@example.com"))}" autocomplete="off">
+      <p class="hint" style="margin:6px 0 0">${H(t("Leave it blank and you just get the code to pass on yourself."))}</p></div>
     <div id="rbInvOut"></div>
     ${hint("The code is never stored, only its fingerprint — so a list of codes cannot be turned into a way in. Give it out once; anyone who has it can join as that role.")}`,
     `<button class="btn" type="button" data-rbclose>${H(t("Close"))}</button>
@@ -43052,6 +43771,10 @@ async function act(a, el){
 
   /* ---- moving around ---- */
   case "scope": V0.scope=el.dataset.k; saveV(); return paint();
+  case "lens": V0.lens=el.dataset.l==="week"?"week":"day";
+      if(V0.lens==="week"&&!V0.gridSpace){ const s=spaces.find(x=>x.active); if(s) V0.gridSpace=s.id; }
+      saveV(); return paint();
+  case "undo-move": return undoMove();
   case "day": V0.date=iso(addDays(fromYmd(V0.date||today()), num(el.dataset.d,1))); saveV(); return paint();
   case "today": V0.date=today(); saveV(); return paint();
   case "nextday": V0.date=iso(addDays(fromYmd(V0.date||today()),1)); saveV(); return paint();
@@ -43085,12 +43808,73 @@ async function act(a, el){
     }, "rbSMsg");
   case "approve": return guard(async()=>{
       const b=bookings.find(x=>x.id===id); if(!b) return;
-      await setState(b,"confirmed"); closeDlg(); paint(); });
+      await setState(b,"confirmed");
+      await notifyBooking(Object.assign({},b,{state:"confirmed"}),"decided");
+      closeDlg(); paint(); });
   case "decline": return guard(async()=>{
       const b=bookings.find(x=>x.id===id); if(!b) return;
       const why=await askText(t("Why? They will see this."), t("Decline"));
       if(why===null) return;
       await cancelBooking(b, why||t("declined"));
+      await notifyBooking(Object.assign({},b,{state:"cancelled",
+        cancelReason:why||t("declined")}),"decided");
+      closeDlg(); paint(); });
+  /* ---- counter-proposing ----
+     Declining outright when the venue would happily give them 15:00 instead
+     is the rudest thing a booking system does. This is a decline and an
+     offer in one move: the original goes back, and a second request appears
+     in the booker's own list marked as the venue's suggestion, which THEY
+     accept or turn down. The venue has already said yes by offering it. */
+  case "counter": return openCounter(id);
+  case "counter-go": return guard(async()=>{
+      const b=bookings.find(x=>x.id===id); if(!b) return;
+      const sel=$("#rbCtSlot");
+      if(!sel||!sel.value) return busyMsg("rbCtMsg", t("Pick a time to offer."), true);
+      const [spaceId, from] = sel.value.split("|");
+      const mins=fn("rbCtMin", b.minutes);
+      const note=fv("rbCtNote");
+      const c=checkBooking({spaceId, date:V0.ctDate||b.date, fromMin:+from, minutes:mins,
+        bookerType:b.bookerType, bookerId:b.bookerId, asAdmin:true});
+      if(!c.ok) return busyMsg("rbCtMsg", c.why, true);
+      const date=V0.ctDate||b.date;
+      const price=quote(spaceId,date,+from,mins,b.bookerType,b.onBehalfOf||b.bookerId);
+      const nid=rid();
+      await col("bookings").doc(nid).set({ spaceId, date, time:toHHMM(+from), minutes:mins,
+        bookerType:b.bookerType, bookerId:b.bookerId, bookerName:b.bookerName,
+        onBehalfOf:b.onBehalfOf||null, title:b.title||t("Booking"), purpose:b.purpose||"",
+        attendees:b.attendees||0, price, state:"requested",
+        counterOf:b.id, counterNote:note||"", notified:{},
+        createdAt:nowIso(), createdBy:myUid||"" });
+      await claimFor(spaceId, date, nid, +from, +from+mins, "requested");
+      await cancelBooking(b, note
+        ? t("The venue offered another time instead: {n}").replace("{n}",note)
+        : t("The venue offered another time instead."));
+      audit("counter","booking",b.id,nid);
+      const offer=nBooking({spaceId, date, time:toHHMM(+from), minutes:mins,
+        bookerType:b.bookerType, bookerId:b.bookerId, onBehalfOf:b.onBehalfOf||null,
+        state:"requested", counterOf:b.id}, nid);
+      const to=mailTargetFor(offer,"decided");
+      if(to) await queueMail("decided", to,
+        t("Another time instead: {room}").replace("{room}",(spaceById(spaceId)||{}).name||""),
+        t("The venue could not give you the slot you asked for, and has offered this one instead. Open Rooms to accept or turn it down.")
+        + "\n\n" + ((spaceById(spaceId)||{}).name||"") + "\n" + whenLine(offer)
+        + (note?"\n\n"+note:""));
+      closeDlg(); paint();
+      say(t("Offered. It is waiting for them to accept."), t("Done"));
+    }, "rbCtMsg");
+  /* the booker's side of the same thing */
+  case "counter-yes": return guard(async()=>{
+      const b=bookings.find(x=>x.id===id); if(!b) return;
+      const c=checkBooking({spaceId:b.spaceId, date:b.date, fromMin:toMin(b.time),
+        minutes:b.minutes, bookerType:b.bookerType, bookerId:b.bookerId, ignoreId:b.id});
+      if(!c.ok) return say(c.why, t("That has gone"));
+      await setState(b,"confirmed");
+      closeDlg(); paint();
+      say(t("Taken. It is on the calendar."), t("Done")); });
+  case "counter-no": return guard(async()=>{
+      const b=bookings.find(x=>x.id===id); if(!b) return;
+      if(!await ask(t("Turn down the time the venue offered?"), t("Turn it down"))) return;
+      await cancelBooking(b, t("The offer was turned down."));
       closeDlg(); paint(); });
   case "noshow": return guard(async()=>{
       const b=bookings.find(x=>x.id===id); if(!b) return;
@@ -43180,9 +43964,13 @@ async function act(a, el){
   case "edit-member": return openMemberEditor(id);
   case "save-member": return guard(async()=>{
       const m=members.find(x=>x.id===id); if(!m) return;
+      const notify={};
+      document.querySelectorAll("#rbDlgBody [data-notify]").forEach(cb=>{
+        notify[cb.dataset.notify]=cb.checked; });
       await saveMember(Object.assign({},m,{ name:fv("rbMName")||m.name,
         role:fv("rbMRole")||m.role, tariffId:fv("rbMTariff")||null,
-        company:fv("rbMCompany"), active:fc("rbMActive") }));
+        company:fv("rbMCompany"), active:fc("rbMActive"),
+        notify:Object.keys(notify).length?notify:m.notify }));
       closeDlg(); paint(); });
   case "edit-guest": return guard(async()=>{
       const g=guestById(id); if(!g) return;
@@ -43193,9 +43981,26 @@ async function act(a, el){
   case "invite": return openInvite();
   case "make-invite": return guard(async()=>{
       const code=await makeInvite(fv("rbInvRole"), fv("rbInvTariff"));
+      const to=fv("rbInvMail");
+      /* An emailed invite is the same code, carried rather than dictated:
+         the code itself is still the only thing that opens anything, so
+         nothing new is trusted here — the email is just the envelope. */
+      let sent=false;
+      if(to && /@/.test(to)){
+        const link=location.origin+location.pathname+"#rooms/"+((org&&org.slug)||"");
+        sent=await queueMail("invite", to,
+          t("{venue} has given you a room-booking code").replace("{venue}",(org&&org.name)||t("A venue")),
+          t("You have been invited to book rooms at {venue}.").replace("{venue}",(org&&org.name)||"")
+          + "\n\n" + t("Your code:") + " " + code
+          + "\n" + link
+          + "\n\n" + t("Open the link, make an account, and put the code in when it asks."));
+      }
       const out=$("#rbInvOut");
       if(out) out.innerHTML=`<div class="rb-code">${H(code)}</div>
-        <p class="hint" style="margin:6px 0 0">${H(t("Give this to them. It works once per person and does not expire."))}</p>`; });
+        <p class="hint" style="margin:6px 0 0">${H(t("Give this to them. It works once per person and does not expire."))}</p>
+        ${to?`<p class="hint${sent?"":" bad"}" style="margin:6px 0 0">${H(sent
+          ? t("Queued an email to {who} with the code in it — it leaves when the venue's mail is switched on.").replace("{who}",to)
+          : t("The email could not be queued, so pass the code on yourself."))}</p>`:""}`; });
   case "guest-link": return openGuestLink();
   case "copy-link": { const el2=$("#rbLinkBox");
       if(el2){ el2.select(); try{ document.execCommand("copy"); }catch(e){}
@@ -43267,8 +44072,14 @@ async function act(a, el){
         calendarVisibility:fv("rbvVis")||"all", invoicePrefix:fv("rbvPrefix"),
         invoiceNext:Math.max(1,fn("rbvNext",1)), dueDays:fn("rbvDue",14),
         vatRate:fn("rbvVat",0), ico:fv("rbvIco"), bankAccount:fv("rbvBank"),
-        address:fv("rbvAddr"), footerText:fv("rbvFoot") });
+        address:fv("rbvAddr"), footerText:fv("rbvFoot"),
+        requestExpiryHours:clamp(fn("rbvExpiry",48),0,720),
+        notifyOn:fc("rbvNotifyOn"), notifyFrom:fv("rbvNotifyFrom") });
       say(t("Saved."), t("Done")); paint(); });
+  case "mail-count": return guard(async()=>{
+      if(demo){ mailWaiting=demoMail.length; return paint(); }
+      const snap=await mailRef().where("orgId","==",orgId).limit(500).get();
+      mailWaiting=snap.size; paint(); });
   case "export-org": return exportOrg();
   case "demo": return startDemo();
   case "demo-off": { demo=false; db=null; orgId=null; org=null; meMember=null;
@@ -43332,10 +44143,86 @@ function initWiring(){
         Math.max(step,(V().find&&V().find.minutes)||60));
     }
   });
+  /* ---- dragging and stretching a booking on the board ----
+     Pointer events, so one code path covers mouse, pen and finger. Nothing
+     starts until the pointer has actually travelled DRAG_SLOP pixels, which
+     is what keeps a plain tap a tap: the click handler above still opens the
+     booking, and only a real drag suppresses it.
+
+     Everything moves in whole slots, the same step the rest of the module
+     books in, and the conflict check runs on drop — never during, because a
+     refusal every few pixels is noise, and because the check is the same one
+     that guards every other way into a booking. */
+  const DRAG_SLOP=5;
+  let drag=null;
+  view.addEventListener("pointerdown", e=>{
+    if(e.button!=null && e.button!==0) return;
+    const blk=e.target.closest(".rb-blk[data-move]"); if(!blk) return;
+    const col=blk.closest(".rb-col"); if(!col) return;
+    const b=bookings.find(x=>x.id===blk.dataset.id); if(!b) return;
+    drag={ id:b.id, blk, fromCol:col, startX:e.clientX, startY:e.clientY,
+      grip:!!e.target.closest("[data-grip]"), moved:false,
+      lo:num(col.dataset.lo,480), origFrom:num(blk.dataset.from,0),
+      origMin:num(blk.dataset.min,60), col, minutes:num(blk.dataset.min,60),
+      fromMin:num(blk.dataset.from,0) };
+    /* capture keeps the moves coming to this element even when the finger
+       leaves it, which is most of a drag. It throws if the pointer has
+       already gone, and a failed capture is not a reason to refuse the drag. */
+    try{ blk.setPointerCapture(e.pointerId); }catch(err){}
+  });
+  view.addEventListener("pointermove", e=>{
+    if(!drag) return;
+    const dx=e.clientX-drag.startX, dy=e.clientY-drag.startY;
+    if(!drag.moved && Math.abs(dx)<DRAG_SLOP && Math.abs(dy)<DRAG_SLOP) return;
+    if(!drag.moved){ drag.moved=true; drag.blk.classList.add("rb-dragging"); }
+    const step=(org&&org.settings.slotMinutes)||30;
+    const dMin=Math.round((dy/GRID_PX)/step)*step;
+    if(drag.grip){
+      /* stretching: the start stays put, the end follows the finger */
+      drag.minutes=Math.max(step, drag.origMin+dMin);
+      drag.blk.style.height=Math.max(16,drag.minutes*GRID_PX)+"px";
+      const lab=drag.blk.querySelector("small");
+      if(lab) lab.textContent=toHHMM(drag.fromMin)+"–"+toHHMM(drag.fromMin+drag.minutes);
+    }else{
+      /* moving: in time down the column, and across columns to another room
+         (day lens) or another day (week lens) — the column knows which */
+      drag.fromMin=Math.max(0,Math.min(24*60-drag.minutes, drag.origFrom+dMin));
+      /* the block being dragged sits under the pointer and above everything
+         else, so it has to be taken out of hit-testing for the moment it
+         takes to ask what column the finger is actually over — otherwise a
+         booking can only ever be dropped back in the column it started in */
+      const was=drag.blk.style.pointerEvents;
+      drag.blk.style.pointerEvents="none";
+      const over=document.elementFromPoint(e.clientX,e.clientY);
+      drag.blk.style.pointerEvents=was;
+      const col=over&&over.closest?over.closest(".rb-col"):null;
+      if(col&&col!==drag.col){ drag.col=col; drag.lo=num(col.dataset.lo,480); }
+      drag.blk.style.top=((drag.fromMin-drag.lo)*GRID_PX)+"px";
+      const lab=drag.blk.querySelector("small");
+      if(lab) lab.textContent=toHHMM(drag.fromMin)+"–"+toHHMM(drag.fromMin+drag.minutes);
+    }
+  });
+  const endDrag=e=>{
+    if(!drag) return;
+    const d0=drag; drag=null;
+    if(!d0.moved) return;                       /* a tap: the click handles it */
+    d0.blk.classList.remove("rb-dragging");
+    /* the click that follows a drag would otherwise open the booking sheet */
+    const swallow=ev=>{ ev.stopPropagation(); ev.preventDefault(); };
+    view.addEventListener("click", swallow, {capture:true, once:true});
+    setTimeout(()=>view.removeEventListener("click", swallow, {capture:true}), 0);
+    const spaceId=d0.col.dataset.sp, date=d0.col.dataset.date;
+    if(spaceId===undefined||date===undefined) return paint();
+    moveBooking(d0.id, spaceId, date, d0.fromMin, d0.minutes);
+  };
+  view.addEventListener("pointerup", endDrag);
+  view.addEventListener("pointercancel", ()=>{ if(drag){ drag=null; paint(); } });
+
   view.addEventListener("change", e=>{
     const id=e.target.id, v=V();
     if(id==="rbfDate"){ v.date=e.target.value||today(); saveV(); paint(); }
     else if(id==="rbGridDate"){ v.date=e.target.value||today(); saveV(); paint(); }
+    else if(id==="rbGridSpace"){ v.gridSpace=e.target.value; saveV(); paint(); }
     else if(id==="rbfWin"){ v.find.win=e.target.value; saveV(); paint(); }
     else if(id==="rbfDur"){ v.find.minutes=num(e.target.value,60); saveV(); paint(); }
     else if(id==="rbfPpl"){ v.find.people=num(e.target.value,0); saveV(); paint(); }
@@ -43391,14 +44278,14 @@ function plannerItems(dateIso){
    real code path runs against it: the ten-minute hold, the conflict check
    with its buffers, the price freeze, approval, invoicing, the reports.
    What you cannot do is keep any of it, and the banner says so. */
-let demo=false, demoAudit=[], demoGuards=[];
+let demo=false, demoAudit=[], demoGuards=[], demoMail=[];
 const arrUnion = v => (typeof firebase!=="undefined" && firebase.firestore
   && firebase.firestore.FieldValue) ? firebase.firestore.FieldValue.arrayUnion(v) : v;
 const DEMO_NORM={spaces:nSpace, tariffs:nTariff, members:nMember, guests:nGuest,
   bookings:nBooking, series:nSeries, closures:nClosure, invoices:nInvoice};
 function demoList(name){
   return ({spaces, tariffs, members, guests, bookings, series, closures, invoices,
-    audit:demoAudit, guards:demoGuards})[name] || [];
+    audit:demoAudit, guards:demoGuards, roomMail:demoMail})[name] || [];
 }
 function demoOrgRef(){
   return { id:"demo",
@@ -43427,12 +44314,14 @@ const DEMO_DB={
     return { set:(r,d,o)=>q.push(()=>r.set(d,o)),
              commit:async()=>{ for(const f of q) await f(); } }; },
   runTransaction:fn=>fn({ get:r=>r.get(), set:(r,d,o)=>r.set(d,o) }),
-  collection:()=>demoCol("audit")
+  /* the outbox is a top-level collection, so the demo has to answer to its
+     name rather than lumping everything in with the audit trail */
+  collection:n=>demoCol(n==="roomMail"?"roomMail":"audit")
 };
 function startDemo(){
   demo=true; stopSubs();
   db=DEMO_DB; orgId="demo"; myUid="demo-owner"; myEmail="you@example.com"; anon=false;
-  demoAudit=[]; demoGuards=[];
+  demoAudit=[]; demoGuards=[]; demoMail=[];
   org=nOrg({ name:t("Sample venue"), slug:"sample", ownerUid:"demo-owner",
     openingHours:{1:[{from:"08:00",to:"21:00"}],2:[{from:"08:00",to:"21:00"}],3:[{from:"08:00",to:"21:00"}],
       4:[{from:"08:00",to:"21:00"}],5:[{from:"08:00",to:"21:00"}],6:[{from:"09:00",to:"14:00"}],0:[]},
@@ -43457,6 +44346,7 @@ function startDemo(){
   spaces=[
     nSpace({name:t("Classroom 1"), capacity:12, equipment:["projector","whiteboard"],
       color:PALETTE[1], sortOrder:0,
+      description:t("Second floor, no lift. The blinds actually black it out."),
       rules:{minMinutes:30, maxMinutes:240, bufferBeforeMin:10, bufferAfterMin:10,
         whoMayBook:"members+guests", approval:"guests", cancelWindowHours:24}},"sp1"),
     nSpace({name:t("Classroom 2"), capacity:8, equipment:["whiteboard","tv"],
@@ -43464,6 +44354,21 @@ function startDemo(){
       rules:{minMinutes:30, whoMayBook:"members+guests", approval:"guests"}},"sp2"),
     nSpace({name:t("The studio"), capacity:20, equipment:["piano","sound system","blackout"],
       color:PALETTE[4], sortOrder:2, hourlyRate:500,
+      description:t("Ground floor, step-free. The piano was tuned in June."),
+      /* a drawn picture rather than a photograph: it costs 400 bytes, it
+         cannot be mistaken for a real room, and it is enough to show what a
+         room with a picture looks like next to three without one */
+      photo:"data:image/svg+xml;utf8,"+encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360">
+          <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#A583B5"/><stop offset="1" stop-color="#5E9E85"/>
+          </linearGradient></defs>
+          <rect width="640" height="360" fill="url(#g)"/>
+          <rect x="70" y="150" width="190" height="90" rx="6" fill="#00000033"/>
+          <rect x="70" y="132" width="190" height="22" rx="4" fill="#ffffff55"/>
+          <circle cx="470" cy="140" r="46" fill="#ffffff33"/>
+          <rect x="390" y="240" width="170" height="10" rx="5" fill="#ffffff44"/>
+        </svg>`),
       rules:{minMinutes:60, maxMinutes:480, bufferBeforeMin:15, bufferAfterMin:15,
         whoMayBook:"members+guests", approval:"all", cancelWindowHours:48}},"sp3"),
     nSpace({name:t("Small room"), capacity:4, equipment:["video call"],
@@ -43537,9 +44442,18 @@ function selfTest(){
   const ok_=(name,cond,detail)=>is(name, !!cond, true) || (detail&&!cond&&out.push("       "+detail));
   try{
     const d0=iso(addDays(Date.now(),3));                 /* a clear day ahead */
-    org=nOrg({name:"Test", ownerUid:"u1", openingHours:{1:[{from:"08:00",to:"20:00"}],
-      2:[{from:"08:00",to:"20:00"}],3:[{from:"08:00",to:"20:00"}],4:[{from:"08:00",to:"20:00"}],
-      5:[{from:"08:00",to:"20:00"}],6:[{from:"09:00",to:"13:00"}],0:[]},
+    /* Open the same twelve hours EVERY day, weekend included. The fixture
+       used to keep a real venue's short Saturday and closed Sunday, which
+       made the whole suite depend on which day of the week it was run: from
+       Friday to Sunday `d0` landed on a day with different hours and five
+       checks failed — a guest booking at 14:00, a 17:00 weekly series, and
+       the utilisation sum — none of them because anything was wrong. A test
+       that cries wolf two days in seven is worse than no test, and the
+       weekday-versus-weekend behaviour is already covered by the checks
+       below that name their own hours. */
+    const WEEK=[{from:"08:00",to:"20:00"}];
+    org=nOrg({name:"Test", ownerUid:"u1",
+      openingHours:{0:WEEK,1:WEEK,2:WEEK,3:WEEK,4:WEEK,5:WEEK,6:WEEK},
       settings:{slotMinutes:30, currency:"Kč"}},"o1");
     myUid="u1"; anon=false;
     tariffs=[ nTariff({name:"Staff", hourlyRate:0},"t0"),
@@ -43645,6 +44559,46 @@ function selfTest(){
 initWiring();
 return { render, paint, boot, plannerItems, selfTest, startDemo, isDemo:()=>demo,
   hasVenue:()=>!!org, pending:()=>pendingReqs().length,
+  sweep:()=>sweep(true),
+  /* ---- what Teachbench asks Rooms ----
+     Rooms answers; it never reaches into Teachbench, exactly as it never
+     reaches into the Planner. A lesson that names a room becomes a booking
+     through the ordinary conflict check, so a room double-booked by a
+     lesson is refused the same way a room double-booked by hand is. */
+  roomsForPicker:()=>org?spaces.filter(s=>s.active)
+    .map(s=>({id:s.id, name:s.name, capacity:s.capacity})):[],
+  async linkLesson(o){
+    if(!org) throw new Error("no-venue");
+    if(!o.spaceId) throw new Error("no-room");
+    const date=String(o.date||""), fromMin=toMin(o.time||"");
+    const minutes=clamp(num(o.minutes,60),5,1440);
+    if(!date || !o.time) throw new Error("no-when");
+    const asAdmin=isAdmin();
+    const bookerType=asAdmin?"admin":"member";
+    const check=checkBooking({spaceId:o.spaceId, date, fromMin, minutes,
+      bookerType, bookerId:myUid, asAdmin, ignoreId:o.bookingId||null});
+    if(!check.ok){ const e=new Error("clash"); e.why=check.why; throw e; }
+    const price=quote(o.spaceId,date,fromMin,minutes,bookerType,myUid,o.bookingId||null);
+    const patch={ spaceId:o.spaceId, date, time:toHHMM(fromMin), minutes,
+      bookerType, bookerId:myUid, bookerName:whoAmI(),
+      title:o.title||t("Lesson"), purpose:o.purpose||"", price,
+      state:"confirmed", lessonId:String(o.lessonId||""), updatedAt:nowIso() };
+    const id=o.bookingId||rid();
+    await claimFor(o.spaceId, date, id, fromMin, fromMin+minutes, "confirmed");
+    if(o.bookingId){
+      const old=bookings.find(x=>x.id===o.bookingId);
+      if(old && !(old.spaceId===o.spaceId && old.date===date))
+        await releaseClaim(old.spaceId, old.date, o.bookingId);
+    }else patch.createdAt=nowIso();
+    await col("bookings").doc(id).set(patch,{merge:true});
+    audit(o.bookingId?"update":"create","booking",id,"lesson");
+    return id;
+  },
+  async unlinkLesson(bookingId){
+    if(!org||!bookingId) return;
+    const b=bookings.find(x=>x.id===bookingId);
+    if(b) await cancelBooking(b, t("The lesson it belonged to was removed."));
+  },
   _draft:null,
   /* a printable self-check, in the same spirit as the projects one */
   check(){
@@ -43821,7 +44775,121 @@ Object.assign(CS,{
   "Workshop":"Workshop", "Trial lesson":"Ukázková hodina",
   "Needs the piano tuned if possible":"Kdyby to šlo, naladit piano",
   "Two hours, blackout needed":"Dvě hodiny, potřebujeme zatemnit",
-  "Thank you.":"Děkujeme."
+  "Ground floor, step-free. The piano was tuned in June.":
+    "Přízemí, bez schodů. Piano bylo laděné v červnu.",
+  "Thank you.":"Děkujeme.",
+
+  /* ---- the day/week lens, and moving a booking on the board ---- */
+  "Day":"Den", "Week":"Týden", "Undo the move":"Vrátit přesun",
+  "Moved to {when}.":"Přesunuto na {when}.",
+  "It cannot go there":"Tam to nejde",
+  "One room, seven days. Tap an empty stretch to book it; drag a booking to move it, or pull its bottom edge to make it longer.":
+    "Jedna místnost, sedm dní. Klepnutím na volné místo rezervuješ; rezervaci přetáhneš jinam, nebo ji za spodní hranu prodloužíš.",
+  "Tap an empty stretch to book it. Drag a booking to move it, or pull its bottom edge to make it longer. Hatched edges are the turnaround the room needs between bookings.":
+    "Klepnutím na volné místo rezervuješ. Rezervaci přetáhneš jinam, nebo ji za spodní hranu prodloužíš. Šrafované okraje jsou přestávka, kterou místnost mezi rezervacemi potřebuje.",
+
+  /* ---- overriding a rule ---- */
+  "This breaks one of the room's own rules":"Tohle porušuje jedno z pravidel místnosti",
+  "Why are you making it anyway?":"Proč to i tak děláš?",
+  "The head of school asked for it in person":"Ředitelka o to osobně požádala",
+  "Say why you are overriding the rule — it goes on the booking.":
+    "Napiš, proč pravidlo obcházíš — zapíše se to k rezervaci.",
+  "A rule was overridden":"Pravidlo bylo obejito",
+
+  /* ---- counter-proposing ---- */
+  "Offer another…":"Nabídnout jiný termín…", "Offer another time":"Nabídnout jiný termín",
+  "Which day":"Který den", "Offer them":"Nabídnout jim",
+  "A word about why":"Pár slov proč", "Offer it":"Nabídnout",
+  "Nothing free that day":"Ten den není nic volného",
+  "asked for":"chtěl(a)",
+  "The hall is booked for the school play that afternoon":"Sál je to odpoledne na školní besídce",
+  "They get this as a request of their own to accept or turn down, and the slot you offer is held for them meanwhile. The one they asked for goes back.":
+    "Přijde jim to jako vlastní žádost, kterou přijmou nebo odmítnou, a nabídnutý termín je jim zatím držený. Ten původní se uvolní.",
+  "Offered. It is waiting for them to accept.":"Nabídnuto. Čeká se, až to přijmou.",
+  "Pick a time to offer.":"Vyber termín, který nabídneš.",
+  "The venue offered another time instead: {n}":"Podnik místo toho nabídl jiný termín: {n}",
+  "The venue offered another time instead.":"Podnik místo toho nabídl jiný termín.",
+  "The venue offered this instead of the time you asked for.":
+    "Tohle ti podnik nabídl místo termínu, o který jsi žádal(a).",
+  "This is the time you offered. It is waiting for them, not for you.":
+    "Tenhle termín jsi nabídl(a) ty. Čeká se na ně, ne na tebe.",
+  "Take it":"Beru", "No thanks":"Díky, ne", "Withdraw it…":"Stáhnout nabídku…",
+  "Turn down the time the venue offered?":"Odmítnout termín, který podnik nabídl?",
+  "Turn it down":"Odmítnout",
+  "The offer was turned down.":"Nabídka byla odmítnuta.",
+  "Taken. It is on the calendar.":"Bereme. Je to v kalendáři.",
+  "That has gone":"To už je pryč",
+  "Another time instead: {room}":"Jiný termín místo toho: {room}",
+
+  /* ---- requests running out ---- */
+  "Goes back in {n} if nobody decides.":"Za {n} se uvolní, pokud nikdo nerozhodne.",
+  "Goes back on {d} if nobody decides.":"{d} se uvolní, pokud nikdo nerozhodne.",
+  "Out of time — it goes back on the next sweep.":"Čas vypršel — uvolní se při nejbližší kontrole.",
+  "Nobody answered in time, so the slot went back.":"Nikdo neodpověděl včas, tak se termín uvolnil.",
+  "A request nobody answers goes back after (hours)":"Nevyřízená žádost se uvolní po (hodinách)",
+  "A request holds the slot exactly as a booking does, so one that nobody ever decides on quietly costs the venue the room. Zero switches the expiry off and they wait for ever.":
+    "Žádost drží termín stejně jako rezervace, takže ta, o které nikdo nerozhodne, tiše stojí podnik místnost. Nula vypršení vypne a žádosti čekají navždy.",
+
+  /* ---- the room's picture and description ---- */
+  "Anything worth knowing about it":"Co je o ní dobré vědět",
+  "Second floor, no lift. The blinds actually black it out.":
+    "Druhé patro, bez výtahu. Žaluzie opravdu zatemní.",
+  "A picture of it":"Fotka", "Choose a photo":"Vybrat fotku", "Remove":"Odebrat",
+  "none yet":"zatím žádná", "Shrinking it…":"Zmenšuji…",
+  "{n} kB — saved with the room.":"{n} kB — uloží se s místností.",
+  "Shown on the room's card and to anyone booking through the public link.":
+    "Zobrazí se na kartě místnosti a všem, kdo rezervují přes veřejný odkaz.",
+  "That picture will not come down small enough. Try a smaller one.":
+    "Tuhle fotku se nedaří zmenšit dost. Zkus menší.",
+  "That file could not be read as an image.":"Ten soubor se nepodařilo načíst jako obrázek.",
+
+  /* ---- email ---- */
+  "Email":"E-mail", "Queue the four notifications":"Řadit čtyři upozornění",
+  "Reply-to address":"Adresa pro odpověď", "bookings@your-venue.cz":"rezervace@tvuj-podnik.cz",
+  "Booking confirmed · request approved or declined · a reminder the day before · an invoice issued. Members can turn any of the four off for themselves.":
+    "Potvrzená rezervace · schválená nebo zamítnutá žádost · připomínka den předem · vystavená faktura. Každý si může kterékoliv z nich vypnout.",
+  "Nothing leaves this app on its own":"Samo od sebe z appky nic neodejde",
+  "Potting Bench is a page, not a server, so it cannot send mail itself. Every notification is written into the roomMail collection in the exact shape Firebase's official “Trigger Email from Firestore” extension reads. Install that extension against roomMail and the queue empties itself from then on. Until then nothing is sent, and this card says how much is waiting.":
+    "Potting Bench je stránka, ne server, takže sám poštu neodešle. Každé upozornění se zapíše do kolekce roomMail přesně v podobě, kterou čte oficiální rozšíření Firebase „Trigger Email from Firestore“. Nainstaluj to rozšíření na roomMail a fronta se od té chvíle vyprazdňuje sama. Do té doby se nic neodesílá a tahle karta říká, kolik toho čeká.",
+  "Not counted yet.":"Zatím nespočítáno.", "Nothing waiting.":"Nic nečeká.",
+  "{n} waiting to go out.":"{n} čeká na odeslání.", "Count the outbox":"Spočítat frontu",
+  "Email them about":"Posílat e-mail o",
+  "a booking going through":"potvrzení rezervace",
+  "a request being approved or declined":"schválení nebo zamítnutí žádosti",
+  "a reminder the day before":"připomínce den předem",
+  "an invoice being issued":"vystavení faktury",
+  "Nothing else is ever emailed. Notifications for every small change are the loudest complaint about every other booking system there is.":
+    "Nic jiného se nikdy neposílá. Upozornění na každou drobnost jsou nejhlasitější stížnost na všechny ostatní rezervační systémy.",
+  "Booked: {room}, {when}":"Rezervováno: {room}, {when}",
+  "Your booking is confirmed.":"Tvoje rezervace je potvrzená.",
+  "Approved: {room}, {when}":"Schváleno: {room}, {when}",
+  "Not this time: {room}, {when}":"Tentokrát ne: {room}, {when}",
+  "The venue has approved your booking.":"Podnik tvoji rezervaci schválil.",
+  "The venue could not take this booking.":"Podnik tuhle rezervaci nemohl přijmout.",
+  "Tomorrow: {room}, {when}":"Zítra: {room}, {when}",
+  "A reminder that you have this room tomorrow.":"Připomínka, že zítra máš tuhle místnost.",
+  "Invoice {n} from {venue}":"Faktura {n} od {venue}",
+  "Invoice {n} is attached to your account, for {total}, due {due}.":
+    "Faktura {n} je připsaná k tvému účtu, na {total}, splatná {due}.",
+  "The venue":"Podnik",
+
+  /* ---- inviting by email ---- */
+  "Email it to (optional)":"Poslat e-mailem na (nepovinné)",
+  "them@example.com":"nekdo@priklad.cz",
+  "Leave it blank and you just get the code to pass on yourself.":
+    "Nech prázdné a dostaneš jen kód, který předáš sám(a).",
+  "{venue} has given you a room-booking code":"{venue} ti dal(a) kód pro rezervaci místností",
+  "You have been invited to book rooms at {venue}.":"Byl(a) jsi pozván(a) rezervovat místnosti v {venue}.",
+  "Your code:":"Tvůj kód:",
+  "Open the link, make an account, and put the code in when it asks.":
+    "Otevři odkaz, založ si účet a kód zadej, až se na něj appka zeptá.",
+  "Queued an email to {who} with the code in it — it leaves when the venue's mail is switched on.":
+    "E-mail s kódem pro {who} je ve frontě — odejde, až bude pošta podniku zapnutá.",
+  "The email could not be queued, so pass the code on yourself.":
+    "E-mail se nepodařilo zařadit do fronty, předej kód sám(a).",
+
+  /* ---- the lesson that holds a room ---- */
+  "Lesson":"Hodina"
 });
 
 </script>

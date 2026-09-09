@@ -237,6 +237,41 @@ service cloud.firestore {
       allow update: if false;
     }
 
+    // ---------- the outbox ----------
+    // Notifications the app has composed but cannot itself send: a static
+    // page has no mail server. Documents here are written in the shape
+    // Firebase's "Trigger Email from Firestore" extension consumes, so
+    // installing that extension against this collection is what actually
+    // puts them on the wire.
+    //
+    // The one thing that matters here is that this is NOT an open relay.
+    // Only a MEMBER of the venue named on the document may create one, which
+    // is why a guest's own device never queues its own mail — an admin's
+    // device does it for them on the next sweep. Without that check anyone
+    // with an anonymous account could use a venue's mail extension to send
+    // whatever they liked to whoever they liked, over the venue's domain.
+    //
+    // Nobody reads anybody's mail: only staff, and only to count what is
+    // waiting. The extension runs with admin rights and ignores these rules,
+    // so restricting reads costs it nothing.
+    match /roomMail/{id} {
+      allow get, list: if signedIn() && rbIsAdmin(resource.data.orgId);
+      allow create: if signedIn()
+        && request.resource.data.orgId is string
+        && rbIsMember(request.resource.data.orgId)
+        && rbMe(request.resource.data.orgId).role != 'viewer'
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.to is list
+        && request.resource.data.to.size() <= 5
+        && request.resource.data.message.subject is string
+        && request.resource.data.message.text is string;
+      // The extension stamps its own delivery state on the document, which it
+      // does with admin rights. Nothing in the app may rewrite a queued
+      // message, and only staff may clear one out.
+      allow update: if false;
+      allow delete: if signedIn() && rbIsAdmin(resource.data.orgId);
+    }
+
     // ---------- the venue ----------
     match /roomOrgs/{orgId} {
       // Any signed-in account may read the venue itself: a guest arriving on
