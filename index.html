@@ -16448,8 +16448,12 @@ $("#pvBody").addEventListener("click",async e=>{
   if(si){ hxFilter=openIssuesFor(si.dataset.seeill).length?"open":"all"; show("health"); return; }
   if(oi){ openIssuePage(oi.dataset.openill); return; }
   const tc=q("takecut");
-  if(tc){ openCutDlg(); $("#cutFrom").value=tc.dataset.takecut;
-    $("#cutSpWrap").hidden=true; syncCutMethod(); return; }
+  /* Preselect the plant you pressed this on. It used to poke the old #cutFrom
+     <select> directly; that select no longer exists, so the assignment threw on
+     null and took the rest of this handler down with it. setCutSrc is the one
+     way in now — it sets both halves of the choice, repaints the list and syncs
+     the method, so there is nothing left here to keep in step by hand. */
+  if(tc){ openCutDlg(); setCutSrc(tc.dataset.takecut,""); return; }
   const aa=q("addact"), at=q("acttog");
   if(aa){ openAction(); return; }
   if(at){
