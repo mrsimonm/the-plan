@@ -4609,6 +4609,19 @@ html[data-shell="rail"] body{
             <input id="pdMax" type="number" step="0.05" min="0" inputmode="decimal" placeholder="max">
           </div>
           <p class="hint">Optional. If you set a range, the lineup editor flags a dose outside it.</p></div>
+        <!-- What the bottle cost and how big it is. Together these are the only
+             way to turn "you used 27 ml of this" into "that was 34 Kč" — and
+             the cost per litre of mix is the number that actually decides
+             whether a feeding regime is affordable. -->
+        <div class="grid2">
+          <div class="field"><label for="pdPrice">What it cost</label>
+            <input id="pdPrice" type="number" min="0" step="1" inputmode="decimal" placeholder="—"></div>
+          <div class="field"><label for="pdCur">Currency</label>
+            <select id="pdCur"></select></div>
+        </div>
+        <div class="field"><label for="pdPack">Bottle or bag size <span id="pdPackUnit">(ml)</span></label>
+          <input id="pdPack" type="number" min="0" step="1" inputmode="decimal" placeholder="1000">
+          <p class="hint" id="pdCostHint" style="margin:6px 0 0"></p></div>
         <div class="field" id="pdDensField"><label for="pdDens">Density (g/ml)</label>
           <input id="pdDens" type="number" step="0.01" min="0.5" max="2" value="1.1" inputmode="decimal">
           <p class="hint">Only affects the ppm and EC estimates. Leave it if the bottle doesn't say.</p></div>
@@ -9505,6 +9518,18 @@ function migrate(d){
     }
   });
 
+  /* v12: tie a grown plant to the plant it came off by ID rather than by the
+     name it was christened from. The name was all v11 had to go on, but it is
+     the one field anyone edits — rename a parent and its offspring would
+     quietly detach from it, taking the "what this plant has produced" figures
+     with them. Fills only where the link is missing, so it never overrules one
+     already established. */
+  d.subjects.forEach(x=>{
+    if(!x||x.module!=="plants"||x.acq!=="grown"||x.parentId||!x.from) return;
+    const parent=d.subjects.find(y=>y!==x&&y.module==="plants"&&y.name===x.from);
+    if(parent) x.parentId=parent.id;
+  });
+
   /* v8: pests, diseases and disorders. An issue whose plant has gone is dropped
      — it describes something that happened TO a plant, so without the plant it
      is not a record of anything. Status is closed to the three the UI can draw:
@@ -10965,7 +10990,7 @@ async function promoteCutting(c){
     light:sp?sp.l:null,hum:sp?sp.h:null,spot:"",detail:"",since:ymd(Date.now()),schedId:null,week:1,
     anchor:leastLoadedActionDay(),
     acq:"grown", price:0, from:parent?parent.name:"", bought:ymd(Date.now()),
-    cur:parent?plantCur(parent):"CZK"});
+    cur:parent?plantCur(parent):"CZK", parentId:parent?parent.id:null});
   if(sp){
     S.routines.push({id:uid(),subjectId:sid,kind:"water",name:"Water",every:sp.w});
     S.routines.push({id:uid(),subjectId:sid,kind:"feed",name:"Feed",every:sp.f});
@@ -24106,7 +24131,36 @@ $("#pdForm").addEventListener("change",async()=>{
   const liq=$("#pdForm").value==="liquid";
   $("#pdDensField").style.display=(liq&&adv())?"":"none";
   $("#doseUnit").textContent=liq?"(ml/L)":"(g/L)";
+  $("#pdPackUnit").textContent=liq?"(ml)":"(g)";
+  prodCostHint();
 });
+/* What this bottle works out at per dose — the figure that turns a price tag
+   into something you can compare between products, since a cheap concentrate
+   used at 4 ml/L can easily cost more per tank than a dear one used at 0.5. */
+function prodCostHint(){
+  const cs=L.lang==="cs", liq=$("#pdForm").value==="liquid";
+  const price=+$("#pdPrice").value||0, pack=+$("#pdPack").value||0;
+  const dose=+$("#pdDose").value||0, cur=CURRENCIES[$("#pdCur").value]?$("#pdCur").value:"CZK";
+  const el=$("#pdCostHint"); if(!el) return;
+  if(!(price>0&&pack>0)){
+    el.textContent=cs
+      ? "Cena a objem jsou nepovinné — bez nich se ve statistikách počítá jen spotřeba, ne peníze."
+      : "Both optional — without them Stats counts how much you used, but not what it cost.";
+    return;
+  }
+  const perUnit=toCZK(price,cur)/pack;
+  const unit=liq?"ml":"g";
+  const perL=dose>0?perUnit*dose:0;
+  el.textContent=(cs
+    ? `${moneyFine(perUnit)} za ${unit}`
+    : `${moneyFine(perUnit)} per ${unit}`)
+    + (perL>0?(cs?` · ${moneyFine(perL)} na litr roztoku při ${dose} ${unit}/l.`
+                 :` · ${moneyFine(perL)} per litre of mix at ${dose} ${unit}/L.`):".");
+}
+["#pdPrice","#pdPack","#pdCur","#pdDose"].forEach(id=>{
+  const el=$(id); if(el) el.addEventListener("input",prodCostHint);
+});
+if($("#pdCur")) $("#pdCur").addEventListener("change",prodCostHint);
 function openProd(p){
   editingProd=p;
   $("#prodViewTitle").textContent=p?"Edit product":"New product";
@@ -24118,6 +24172,10 @@ function openProd(p){
   $("#pdN").value=g("n"); $("#pdP").value=g("p"); $("#pdK").value=g("k");
   $("#pdCa").value=g("ca"); $("#pdMg").value=g("mg"); $("#pdSi").value=g("si");
   $("#pdDens").value=g("dens",1.1); $("#pdBio").checked=!!g("bio",false);
+  $("#pdPrice").value=g("price")||""; $("#pdPack").value=g("pack")||"";
+  $("#pdCur").innerHTML=Object.keys(CURRENCIES).map(c=>
+    `<option value="${c}"${(CURRENCIES[g("cur")]?g("cur"):"CZK")===c?" selected":""}>${
+      esc(CURRENCIES[c].sym)} ${esc(c)}</option>`).join("");
   catHint(); $("#pdForm").dispatchEvent(new Event("change"));
   applyAdvanced();
   show("product");
@@ -24133,7 +24191,9 @@ $("#prodSave").addEventListener("click",async()=>{
     cat:$("#pdCat").value,form:$("#pdForm").value,
     dose:+$("#pdDose").value||0,doseMin:num("#pdMin"),doseMax:num("#pdMax"),
     n:num("#pdN"),p:num("#pdP"),k:num("#pdK"),ca:num("#pdCa"),mg:num("#pdMg"),si:num("#pdSi"),
-    dens:+$("#pdDens").value||1.1,bio:$("#pdBio").checked};
+    dens:+$("#pdDens").value||1.1,bio:$("#pdBio").checked,
+    price:Math.max(0,+$("#pdPrice").value||0), pack:Math.max(0,+$("#pdPack").value||0),
+    cur:CURRENCIES[$("#pdCur").value]?$("#pdCur").value:"CZK"};
   if(editingProd) Object.assign(editingProd,d);
   else S.products.push(Object.assign({id:uid()},d));
   touch(); renderShelf(); renderMix(); show("shelf");
@@ -38152,6 +38212,18 @@ function money(czk,cur){
     {minimumFractionDigits:d.dp,maximumFractionDigits:d.dp});
   return d.after?`${n} ${d.sym}`:`${d.sym}${n}`;
 }
+/* Crowns are quoted whole, which is right for a plant and useless for a
+   millilitre: a fertiliser costing 0.42 Kč/ml renders as "0 Kč", which is the
+   one number the per-dose hint exists to show. So small amounts keep enough
+   decimals to say something, and large ones stay clean. */
+function moneyFine(czk,cur){
+  const c=cur||showCur(), d=CURRENCIES[c]||CURRENCIES.CZK;
+  const v=fromCZK(+czk||0,c), a=Math.abs(v);
+  const dp=a>=100?d.dp:a>=1?Math.max(d.dp,2):3;
+  const n=v.toLocaleString(locale(),
+    {minimumFractionDigits:Math.min(d.dp,dp), maximumFractionDigits:dp});
+  return d.after?`${n} ${d.sym}`:`${d.sym}${n}`;
+}
 /* How a plant arrived. Only the money matters to the totals, but the kind is
    what separates "the collection cost me this" from "the collection grew this
    for itself", which is the more interesting of the two numbers. */
@@ -38266,8 +38338,20 @@ function feedUse(ev){
     .map(s=>({pid:s.p.id,name:s.p.name,qty:s.total,unit:s.unit}));
 }
 /* totals per product across a window of the log */
+/* What one millilitre or gram of a product costs, in crowns. A bottle price on
+   its own says nothing useful — a cheap concentrate used at 4 ml/L can easily
+   cost more per tank than a dear one used at 0.5 — so the price only becomes
+   comparable once it is divided by what is in the bottle. */
+function unitCostCZK(p){
+  const price=+(p&&p.price)||0, pack=+(p&&p.pack)||0;
+  if(!(price>0&&pack>0)) return 0;
+  return toCZK(price, CURRENCIES[p.cur]?p.cur:"CZK")/pack;
+}
+/* what one logged feed cost, from the amounts it used */
+const feedCostCZK=ev=>feedUse(ev).reduce((a,u)=>a+u.qty*unitCostCZK(prod(u.pid)),0);
+
 function fertTotals(sinceTs){
-  const by={}; let feeds=0, litres=0, est=0, estLitres=0;
+  const by={}; let feeds=0, litres=0, est=0, estLitres=0, cost=0;
   (S.events||[]).forEach(e=>{
     if((e.kind||e.type)!=="feed") return;
     if(sinceTs!=null&&+new Date(e.at)<sinceTs) return;
@@ -38275,12 +38359,59 @@ function fertTotals(sinceTs){
     if(e.volEst){ est++; estLitres+=+e.volL||0; }
     feedUse(e).forEach(u=>{
       const k=u.pid;
-      if(!by[k]) by[k]={name:u.name,unit:u.unit,qty:0};
+      if(!by[k]) by[k]={name:u.name,unit:u.unit,qty:0,cost:0,pid:k};
       by[k].qty+=u.qty;
+      const c=u.qty*unitCostCZK(prod(k));
+      by[k].cost+=c; cost+=c;
     });
   });
-  return {rows:Object.keys(by).map(k=>by[k]).sort((a,b)=>b.qty-a.qty),
-          feeds, litres, est, estLitres};
+  const rows=Object.keys(by).map(k=>by[k]).sort((a,b)=>b.qty-a.qty);
+  /* a total is only honest if it says what it could not see */
+  const unpriced=rows.filter(r=>!unitCostCZK(prod(r.pid))).length;
+  return {rows, feeds, litres, est, estLitres, cost, unpriced};
+}
+
+/* ============================================================================
+   WHAT THE COLLECTION PRODUCES
+
+   A houseplant collection is the rare kind of asset that makes more of itself.
+   Every plant here already knows what it cost and every rooted cutting knows
+   which plant it came off, so the interesting question — has this Monstera paid
+   for itself in cuttings? — is only a join away.
+
+   Matched on parentId, falling back to the name a cutting was christened from
+   for anything predating that link.
+   ========================================================================= */
+function propValue(){
+  const plants=subjectsIn("plants"), byKey={};
+  const keyFor=(parent,label)=>{
+    const k=parent?parent.id:("name:"+(label||"?"));
+    if(!byKey[k]) byKey[k]={parent, name:parent?parent.name:(label||"—"),
+      kids:0, worth:0, going:0};
+    return byKey[k];
+  };
+  plants.filter(isGrown).forEach(g=>{
+    const parent=(g.parentId&&subject(g.parentId))
+      || plants.find(p=>p!==g&&g.from&&p.name===g.from) || null;
+    if(!parent&&!g.from) return;         // a cutting with no known origin says nothing
+    const row=keyFor(parent,g.from);
+    row.kids++; row.worth+=worthCZK(g);
+  });
+  /* batches still on the windowsill — not value yet, but worth seeing beside it */
+  (S.cuttings||[]).forEach(c=>{
+    if(!c) return;
+    const going=cutSlots(c).filter(s=>s==="in"||s==="rooted").length;
+    if(!going) return;
+    const parent=c.subjectId?subject(c.subjectId):null;
+    if(!parent&&!c.species) return;
+    keyFor(parent,c.species).going+=going;
+  });
+  const rows=Object.keys(byKey).map(k=>byKey[k])
+    .sort((a,b)=>b.worth-a.worth||b.kids-a.kids);
+  return {rows,
+    total: rows.reduce((a,r)=>a+r.worth,0),
+    kids:  rows.reduce((a,r)=>a+r.kids,0),
+    going: rows.reduce((a,r)=>a+r.going,0)};
 }
 
 /* ---- the two new statistics cards ---- */
@@ -38351,7 +38482,44 @@ function moneyStatsCard(){
           <span class="arow-sub">${esc(cs?`${plural(free.length,"plant")} darem nebo výměnou`
             :`${plural(free.length,"plant")} given or swapped`)}</span>
         </div>`:""}
-      </div></div>`:""}`;
+      </div></div>`:""}
+    ${(()=>{
+      const pv=propValue();
+      if(!pv.rows.length) return "";
+      /* Has this plant paid for itself? Only askable where it has a price of
+         its own, so the ratio is shown per row and never as a headline that
+         would quietly average over plants that were never priced. */
+      /* Only a real plant can be named as a producer. A cutting whose origin is
+         just typed text ("own cutting", a friend's name) still counts towards
+         the total below — it is value the collection grew — but listing that
+         text as if it were a plant in the collection would be a lie about what
+         the row is. */
+      const bars=pv.rows.filter(r=>r.parent&&r.worth>0).slice(0,6).map(r=>{
+        const paid=r.parent?paidCZK(r.parent):0;
+        const note=[plural(r.kids,"plant"),
+          paid>0?`${Math.round(r.worth/paid*100)}% ${cs?"z ceny":"of its price"}`:""]
+          .filter(Boolean).join(" · ");
+        return [r.name, r.worth, note];
+      });
+      return `<div style="margin-top:15px">
+        <span class="eyebrow" style="display:block;margin-bottom:7px">${
+          esc(cs?"Co sbírka vypěstovala":"What it has produced")}</span>
+        ${bars.length?moneyBars(bars):""}
+        <div class="stack" style="gap:6px${bars.length?";margin-top:8px":""}">
+          <div class="arow">
+            <span class="arow-name">${esc(pv.total>0?money(pv.total):"—")}</span>
+            <span class="arow-sub">${esc(cs
+              ? `z ${plural(pv.kids,"plant")}, které si sbírka vypěstovala sama`
+              : `across ${plural(pv.kids,"plant")} the collection raised itself`)}</span>
+          </div>
+          ${pv.going?`<div class="arow">
+            <span class="arow-name">${esc(String(pv.going))}</span>
+            <span class="arow-sub">${esc(cs
+              ? "řízků právě zakořeňuje — hodnota se přičte, až je přesadíš"
+              : "cuttings still rooting — they count once you pot them on")}</span>
+          </div>`:""}
+        </div></div>`;
+    })()}`;
   return sCard("What it's worth", inner,
     priced.length<plants.length
       ? "Only priced plants count. Anything with no price is left out of both totals rather than guessed at."
@@ -38366,16 +38534,26 @@ function fertStatsCard(){
       : "Nothing yet. Log a feed from the Bench with a volume and a formula, and the amounts work themselves out.")}</p>`);
   const rows=all.rows.map(r=>[r.name, Math.round(r.qty*10)/10, r.unit]);
   const mRows=month.rows.map(r=>[r.name, Math.round(r.qty*10)/10, r.unit]);
+  const priced=all.rows.filter(r=>unitCostCZK(prod(r.pid))>0);
   const inner=`<div class="statrow q">
       ${statCell(all.feeds,cs?"krmení":"feeds")}
       ${statCell(oneDp(all.litres)+" L",cs?"namícháno":"mixed")}
-      ${statCell(all.rows.length,cs?"produktů":"products")}
-      ${statCell(oneDp(all.feeds?all.litres/all.feeds:0)+" L",cs?"průměr":"average")}
+      ${all.cost>0
+        ? statCell(money(all.cost),cs?"za hnojivo":"on fertiliser")
+        : statCell(all.rows.length,cs?"produktů":"products")}
+      ${all.cost>0
+        ? statCell(money(all.feeds?all.cost/all.feeds:0),cs?"za krmení":"a feed")
+        : statCell(oneDp(all.feeds?all.litres/all.feeds:0)+" L",cs?"průměr":"average")}
     </div>
     <div style="margin-top:15px">
       <span class="eyebrow" style="display:block;margin-bottom:7px">${esc(cs?"Celkem spotřebováno":"Used in total")}</span>
       ${barList(rows)}
     </div>
+    ${priced.length?`<div style="margin-top:15px">
+      <span class="eyebrow" style="display:block;margin-bottom:7px">${esc(cs?"Co to stálo":"What that cost")}</span>
+      ${moneyBars(priced.sort((a,b)=>b.cost-a.cost)
+        .map(r=>[r.name, r.cost, (Math.round(r.qty*10)/10)+r.unit]))}
+    </div>`:""}
     ${mRows.length?`<div style="margin-top:15px">
       <span class="eyebrow" style="display:block;margin-bottom:7px">${esc(cs?"Posledních 30 dní":"Last 30 days")}</span>
       ${barList(mRows)}
@@ -38383,11 +38561,17 @@ function fertStatsCard(){
   /* Say plainly how much of this is measured and how much inferred. A total
      that hides the difference is the kind of number people plan around and
      should not. */
-  const note=all.est
+  const priceNote=all.unpriced
+    ? (all.unpriced===1
+        ? ` One of the ${all.rows.length} products has no bottle price yet, so it adds nothing to the money — put one on the Shelf and it joins in.`
+        : ` ${all.unpriced} of the ${all.rows.length} products have no bottle price yet, so they add nothing to the money — put prices on the Shelf and they join in.`)
+    : "";
+  const note=(all.est
     ? (all.est===all.feeds
         ? `Every one of these feeds was ticked off without a volume, so the amounts come from each plant's own pour — its pot size and substrate. Open a feed in the Log to put the real figure in.`
         : `${all.feeds-all.est} of ${all.feeds} feeds were measured on the Bench; the other ${all.est} ${all.est===1?"was":"were"} ticked off without a volume and ${all.est===1?"uses the plant's":"use each plant's"} own pour instead. Correct ${all.est===1?"it":"any of them"} in the Log.`)
-    : "Worked out from the volume, formula and strength of every feed you logged — not a separate tally to keep. Correct a feed's volume in the Log and these move with it.";
+    : "Worked out from the volume, formula and strength of every feed you logged — not a separate tally to keep. Correct a feed's volume in the Log and these move with it.")
+    + priceNote;
   return sCard("Fertiliser used", inner, note);
 }
 
