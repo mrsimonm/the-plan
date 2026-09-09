@@ -4299,7 +4299,7 @@ html[data-shell="rail"] body{
 <div class="navwrap"><nav class="nav" role="tablist">
   <button role="tab" aria-selected="true"  data-view="garden">Garden</button>
   <button role="tab" aria-selected="false" data-view="mix">Bench</button>
-  <button role="tab" aria-selected="false" data-view="cuttings">Grow</button>
+  <button role="tab" aria-selected="false" data-view="cuttings">Propagation</button>
   <button role="tab" aria-selected="false" data-view="plan">Diary</button>
   <button role="tab" aria-selected="false" data-view="library">Library</button>
   <button role="tab" aria-selected="false" data-view="stats">Stats</button>
@@ -6956,14 +6956,32 @@ html[data-shell="rail"] body{
 <dialog id="cutDlg"><form id="cutForm">
   <h3 class="dlg-head">Start something off</h3>
   <div class="dlg-body">
-    <div class="field"><label for="cutFrom">From</label><select id="cutFrom"></select></div>
-    <div class="field" id="cutSpWrap" hidden><label for="cutSp">What is it?</label>
-      <select id="cutSp"></select></div>
+    <!-- One searchable list instead of a plant dropdown plus a species dropdown
+         you only saw if you picked "not one of mine". Your own plants come
+         first, then the catalogue; and anything that isn't in either can be
+         typed and added, because the plant in your hand does not care whether
+         this app has heard of it. -->
+    <div class="field"><label for="cutSrcSearch">What are you taking it from?</label>
+      <div class="sp-pick">
+        <div class="sp-search">
+          <input id="cutSrcSearch" type="search" autocomplete="off" enterkeyhint="done"
+                 placeholder="Search your plants and species…" aria-controls="cutSrcList">
+          <button type="button" class="sp-add" id="cutSrcAdd" aria-pressed="false"
+                  title="Not in the list? Add it yourself"
+                  aria-label="Add something that is not in the list">+</button></div>
+        <div class="sp-list" id="cutSrcList" role="listbox" aria-label="Source"></div>
+      </div>
+      <input type="hidden" id="cutFromId"><input type="hidden" id="cutSpecies">
+      <p class="hint" id="cutSrcHint" style="margin:6px 0 0"></p></div>
     <div class="grid2">
       <div class="field"><label for="cutMethod">How</label><select id="cutMethod"></select></div>
       <div class="field"><label for="cutN">How many</label>
         <input id="cutN" type="number" min="1" max="99" value="3" inputmode="numeric"></div>
     </div>
+    <div class="field"><label for="cutLeaves">Leaves on each</label>
+      <input id="cutLeaves" type="number" min="0" max="99" inputmode="numeric" placeholder="—">
+      <p class="hint" style="margin:6px 0 0">Optional. A cutting with too few leaves has nothing to
+        photosynthesise with; too many and it wilts before it can root.</p></div>
     <p class="hint" id="cutHint" style="margin:-4px 0 0"></p>
     <div class="field"><label for="cutWhen">Taken on</label><input id="cutWhen" type="date"></div>
     <div class="field"><label for="cutNote">Note</label>
@@ -11033,11 +11051,29 @@ function renderCuttings(){
     if(cutCount(c,"rooted")) bit(cutCount(c,"rooted"),"rooted","zakořeněno");
     if(cutCount(c,"potted")) bit(cutCount(c,"potted"),"potted","zasazeno");
     if(cutCount(c,"lost")) bit(cutCount(c,"lost"),"lost","padlo");
+    /* Everything a batch knows, on the batch. It used to say only its method,
+       its age and its tallies, so the two things you actually want when you
+       walk up to a jar — is it due to have rooted by now, and what did I
+       actually do here — lived only inside the batch page. */
+    const cs=L.lang==="cs";
+    const due=m.hi?(days>=m.hi
+        ? (cs?`mělo už zakořenit`:`should have rooted by now`)
+        : (cs?`kořeny obvykle ${Math.max(0,(m.lo||m.hi)-days)}–${Math.max(0,m.hi-days)} dní`
+             :`roots usually ${Math.max(0,(m.lo||m.hi)-days)}–${Math.max(0,m.hi-days)} days away`))
+      :"";
+    const facts=[
+      c.leaves>0?(cs?`${plural(c.leaves,"leaf")} na řízek`:`${plural(c.leaves,"leaf")} each`):"",
+      cs?`vzato ${new Date(fromYmd(c.at)).toLocaleDateString(locale(),{day:"numeric",month:"short"})}`
+        :`taken ${new Date(fromYmd(c.at)).toLocaleDateString(locale(),{day:"numeric",month:"short"})}`,
+      due
+    ].filter(Boolean);
     return `<div class="cutrow${asked?" asked":""}">
       <button type="button" class="cutrow-top" data-open-batch="${c.id}">
         <span class="cutrow-name">${esc(cutName(c))}</span>
         <span class="cutrow-sub">${esc(t(m.l).toLowerCase())} · ${L.lang==="cs"?"den":"day"} ${days} · ${
           esc(bits.join(" · "))}</span>
+        <span class="cutrow-sub" style="opacity:.75">${esc(facts.join(" · "))}${
+          c.note?` · ${esc(c.note)}`:""}</span>
         <span class="chev" aria-hidden="true">›</span>
       </button>
       <div class="slots">${cutSlots(c).map((st,i)=>
@@ -11086,24 +11122,106 @@ function renderCuttings(){
    that page and pressed the button there has chosen the method deliberately,
    and having the dialog quietly switch it back to the default would read as
    the button not having worked. */
+/* ---- the source picker ------------------------------------------------------
+   One searchable list where there were two dropdowns, the second of which only
+   appeared if you had already picked "not one of mine" in the first.
+
+   The choice is held in two hidden fields rather than one, because a cutting off
+   YOUR Monstera and a cutting off "a Monstera, somewhere" are different facts:
+   only the first can be credited to a parent when the value it grows into is
+   worked out later. Picking a plant records both; picking or typing a species
+   records only the name. */
+let cutSrcQuery="";
+function renderCutSrcList(){
+  const q=cutSrcQuery.trim().toLowerCase();
+  const fromId=$("#cutFromId").value, sp=$("#cutSpecies").value;
+  const mine=subjectsIn("plants").filter(p=>!q||
+    [p.name,p.species,p.spot].filter(Boolean).join(" ").toLowerCase().includes(q));
+  let html="", hits=mine.length;
+  if(mine.length){
+    html+=`<div class="sp-g">${esc(t("Your plants"))}</div>`+mine.map(p=>
+      `<button type="button" class="sp-o" role="option" data-cutp="${p.id}"
+        aria-selected="${p.id===fromId}"><span>${spLabel(p.name,q)}${
+        p.species&&p.species!==p.name
+          ? ` <em style="font-style:normal;opacity:.55">${esc(p.species)}</em>`:""}</span></button>`).join("");
+  }
+  SPECIES.forEach(g=>{
+    const list=q?g.list.filter(x=>x.n.toLowerCase().includes(q)):g.list;
+    if(!list.length) return;
+    hits+=list.length;
+    html+=`<div class="sp-g">${esc(g.g)}</div>`+list.map(x=>
+      `<button type="button" class="sp-o" role="option" data-cutsp="${esc(x.n)}"
+        aria-selected="${!fromId&&x.n===sp}"><span>${spLabel(x.n,q)}</span></button>`).join("");
+  });
+  if(!hits) html=`<p class="sp-none">${L.lang==="cs"
+      ? `Nic neodpovídá „${esc(cutSrcQuery.trim())}“.`
+      : `Nothing matches “${esc(cutSrcQuery.trim())}”.`}<br>${esc(t("Tap + to add it yourself."))}</p>`;
+  $("#cutSrcList").innerHTML=html;
+  /* the + reads as chosen only when what you typed is genuinely your own name
+     for something, not merely a species that happens to be off-list */
+  $("#cutSrcAdd").setAttribute("aria-pressed",String(!fromId&&!!sp&&!speciesFind(sp)));
+}
+function cutSrcHint(){
+  const cs=L.lang==="cs", el=$("#cutSrcHint"); if(!el) return;
+  const p=$("#cutFromId").value?subject($("#cutFromId").value):null;
+  const sp=$("#cutSpecies").value;
+  el.textContent = p
+    ? (cs?`Řízek z tvé „${p.name}“ — co z něj vyroste, se připíše jí.`
+         :`Off your own ${p.name} — whatever it grows into is credited to that plant.`)
+    : sp
+      ? (cs?`${sp} — není to tvoje rostlina, takže se hodnota nikomu nepřipíše.`
+           :`${sp} — not one of your plants, so nothing gets credited to a parent.`)
+      : (cs?"Vyber rostlinu nebo druh, nebo napiš vlastní a klepni na +."
+           :"Pick one of your plants or a species — or type your own and tap +.");
+}
+function setCutSrc(plantId,species){
+  $("#cutFromId").value=plantId||"";
+  $("#cutSpecies").value=species||"";
+  cutSrcQuery=""; $("#cutSrcSearch").value="";
+  renderCutSrcList(); syncCutMethod(); cutSrcHint();
+}
+$("#cutSrcSearch").addEventListener("input",e=>{
+  cutSrcQuery=e.target.value; renderCutSrcList();
+});
+/* Enter in a form submits it — here it should take the first match, or, when
+   nothing matched, mean the only thing left it can mean: add what you typed */
+$("#cutSrcSearch").addEventListener("keydown",e=>{
+  if(e.key==="Escape"&&e.target.value){
+    e.preventDefault(); e.stopPropagation();
+    e.target.value=""; cutSrcQuery=""; renderCutSrcList(); return;
+  }
+  if(e.key!=="Enter") return;
+  e.preventDefault();
+  const first=$("#cutSrcList").querySelector(".sp-o");
+  if(first) first.click(); else $("#cutSrcAdd").click();
+});
+$("#cutSrcAdd").addEventListener("click",()=>{
+  const typed=$("#cutSrcSearch").value.trim();
+  if(!typed){ $("#cutSrcSearch").focus(); return; }
+  setCutSrc("",typed);
+});
+$("#cutSrcList").addEventListener("click",e=>{
+  const p=e.target.closest("[data-cutp]"), s=e.target.closest("[data-cutsp]");
+  if(p){ const pl=subject(p.dataset.cutp); setCutSrc(pl?pl.id:"", pl?(pl.species||""):""); return; }
+  if(s) setCutSrc("", s.dataset.cutsp);
+});
+
 function openCutDlg(presetMethod){
-  const plants=subjectsIn("plants");
-  $("#cutFrom").innerHTML=plants.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("")
-    +'<option value="__other">Not one of mine</option>';
-  $("#cutSp").innerHTML='<option value="">— pick one —</option>'
-    +SPECIES.map(g=>`<optgroup label="${esc(g.g)}">`
-      +g.list.map(x=>`<option value="${esc(x.n)}">${esc(x.n)}</option>`).join("")+`</optgroup>`).join("");
   $("#cutMethod").innerHTML=METHOD_KEYS.map(k=>`<option value="${k}">${esc(METHODS[k].l)}</option>`).join("");
-  $("#cutSpWrap").hidden=plants.length>0;
   $("#cutWhen").value=ymd(Date.now());
-  $("#cutN").value=3; $("#cutNote").value="";
-  syncCutMethod();
-  /* after syncCutMethod, or it would be overwritten by the recommendation */
+  $("#cutN").value=3; $("#cutNote").value=""; $("#cutLeaves").value="";
+  const first=subjectsIn("plants")[0];
+  setCutSrc(first?first.id:"", "");
+  /* after setCutSrc, or the species' recommendation would overwrite it */
   if(presetMethod&&METHODS[presetMethod]){
     $("#cutMethod").value=presetMethod;
     cutMethodHint(presetMethod);
   }
   $("#cutDlg").showModal();
+  setTimeout(()=>{
+    const el=$("#cutSrcList").querySelector('[aria-selected="true"]');
+    if(el) el.scrollIntoView({block:"center"});
+  },40);
 }
 function cutMethodHint(k){
   const m=METHODS[k];
@@ -11112,18 +11230,12 @@ function cutMethodHint(k){
 }
 /* pick the method the care sheet already recommends */
 function syncCutMethod(){
-  const v=$("#cutFrom").value;
-  const sp = v==="__other" ? speciesFind($("#cutSp").value)
-           : (()=>{ const p=subject(v); return p?speciesFind(p.species):null; })();
+  const p=$("#cutFromId").value?subject($("#cutFromId").value):null;
+  const sp=p?speciesFind(p.species):speciesFind($("#cutSpecies").value);
   if(sp) $("#cutMethod").value=methodFor(sp);
   cutMethodHint($("#cutMethod").value);
 }
-$("#cutFrom").addEventListener("change",()=>{
-  $("#cutSpWrap").hidden=$("#cutFrom").value!=="__other";
-  syncCutMethod();
-});
-$("#cutSp").addEventListener("change",syncCutMethod);
-$("#cutMethod").addEventListener("change",syncCutMethod);
+$("#cutMethod").addEventListener("change",()=>cutMethodHint($("#cutMethod").value));
 $("#addCut").addEventListener("click",()=>openCutDlg());
 $("#cutBody").addEventListener("click",async e=>{
   if(e.target.closest("#cutFirst")){ openCutDlg(); return; }
@@ -11150,14 +11262,17 @@ function bumpCut(key){
 }
 $("#cutForm").addEventListener("submit",e=>{
   e.preventDefault();
-  const from=$("#cutFrom").value;
-  const p=from&&from!=="__other"?subject(from):null;
+  const p=$("#cutFromId").value?subject($("#cutFromId").value):null;
+  const species=p?(p.species||""):$("#cutSpecies").value.trim();
+  /* a batch with no source at all has nothing to call itself later */
+  if(!p&&!species){ say("Pick what you're taking it from, or type a name and tap +."); return; }
+  const n=Math.max(1,+$("#cutN").value||1);
   S.cuttings=S.cuttings||[];
-  S.cuttings.push({id:uid(), subjectId:p?p.id:null,
-    species:p?(p.species||""):$("#cutSp").value,
-    method:$("#cutMethod").value, n:Math.max(1,+$("#cutN").value||1),
+  S.cuttings.push({id:uid(), subjectId:p?p.id:null, species,
+    method:$("#cutMethod").value, n,
+    leaves:Math.max(0,+$("#cutLeaves").value||0),
     at:$("#cutWhen").value||ymd(Date.now()),
-    slots:Array.from({length:Math.max(1,+$("#cutN").value||1)},()=>"in"),
+    slots:Array.from({length:n},()=>"in"),
     note:$("#cutNote").value.trim(), by:L.me});
   touch(); renderCuttings(); $("#cutDlg").close();
 });
@@ -20383,8 +20498,13 @@ const PLU={
   month:["měsíc","měsíce","měsíců"], year:["rok","roky","let"],
   item:["položka","položky","položek"]
 };
+/* English irregulars. Adding an "s" is right for almost every noun this app
+   counts and wrong for the one it counts most — a plant app that says "3 leafs"
+   has undermined itself before it gets to the number. */
+const PLU_EN={leaf:"leaves"};
 const plural=(n,w)=>L.lang==="cs"&&PLU[w]
-  ? `${n} ${pl3(n,...PLU[w])}` : `${n} ${w}${n===1?"":"s"}`;
+  ? `${n} ${pl3(n,...PLU[w])}`
+  : `${n} ${n===1?w:(PLU_EN[w]||w+"s")}`;
 function successRate(list){
   let taken=0,potted=0,settled=0;
   list.forEach(c=>{ cutSlots(c).forEach(x=>{ taken++;
@@ -25331,7 +25451,7 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "Weekly feed while it's pushing new leaves":"Týdenní hnojení, dokud žene nové listy",
 "Organic vegetative base feed. Sugar-beet derived, feeds the soil life rather than the plant directly.":"Organické základní hnojivo pro vegetaci. Vyrobené z cukrové řepy, živí spíš půdní život než přímo rostlinu.",
 /* ---- chrome, tabs, buttons ---- */
-"Garden":"Zahrada","Bench":"Ponk","Grow":"Množení","Diary":"Deník","Library":"Knihovna",
+"Garden":"Zahrada","Bench":"Ponk","Propagation":"Množení","Diary":"Deník","Library":"Knihovna",
 "Academy":"Akademie","Shelf":"Police","Plant":"Rostlina","All plants":"Všechny rostliny",
 "Propagation":"Množení","Schedule":"Plán","Schedules":"Plány","Log":"Záznamy",
 "Settings":"Nastavení","Language":"Jazyk","local":"lokálně","Daily Planner":"Denní plánovač",
@@ -33580,7 +33700,7 @@ const DZ_ITEMS=[
   {g:"Bench", items:[
     {k:"garden",   app:"bench", view:"garden",   en:"Garden"},
     {k:"mix",      app:"bench", view:"mix",      en:"Bench"},
-    {k:"cuttings", app:"bench", view:"cuttings", en:"Grow"},
+    {k:"cuttings", app:"bench", view:"cuttings", en:"Propagation"},
     {k:"plan",     app:"bench", view:"plan",     en:"Diary"},
     {k:"library",  app:"bench", view:"library",  en:"Library"},
     {k:"stats",    app:"bench", view:"stats",    en:"Stats"}]},
