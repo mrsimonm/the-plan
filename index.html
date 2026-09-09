@@ -6696,6 +6696,31 @@ html[data-shell="rail"] body{
     <div id="rbBody" class="stack"></div>
   </section>
 
+  <section class="view" id="view-adhd" hidden>
+    <div class="sec-head">
+      <h2 id="adTitle">ADHD Planner</h2>
+      <div class="ad-nav" id="adNav">
+        <button type="button" class="ad-nav-btn" id="adMenuBtn" aria-expanded="false" aria-controls="adMenu">
+          <span class="tb-bars" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span id="adMenuLabel">Now</span>
+          <span class="ad-badge" id="adInBadge" hidden></span>
+          <span class="tb-nav-chev" aria-hidden="true">▾</span>
+        </button>
+        <div class="ad-menu" id="adMenu" hidden>
+          <button type="button" data-adscope="now">Now</button>
+          <button type="button" data-adscope="dump">Dump<b id="adCountDump"></b></button>
+          <button type="button" data-adscope="today">Today<b id="adCountToday"></b></button>
+          <button type="button" data-adscope="all">Everything<b id="adCountAll"></b></button>
+          <button type="button" data-adscope="wins">Wins<b id="adCountWins"></b></button>
+        </div>
+      </div>
+    </div>
+
+    <p class="ad-exp"><b>Experimental</b><span>A separate bench, still being built. Nothing here touches the Daily Planner or anything else in the app.</span></p>
+
+    <div class="stack" id="adBody"></div>
+  </section>
+
 </main>
 
 <!-- web clipper: paste text or a link, or scan an image for its text -->
@@ -8183,6 +8208,214 @@ html[data-layout="phone"] .rb-nav-btn{font-size:12.5px; padding:7px 10px}
 html[data-layout="phone"] .rb-sp-photo{height:104px}
 </style>
 
+<style id="adhd-css">
+/* ============================================================================
+   ADHD PLANNER — experimental, and deliberately not another list app.
+
+   Everything here is aimed at the four things that actually break a day with
+   ADHD, rather than at organising work more finely:
+
+     1. STARTING.      Not knowing what to do first is what stops the day, so
+                       the home screen is ONE task, one sentence saying what
+                       the very first physical move is, and a clock. Nothing
+                       else is on it. Choosing happens on a different screen,
+                       at a different time, when choosing is the job.
+     2. TIME BLINDNESS. A number counting down is not felt. A shrinking disc
+                       is — it is the one physical ADHD aid (the Time Timer)
+                       that consistently works, so the clock here is a disc
+                       first and digits second. Overtime keeps counting up in
+                       amber instead of stopping, because working past the
+                       estimate is normal and should not look like failure.
+     3. CAPTURE.       The thought that arrives mid-task takes the task with
+                       it unless it can be put down in under two seconds. So
+                       there is a one-line catcher ON the focus screen, and a
+                       Dump screen that is a single input and nothing else —
+                       no project, no date, no priority. Deciding later is the
+                       whole point.
+     4. OVERCOMMITTING. Today is capped. Adding a fourth thing does not make
+                       a longer list, it asks which of the three comes off.
+
+   What is deliberately absent: overdue red, priority levels, and any number
+   that goes down when you do badly. A task that has moved five times says so
+   quietly and offers to be broken up; it never turns into a scold. "Energy"
+   replaces priority because on the bad days the question is never what
+   matters most, it is what your brain can currently hold.
+
+   Built out of the app's own vocabulary (.card, .pad, .btn, .field, .chip,
+   .eyebrow, .hint, .empty) so it inherits every palette, both designs and
+   dark mode for free. Only what the app has no word for is defined below.
+   ============================================================================ */
+
+/* ---- the scope menu, same shape as Rooms' and Teachbench's ---- */
+.ad-nav{position:relative}
+.ad-nav-btn{display:inline-flex; align-items:center; gap:8px; padding:8px 12px;
+  border:1px solid var(--line); border-radius:var(--r-xs); background:var(--surface);
+  color:var(--ink); font:inherit; font-size:13.5px; cursor:pointer}
+.ad-nav-btn:hover{background:var(--surface-2)}
+.ad-menu{position:absolute; right:0; top:calc(100% + 6px); z-index:40; min-width:190px;
+  background:var(--glass-fill-2); backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
+  border:1px solid var(--glass-border); border-radius:var(--r-sm); box-shadow:var(--shadow-lift);
+  padding:5px; display:flex; flex-direction:column; gap:2px}
+.ad-menu button{appearance:none; border:0; background:none; text-align:left; cursor:pointer;
+  padding:9px 11px; border-radius:var(--r-xs); color:var(--ink); font:inherit; font-size:14px;
+  display:flex; align-items:center; justify-content:space-between; gap:10px}
+.ad-menu button:hover{background:var(--accent-soft); color:var(--accent)}
+.ad-menu b{font-variant-numeric:tabular-nums; font-weight:600; font-size:12px; color:var(--ink-3)}
+.ad-badge{min-width:19px; padding:0 5px; height:19px; border-radius:999px; background:var(--accent);
+  color:var(--on-accent); font-size:11px; font-weight:700; font-variant-numeric:tabular-nums;
+  display:inline-flex; align-items:center; justify-content:center}
+
+/* the "this is a laboratory" strip — one line, said once, never repeated on
+   every card underneath it */
+.ad-exp{display:flex; align-items:center; gap:9px; padding:9px 13px; margin-bottom:12px;
+  border:1px dashed var(--line-strong); border-radius:var(--r-sm);
+  background:var(--accent-soft); color:var(--ink); font-size:12.5px; line-height:1.4}
+.ad-exp b{color:var(--accent); text-transform:uppercase; letter-spacing:.08em; font-size:11px; flex:0 0 auto}
+
+/* ============================ NOW ============================
+   The focus screen. Wide margins, few objects, nothing that scrolls under
+   the fold on a phone before the clock is reached. */
+.ad-now{display:flex; flex-direction:column; align-items:center; gap:18px;
+  padding:26px 20px 22px; text-align:center}
+.ad-now-what{font-size:23px; font-weight:700; letter-spacing:-.02em; line-height:1.25;
+  color:var(--ink-strong); max-width:19em}
+.ad-now-step{font-size:16px; line-height:1.45; color:var(--accent); font-weight:600; max-width:24em}
+.ad-now-step .ad-first{display:block; font-size:11px; font-weight:700; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-3); margin-bottom:5px}
+.ad-now-meta{display:flex; gap:8px; flex-wrap:wrap; justify-content:center}
+
+/* the disc. --p is percent of the planned time still left. */
+.ad-disc{position:relative; width:210px; height:210px; border-radius:50%;
+  background:conic-gradient(var(--accent) calc(var(--p,100) * 1%), var(--track-bg) 0);
+  display:grid; place-items:center; box-shadow:var(--shadow-lift);
+  transition:background .9s linear}
+.ad-disc::after{content:""; position:absolute; inset:15px; border-radius:50%;
+  background:var(--surface); box-shadow:inset 0 1px 0 rgba(255,255,255,.5)}
+.ad-disc[data-over="1"]{background:var(--amber)}
+.ad-disc[data-idle="1"]{background:conic-gradient(var(--track-line) calc(var(--p,100) * 1%), var(--track-bg) 0)}
+.ad-disc-in{position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:2px}
+.ad-disc-time{font-size:38px; font-weight:700; font-variant-numeric:tabular-nums;
+  letter-spacing:-.03em; color:var(--ink-strong); line-height:1}
+.ad-disc-sub{font-size:11.5px; letter-spacing:.09em; text-transform:uppercase; font-weight:700; color:var(--ink-3)}
+.ad-disc[data-over="1"] .ad-disc-time{color:var(--amber)}
+
+.ad-acts{display:flex; gap:8px; flex-wrap:wrap; justify-content:center}
+.ad-acts .btn{min-width:96px}
+.ad-out{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-top:2px}
+
+/* the thought catcher — attached to the focus card, not a separate place to
+   navigate to, because navigating is exactly what loses the task */
+.ad-catch{display:flex; gap:7px; width:100%; max-width:420px; margin-top:4px}
+.ad-catch input{flex:1 1 auto; min-width:0}
+.ad-caught{font-size:12px; color:var(--ok); min-height:16px}
+
+/* the picker shown when nothing is running */
+.ad-pick{display:flex; flex-direction:column; gap:9px; width:100%; max-width:460px}
+.ad-cand{display:flex; align-items:center; gap:11px; width:100%; text-align:left; cursor:pointer;
+  padding:13px 15px; border-radius:var(--r-sm); border:1px solid var(--line);
+  background:var(--surface); color:var(--ink-strong); font:inherit}
+.ad-cand:hover{border-color:var(--accent); background:var(--accent-soft)}
+.ad-cand-t{flex:1 1 auto; min-width:0; font-weight:600; font-size:15px; line-height:1.3}
+.ad-cand-t small{display:block; font-weight:500; font-size:12px; color:var(--ink-3); margin-top:2px}
+.ad-cand-m{flex:0 0 auto; font-size:12px; color:var(--ink-3); font-variant-numeric:tabular-nums}
+
+/* the 3-2-1 that gets you over the activation hump */
+.ad-ritual{position:fixed; inset:0; z-index:70; display:grid; place-items:center;
+  background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px)}
+.ad-ritual-n{font-size:120px; font-weight:800; color:var(--accent); letter-spacing:-.05em; line-height:1;
+  text-align:center}
+.ad-ritual-s{text-align:center; font-size:15px; color:var(--ink); margin-top:10px; max-width:16em}
+
+/* ======================== DUMP / lists ======================== */
+.ad-dumpform{display:flex; gap:8px}
+.ad-dumpform input{flex:1 1 auto; min-width:0; font-size:16px}
+.ad-list{display:flex; flex-direction:column}
+.ad-row{display:flex; align-items:flex-start; gap:11px; padding:12px 2px;
+  border-top:1px solid var(--line-soft)}
+.ad-row:first-child{border-top:0}
+.ad-row-b{flex:1 1 auto; min-width:0}
+.ad-row-t{font-size:14.5px; line-height:1.35; color:var(--ink-strong); font-weight:500;
+  overflow-wrap:anywhere; cursor:pointer}
+.ad-row.is-done .ad-row-t{color:var(--ink-3); text-decoration:line-through}
+.ad-row-s{font-size:12px; color:var(--ink-3); margin-top:3px; line-height:1.4;
+  display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+.ad-row-acts{flex:0 0 auto; display:flex; gap:5px; flex-wrap:wrap; justify-content:flex-end}
+.ad-tick{flex:0 0 auto; width:24px; height:24px; margin-top:1px; border-radius:50%;
+  border:2px solid var(--line-strong); background:none; cursor:pointer; padding:0;
+  display:grid; place-items:center; color:transparent; font-size:13px; font-weight:800}
+.ad-tick:hover{border-color:var(--accent); color:var(--accent-soft)}
+.ad-tick[aria-pressed="true"]{background:var(--ok); border-color:var(--ok); color:#fff}
+
+/* energy is brain-fuel, not importance — three named states, never a scale */
+.ad-en{display:inline-flex; align-items:center; gap:5px; padding:2px 9px; border-radius:999px;
+  font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+  border:1px solid transparent}
+.ad-en[data-e="low"]{background:var(--amber-soft); color:var(--amber)}
+.ad-en[data-e="mid"]{background:var(--accent-soft); color:var(--accent)}
+.ad-en[data-e="deep"]{background:var(--sunk); color:var(--ink); border-color:var(--line-strong)}
+.ad-moved{color:var(--amber); font-weight:600}
+
+/* Today's cap, drawn as slots rather than written as "3/3" — an empty slot is
+   an invitation, a full row is a full row, and neither is a scolding */
+.ad-cap{display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap}
+.ad-cap-slots{display:flex; gap:5px}
+.ad-cap-slot{width:26px; height:8px; border-radius:999px; background:var(--track-bg);
+  border:1px solid var(--track-line)}
+.ad-cap-slot.on{background:var(--accent); border-color:var(--accent)}
+.ad-cap-txt{font-size:12.5px; color:var(--ink-3)}
+
+/* Every <input> in this app is full width, which a bare checkbox inherits —
+   so a checkbox and its words have to be told, once, how to sit together. */
+.ad-check{display:flex; align-items:center; gap:11px; cursor:pointer;
+  font-size:14px; line-height:1.4; color:var(--ink)}
+.ad-check input[type=checkbox]{flex:0 0 auto; width:20px; height:20px; min-width:0; margin:0;
+  accent-color:var(--accent)}
+.ad-check span{flex:1 1 auto}
+
+/* the editor that opens under a task, not in a dialog — a dialog closes the
+   list, and the whole point of breaking a task down is seeing it shrink. The
+   accent rail down its left says which row it belongs to, which a plain block
+   of fields sitting in the flow does not. */
+.ad-edit{padding:12px 2px 16px 15px; margin:2px 0 6px 11px;
+  border-left:2px solid var(--accent-soft);
+  display:flex; flex-direction:column; gap:11px}
+.ad-edit .field > label{font-size:11px}
+.ad-steps{display:flex; flex-direction:column; gap:6px}
+.ad-step{display:flex; align-items:center; gap:9px}
+.ad-step input[type=text]{flex:1 1 auto; min-width:0}
+.ad-step.is-done input[type=text]{color:var(--ink-3); text-decoration:line-through}
+.ad-nudge{padding:10px 12px; border-radius:var(--r-xs); background:var(--amber-soft);
+  color:var(--amber); font-size:12.5px; line-height:1.45}
+.ad-nudge b{font-weight:700}
+.ad-grouphead{font-family:var(--font); font-weight:700; text-transform:uppercase;
+  letter-spacing:.09em; font-size:11px; color:var(--ink-3); margin:14px 0 2px}
+.ad-grouphead:first-child{margin-top:0}
+
+/* ============================ WINS ============================ */
+.ad-spark{display:flex; align-items:flex-end; gap:6px; height:74px; margin:6px 0 2px}
+.ad-spark-d{flex:1 1 0; display:flex; flex-direction:column; align-items:center;
+  justify-content:flex-end; gap:5px; min-width:0; height:100%}
+.ad-spark-b{width:100%; border-radius:5px 5px 2px 2px; background:var(--accent); opacity:.85;
+  min-height:3px; transition:height .3s}
+.ad-spark-d.is-today .ad-spark-b{background:var(--accent-2); opacity:1}
+.ad-spark-l{font-size:10px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.04em}
+.ad-calib{padding:12px 14px; border-radius:var(--r-sm); background:var(--sunk);
+  font-size:13.5px; line-height:1.5; color:var(--ink)}
+.ad-calib b{color:var(--accent)}
+
+html[data-layout="phone"] .ad-disc{width:180px; height:180px}
+html[data-layout="phone"] .ad-disc-time{font-size:33px}
+html[data-layout="phone"] .ad-now-what{font-size:20px}
+@media (prefers-reduced-motion: reduce){ .ad-disc{transition:none} .ad-spark-b{transition:none} }
+</style>
+
+<dialog id="adSwapDlg">
+  <h3 class="dlg-head" id="adSwapHead">Today is full</h3>
+  <div class="dlg-body" id="adSwapBody"></div>
+  <div class="dlg-foot"><button type="button" class="btn" id="adSwapCancel">Leave it as it is</button></div>
+</dialog>
+
 <script>
 "use strict";
 
@@ -9484,7 +9717,11 @@ function seed(){return{
   planner:{sleepOff:false, sleepWeekday:{from:"23:00",hours:8}, sleepWeekend:{from:"23:00",hours:8}, sleepEx:{}, tasks:[], blocks:[], linkCare:true, linkHours:true, linkProjects:true, carePace:3},
   hours:{projects:[], sessions:[], running:null,
     settings:{currency:"Kč", pomoWork:25, pomoShort:5, pomoLong:15, pomoCycle:4}},
-  projplan:{projects:[], limit:8, weekendsOff:false}
+  projplan:{projects:[], limit:8, weekendsOff:false},
+  /* the ADHD Planner. Filled in lazily by the module too, so a state that
+     arrived from a device on an older build needs no migration step. */
+  adhd:{tasks:[], sessions:[], current:null,
+        settings:{cap:3, ritual:true, buzz:true, mins:15}}
 };}
 
 /* v2 lineups became schedule weeks; in v4 the doses move out into named formulas
@@ -21860,7 +22097,11 @@ const APPS=[{id:"bench",label:"Potting Bench",view:null},
             {id:"teachbench-student",label:"Student Bench",view:"teachbench-student"},
             {id:"notes",label:"Notes",view:"notes"},
             {id:"cabinet",label:"Cabinet",view:"cabinet"},
-            {id:"rooms",label:"Rooms",view:"rooms"}];
+            {id:"rooms",label:"Rooms",view:"rooms"},
+            /* experimental, and deliberately its own app rather than a
+               tab inside the Daily Planner: it is a different idea about
+               what a day is, and mixing the two would muddle both */
+            {id:"adhd",label:"ADHD Planner",view:"adhd"}];
 /* "settings" is deliberately NOT here any more: it is the whole app's screen,
    not one of Potting Bench's, so it must not be remembered as the bench tab
    you were last on and must not light up Library in the tab strip. It still
@@ -23368,7 +23609,7 @@ function showNow(v){
      own re-render is a no-op rather than a recursion. */
   if(v!=="planner"&&document.documentElement.classList.contains("pfocus")) pSetFocus(false);
   document.querySelectorAll(".nav button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.view===v)));
-  BENCH_VIEWS.concat(["planner","hours","hproject","teachbench","teachbench-student","notes","note","cabinet","cabitem","rooms","settings"]).forEach(x=>{ $("#view-"+x).hidden=(x!==v); });
+  BENCH_VIEWS.concat(["planner","hours","hproject","teachbench","teachbench-student","notes","note","cabinet","cabitem","rooms","adhd","settings"]).forEach(x=>{ $("#view-"+x).hidden=(x!==v); });
   /* editor sub-views (product/formula/plant/batch/…) are populated by their
      open* call, not by showNow — relaunching straight into one was a blank
      shell that crashed on the first tap. Remember their parent tab instead. */
@@ -23385,6 +23626,7 @@ function showNow(v){
   if(v==="notes") renderNotes();
   if(v==="cabinet") cbRender();
   if(v==="rooms"&&window.RB) try{ RB.render(); }catch(e){ console.warn("rooms",e); }
+  if(v==="adhd"&&window.AD) try{ window.AD.render(); }catch(e){ console.warn("adhd",e); }
   if(v==="cabitem") cbRenderItem();
   /* a remote state can land while a note is open — repaint, don't just regrow */
   if(v==="note"){ nRenderEditor(); nGrowAll(); }
@@ -34146,7 +34388,8 @@ const DZ_ICON={
   teachbench:'<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 5.5a3 3 0 0 1 0 5M18 20a6 6 0 0 0-3-5.2"/>',
   student:'<path d="M3 8.5 12 4l9 4.5-9 4.5Z"/><path d="M7 11v5c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5v-5"/>',
   cabinet:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M12 3v18M4 9.5h16M4 16h16"/>',
-  rooms:'<path d="M3 21h18"/><path d="M5 21V6l7-3 7 3v15"/><rect x="9" y="12" width="6" height="9"/><path d="M9 8h.01M15 8h.01"/>'
+  rooms:'<path d="M3 21h18"/><path d="M5 21V6l7-3 7 3v15"/><rect x="9" y="12" width="6" height="9"/><path d="M9 8h.01M15 8h.01"/>',
+  adhd:'<circle cx="12" cy="12" r="9"/><path d="M12 12V3a9 9 0 0 1 7.8 4.5Z" fill="currentColor" stroke="none"/>'
 };
 const dzSvg=k=>'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'+(DZ_ICON[k]||"")+'</svg>';
 
@@ -34163,7 +34406,8 @@ const DZ_ITEMS=[
     {k:"stats",    app:"bench", view:"stats",    en:"Stats"}]},
   {g:"Plan", items:[
     {k:"planner",  app:"planner", en:"Daily Planner"},
-    {k:"hours",    app:"hours",   en:"Hours"}]},
+    {k:"hours",    app:"hours",   en:"Hours"},
+    {k:"adhd",     app:"adhd",    en:"ADHD Planner"}]},
   {g:"Write", items:[
     {k:"notes",    app:"notes",   en:"Notes"}]},
   {g:"Teach", items:[
@@ -34188,6 +34432,7 @@ function dzCurrentKey(){
   if(v==="teachbench-student") return "student";
   if(v==="cabinet"||v==="cabitem") return "cabinet";
   if(v==="rooms") return "rooms";
+  if(v==="adhd") return "adhd";
   const parent=(typeof NAV_PARENT==="object"&&NAV_PARENT[v])||v;
   return parent;
 }
@@ -45186,6 +45431,959 @@ Object.assign(CS,{
 
   /* ---- the lesson that holds a room ---- */
   "Lesson":"Hodina"
+});
+
+
+/* ============================================================================
+   ADHD PLANNER — the code. The reasoning about WHY it is shaped this way
+   lives in <style id="adhd-css">; this comment is only about the mechanics.
+
+   Its own island, the way Notes, Cabinet and Rooms are: one IIFE at the tail
+   of the script, one <style> block, one <section>. It reaches into the rest
+   of the app in exactly three additive places — the APPS list, showNow()'s
+   view list, and one key in seed(). Nothing else in the app reads S.adhd, and
+   this module reads nothing of anyone else's.
+
+   ---- where the data lives, and the one thing that does NOT live there ----
+
+   Tasks, finished sittings and settings go in S.adhd, so they sync between
+   the user's own devices like everything else in S.
+
+   The RUNNING TIMER does not. It lives in L (per-device), for two reasons.
+   A timer is a property of the device you are sitting at, not of the account
+   — starting one on the laptop should not start one on the phone. And S is
+   written through touch(), which serialises the whole state object and
+   schedules a push; a clock that ticked into it every second would do that
+   3,600 times an hour for a value nobody needs to keep. So the tick writes
+   nothing at all: elapsed time is derived from a single wall-clock timestamp
+   (`from`), which means a reload, a backgrounded tab or a phone that slept
+   all resume with the correct figure rather than a clock that quietly
+   stopped. Only when a sitting ENDS is anything written to S — one session
+   row, and the seconds added to the task.
+
+   ---- the shape ----
+
+     S.adhd.tasks[]    {id, title, step, note, energy, mins, spent, steps[],
+                        state, today, todayAt, moves, createdAt, doneAt, guess}
+        state:  "in"     in the dump, not yet decided about
+                "open"   a real task
+                "done"   finished
+                "binned" thrown away (kept, so Undo stays possible; never shown)
+        step:   the ONE physical first move. Not a description of the task.
+        energy: "low" | "mid" | "deep" — brain fuel, never importance.
+        mins:   the estimate. guess: the estimate as it stood when the task was
+                finished, so a later edit cannot rewrite history.
+        moves:  how many times it has been pushed off. Shown, never punished.
+     S.adhd.sessions[] {id, taskId, start, secs, day}   one focused sitting
+     S.adhd.current    the task on the Now screen (id, or null)
+     S.adhd.settings   {cap, ritual, buzz, mins}
+     L.adT             {id, planned, acc, from} — the live timer, this device
+   ============================================================================ */
+
+const AD = (() => {
+
+  const SCOPES = ["now","dump","today","all","wins"];
+  const SCOPE_LABEL = {now:"Now", dump:"Dump", today:"Today", all:"Everything", wins:"Wins"};
+  const ENERGY = [["low","Light"],["mid","Medium"],["deep","Deep"]];
+  const ENERGY_LBL = {low:"Light", mid:"Medium", deep:"Deep"};
+  const ENERGY_HINT = {
+    low:"Almost no brain needed — these are for when you are running on empty.",
+    mid:"An ordinary amount of thinking.",
+    deep:"Needs a quiet head and an uninterrupted run at it."
+  };
+  const DEFAULTS = {cap:3, ritual:true, buzz:true, mins:15};
+
+  let scope = "now";
+  let openId = null;      /* the task whose inline editor is unfolded */
+  let tick = null;        /* the once-a-second repaint, only while Now is up */
+  let ritualTimer = null;
+  let flash = "";         /* one line of praise, shown once after a win */
+
+  const T = s => esc(t(s));
+
+  /* ---------------- state ----------------
+     Never assumes S.adhd exists. A state that arrived from another device
+     running an older build simply has the key filled in on first read, which
+     is why there is no entry in migrate() waiting to go stale. */
+  function st(){
+    if(!S.adhd || typeof S.adhd!=="object") S.adhd={};
+    const a=S.adhd;
+    if(!Array.isArray(a.tasks)) a.tasks=[];
+    if(!Array.isArray(a.sessions)) a.sessions=[];
+    if(!a.settings||typeof a.settings!=="object") a.settings={};
+    Object.keys(DEFAULTS).forEach(k=>{ if(a.settings[k]===undefined) a.settings[k]=DEFAULTS[k]; });
+    if(a.current===undefined) a.current=null;
+    return a;
+  }
+  const byId = id => st().tasks.find(x=>x.id===id)||null;
+  const live = () => st().tasks.filter(x=>x.state!=="binned");
+  const inbox = () => live().filter(x=>x.state==="in").sort((a,b)=>b.createdAt-a.createdAt);
+  const openTasks = () => live().filter(x=>x.state==="open");
+  const todayList = () => openTasks().filter(x=>x.today).sort((a,b)=>(a.todayAt||0)-(b.todayAt||0));
+
+  function newTask(title, patch){
+    const now=Date.now();
+    return Object.assign({
+      id:uid(), title:String(title||"").trim(), step:"", note:"",
+      energy:"mid", mins:st().settings.mins||15, spent:0, steps:[],
+      state:"in", today:false, todayAt:0, moves:0,
+      createdAt:now, doneAt:0, guess:0
+    }, patch||{});
+  }
+
+  /* the app-day a moment belongs to — before the day-start hour it is still
+     yesterday, exactly as the garden and the Daily Planner already treat it,
+     so a 1am win lands on the day it felt like rather than the next one */
+  function day(ts){
+    const h = (typeof L.dayStartHour==="number") ? L.dayStartHour : 4;
+    const d = new Date(ts);
+    if(d.getHours() < h) d.setDate(d.getDate()-1);
+    return ymd(+d);
+  }
+
+  /* ---------------- the timer ----------------
+     `from` is a wall-clock timestamp, so elapsed time is computed, never
+     accumulated by a tick that a sleeping phone would miss. */
+  function timer(){
+    const T0=L.adT;
+    if(!T0||typeof T0!=="object") return null;
+    if(!byId(T0.id)){ L.adT=null; saveLocal(); return null; }
+    return T0;
+  }
+  function elapsed(T0){ return (T0.acc||0) + (T0.from ? (Date.now()-T0.from)/1000 : 0); }
+  function armTimer(task, mins){
+    L.adT = {id:task.id, planned:Math.max(60,(mins||task.mins||15)*60), acc:0, from:0, rang:0};
+    saveLocal();
+  }
+  function runTimer(on){
+    const T0=timer(); if(!T0) return;
+    if(on){ if(!T0.from) T0.from=Date.now(); }
+    else if(T0.from){ T0.acc=elapsed(T0); T0.from=0; }
+    saveLocal();
+    if(on) startTick(); else stopTick();
+  }
+  /* Bank the sitting: the seconds go onto the task and into one session row,
+     and only then is S touched. Called by Done, by Park, by binning and by
+     picking a different task — every way out of a sitting, so time can never
+     be silently lost. */
+  function bankTimer(){
+    const T0=timer(); if(!T0) return 0;
+    const secs=Math.round(elapsed(T0));
+    const task=byId(T0.id);
+    L.adT=null; saveLocal(); stopTick();
+    if(!task || secs<20) return 0;              /* a mis-tap is not a sitting */
+    task.spent=(task.spent||0)+secs;
+    st().sessions.push({id:uid(), taskId:task.id, start:Date.now()-secs*1000, secs, day:day(Date.now())});
+    if(st().sessions.length>2000) st().sessions=st().sessions.slice(-2000);
+    touch();
+    return secs;
+  }
+  function startTick(){
+    stopTick();
+    tick=setInterval(()=>{
+      if(curView!=="adhd"||scope!=="now"){ stopTick(); return; }
+      paintClock();
+    },1000);
+  }
+  function stopTick(){ if(tick){ clearInterval(tick); tick=null; } }
+
+  function fmtClock(secs){
+    const s=Math.max(0,Math.round(secs));
+    const h=Math.floor(s/3600), m=Math.floor(s%3600/60), ss=s%60;
+    return h ? `${h}:${String(m).padStart(2,"0")}:${String(ss).padStart(2,"0")}`
+             : `${m}:${String(ss).padStart(2,"0")}`;
+  }
+  function fmtMins(n){
+    n=Math.round(n);
+    if(n<60) return n+" min";
+    const h=Math.floor(n/60), m=n%60;
+    return m ? `${h} h ${m} min` : `${h} h`;
+  }
+
+  /* Repaints only the clock, once a second. Re-rendering the whole screen
+     every second would blow away a half-typed thought in the catcher. */
+  function paintClock(){
+    const disc=$("#adDisc"); if(!disc) return;
+    const T0=timer(); if(!T0) return;
+    const el=elapsed(T0), left=T0.planned-el, over=left<0;
+    disc.style.setProperty("--p", String(over?0:Math.max(0,Math.min(100,left/T0.planned*100))));
+    disc.dataset.over = over?"1":"";
+    disc.dataset.idle = T0.from?"":"1";
+    const tm=$("#adDiscTime"), sub=$("#adDiscSub");
+    if(tm) tm.textContent=(over?"+":"")+fmtClock(Math.abs(left));
+    if(sub) sub.textContent = over ? t("over") : (T0.from ? t("left") : t("paused"));
+    /* one buzz the moment the planned time runs out, never again */
+    if(over && !T0.rang && T0.from){
+      T0.rang=1; saveLocal();
+      if(st().settings.buzz && navigator.vibrate) try{ navigator.vibrate([90,70,90]); }catch(e){}
+    }
+  }
+
+  /* ---------------- rendering ---------------- */
+  function render(){
+    const body=$("#adBody"); if(!body) return;
+    st();
+    if(!SCOPES.includes(scope)) scope="now";
+    const lbl=$("#adMenuLabel"); if(lbl) lbl.textContent=t(SCOPE_LABEL[scope]);
+    const n=inbox().length, badge=$("#adInBadge");
+    if(badge){
+      badge.hidden=!n||scope==="dump";
+      badge.textContent=String(n);
+      /* it sits beside whatever scope you are on, so without words it
+         reads as a count of that scope rather than of the Dump */
+      const w=t("{n} waiting in the Dump").replace("{n}",n);
+      badge.title=w; badge.setAttribute("aria-label",w);
+    }
+    const setC=(id,v)=>{ const e=$(id); if(e) e.textContent=v?String(v):""; };
+    setC("#adCountDump", n);
+    setC("#adCountToday", todayList().filter(x=>!x.doneAt).length);
+    setC("#adCountAll", openTasks().length);
+    setC("#adCountWins", doneOn(pToday()).length);
+    document.querySelectorAll("#adMenu [data-adscope]").forEach(b=>
+      b.setAttribute("aria-current", String(b.dataset.adscope===scope)));
+
+    body.innerHTML =
+      scope==="now"   ? nowHTML()   :
+      scope==="dump"  ? dumpHTML()  :
+      scope==="today" ? todayHTML() :
+      scope==="all"   ? allHTML()   : winsHTML();
+
+    if(scope==="now"){ paintClock(); const T0=timer(); if(T0&&T0.from) startTick(); else stopTick(); }
+    else stopTick();
+    if(scope==="dump"){ const i=$("#adDumpIn"); if(i&&matchMedia("(pointer:fine)").matches) i.focus(); }
+  }
+
+  /* ============================ NOW ============================ */
+  function nextStep(task){
+    const s=(task.steps||[]).find(x=>!x.done);
+    return s ? s.text : (task.step||"");
+  }
+  function curTask(){
+    const a=st(), c=a.current && byId(a.current);
+    return (c && c.state==="open") ? c : null;
+  }
+
+  function nowHTML(){
+    const cur=curTask();
+    const head = flash
+      ? `<div class="card pad" style="text-align:center"><p style="margin:0;font-size:15px;line-height:1.5">${esc(flash)}</p></div>`
+      : "";
+    flash="";
+    return head + (cur ? focusHTML(cur) : pickHTML());
+  }
+
+  function focusHTML(task){
+    let T0=timer();
+    if(!T0 || T0.id!==task.id){ armTimer(task, task.mins); T0=timer(); }
+    const el=elapsed(T0), left=T0.planned-el, over=left<0;
+    const step=nextStep(task);
+    const stepsLeft=(task.steps||[]).filter(x=>!x.done).length;
+    const running=!!T0.from;
+    return `<div class="card ad-now">
+      <span class="eyebrow">${T("Right now")}</span>
+      <div class="ad-now-what">${esc(task.title)}</div>
+      ${step
+        ? `<div class="ad-now-step"><span class="ad-first">${T(stepsLeft?"Next step":"First move")}</span>${esc(step)}</div>`
+        : `<div class="ad-now-step"><span class="ad-first">${T("First move")}</span>
+             <button type="button" class="btn mini" data-adact="setstep">${T("What is the very first thing you touch?")}</button></div>`}
+
+      <div class="ad-disc" id="adDisc" data-over="${over?1:""}" data-idle="${running?"":"1"}"
+           style="--p:${over?0:Math.max(0,Math.min(100,left/T0.planned*100))}"
+           role="timer" aria-label="${T("Time left on this task")}">
+        <div class="ad-disc-in">
+          <div class="ad-disc-time" id="adDiscTime">${(over?"+":"")+fmtClock(Math.abs(left))}</div>
+          <div class="ad-disc-sub" id="adDiscSub">${T(over?"over":(running?"left":"paused"))}</div>
+        </div>
+      </div>
+
+      <div class="ad-acts">
+        <button type="button" class="btn primary" data-adact="${running?"pause":"go"}">${T(running?"Pause":(el>1?"Carry on":"Start"))}</button>
+        <button type="button" class="btn" data-adact="plus5">${T("+5 min")}</button>
+      </div>
+
+      <div class="ad-out">
+        <button type="button" class="btn" data-adact="done">${T("Done")}</button>
+        ${stepsLeft?`<button type="button" class="btn" data-adact="stepdone">${T("Step done")}</button>`:""}
+        <button type="button" class="btn" data-adact="park">${T("Park it")}</button>
+        <button type="button" class="btn" data-adact="toobig">${T("Too big")}</button>
+      </div>
+
+      <form class="ad-catch" id="adCatchForm">
+        <input type="text" id="adCatchIn" autocomplete="off" placeholder="${T("Caught a thought? Put it here and carry on")}">
+        <button type="submit" class="btn mini">${T("Keep")}</button>
+      </form>
+      <div class="ad-caught" id="adCaught" role="status"></div>
+
+      <p class="hint" style="max-width:30em">${T("Spent on this so far:")} ${esc(fmtMins((task.spent||0)/60 + el/60))}${
+        task.mins?` · ${T("you thought")} ${esc(fmtMins(task.mins))}`:""}</p>
+    </div>`;
+  }
+
+  /* The picker. Never the whole list — three things and a coin toss, because
+     scrolling forty tasks looking for the right one IS the failure mode. */
+  function pickHTML(){
+    const todays=todayList().filter(x=>!x.doneAt);
+    const pool=todays.length?todays:openTasks().slice().sort((a,b)=>(a.mins||15)-(b.mins||15));
+    const cands=pool.slice(0,3);
+    const dumped=inbox().length;
+    if(!openTasks().length){
+      return `<div class="card pad">
+        <p class="empty">${T(dumped
+          ? "Everything is still sitting in the Dump. Sort a couple of them and they will show up here."
+          : "Nothing on the list yet. Put something in the Dump — you do not have to decide anything about it.")}</p>
+        <div class="btn-row" style="justify-content:center">
+          <button type="button" class="btn primary" data-adgo="dump">${T("Open the Dump")}</button>
+        </div></div>`;
+    }
+    return `<div class="card ad-now">
+      <span class="eyebrow">${T("Pick one thing")}</span>
+      <div class="ad-now-what">${T(todays.length?"What are you doing next?":"Nothing is chosen for today — start with the smallest one.")}</div>
+      <div class="ad-pick">
+        ${cands.map(c=>`<button type="button" class="ad-cand" data-adpick="${esc(c.id)}">
+            <span class="ad-cand-t">${esc(c.title)}${nextStep(c)?`<small>${T("first move:")} ${esc(nextStep(c))}</small>`:""}</span>
+            <span class="ad-cand-m">${esc(fmtMins(c.mins||15))}</span>
+          </button>`).join("")}
+      </div>
+      <div class="ad-out">
+        <button type="button" class="btn" data-adact="roll">${T("Pick one for me")}</button>
+        <button type="button" class="btn" data-adact="tiny">${T("I have nothing left in me")}</button>
+        <button type="button" class="btn" data-adgo="today">${T("Choose today's three")}</button>
+      </div>
+      <p class="hint" style="max-width:28em">${T("Whichever you press, it starts a clock. You are allowed to stop it.")}</p>
+    </div>`;
+  }
+
+  /* ============================ DUMP ============================ */
+  function dumpHTML(){
+    const list=inbox();
+    return `<div class="card pad">
+      <span class="eyebrow">${T("Get it out of your head")}</span>
+      <form class="ad-dumpform" id="adDumpForm" style="margin-top:9px">
+        <input type="text" id="adDumpIn" autocomplete="off" placeholder="${T("Anything at all. Press enter. Repeat.")}">
+        <button type="submit" class="btn primary">${T("Dump")}</button>
+      </form>
+      <p class="hint" style="margin-top:8px">${T("No date, no category, no priority. Deciding is a separate job for a separate moment — this box is only for stopping the thought from going round.")}</p>
+    </div>
+
+    <div class="card pad">
+      <div class="sec-head" style="margin-bottom:6px">
+        <span class="eyebrow">${T("Waiting to be sorted")}</span>
+        ${list.length?`<span class="hint">${esc(list.length)}</span>`:""}
+      </div>
+      ${list.length ? `<div class="ad-list">${list.map(dumpRow).join("")}</div>`
+        : `<p class="empty">${T("Nothing waiting. That is a good place to be.")}</p>`}
+    </div>`;
+  }
+  function dumpRow(x){
+    return `<div class="ad-row" data-adid="${esc(x.id)}">
+      <div class="ad-row-b">
+        <div class="ad-row-t" data-adact="edit">${esc(x.title)}</div>
+        <div class="ad-row-s">${T("dumped")} ${esc(ago(x.createdAt))}</div>
+      </div>
+      <div class="ad-row-acts">
+        <button type="button" class="chip" data-adact="two">${T("2 min")}</button>
+        <button type="button" class="chip" data-adact="totoday">${T("Today")}</button>
+        <button type="button" class="chip" data-adact="keep">${T("Later")}</button>
+        <button type="button" class="chip" data-adact="bin" aria-label="${T("Bin it")}">×</button>
+      </div>
+    </div>${openId===x.id?editHTML(x):""}`;
+  }
+  function ago(ts){
+    const m=Math.max(0,Math.round((Date.now()-ts)/60000));
+    if(m<1) return t("just now");
+    if(m<60) return m+" "+t("min ago");
+    const h=Math.round(m/60);
+    if(h<24) return h+" "+t("h ago");
+    const d=Math.round(h/24);
+    return d+" "+t(d===1?"day ago":"days ago");
+  }
+
+  /* ============================ TODAY ============================ */
+  function todayHTML(){
+    const cap=st().settings.cap||3;
+    const list=todayList();
+    const doing=list.filter(x=>!x.doneAt), done=doneOn(pToday());
+    const slots=[];
+    for(let i=0;i<cap;i++) slots.push(`<span class="ad-cap-slot${i<doing.length?" on":""}"></span>`);
+    return `<div class="card pad">
+      <div class="ad-cap">
+        <span class="ad-cap-slots">${slots.join("")}</span>
+        <span class="ad-cap-txt">${doing.length>=cap
+          ? T("That is a full day. Anything else has to wait, or swap in.")
+          : esc(t("Room for {n} more.").replace("{n}", cap-doing.length))}</span>
+      </div>
+      ${doing.length ? `<div class="ad-list">${doing.map(taskRow).join("")}</div>`
+        : `<p class="empty">${T("Nothing chosen. Pick from Everything, or take the top of the Dump.")}</p>`}
+      <div class="btn-row" style="margin-top:12px">
+        <button type="button" class="btn" data-adgo="all">${T("Choose from Everything")}</button>
+        ${doing.length?`<button type="button" class="btn primary" data-adact="startfirst">${T("Start the first one")}</button>`:""}
+      </div>
+    </div>
+
+    ${done.length?`<div class="card pad">
+      <span class="eyebrow">${T("Already done today")}</span>
+      <div class="ad-list" style="margin-top:6px">${done.map(taskRow).join("")}</div>
+    </div>`:""}
+
+    <div class="card pad">
+      <div class="field">
+        <label for="adCapIn">${T("How many things is a day")}</label>
+        <input type="number" id="adCapIn" class="mono-input" min="1" max="6" step="1" value="${esc(cap)}" style="max-width:110px">
+        <p class="hint">${T("Three is the usual answer. The cap exists so that the list stays something you could actually finish — a list you never finish stops meaning anything.")}</p>
+      </div>
+    </div>`;
+  }
+
+  /* ============================ EVERYTHING ============================ */
+  function allHTML(){
+    const all=openTasks();
+    const groups=ENERGY.map(([k,lbl])=>[k,lbl,all.filter(x=>x.energy===k)]);
+    return `<div class="card pad">
+      <form class="ad-dumpform" id="adNewForm">
+        <input type="text" id="adNewIn" autocomplete="off" placeholder="${T("Add something straight to the list")}">
+        <button type="submit" class="btn primary">${T("Add")}</button>
+      </form>
+      <p class="hint" style="margin-top:8px">${T("Grouped by how much brain it needs, not by how important it is. On a flat day you work down from Light and still get somewhere.")}</p>
+    </div>
+
+    ${all.length ? groups.map(([k,lbl,rows])=>rows.length?`<div class="card pad">
+        <div class="ad-grouphead">${T(lbl)} · ${esc(rows.length)}</div>
+        <p class="hint" style="margin:2px 0 8px">${T(ENERGY_HINT[k])}</p>
+        <div class="ad-list">${rows.map(taskRow).join("")}</div>
+      </div>`:"").join("")
+      : `<div class="card pad"><p class="empty">${T("Nothing on the list.")}</p></div>`}
+
+    <div class="card pad">
+      <span class="eyebrow">${T("Settings")}</span>
+      <div class="stack" style="margin-top:10px">
+        <label class="ad-check">
+          <input type="checkbox" id="adRitual" ${st().settings.ritual?"checked":""}>
+          <span>${T("Count me down from three before a timer starts")}</span></label>
+        <label class="ad-check">
+          <input type="checkbox" id="adBuzz" ${st().settings.buzz?"checked":""}>
+          <span>${T("Buzz the phone when the time is up")}</span></label>
+        <div class="field" style="max-width:190px">
+          <label for="adDefMins">${T("Default length of a sitting")}</label>
+          <input type="number" id="adDefMins" class="mono-input" min="5" max="120" step="5" value="${esc(st().settings.mins||15)}">
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function taskRow(x){
+    const step=nextStep(x);
+    const stepsDone=(x.steps||[]).filter(s=>s.done).length, stepsAll=(x.steps||[]).length;
+    const done=x.state==="done";
+    return `<div class="ad-row${done?" is-done":""}" data-adid="${esc(x.id)}">
+      <button type="button" class="ad-tick" data-adact="tick" aria-pressed="${done}"
+        aria-label="${T(done?"Put it back":"Mark it done")}">✓</button>
+      <div class="ad-row-b">
+        <div class="ad-row-t" data-adact="edit">${esc(x.title)}</div>
+        <div class="ad-row-s">
+          ${done?`<span>${T("done")} ${esc(ago(x.doneAt))}</span>`
+                :`<span class="ad-en" data-e="${esc(x.energy)}">${T(ENERGY_LBL[x.energy]||"Medium")}</span>`}
+          <span>${esc(fmtMins(x.mins||15))}</span>
+          ${stepsAll?`<span>${esc(stepsDone)}/${esc(stepsAll)} ${T("steps")}</span>`:""}
+          ${x.spent?`<span>${T("spent")} ${esc(fmtMins(x.spent/60))}</span>`:""}
+          ${(!done&&x.moves>=3)?`<span class="ad-moved">${esc(t("moved {n}×").replace("{n}",x.moves))}</span>`:""}
+          ${(!done&&step)?`<span>· ${esc(step)}</span>`:""}
+        </div>
+      </div>
+      <div class="ad-row-acts">
+        ${done?`<button type="button" class="chip" data-adact="reopen">${T("Undo")}</button>`
+          :`<button type="button" class="chip" data-adact="start">${T("Do it now")}</button>
+            <button type="button" class="chip" data-adact="${x.today?"offtoday":"totoday"}">${T(x.today?"Off today":"Today")}</button>`}
+      </div>
+    </div>${openId===x.id?editHTML(x):""}`;
+  }
+
+  function editHTML(x){
+    const steps=(x.steps||[]);
+    return `<div class="ad-edit" data-adedit="${esc(x.id)}">
+      ${(x.moves>=3&&x.state!=="done")?`<p class="ad-nudge"><b>${esc(t("This has moved {n} times.").replace("{n}",x.moves))}</b>
+        ${T("That usually means it is too big to picture, not that you are lazy. Write down only the first physical thing you would touch, and make that the task.")}</p>`:""}
+      <div class="field"><label>${T("What it is")}</label>
+        <input type="text" data-adf="title" value="${esc(x.title)}"></div>
+      <div class="field"><label>${T("The very first move")}</label>
+        <input type="text" data-adf="step" value="${esc(x.step||"")}" placeholder="${T("e.g. open the folder called Tax")}">
+        <p class="hint">${T("Something you could do while still holding a cup of tea. Not “do the tax return” — “open the folder”.")}</p></div>
+      <div class="field"><label>${T("Break it into steps")}</label>
+        <div class="ad-steps">
+          ${steps.map((s,i)=>`<div class="ad-step${s.done?" is-done":""}">
+            <button type="button" class="ad-tick" data-adstep="${i}" data-adact="steptick" aria-pressed="${!!s.done}" aria-label="${T("Step done")}">✓</button>
+            <input type="text" data-adstepf="${i}" value="${esc(s.text)}">
+            <button type="button" class="chip" data-adstep="${i}" data-adact="stepdel" aria-label="${T("Remove step")}">×</button>
+          </div>`).join("")}
+          <button type="button" class="btn mini" data-adact="stepadd">${T("+ another step")}</button>
+        </div></div>
+      <div class="field"><label>${T("How much brain")}</label>
+        <div class="chips fill">${ENERGY.map(([k,l])=>
+          `<button type="button" class="chip" data-aden="${k}" aria-pressed="${x.energy===k}">${T(l)}</button>`).join("")}</div></div>
+      <div class="field" style="max-width:200px"><label>${T("How long, honestly")}</label>
+        <input type="number" data-adf="mins" class="mono-input" min="1" max="480" step="5" value="${esc(x.mins||15)}"></div>
+      <div class="field"><label>${T("Anything else")}</label>
+        <textarea data-adf="note" rows="2">${esc(x.note||"")}</textarea></div>
+      <div class="btn-row">
+        ${x.state==="done"?"":`<button type="button" class="btn primary" data-adact="start">${T("Do it now")}</button>`}
+        <button type="button" class="btn" data-adact="closeedit">${T("Close")}</button>
+        <button type="button" class="btn danger" data-adact="bin" style="margin-left:auto">${T("Throw it away")}</button>
+      </div>
+    </div>`;
+  }
+
+  /* ============================ WINS ============================ */
+  function doneOn(d){
+    return live().filter(x=>x.state==="done"&&x.doneAt&&day(x.doneAt)===d)
+                 .sort((a,b)=>b.doneAt-a.doneAt);
+  }
+  function secsOn(d){
+    return st().sessions.filter(s=>s.day===d).reduce((n,s)=>n+(s.secs||0),0);
+  }
+  const DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  function last7(){
+    const out=[], base=new Date();
+    for(let i=6;i>=0;i--){
+      const dt=new Date(base); dt.setDate(dt.getDate()-i);
+      const d=day(+dt);
+      /* fromYmd() hands back a timestamp, not a Date — the day of the week has
+         to be read off a Date built from it */
+      out.push({d, count:doneOn(d).length, secs:secsOn(d), label:DOW[new Date(fromYmd(d)).getDay()]});
+    }
+    return out;
+  }
+  function streak(){
+    let n=0, dt=new Date();
+    /* today not having a win yet must not break a run that is still alive —
+       start counting from yesterday when today is still empty */
+    if(!doneOn(day(+dt)).length) dt.setDate(dt.getDate()-1);
+    while(doneOn(day(+dt)).length){
+      n++; dt.setDate(dt.getDate()-1);
+      if(n>999) break;
+    }
+    return n;
+  }
+  /* How far out the estimates run. The median, not the mean: one task that
+     took eleven times as long should not become the headline figure. */
+  function calibration(){
+    const rows=live().filter(x=>x.state==="done"&&x.guess>0&&x.spent>60)
+      .sort((a,b)=>b.doneAt-a.doneAt).slice(0,12)
+      .map(x=>(x.spent/60)/x.guess).sort((a,b)=>a-b);
+    if(rows.length<4) return null;
+    const m=rows.length%2 ? rows[(rows.length-1)/2] : (rows[rows.length/2-1]+rows[rows.length/2])/2;
+    return {n:rows.length, ratio:m};
+  }
+
+  function winsHTML(){
+    const today=pToday(), dl=doneOn(today), secs=secsOn(today), wk=last7();
+    const max=Math.max(1,...wk.map(x=>x.count));
+    const sr=streak(), cal=calibration();
+    return `<div class="card pad">
+      <span class="eyebrow">${T("Today")}</span>
+      <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:9px">
+        <div class="stat"><b>${esc(dl.length)}</b><span>${T(dl.length===1?"thing finished":"things finished")}</span></div>
+        <div class="stat"><b>${esc(secs?fmtMins(secs/60):"—")}</b><span>${T("actually focused")}</span></div>
+        <div class="stat"><b>${esc(sr||"—")}</b><span>${T(sr===1?"day in a row":"days in a row")}</span></div>
+      </div>
+      ${dl.length?`<div class="ad-list" style="margin-top:12px">${dl.map(taskRow).join("")}</div>`
+        :`<p class="empty">${T("Nothing yet today. One small thing counts — that is not a consolation prize, it is how the day starts.")}</p>`}
+    </div>
+
+    <div class="card pad">
+      <span class="eyebrow">${T("The last seven days")}</span>
+      <div class="ad-spark">
+        ${wk.map(d=>`<div class="ad-spark-d${d.d===today?" is-today":""}" title="${esc(d.d)} · ${esc(d.count)} · ${esc(fmtMins(d.secs/60))}">
+          <span class="ad-spark-b" style="height:${Math.round(d.count/max*100)}%"></span>
+          <span class="ad-spark-l">${T(d.label)}</span></div>`).join("")}
+      </div>
+      <p class="hint">${T("Bars are things finished. An empty day is a day, not a verdict.")}</p>
+    </div>
+
+    ${cal?`<div class="card pad">
+      <span class="eyebrow">${T("Your sense of time")}</span>
+      <p class="ad-calib" style="margin-top:9px">${
+        cal.ratio>=1.15 ? esc(t("Over your last {n} timed tasks you took about {x}× as long as you guessed. Not a flaw — multiply the next guess by {x} and the day will fit.").replace("{n}",cal.n).replace(/\{x\}/g,cal.ratio.toFixed(1)))
+        : cal.ratio<=0.85 ? esc(t("Over your last {n} timed tasks you finished in about {x}× your guess — you are giving yourself more room than you need.").replace("{n}",cal.n).replace("{x}",cal.ratio.toFixed(1)))
+        : esc(t("Over your last {n} timed tasks your guesses were about right. That is rarer than it sounds.").replace("{n}",cal.n))
+      }</p>
+    </div>`:""}`;
+  }
+
+  /* ============================ actions ============================ */
+  function setScope(s){
+    scope=SCOPES.includes(s)?s:"now";
+    openId=null;
+    menu(false);
+    render();
+  }
+  function menu(on){
+    const m=$("#adMenu"), b=$("#adMenuBtn");
+    if(!m||!b) return;
+    m.hidden=!on; b.setAttribute("aria-expanded",String(!!on));
+  }
+
+  function add(title, patch){
+    const s=String(title||"").trim(); if(!s) return null;
+    const task=newTask(s,patch);
+    st().tasks.unshift(task); touch();
+    return task;
+  }
+
+  /* Starting is the whole product, so everything routes through here: bank
+     whatever was running, arm a fresh clock, land on Now. */
+  function begin(task, mins){
+    if(!task||task.state!=="open") return;
+    bankTimer();
+    st().current=task.id; touch();
+    armTimer(task, mins||task.mins);
+    scope="now"; openId=null;
+    render();
+    ritual(()=>{ runTimer(true); render(); });
+  }
+  function ritual(then){
+    if(!st().settings.ritual || matchMedia("(prefers-reduced-motion: reduce)").matches) return then();
+    const el=document.createElement("div");
+    el.className="ad-ritual"; el.setAttribute("role","status");
+    el.innerHTML=`<div><div class="ad-ritual-n">3</div>
+      <div class="ad-ritual-s">${T("Put everything else down. You only have to start.")}</div></div>`;
+    document.body.appendChild(el);
+    let n=3;
+    const num=el.querySelector(".ad-ritual-n");
+    clearInterval(ritualTimer);
+    const stop=()=>{ clearInterval(ritualTimer); ritualTimer=null; el.remove(); };
+    /* tapping through it is always allowed — waiting three seconds for a
+       ritual you did not want is its own small friction */
+    el.addEventListener("click",()=>{ stop(); then(); });
+    ritualTimer=setInterval(()=>{
+      n--;
+      if(n<=0){ stop(); then(); return; }
+      num.textContent=String(n);
+    },1000);
+  }
+
+  function finish(task){
+    if(!task) return;
+    const secs=bankTimer();
+    task.state="done"; task.doneAt=Date.now(); task.guess=task.mins||0;
+    task.today=false;
+    if(st().current===task.id) st().current=null;
+    touch();
+    flash = secs>=60
+      ? t("Done — {a} of actual work on it.").replace("{a}", fmtMins((task.spent||0)/60))
+      : t("Done. That is one fewer thing going round your head.");
+    scope="now"; openId=null; render();
+  }
+
+  /* Parking is a first-class move, not a failure: it counts, so a task that
+     keeps coming back can be spotted and cut up, but nothing anywhere ever
+     colours it red. */
+  function park(task){
+    if(!task) return;
+    bankTimer();
+    task.moves=(task.moves||0)+1;
+    if(st().current===task.id) st().current=null;
+    touch();
+    flash=t("Parked. It is still on the list — nothing was lost.");
+    render();
+  }
+
+  function toToday(task){
+    if(!task||task.today) return;
+    const cap=st().settings.cap||3;
+    const cur=todayList().filter(x=>!x.doneAt);
+    if(cur.length>=cap){ askSwap(task, cur); return; }
+    task.today=true; task.todayAt=Date.now();
+    if(task.state==="in") task.state="open";
+    touch(); render();
+  }
+  function offToday(task){
+    if(!task) return;
+    task.today=false; task.moves=(task.moves||0)+1; touch(); render();
+  }
+  function askSwap(task, cur){
+    const dlg=$("#adSwapDlg"); if(!dlg) return;
+    $("#adSwapHead").textContent=t("Today is full");
+    $("#adSwapBody").innerHTML=`<p class="hint" style="margin-bottom:11px">${
+      esc(t("To put “{new}” on today, one of these comes off. Nothing is deleted — it goes back on the list.").replace("{new}",task.title))}</p>
+      <div class="ad-list">${cur.map(x=>`<div class="ad-row"><div class="ad-row-b">
+        <div class="ad-row-t">${esc(x.title)}</div></div>
+        <div class="ad-row-acts"><button type="button" class="chip" data-adswap="${esc(x.id)}">${T("Take this off")}</button></div>
+      </div>`).join("")}</div>`;
+    $("#adSwapBody").onclick=e=>{
+      const b=e.target.closest("[data-adswap]"); if(!b) return;
+      const outT=byId(b.dataset.adswap);
+      if(outT){ outT.today=false; outT.moves=(outT.moves||0)+1; }
+      task.today=true; task.todayAt=Date.now();
+      if(task.state==="in") task.state="open";
+      touch();
+      try{ dlg.close(); }catch(e2){}
+      render();
+    };
+    try{ dlg.showModal(); }catch(e){ dlg.setAttribute("open",""); }
+  }
+
+  function bin(task){
+    if(!task) return;
+    if(st().current===task.id){ bankTimer(); st().current=null; }
+    task.state="binned"; task.today=false; touch();
+    openId=null; render();
+  }
+
+  /* ---------------- one delegated listener for the whole module ---------------- */
+  function wire(){
+    const view=$("#view-adhd"); if(!view||view.dataset.adWired) return;
+    view.dataset.adWired="1";
+
+    $("#adMenuBtn").addEventListener("click",e=>{ e.stopPropagation(); menu($("#adMenu").hidden); });
+    $("#adMenu").addEventListener("click",e=>{
+      const b=e.target.closest("[data-adscope]"); if(b) setScope(b.dataset.adscope);
+    });
+    document.addEventListener("click",()=>{ const m=$("#adMenu"); if(m&&!m.hidden) menu(false); });
+    $("#adSwapCancel").addEventListener("click",()=>{ try{ $("#adSwapDlg").close(); }catch(e){} });
+
+    view.addEventListener("submit",e=>{
+      const f=e.target;
+      if(f.id==="adDumpForm"){
+        e.preventDefault();
+        const i=$("#adDumpIn");
+        if(add(i.value)){ i.value=""; render(); const j=$("#adDumpIn"); if(j) j.focus(); }
+        return;
+      }
+      if(f.id==="adNewForm"){
+        e.preventDefault();
+        const i=$("#adNewIn");
+        if(add(i.value,{state:"open"})){ i.value=""; render(); const j=$("#adNewIn"); if(j) j.focus(); }
+        return;
+      }
+      if(f.id==="adCatchForm"){
+        e.preventDefault();
+        const i=$("#adCatchIn"), v=i.value.trim();
+        if(!v) return;
+        add(v);
+        i.value="";
+        /* deliberately does NOT re-render: rebuilding the screen would take
+           the clock, the focus and the momentum with it — which is the exact
+           thing this box exists to prevent */
+        const out=$("#adCaught");
+        if(out){ out.textContent=t("Kept. Back to it."); setTimeout(()=>{ const o=$("#adCaught"); if(o) o.textContent=""; },2600); }
+      }
+    });
+
+    view.addEventListener("click",e=>{
+      const en=e.target.closest("[data-aden]");
+      if(en){
+        const box=en.closest("[data-adedit]");
+        const task=box&&byId(box.dataset.adedit);
+        if(task){ task.energy=en.dataset.aden; touch(); render(); }
+        return;
+      }
+      const go=e.target.closest("[data-adgo]");
+      if(go){ setScope(go.dataset.adgo); return; }
+      const pick=e.target.closest("[data-adpick]");
+      if(pick){ begin(byId(pick.dataset.adpick)); return; }
+
+      const btn=e.target.closest("[data-adact]"); if(!btn) return;
+      const act=btn.dataset.adact;
+      const row=btn.closest("[data-adid],[data-adedit]");
+      const id=row && (row.dataset.adid||row.dataset.adedit);
+      const task=id?byId(id):curTask();
+
+      switch(act){
+        case "go":       runTimer(true); render(); break;
+        case "pause":    runTimer(false); render(); break;
+        case "plus5":  { const T0=timer(); if(T0){ T0.planned+=300; T0.rang=0; saveLocal(); paintClock(); } break; }
+        case "done":     finish(curTask()); break;
+        case "park":     park(curTask()); break;
+        case "stepdone":{ const c=curTask(); if(!c) break;
+                          const s=(c.steps||[]).find(x=>!x.done);
+                          if(s){ s.done=true; touch(); }
+                          if(!(c.steps||[]).some(x=>!x.done)) finish(c); else render();
+                          break; }
+        case "toobig":
+        case "setstep": { const c=curTask(); if(!c) break;
+                          scope="all"; openId=c.id; render();
+                          const sel=act==="setstep" ? `[data-adedit="${c.id}"] [data-adf="step"]` : `[data-adedit="${c.id}"]`;
+                          const el2=document.querySelector(sel);
+                          if(el2){ el2.scrollIntoView({block:"center"}); if(act==="setstep") el2.focus(); }
+                          break; }
+        case "roll":    { const pool=todayList().filter(x=>!x.doneAt);
+                          const from=pool.length?pool:openTasks();
+                          if(from.length) begin(from[Math.floor(Math.random()*from.length)]);
+                          break; }
+        case "tiny":    { const sm=openTasks().slice().sort((a,b)=>(a.mins||15)-(b.mins||15))[0];
+                          if(sm) begin(sm,5);
+                          break; }
+        case "startfirst": { const f=todayList().filter(x=>!x.doneAt)[0]; if(f) begin(f); break; }
+        case "start":    begin(task); break;
+        case "tick":     if(!task) break;
+                         if(task.state==="done"){ task.state="open"; task.doneAt=0; touch(); render(); }
+                         else finish(task);
+                         break;
+        case "reopen":   if(task){ task.state="open"; task.doneAt=0; touch(); render(); } break;
+        /* the two-minute rule: this is a DO IT action, not a planning one, so
+           it deliberately does not take one of the day's three slots — a
+           two-minute job that eats a slot is exactly what the cap is for */
+        case "two":      if(task){ task.state="open"; task.mins=2; touch(); begin(task,2); } break;
+        case "totoday":  toToday(task); break;
+        case "offtoday": offToday(task); break;
+        case "keep":     if(task){ task.state="open"; touch(); render(); } break;
+        case "bin":      bin(task); break;
+        case "edit":     openId = (openId===id) ? null : id; render(); break;
+        case "closeedit":openId=null; render(); break;
+        case "stepadd":  if(task){ (task.steps=task.steps||[]).push({id:uid(),text:"",done:false}); touch(); render();
+                           const ins=document.querySelectorAll(`[data-adedit="${task.id}"] [data-adstepf]`);
+                           if(ins.length) ins[ins.length-1].focus();
+                         } break;
+        case "steptick": if(task){ const s=(task.steps||[])[+btn.dataset.adstep];
+                           if(s){ s.done=!s.done; touch(); render(); } } break;
+        case "stepdel":  if(task){ (task.steps||[]).splice(+btn.dataset.adstep,1); touch(); render(); } break;
+      }
+    });
+
+    /* field edits are written on "change", never on every keystroke: touch()
+       serialises the whole state object, and a per-keystroke save is felt on
+       a phone */
+    view.addEventListener("change",e=>{
+      const el=e.target;
+      if(el.id==="adCapIn"){ st().settings.cap=Math.max(1,Math.min(6,+el.value||3)); touch(); render(); return; }
+      if(el.id==="adRitual"){ st().settings.ritual=el.checked; touch(); return; }
+      if(el.id==="adBuzz"){ st().settings.buzz=el.checked; touch(); return; }
+      if(el.id==="adDefMins"){ st().settings.mins=Math.max(5,Math.min(120,+el.value||15)); touch(); return; }
+      const box=el.closest("[data-adedit]"); if(!box) return;
+      const task=byId(box.dataset.adedit); if(!task) return;
+      if(el.dataset.adf){
+        const k=el.dataset.adf;
+        if(k==="mins") task.mins=Math.max(1,Math.min(480,+el.value||15));
+        else task[k]=el.value;
+        touch();
+        if(k==="mins"||k==="title"||k==="step") render();
+        return;
+      }
+      if(el.dataset.adstepf!==undefined){
+        const s=(task.steps||[])[+el.dataset.adstepf];
+        if(s){ s.text=el.value; touch(); }
+      }
+    });
+  }
+
+  /* Escape closes the module's own menu or open editor rather than doing
+     nothing — the only global listener this module adds. */
+  document.addEventListener("keydown",e=>{
+    if(curView!=="adhd"||e.key!=="Escape") return;
+    const m=$("#adMenu");
+    if(m&&!m.hidden){ menu(false); return; }
+    if(openId){ openId=null; render(); }
+  });
+
+  return {
+    render(){ wire(); render(); },
+    scope(s){ wire(); setScope(s); }
+  };
+})();
+window.AD = AD;
+
+Object.assign(CS, {
+  "ADHD Planner":"ADHD plánovač",
+  "A separate bench, still being built. Nothing here touches the Daily Planner or anything else in the app.":
+    "Samostatný ponk, pořád se staví. Nic tady se nedotýká Denního plánovače ani ničeho jiného v appce.",
+  "Experimental":"Experimentální",
+  "Now":"Teď", "Dump":"Vysyp", "Everything":"Všechno", "Wins":"Výhry",
+  "Right now":"Právě teď",
+  "First move":"První pohyb", "Next step":"Další krok",
+  "first move:":"první pohyb:",
+  "What is the very first thing you touch?":"Čeho se úplně první dotkneš?",
+  "Time left on this task":"Zbývající čas na tomhle úkolu",
+  "left":"zbývá", "over":"přes", "paused":"pauza",
+  "Start":"Začít", "Carry on":"Pokračovat", "Pause":"Pauza",
+  "Step done":"Krok hotový", "Park it":"Odložit", "Too big":"Moc velké",
+  "Caught a thought? Put it here and carry on":"Napadlo tě něco? Napiš to sem a pokračuj",
+  "Keep":"Uložit", "Kept. Back to it.":"Uloženo. Zpátky k tomu.",
+  "Spent on this so far:":"Zatím na tom:", "you thought":"tipoval(a) jsi",
+  "Pick one thing":"Vyber jednu věc",
+  "What are you doing next?":"Co budeš dělat teď?",
+  "Nothing is chosen for today — start with the smallest one.":"Na dnešek nic vybraného — začni tím nejmenším.",
+  "Pick one for me":"Vyber za mě",
+  "I have nothing left in me":"Už ve mně nic není",
+  "Choose today's three":"Vyber tři na dnešek",
+  "Whichever you press, it starts a clock. You are allowed to stop it.":
+    "Ať zmáčkneš cokoli, spustí se hodiny. Smíš je zastavit.",
+  "Everything is still sitting in the Dump. Sort a couple of them and they will show up here.":
+    "Všechno pořád leží ve Vysypu. Pár jich zatřiď a objeví se tady.",
+  "Nothing on the list yet. Put something in the Dump — you do not have to decide anything about it.":
+    "Na seznamu zatím nic. Hoď něco do Vysypu — nemusíš o tom nic rozhodovat.",
+  "Open the Dump":"Otevřít Vysyp",
+  "Get it out of your head":"Dostaň to z hlavy",
+  "Anything at all. Press enter. Repeat.":"Cokoli. Zmáčkni enter. Znovu.",
+  "No date, no category, no priority. Deciding is a separate job for a separate moment — this box is only for stopping the thought from going round.":
+    "Žádné datum, žádná kategorie, žádná priorita. Rozhodování je jiná práce na jindy — tohle políčko je jen na to, aby ti ta myšlenka přestala kroužit.",
+  "Waiting to be sorted":"Čeká na zatřídění",
+  "Nothing waiting. That is a good place to be.":"Nic nečeká. To je dobrý stav.",
+  "dumped":"vysypáno", "just now":"právě teď", "min ago":"min zpět", "h ago":"h zpět",
+  "day ago":"den zpět", "days ago":"dní zpět",
+  "Later":"Později", "Bin it":"Vyhodit",
+  "That is a full day. Anything else has to wait, or swap in.":
+    "To je plný den. Cokoli dalšího musí počkat, nebo něco vyměnit.",
+  "Room for {n} more.":"Místo ještě pro {n}.",
+  "Nothing chosen. Pick from Everything, or take the top of the Dump.":
+    "Nic vybraného. Vyber ve Všechno, nebo vezmi vršek Vysypu.",
+  "Choose from Everything":"Vybrat ve Všechno",
+  "Start the first one":"Začít tím prvním",
+  "Already done today":"Dnes už hotovo",
+  "How many things is a day":"Kolik věcí je den",
+  "Three is the usual answer. The cap exists so that the list stays something you could actually finish — a list you never finish stops meaning anything.":
+    "Obvyklá odpověď jsou tři. Strop existuje proto, aby seznam zůstal něčím, co jde doopravdy dodělat — seznam, který nikdy nedoděláš, přestane cokoli znamenat.",
+  "Add something straight to the list":"Přidat rovnou na seznam",
+  "Grouped by how much brain it needs, not by how important it is. On a flat day you work down from Light and still get somewhere.":
+    "Seřazeno podle toho, kolik to chce mozku, ne podle důležitosti. V mrtvém dni jedeš odshora od Lehkých a stejně někam dojdeš.",
+  "Light":"Lehké", "Medium":"Střední", "Deep":"Náročné",
+  "Almost no brain needed — these are for when you are running on empty.":
+    "Skoro žádný mozek — tohle je na to, když už jedeš na výpary.",
+  "An ordinary amount of thinking.":"Běžné množství přemýšlení.",
+  "Needs a quiet head and an uninterrupted run at it.":"Chce klidnou hlavu a nepřerušený nájezd.",
+  "Nothing on the list.":"Na seznamu nic.",
+  "Count me down from three before a timer starts":"Odpočítat mi od tří, než se spustí čas",
+  "Buzz the phone when the time is up":"Zabzučet telefonem, až vyprší čas",
+  "Default length of a sitting":"Výchozí délka sezení",
+  "Mark it done":"Odškrtnout", "Put it back":"Vrátit zpět",
+  "steps":"kroků", "spent":"stráveno",
+  "moved {n}×":"přesunuto {n}×",
+  "Do it now":"Udělat teď", "Off today":"Pryč z dneška",
+  "This has moved {n} times.":"Tohle se přesunulo už {n}×.",
+  "That usually means it is too big to picture, not that you are lazy. Write down only the first physical thing you would touch, and make that the task.":
+    "To obvykle znamená, že je to moc velké na to, aby sis to představil(a), ne že jsi líný(á). Napiš jen první fyzickou věc, které by ses dotkl(a), a udělej z ní ten úkol.",
+  "What it is":"Co to je",
+  "The very first move":"Úplně první pohyb",
+  "e.g. open the folder called Tax":"např. otevřít složku Daně",
+  "Something you could do while still holding a cup of tea. Not “do the tax return” — “open the folder”.":
+    "Něco, co zvládneš s hrnkem čaje v ruce. Ne „udělat daňové přiznání“ — „otevřít složku“.",
+  "Break it into steps":"Rozlož to na kroky",
+  "+ another step":"+ další krok", "Remove step":"Odebrat krok",
+  "How much brain":"Kolik mozku", "How long, honestly":"Jak dlouho, popravdě",
+  "Anything else":"Cokoli dalšího", "Throw it away":"Vyhodit",
+  "thing finished":"věc hotová", "things finished":"věcí hotových",
+  "actually focused":"skutečně soustředěno",
+  "day in a row":"den v řadě", "days in a row":"dní v řadě",
+  "Nothing yet today. One small thing counts — that is not a consolation prize, it is how the day starts.":
+    "Dnes zatím nic. Jedna malá věc se počítá — to není cena útěchy, tak den začíná.",
+  "The last seven days":"Posledních sedm dní",
+  "Bars are things finished. An empty day is a day, not a verdict.":
+    "Sloupce jsou hotové věci. Prázdný den je den, ne rozsudek.",
+  "Your sense of time":"Tvůj cit pro čas",
+  "Over your last {n} timed tasks you took about {x}× as long as you guessed. Not a flaw — multiply the next guess by {x} and the day will fit.":
+    "Na posledních {n} měřených úkolech ti to trvalo asi {x}× déle, než jsi tipoval(a). Není to vada — příští tip vynásob {x} a den bude sedět.",
+  "Over your last {n} timed tasks you finished in about {x}× your guess — you are giving yourself more room than you need.":
+    "Na posledních {n} měřených úkolech jsi skončil(a) asi za {x}× svého tipu — dáváš si víc prostoru, než potřebuješ.",
+  "Over your last {n} timed tasks your guesses were about right. That is rarer than it sounds.":
+    "Na posledních {n} měřených úkolech byly tvoje tipy zhruba správně. To je vzácnější, než to zní.",
+  "Today is full":"Dnešek je plný",
+  "To put “{new}” on today, one of these comes off. Nothing is deleted — it goes back on the list.":
+    "Aby šlo „{new}“ na dnešek, jedna z těchhle musí pryč. Nic se nemaže — vrátí se na seznam.",
+  "Take this off":"Tuhle sundat", "Leave it as it is":"Nechat, jak to je",
+  "{n} waiting in the Dump":"{n} čeká ve Vysypu",
+  "Put everything else down. You only have to start.":"Všechno ostatní polož. Stačí jen začít.",
+  "Done — {a} of actual work on it.":"Hotovo — {a} skutečné práce na tom.",
+  "Done. That is one fewer thing going round your head.":"Hotovo. O jednu věc v hlavě míň.",
+  "Parked. It is still on the list — nothing was lost.":"Odloženo. Pořád je to na seznamu — nic se neztratilo.",
+  "Mon":"Po","Tue":"Út","Wed":"St","Thu":"Čt","Fri":"Pá","Sat":"So","Sun":"Ne"
 });
 
 </script>
