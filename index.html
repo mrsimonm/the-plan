@@ -16291,6 +16291,49 @@ function sparkline(pts){
     <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="3.5" fill="var(--accent)"></circle>
   </svg>`;
 }
+/* ---- where it came from, and what it is worth ------------------------------
+   Its own card rather than another chip in the meta row: a chip is for what you
+   take in at a glance, and a price is something you go looking for.
+
+   Rendered only when there is something to say, so a plant nobody has priced
+   shows nothing at all rather than an empty shell full of dashes — the same
+   rule the Stats cards follow. */
+const ACQ_ROW={bought:"Bought", gift:"A gift", swap:"Swapped", grown:"Grown"};
+const ACQ_ROW_CS={bought:"Koupeno", gift:"Dárek", swap:"Výměna", grown:"Vypěstováno"};
+function pvProvenance(p){
+  const cs=L.lang==="cs";
+  const paid=paidCZK(p), worth=worthCZK(p), kind=p.acq||"bought";
+  if(!(paid>0||+p.worth>0||p.bought||p.from||isGrown(p))) return "";
+  const when=p.bought
+    ? new Date(fromYmd(p.bought)).toLocaleDateString(locale(),{month:"long",year:"numeric"})
+    : "";
+  /* The parent is a link whenever it is still in the collection — being able to
+     walk from a cutting back to the plant it came off is the whole reason
+     parentId is kept, and it has had nowhere to show itself until now. */
+  const parent=p.parentId?subject(p.parentId):null;
+  const origin=isGrown(p)
+    ? (parent
+        ? `${cs?"z tvé ":"from your "}<button type="button" class="linkish"
+             data-open-plant="${esc(parent.id)}">${esc(parent.name)}</button>`
+        : esc(p.from||(cs?"z řízku":"from a cutting")))
+    : esc(p.from||"");
+  const originLine=[origin,when?esc(when):""].filter(Boolean).join(" · ");
+  const row=(k,v)=>`<div class="pline"><span class="pline-k" style="width:74px">${esc(k)}</span>
+    <span class="pline-v" style="white-space:normal">${v}</span></div>`;
+  const rows=[row((cs?ACQ_ROW_CS:ACQ_ROW)[kind]||(cs?"Koupeno":"Bought"), originLine||"—")];
+  if(paid>0) rows.push(row(cs?"Stálo":"Paid", esc(money(paid))));
+  if(worth>0){
+    /* the comparison is the interesting half — a plant that has doubled and one
+       that has not are the same number until you say what it cost */
+    const pct=paid>0&&worth!==paid
+      ? ` <em style="font-style:normal; opacity:.6">${worth>paid?"+":"−"}${
+          Math.round(Math.abs(worth-paid)/paid*100)}%</em>` : "";
+    rows.push(row(cs?"Hodnota":"Worth", esc(money(worth))+pct));
+  }
+  return `<div class="card"><div class="pad" style="padding-bottom:6px">
+      <span class="eyebrow">${esc(cs?"Původ":"Where it came from")}</span></div>
+    <div class="pad" style="padding-top:0">${rows.join("")}</div></div>`;
+}
 function renderPlant(){
   const p=subject(pvId);
   if(!p){ show("plants"); return; }
@@ -16333,6 +16376,8 @@ function renderPlant(){
         </div>
       </div>
     </div>
+
+    ${pvProvenance(p)}
 
     <div class="card">
       <div class="pad" style="padding-bottom:6px"><span class="eyebrow">Care</span></div>
@@ -16517,6 +16562,9 @@ $("#pvBody").addEventListener("click",async e=>{
   const did=q("did"),ed=q("edit-plant"),mx=q("mix"),add=q("addphoto"),sh=q("shot"),del=q("del-plant");
   const tg=q("tag");
   if(tg){ explainTag(tg.dataset.tag); return; }
+  /* the parent link in the provenance card — walk from a cutting to its mother */
+  const op=q("open-plant");
+  if(op){ openPlantPage(op.dataset.openPlant); return; }
   const lf=q("leaf"), lu=q("leafundo");
   /* Logging a leaf touches no routine and nothing falls due because of it, so
      only the plant's own page and the log need redrawing — the agenda and the
