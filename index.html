@@ -6257,6 +6257,27 @@ html[data-shell="rail"] body{
         <p class="tbs-err" id="tbsStaffErr" hidden></p>
         <p class="tbs-muted" style="font-size:12px">A student never sees this screen — they open their own link instead.</p>
       </div>
+
+      <!-- New teachers make their own account here, with a code the owner
+           gives them. Kept behind a disclosure rather than shown open,
+           because signing in is what nearly everyone is here to do. -->
+      <div class="card pad stack">
+        <button class="btn" id="tbsRegToggle" aria-expanded="false" aria-controls="tbsRegForm">
+          First time? Make a teacher account</button>
+        <div id="tbsRegForm" hidden class="stack">
+          <div class="field"><label for="tbsRegCode">Invite code</label>
+            <input id="tbsRegCode" placeholder="ABCD1234" autocomplete="off" style="text-transform:uppercase">
+            <p class="tbs-muted" style="font-size:12px;margin:6px 0 0">The person who runs the school gives you this.</p></div>
+          <div class="field"><label for="tbsRegName">Your name</label>
+            <input id="tbsRegName" placeholder="Jana Nováková" autocomplete="name"></div>
+          <div class="field"><label for="tbsRegEmail">Email</label>
+            <input id="tbsRegEmail" type="email" autocomplete="username" placeholder="you@example.com"></div>
+          <div class="field"><label for="tbsRegPass">Choose a password</label>
+            <input id="tbsRegPass" type="password" autocomplete="new-password" placeholder="At least six characters"></div>
+          <button class="btn primary" id="tbsRegGo">Make my account</button>
+          <p class="tbs-err" id="tbsRegErr" hidden></p>
+        </div>
+      </div>
     </div>
 
     <!-- staff: roster + per-student detail -->
@@ -6272,6 +6293,19 @@ html[data-shell="rail"] body{
         </div>
       </div>
       <div class="card" id="tbsStudentList"></div>
+
+      <!-- Owner only: hand a new teacher a code instead of opening the
+           Firebase console. Hidden entirely for a plain teacher. -->
+      <div class="card pad stack" id="tbsInviteCard" hidden>
+        <span class="eyebrow">Teachers</span>
+        <div class="row" style="gap:8px">
+          <input id="tbsInviteName" placeholder="Their name (optional)" style="flex:1" aria-label="New teacher name">
+          <button class="btn primary" id="tbsInviteGo">Make a code</button>
+        </div>
+        <div id="tbsInviteOut"></div>
+        <p class="tbs-muted" style="font-size:12px">They open Teachbench, choose “First time? Make a teacher account”, and put the code in. The code keeps working until you revoke it, so revoke it once they are in.</p>
+        <div id="tbsInviteList"></div>
+      </div>
     </div>
 
     <div class="tbs-screen" id="tbsStaffStudent" hidden>
@@ -28214,6 +28248,64 @@ const TBS = (() => {
     if(!snap.exists){ await auth.signOut(); throw new Error("not-staff"); }
     return { uid:cred.user.uid, ...snap.data() };
   }
+
+  /* ---- new teachers, without a trip to the Firebase console ----
+     A teacher can read every one of their students' records, so this can
+     never be open self-registration the way potting-bench sync can: anybody
+     who found the URL would be able to sign themselves up and read children's
+     work. So it is invite-gated, in exactly the shape roomOrgs/members
+     already proved — the owner issues a code, the code's SHA-256 is the
+     document id (so knowing the id IS knowing the code, and the collection
+     cannot be listed into a way in), and firestore.rules lets a brand-new
+     account write its OWN staff row only when that row carries the hash of
+     an invite that really exists and names the role being claimed.
+
+     The one thing that stays a console job is the very first owner, which
+     is a genuine bootstrap and happens once in the life of the project. */
+  async function makeStaffInvite(role, name){
+    await init();
+    const code = makeCode();
+    const hash = await sha256Hex(normaliseCode(code));
+    await db.collection("staffInvites").doc(hash).set({
+      role: role === "owner" ? "owner" : "teacher",
+      name: String(name||"").trim(),
+      createdAt: new Date().toISOString(),
+      createdBy: (auth.currentUser && auth.currentUser.uid) || ""
+    });
+    return code;
+  }
+  async function listStaffInvites(){
+    await init();
+    const snap = await db.collection("staffInvites").get();
+    return snap.docs.map(d => ({ hash:d.id, ...d.data() }))
+      .sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  }
+  async function revokeStaffInvite(hash){
+    await init();
+    await db.collection("staffInvites").doc(hash).delete();
+  }
+  /* Register and redeem in one step. The invite is checked BEFORE the account
+     is created — reading it only needs to be signed in at all, which an
+     anonymous session satisfies — so a wrong code cannot leave a stranded
+     auth user behind with no staff row and no way to explain itself. */
+  async function registerStaff(email, password, rawCode, displayName){
+    await init();
+    const hash = await sha256Hex(normaliseCode(rawCode));
+    if(!auth.currentUser) await auth.signInAnonymously();
+    const inv = await db.collection("staffInvites").doc(hash).get();
+    if(!inv.exists) throw new Error("bad-invite");
+    const role = inv.data().role === "owner" ? "owner" : "teacher";
+
+    const cred = await auth.createUserWithEmailAndPassword(email, password);
+    const uid = cred.user.uid;
+    /* inviteHash travels with the row: it is the only thing the rules can
+       check to see that this account really did hold a code for this role */
+    const doc = { role, inviteHash: hash,
+      name: String(displayName||"").trim() || (inv.data().name || email.split("@")[0]),
+      email, createdAt: new Date().toISOString() };
+    await db.collection("staff").doc(uid).set(doc);
+    return { uid, ...doc };
+  }
   async function currentStaff(){
     await init();
     const u = await currentUser();
@@ -28513,6 +28605,7 @@ const TBS = (() => {
   }
 
   return { init, redeemCode, myStudentId, signInStaff, currentStaff, signOut,
+           registerStaff, makeStaffInvite, listStaffInvites, revokeStaffInvite,
            onRoster, onStudent, addStudent, knownCode, reissueCode,
            onCards, addCard, deleteCard, submitReview,
            onHomework, sendHomework, photoUrl,
@@ -28960,6 +29053,10 @@ const TBS_UI = (() => {
      teacher's own local Teachbench, not in Firestore. */
   const DAY_MS = 86400000;
   const dayKey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  /* Set when the sign-in screen is wired; enterStaff calls it once it knows
+     whether this account is the owner. Declared out here because the wiring
+     and enterStaff are two separate functions in this module. */
+  let tbsPaintInvites = null;
 
   function dueByDay(){
     const map = new Map();
@@ -29301,6 +29398,13 @@ const TBS_UI = (() => {
     dropListeners();
     show("tbsStaffHome");
     $$("tbsStaffTitle").textContent = staff.role === "owner" ? "All students" : "Your students";
+    /* Only the owner may issue teacher codes — the rules say so too, so this
+       is the honest face of a real restriction rather than a hidden button. */
+    const inviteCard = $$("tbsInviteCard");
+    if(inviteCard){
+      inviteCard.hidden = staff.role !== "owner";
+      if(staff.role === "owner" && tbsPaintInvites) tbsPaintInvites();
+    }
     state.unsub.push(TBS.onRoster(staff, list => {
       state.roster = list.slice().sort((a,b) => String(a.name).localeCompare(String(b.name)));
       renderRoster();
@@ -29665,6 +29769,75 @@ const TBS_UI = (() => {
     };
     $$("tbsStaffGo").onclick = tryStaff;
     $$("tbsPass").onkeydown = e => { if(e.key === "Enter") tryStaff(); };
+
+    /* staff: making an account with an invite code */
+    $$("tbsRegToggle").onclick = () => {
+      const f = $$("tbsRegForm"), open = f.hidden;
+      f.hidden = !open;
+      $$("tbsRegToggle").setAttribute("aria-expanded", String(open));
+    };
+    const tryRegister = async () => {
+      const err = $$("tbsRegErr"), b = $$("tbsRegGo");
+      const code = $$("tbsRegCode").value.trim();
+      const mail = $$("tbsRegEmail").value.trim();
+      const pass = $$("tbsRegPass").value;
+      if(!code || !mail || !pass){
+        err.textContent = "The code, an email and a password — all three.";
+        err.hidden = false; return;
+      }
+      err.hidden = true; b.disabled = true; b.textContent = "Making it…";
+      try{
+        const staff = await TBS.registerStaff(mail, pass, code, $$("tbsRegName").value.trim());
+        $$("tbsRegPass").value = "";
+        enterStaff(staff);
+      }catch(e){
+        const c = e && e.code;
+        err.textContent =
+          (e && e.message === "bad-invite") ? "That code does not open anything. Check it with whoever gave it to you." :
+          c === "auth/email-already-in-use" ? "There is already an account with that email — sign in above instead." :
+          c === "auth/weak-password" ? "That password is too short. Six characters or more." :
+          c === "auth/invalid-email" ? "That does not look like an email address." :
+          c === "auth/network-request-failed" ? "No connection. Try again." :
+          "Could not make the account.";
+        err.hidden = false;
+      }finally{ b.disabled = false; b.textContent = "Make my account"; }
+    };
+    $$("tbsRegGo").onclick = tryRegister;
+    $$("tbsRegPass").onkeydown = e => { if(e.key === "Enter") tryRegister(); };
+
+    /* staff: the owner handing out those codes */
+    async function paintInvites(){
+      const box = $$("tbsInviteList"); if(!box) return;
+      try{
+        const rows = await TBS.listStaffInvites();
+        box.innerHTML = rows.length
+          ? rows.map(r => `<div class="row" style="gap:8px;align-items:center;margin-top:7px">
+              <span style="flex:1;font-size:12.5px">${(r.name || "unnamed").replace(/[<>&]/g,"")}
+                <span class="tbs-muted">· ${String(r.role)} · ${String(r.createdAt||"").slice(0,10)}</span></span>
+              <button class="btn mini" data-revoke="${r.hash}">Revoke</button></div>`).join("")
+          : `<p class="tbs-muted" style="font-size:12px;margin:7px 0 0">No codes outstanding.</p>`;
+      }catch(e){ box.innerHTML = ""; }
+    }
+    $$("tbsInviteGo").onclick = async () => {
+      const b = $$("tbsInviteGo"), out = $$("tbsInviteOut");
+      b.disabled = true;
+      try{
+        const code = await TBS.makeStaffInvite("teacher", $$("tbsInviteName").value.trim());
+        out.innerHTML = `<p style="font-size:20px;font-weight:600;letter-spacing:.12em;margin:8px 0 0">${code}</p>`;
+        $$("tbsInviteName").value = "";
+        await paintInvites();
+      }catch(e){
+        out.innerHTML = `<p class="tbs-err" style="margin:8px 0 0">Could not make a code. Only the owner can.</p>`;
+      }finally{ b.disabled = false; }
+    };
+    $$("tbsInviteList").onclick = async e => {
+      const b = e.target.closest("[data-revoke]"); if(!b) return;
+      b.disabled = true;
+      try{ await TBS.revokeStaffInvite(b.dataset.revoke); await paintInvites(); }
+      catch(err){ b.disabled = false; }
+    };
+    /* exposed so enterStaff can fill it once it knows the role */
+    tbsPaintInvites = paintInvites;
     $$("tbsStaffOut").onclick = async () => {
       dropListeners(); dropStudentListeners(); dropStatListeners();
       state.staff = null; state.roster = []; state.stats = {};
@@ -33543,6 +33716,19 @@ var PSYNC = (() => {
     const u = auth.currentUser;
     if(u) attach(u).catch(err => console.warn("PSYNC", err));
   }
+  /* Making the account, rather than being handed one.
+     Sync data lives at users/{uid}/state/{doc} and firestore.rules lets only
+     that uid read or write it, so a brand-new account is complete the moment
+     it exists: nothing to provision, nothing to approve, and no way for one
+     account to see another's plants. That is what makes self-registration
+     safe here and NOT safe for Teachbench staff, who can read other people's
+     students and therefore still need an invite. */
+  async function register(email, password){
+    await init();
+    await auth.createUserWithEmailAndPassword(email, password);
+    const u = auth.currentUser;
+    if(u) attach(u).catch(err => console.warn("PSYNC", err));
+  }
   async function signOut(){
     await init();
     await auth.signOut();
@@ -33614,31 +33800,56 @@ var PSYNC = (() => {
         try{ await signOut(); }catch(e){}
       };
     }else{
+      /* Two modes on one form rather than two screens: the fields are the
+         same and the only real difference is which button was pressed.
+         Making the account here is the whole point — before this, every new
+         account had to be typed into the Firebase console by hand, which is
+         not a thing anybody should have to do to use their own app on a
+         second device. */
       panel.innerHTML =
         '<div class="field"><label for="psyncEmail">Sync across devices</label>' +
-        '<p class="hint">Sign in with the same account on your phone and your ' +
-        'laptop and they keep the same data. Photos are not synced.</p>' +
+        '<p class="hint">Use the same account on your phone and your laptop and ' +
+        'they keep the same data. Photos are not synced. If you have never ' +
+        'synced before, make an account — nothing else is needed.</p>' +
         '<input id="psyncEmail" type="email" autocomplete="username" placeholder="you@example.com">' +
         '<input id="psyncPass" type="password" autocomplete="current-password" placeholder="Password">' +
-        '<button class="btn" id="psyncIn">Sign in</button>' +
+        '<div class="btn-row"><button class="btn primary" id="psyncIn">Sign in</button>' +
+        '<button class="btn" id="psyncReg">Make an account</button></div>' +
         '<p class="hint" id="psyncErr" hidden></p></div>';
       const err = panel.querySelector("#psyncErr");
-      panel.querySelector("#psyncIn").onclick = async () => {
-        const b = panel.querySelector("#psyncIn");
-        err.hidden = true; b.disabled = true; b.textContent = "Signing in…";
+      /* One handler for both buttons: same fields, same failure surface, and
+         the error copy is the only thing that differs by mode. */
+      const go = async (mode) => {
+        const b = panel.querySelector(mode === "register" ? "#psyncReg" : "#psyncIn");
+        const other = panel.querySelector(mode === "register" ? "#psyncIn" : "#psyncReg");
+        const label = b.textContent;
+        const mail = panel.querySelector("#psyncEmail").value.trim();
+        const pass = panel.querySelector("#psyncPass").value;
+        if(!mail || !pass){
+          err.textContent = "An email and a password, and it is done.";
+          err.hidden = false; return;
+        }
+        err.hidden = true; b.disabled = other.disabled = true;
+        b.textContent = mode === "register" ? "Making it…" : "Signing in…";
         try{
-          await signIn(panel.querySelector("#psyncEmail").value.trim(),
-                       panel.querySelector("#psyncPass").value);
+          if(mode === "register") await register(mail, pass);
+          else await signIn(mail, pass);
         }catch(e){
           const c = e && e.code;
           err.textContent =
+            c === "auth/email-already-in-use" ? "There is already an account with that email — sign in instead." :
+            c === "auth/weak-password" ? "That password is too short. Six characters or more." :
+            c === "auth/invalid-email" ? "That does not look like an email address." :
             c === "auth/wrong-password" || c === "auth/invalid-credential" ? "Wrong email or password." :
-            c === "auth/user-not-found" ? "No account with that email." :
+            c === "auth/user-not-found" ? "No account with that email — make one instead." :
             c === "auth/network-request-failed" ? "No connection. Try again." :
-            "Could not sign in.";
+            mode === "register" ? "Could not make the account." : "Could not sign in.";
           err.hidden = false;
-        }finally{ b.disabled = false; b.textContent = "Sign in"; }
+        }finally{ b.disabled = other.disabled = false; b.textContent = label; }
       };
+      panel.querySelector("#psyncIn").onclick  = () => go("signin");
+      panel.querySelector("#psyncReg").onclick = () => go("register");
+      panel.querySelector("#psyncPass").onkeydown = e => { if(e.key === "Enter") go("signin"); };
     }
   }
 

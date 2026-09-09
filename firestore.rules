@@ -63,9 +63,48 @@ service cloud.firestore {
     match /staff/{uid} {
       allow get: if signedIn() && (request.auth.uid == uid || isOwner());
       allow list: if isOwner();
-      // The first owner document is created by hand in the console
-      // (bootstrap); after that only the owner can add or change staff.
+      // The first owner document is still created by hand in the console —
+      // that is a genuine bootstrap and happens once in the life of the
+      // project. After that the owner can add or change staff directly...
       allow create, update, delete: if isOwner();
+
+      // ...and a NEW teacher can write their own row, but only while holding
+      // an invite the owner actually issued. This is what stops every new
+      // teacher being a console job without making staff self-service: a
+      // teacher can read all of their students' work, so open registration
+      // here would hand anyone who found the URL a way into children's
+      // records.
+      //
+      // Same shape as roomOrgs/members: .get() with a default that can never
+      // match a real invite (a row with no inviteHash must be DENIED, not
+      // error the request out), the invite must exist, and the role claimed
+      // must be the role the invite names — so a teacher's code cannot be
+      // redeemed into an owner account.
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.get('inviteHash', '') != ''
+        && exists(/databases/$(database)/documents/staffInvites/$(request.resource.data.get('inviteHash','x')))
+        && get(/databases/$(database)/documents/staffInvites/$(request.resource.data.get('inviteHash','x'))).data.role == request.resource.data.role;
+
+      // Your own name is yours; your role is not. Without this an account
+      // could quietly promote itself to owner after redeeming a teacher code.
+      allow update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.role == resource.data.role;
+    }
+
+    // ---------- teacher invite codes ----------
+    // Doc id is the SHA-256 of the code, exactly as accessCodes and
+    // roomInvites work: one get by exact id means you already knew the code,
+    // and listing is owner-only, so codes cannot be enumerated into a way in.
+    //
+    // A get is open to any signed-in account, an anonymous one included,
+    // because the person redeeming has no account yet — the app signs in
+    // anonymously, checks the code, and only then creates the real account,
+    // so a wrong code strands no half-made user behind it.
+    match /staffInvites/{codeHash} {
+      allow get: if signedIn();
+      allow list: if isOwner();
+      allow create, delete: if isOwner();
+      allow update: if false;
     }
 
     // ---------- access codes ----------
