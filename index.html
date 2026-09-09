@@ -9476,6 +9476,35 @@ function migrate(d){
     x.cycle=c;
   });
 
+  /* v11: cuttings potted on before the bench recorded where a plant came from.
+     promoteCutting has always named them "<parent> cutting" but gave them no
+     acquisition kind, so they fell to the default and counted as bought at zero
+     — the one thing in a collection that cost nothing and is still worth
+     something was the one thing the worth card could not see.
+
+     Done here rather than left to hand-editing because the only thing that
+     identifies them is the name that function gave them, and that gets less
+     reliable with every plant anyone renames. Deliberately narrow: a plant that
+     already has a kind, a price or a value of its own is never touched, so this
+     can only ever fill a blank. Setting acq is also what makes it idempotent —
+     it will not run over the same plant twice. If it catches a cutting you
+     actually bought as one, the kind is a dropdown in the plant dialog. */
+  d.subjects.forEach(x=>{
+    if(!x||x.module!=="plants") return;
+    if(x.acq!=null||+x.price>0||+x.worth>0) return;
+    const m=/^(.*\S)\s+cutting$/i.exec(x.name||"");
+    if(!m) return;
+    x.acq="grown";
+    x.price=0;
+    /* the parent is recoverable while it still carries the name the cutting was
+       christened from — worth keeping, since it is the plant's provenance */
+    const parent=d.subjects.find(y=>y!==x&&y.module==="plants"&&y.name===m[1]);
+    if(parent){
+      if(!x.from) x.from=parent.name;
+      if(!x.cur&&parent.cur) x.cur=parent.cur;
+    }
+  });
+
   /* v8: pests, diseases and disorders. An issue whose plant has gone is dropped
      — it describes something that happened TO a plant, so without the plant it
      is not a record of anything. Status is closed to the three the UI can draw:
