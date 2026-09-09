@@ -28511,16 +28511,32 @@ const TBS = (() => {
      reads children's work — so a staff invite both expires and is burnt the
      moment it is used. Stored as epoch milliseconds because that is what
      firestore.rules can compare request.time against without parsing. */
-  const STAFF_INVITE_DAYS = 14;
+  /* How much an invite is worth stealing depends entirely on its role, and
+     the two are not close.
+
+     A TEACHER invite buys an empty account. teachbenchStudents is gated on
+     canManage() — the owner, or the teacher a student is actually assigned
+     to — so a freshly redeemed teacher can read nothing at all until the
+     owner assigns them somebody. It grants membership, not access. Two weeks.
+
+     An OWNER invite is the whole database. isOwner() satisfies canManage()
+     for every student unconditionally, so that code IS the keys from the
+     moment it is minted until it is used or expires. Nothing in this app
+     mints one — the only button hardcodes "teacher" — so it can only come
+     from somebody deliberately calling this from a console, and it should
+     live for as long as that takes and not one day longer. */
+  const STAFF_INVITE_MS = 14*86400000;      /* a teacher: two weeks */
+  const OWNER_INVITE_MS = 86400000;         /* the keys: one day    */
   async function makeStaffInvite(role, name){
     await init();
     const code = makeCode();          /* crypto.getRandomValues, not Math.random */
     const hash = await sha256Hex(normaliseCode(code));
+    const owner = role === "owner";
     await db.collection("staffInvites").doc(hash).set({
-      role: role === "owner" ? "owner" : "teacher",
+      role: owner ? "owner" : "teacher",
       name: String(name||"").trim(),
       createdAt: new Date().toISOString(),
-      expiresAtMs: Date.now() + STAFF_INVITE_DAYS*86400000,
+      expiresAtMs: Date.now() + (owner ? OWNER_INVITE_MS : STAFF_INVITE_MS),
       createdBy: (auth.currentUser && auth.currentUser.uid) || ""
     });
     return code;
@@ -30057,7 +30073,7 @@ const TBS_UI = (() => {
         const c = e && e.code;
         err.textContent =
           (e && e.message === "bad-invite") ? "That code does not open anything. Check it with whoever gave it to you." :
-          (e && e.message === "expired-invite") ? "That code has run out. Ask for a fresh one — they last two weeks." :
+          (e && e.message === "expired-invite") ? "That code has run out. Ask whoever gave it to you for a fresh one." :
           c === "auth/email-already-in-use" ? "There is already an account with that email — sign in above instead." :
           c === "auth/weak-password" ? "That password is too short. Six characters or more." :
           c === "auth/invalid-email" ? "That does not look like an email address." :

@@ -124,7 +124,25 @@ service cloud.firestore {
     match /staffInvites/{codeHash} {
       allow get: if signedIn();
       allow list: if isOwner();
-      allow create: if isOwner();
+      // The lifetime is capped HERE and not only in the client, because the
+      // client writing these IS the owner's, and an owner could otherwise
+      // hand-write an invite that never expires.
+      //
+      // A teacher invite buys an empty account — teachbenchStudents is gated
+      // on canManage(), so a redeemed teacher reads nothing until students
+      // are assigned to them — and gets a fortnight. An owner invite
+      // satisfies canManage() for every student unconditionally, so it IS
+      // the database, and gets a day.
+      //
+      // The five minutes of slack absorbs clock skew: the client computes
+      // the stamp from its own clock, and a device running slightly fast
+      // would otherwise have its own invites refused.
+      allow create: if isOwner()
+        && request.resource.data.role in ['owner', 'teacher']
+        && request.resource.data.expiresAtMs is number
+        && request.resource.data.expiresAtMs > request.time.toMillis()
+        && request.resource.data.expiresAtMs <= request.time.toMillis() + 300000
+             + (request.resource.data.role == 'owner' ? 86400000 : 1209600000);
       allow update: if false;
       // The owner may revoke any invite. Beyond that, exactly one other
       // account may delete this one: the account that just redeemed it,
