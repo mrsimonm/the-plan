@@ -92,8 +92,19 @@ service cloud.firestore {
 
       // Your own name is yours; your role is not. Without this an account
       // could quietly promote itself to owner after redeeming a teacher code.
+      //
+      // inviteHash is frozen for the same reason, and the reason is easy to
+      // miss: the staffInvites delete rule below derives authority FROM this
+      // field — it lets you revoke the invite your row names. Left writable,
+      // a teacher who happened to know a colleague's code could point their
+      // own row at that hash and burn it, revoking an invite meant for
+      // somebody else. No escalation and no read, since role is still pinned
+      // and invites cannot be listed, but a nuisance the owner would struggle
+      // to explain. A field that grants authority has to be as immutable as
+      // the field that grants role.
       allow update: if signedIn() && request.auth.uid == uid
-        && request.resource.data.role == resource.data.role;
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.get('inviteHash','') == resource.data.get('inviteHash','');
     }
 
     // ---------- teacher invite codes ----------
