@@ -6303,7 +6303,7 @@ html[data-shell="rail"] body{
           <button class="btn primary" id="tbsInviteGo">Make a code</button>
         </div>
         <div id="tbsInviteOut"></div>
-        <p class="tbs-muted" style="font-size:12px">They open Teachbench, choose “First time? Make a teacher account”, and put the code in. The code keeps working until you revoke it, so revoke it once they are in.</p>
+        <p class="tbs-muted" style="font-size:12px">They open Teachbench, choose “First time? Make a teacher account”, and put the code in. A code works once and lasts two weeks — it is used up the moment they register, and runs out on its own if they never do.</p>
         <div id="tbsInviteList"></div>
       </div>
     </div>
@@ -28262,14 +28262,23 @@ const TBS = (() => {
 
      The one thing that stays a console job is the very first owner, which
      is a genuine bootstrap and happens once in the life of the project. */
+  /* Fourteen days, and then it is worth nothing. roomInvites only checks that
+     an invite exists, which is a fair trade for a room booking: one leaked
+     code costs you a stranger on your calendar. The same trade here would let
+     one leaked code mint unlimited teacher accounts for ever, and a teacher
+     reads children's work — so a staff invite both expires and is burnt the
+     moment it is used. Stored as epoch milliseconds because that is what
+     firestore.rules can compare request.time against without parsing. */
+  const STAFF_INVITE_DAYS = 14;
   async function makeStaffInvite(role, name){
     await init();
-    const code = makeCode();
+    const code = makeCode();          /* crypto.getRandomValues, not Math.random */
     const hash = await sha256Hex(normaliseCode(code));
     await db.collection("staffInvites").doc(hash).set({
       role: role === "owner" ? "owner" : "teacher",
       name: String(name||"").trim(),
       createdAt: new Date().toISOString(),
+      expiresAtMs: Date.now() + STAFF_INVITE_DAYS*86400000,
       createdBy: (auth.currentUser && auth.currentUser.uid) || ""
     });
     return code;
@@ -28294,6 +28303,10 @@ const TBS = (() => {
     if(!auth.currentUser) await auth.signInAnonymously();
     const inv = await db.collection("staffInvites").doc(hash).get();
     if(!inv.exists) throw new Error("bad-invite");
+    /* Checked here for a sentence a person can act on, and checked AGAIN in
+       firestore.rules because this one is only a courtesy — the rule is what
+       actually holds. */
+    if(!(Number(inv.data().expiresAtMs) > Date.now())) throw new Error("expired-invite");
     const role = inv.data().role === "owner" ? "owner" : "teacher";
 
     const cred = await auth.createUserWithEmailAndPassword(email, password);
@@ -28304,6 +28317,14 @@ const TBS = (() => {
       name: String(displayName||"").trim() || (inv.data().name || email.split("@")[0]),
       email, createdAt: new Date().toISOString() };
     await db.collection("staff").doc(uid).set(doc);
+    /* Burn it. The rules let exactly one account delete this invite — the one
+       whose staff row carries its hash, which is this one, a line above.
+       Best-effort on purpose: the account is already made and usable, so a
+       failed delete must not throw the new teacher back to a form. It leaves
+       the invite alive until it expires, which is why the expiry exists as
+       well as the burn rather than instead of it. */
+    try{ await db.collection("staffInvites").doc(hash).delete(); }
+    catch(e){ diagRecord("tbs", "could not burn staff invite", e, false); }
     return { uid, ...doc };
   }
   async function currentStaff(){
@@ -29794,6 +29815,7 @@ const TBS_UI = (() => {
         const c = e && e.code;
         err.textContent =
           (e && e.message === "bad-invite") ? "That code does not open anything. Check it with whoever gave it to you." :
+          (e && e.message === "expired-invite") ? "That code has run out. Ask for a fresh one — they last two weeks." :
           c === "auth/email-already-in-use" ? "There is already an account with that email — sign in above instead." :
           c === "auth/weak-password" ? "That password is too short. Six characters or more." :
           c === "auth/invalid-email" ? "That does not look like an email address." :
@@ -29811,10 +29833,17 @@ const TBS_UI = (() => {
       try{
         const rows = await TBS.listStaffInvites();
         box.innerHTML = rows.length
-          ? rows.map(r => `<div class="row" style="gap:8px;align-items:center;margin-top:7px">
-              <span style="flex:1;font-size:12.5px">${(r.name || "unnamed").replace(/[<>&]/g,"")}
-                <span class="tbs-muted">· ${String(r.role)} · ${String(r.createdAt||"").slice(0,10)}</span></span>
-              <button class="btn mini" data-revoke="${r.hash}">Revoke</button></div>`).join("")
+          ? rows.map(r => {
+              const left = Number(r.expiresAtMs) - Date.now();
+              const when = !(Number(r.expiresAtMs) > 0) ? "no expiry — revoke it"
+                : left <= 0 ? "run out"
+                : left < 86400000 ? "today"
+                : Math.ceil(left/86400000) + " days left";
+              return `<div class="row" style="gap:8px;align-items:center;margin-top:7px">
+                <span style="flex:1;font-size:12.5px">${(r.name || "unnamed").replace(/[<>&]/g,"")}
+                  <span class="tbs-muted">· ${String(r.role)} · ${when}</span></span>
+                <button class="btn mini" data-revoke="${r.hash}">Revoke</button></div>`;
+            }).join("")
           : `<p class="tbs-muted" style="font-size:12px;margin:7px 0 0">No codes outstanding.</p>`;
       }catch(e){ box.innerHTML = ""; }
     }
@@ -41271,9 +41300,17 @@ async function sha256Hex(text){
   return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
 }
 const normCode = c => String(c||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+/* crypto.getRandomValues, not Math.random: this code is the whole of what
+   stands between a stranger and a venue's calendar, and Math.random is not a
+   CSPRNG — V8's generator state is recoverable from a run of observed
+   outputs, so codes minted after ones somebody has already seen become
+   predictable no matter how large the keyspace looks. The alphabet is 32
+   characters and a byte is 256 values, so `% A.length` divides evenly and
+   adds no bias. Teachbench's own makeCode has always done it this way. */
 function makeCode(){
   const A="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";           /* no I, O, 0 or 1 */
-  let s=""; for(let i=0;i<8;i++) s+=A[Math.floor(Math.random()*A.length)];
+  const r=crypto.getRandomValues(new Uint8Array(8));
+  const s=[...r].map(b=>A[b % A.length]).join("");
   return s.slice(0,4)+"-"+s.slice(4);
 }
 

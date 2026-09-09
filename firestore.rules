@@ -80,10 +80,15 @@ service cloud.firestore {
       // error the request out), the invite must exist, and the role claimed
       // must be the role the invite names — so a teacher's code cannot be
       // redeemed into an owner account.
+      // The invite must exist, must name the role being claimed, and must not
+      // have run out. The expiry is checked HERE and not only in the client,
+      // because a client check is a courtesy and a rule is a control.
       allow create: if signedIn() && request.auth.uid == uid
         && request.resource.data.get('inviteHash', '') != ''
         && exists(/databases/$(database)/documents/staffInvites/$(request.resource.data.get('inviteHash','x')))
-        && get(/databases/$(database)/documents/staffInvites/$(request.resource.data.get('inviteHash','x'))).data.role == request.resource.data.role;
+        && get(/databases/$(database)/documents/staffInvites/$(request.resource.data.get('inviteHash','x'))).data.role == request.resource.data.role
+        && request.time.toMillis()
+             < get(/databases/$(database)/documents/staffInvites/$(request.resource.data.get('inviteHash','x'))).data.get('expiresAtMs', 0);
 
       // Your own name is yours; your role is not. Without this an account
       // could quietly promote itself to owner after redeeming a teacher code.
@@ -100,11 +105,25 @@ service cloud.firestore {
     // because the person redeeming has no account yet — the app signs in
     // anonymously, checks the code, and only then creates the real account,
     // so a wrong code strands no half-made user behind it.
+    // Single-use, and short-lived. An invite that merely has to EXIST — the
+    // way roomInvites works — mints unlimited accounts for ever once it
+    // leaks. That is a survivable trade for a room booking and not one for a
+    // token that opens children's records, so a staff invite is burnt on
+    // redemption and expires on its own if it never is.
     match /staffInvites/{codeHash} {
       allow get: if signedIn();
       allow list: if isOwner();
-      allow create, delete: if isOwner();
+      allow create: if isOwner();
       allow update: if false;
+      // The owner may revoke any invite. Beyond that, exactly one other
+      // account may delete this one: the account that just redeemed it,
+      // identified by its own staff row carrying this very hash. That is
+      // narrow on purpose — "anyone signed in may delete an invite" would
+      // let a stranger revoke every code the owner has outstanding.
+      allow delete: if isOwner()
+        || (signedIn()
+            && exists(/databases/$(database)/documents/staff/$(request.auth.uid))
+            && get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.get('inviteHash','') == codeHash);
     }
 
     // ---------- access codes ----------
