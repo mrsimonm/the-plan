@@ -38174,7 +38174,12 @@ function mcPresetCounts(ids){
   ids.forEach(id=>{
     const p=subject(id); if(!p) return;
     const r=routineOf(id,mcJob); if(!r) return;
-    const days=fixedDays(r);
+    /* Precedence has to match routineDue's, or the preview describes a week the
+       app does not actually keep: the cycle overrides pinned days there, and
+       putting a plant on the cycle never cleared the days it was pinned to
+       before — so reading days first counts it on weekdays it no longer comes
+       due on. */
+    const days=cycleOn(p)?null:fixedDays(r);
     if(days){ days.forEach(d=>n[d]++); return; }
     /* one plant counts once per weekday however often it comes round */
     const seen={};
@@ -38288,18 +38293,35 @@ $("#mcApply").addEventListener("click",async()=>{
   const cs=L.lang==="cs", job=mcJobLabel(mcJob).toLowerCase();
   const feedLine=ride?(cs?`\n\nHnojivo v ${dowList(mcFeedDays(days))}.`
                          :`\n\nFertiliser on ${dowList(mcFeedDays(days))}.`):"";
+  /* Only water and feed come off the cycle, so only they may say so. A
+     confirmation that threatens something it will not do is as bad as one that
+     hides something it will. */
+  const cycleLine=mcJob==="spray"
+    ? (cs?"\n\nPřepíše to jejich vlastní interval postřiku."
+         :"\n\nThis overrides their own spray interval.")
+    : (cs?"\n\nPřepíše to jejich vlastní intervaly a sundá je z cyklu."
+         :"\n\nThis overrides their own intervals and takes them off the cycle.");
   const msg=days.length
-    ? (cs?`Nastavit ${ids.length} rostlinám ${job} na ${dowList(days)}?${feedLine}\n\nPřepíše to jejich vlastní intervaly a sundá je z cyklu.`
-        :`Set ${plural(ids.length,"plant")} to ${job} on ${dowList(days)}?${feedLine}\n\nThis overrides their own intervals and takes them off the cycle.`)
+    ? (cs?`Nastavit ${ids.length} rostlinám ${job} na ${dowList(days)}?${feedLine}${cycleLine}`
+        :`Set ${plural(ids.length,"plant")} to ${job} on ${dowList(days)}?${feedLine}${cycleLine}`)
     : (cs?`Zrušit pevné dny (${job}) u ${ids.length} rostlin?\n\nVrátí se ke svým intervalům.`
         :`Clear the ${job} days on ${plural(ids.length,"plant")}?\n\nThey go back to their own intervals.`);
   if(!await ask(msg,cs?"Nastavit":"Set")) return;
   ids.forEach(id=>{
     const p=subject(id); if(!p) return;
-    /* the cycle short-circuits pinned days entirely inside routineDue, so a
-       plant left on it would quietly ignore every day just picked for it */
-    if(days.length&&cycleOn(p)) p.cycle=Object.assign({},cycleOf(p),{on:false});
-    mcRoutine(p,mcJob).days=days.slice();
+    /* The cycle short-circuits pinned days inside routineDue — but only for
+       watering and feeding. A pinned spray runs alongside an active cycle quite
+       happily, so switching the cycle off for a spray pin would destroy the
+       plant's entire watering and feeding setup to no purpose whatsoever. */
+    if(days.length&&mcJob!=="spray"&&cycleOn(p))
+      p.cycle=Object.assign({},cycleOf(p),{on:false});
+    /* Clearing days must never CREATE a routine. "They go back to their own
+       intervals" has nothing to say to a plant that never had this job at all,
+       and making one here would switch on a fortnightly spray for every plant
+       that has never been sprayed — from a button whose own confirmation says
+       it is taking a schedule away. */
+    const r=days.length?mcRoutine(p,mcJob):routineOf(p.id,mcJob);
+    if(r) r.days=days.slice();
     if(ride) mcRoutine(p,"feed").days=mcFeedDays(days);
   });
   touch();
@@ -38732,10 +38754,16 @@ function renderFeedFix(){
 if($("#feedFixSave")) $("#feedFixSave").addEventListener("click",()=>{
   if(!fixingEv) return;
   const v=+$("#feedFixVol").value||0, s=+$("#feedFixStr").value||100;
+  /* A figure you typed in yourself is no longer an estimate — but opening the
+     dialog, seeing a plausible number and pressing Save is not typing it in.
+     Clearing the mark there would quietly promote a guess to a measurement and
+     shrink the "how much of this is inferred" note that exists to be honest
+     about exactly that. So only an actual change clears it. */
+  const changed=Math.max(0,v)!==+fixingEv.volL
+    || Math.min(200,Math.max(1,s))!==(+fixingEv.strength||100);
   fixingEv.volL=Math.max(0,v);
   fixingEv.strength=Math.min(200,Math.max(1,s));
-  /* a figure you typed in yourself is no longer an estimate */
-  delete fixingEv.volEst;
+  if(changed) delete fixingEv.volEst;
   touch(); $("#feedFixDlg").close(); fixingEv=null;
   renderLog(); renderStats();
 });
