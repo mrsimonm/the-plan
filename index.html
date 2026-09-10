@@ -8587,6 +8587,67 @@ html[data-layout="phone"] .prow{padding:11px 12px}
 .bc-count{font-size:12px; color:var(--ink-3); font-family:var(--font);
   font-variant-numeric:tabular-nums}
 #batchPlantList{max-height:42vh; overflow-y:auto; margin:0 -4px; padding:0 4px}
+
+/* ============================ SUBTASKS ============================
+   Steps were in the data model from the start but only reachable by opening
+   a task's editor, where they were a column of bare inputs behind a button
+   that re-rendered the screen once per line. Nothing anywhere else in the
+   module showed that a task even had them. Three things change:
+
+     - a task carries its progress wherever it appears,
+     - the whole checklist is on the focus screen, not just the next line,
+     - adding steps is one field you keep typing into.
+
+   Why a bar and not "3/7": a fraction has to be read and then divided. A bar
+   is how far along you are, seen rather than worked out — the same reason
+   the timer on this screen is a disc and not a number. The fraction stays
+   next to it for when the exact count matters. */
+.ad-prog{display:flex; align-items:center; gap:8px; margin-top:7px}
+.ad-prog-bar{flex:1 1 auto; min-width:60px; max-width:210px; height:5px; border-radius:999px;
+  background:var(--track-bg); overflow:hidden}
+.ad-prog-bar i{display:block; height:100%; width:0; border-radius:999px; background:var(--accent);
+  transition:width .25s ease}
+.ad-prog-n{flex:0 0 auto; font-size:11.5px; font-weight:600; color:var(--ink-3);
+  font-variant-numeric:tabular-nums}
+.ad-prog.is-all .ad-prog-bar i{background:var(--ok)}
+.ad-prog.is-all .ad-prog-n{color:var(--ok)}
+
+/* ---- the checklist on the focus screen ----
+   Left-aligned inside a centred column on purpose: a list of jobs is read
+   down its left edge, and centring would start every line in a different
+   place. Named .ad-todo rather than .ad-list because .ad-list is already
+   the task-row container. */
+.ad-todo{width:100%; max-width:430px; text-align:left; display:flex; flex-direction:column; gap:2px}
+.ad-todo-h{display:flex; align-items:baseline; justify-content:space-between; gap:10px;
+  margin-bottom:5px; padding:0 2px}
+.ad-ci{display:flex; align-items:flex-start; gap:10px; width:100%; padding:9px 11px;
+  border:1px solid transparent; border-radius:var(--r-xs); background:none; cursor:pointer;
+  font:inherit; font-size:14px; line-height:1.4; color:var(--ink); text-align:left; appearance:none}
+.ad-ci:hover{background:var(--surface-2)}
+.ad-ci-box{flex:0 0 auto; width:21px; height:21px; border-radius:6px; border:2px solid var(--line-strong);
+  display:grid; place-items:center; font-size:12px; line-height:1; color:transparent}
+.ad-ci[aria-pressed="true"] .ad-ci-box{background:var(--ok); border-color:var(--ok); color:#fff}
+.ad-ci[aria-pressed="true"] .ad-ci-t{color:var(--ink-3); text-decoration:line-through}
+/* the one you are on is the only line with an outline, so the eye lands on it
+   without everything else having to be dimmed to make it stand out */
+.ad-ci.is-next{border-color:var(--accent); background:var(--accent-soft)}
+.ad-ci.is-next .ad-ci-t{font-weight:600; color:var(--ink-strong)}
+.ad-todo-all{margin:2px 0 0; font-size:13px; font-weight:600; color:var(--ok); text-align:center}
+
+/* ---- adding them ----
+   One permanent field at the foot of the list instead of a button that adds
+   an empty row: you type, press enter, and the cursor is still there for the
+   next one. */
+.ad-stepadd{display:flex; gap:7px; align-items:center; margin-top:3px}
+.ad-stepadd input{flex:1 1 auto; min-width:0}
+
+/* ---- the split offer in the Dump ----
+   Sits under the dumped line it belongs to, quiet until read. */
+.ad-split{margin:9px 0 2px; padding:11px 13px; border-radius:var(--r-xs);
+  background:var(--sunk); border:1px solid var(--line)}
+.ad-split p{margin:0; font-size:12.5px; line-height:1.45; color:var(--ink-2)}
+.ad-split ol{margin:8px 0 10px; padding-left:21px; font-size:13.5px; line-height:1.6; color:var(--ink)}
+.ad-split .btn-row{gap:7px}
 </style>
 
 <dialog id="adSwapDlg">
@@ -45908,12 +45969,19 @@ Object.assign(CS,{
    ---- the shape ----
 
      S.adhd.tasks[]    {id, title, step, note, energy, mins, spent, steps[],
-                        state, today, todayAt, moves, createdAt, doneAt, guess}
+                        state, today, todayAt, moves, createdAt, doneAt, guess,
+                        nosplit}
         state:  "in"     in the dump, not yet decided about
                 "open"   a real task
                 "done"   finished
                 "binned" thrown away (kept, so Undo stays possible; never shown)
         step:   the ONE physical first move. Not a description of the task.
+        steps:  [{id, text, done}] — the checklist inside the task. Never a
+                sub-task: a step has no estimate, no energy and no day of its
+                own, because the moment it needs one of those it is a task,
+                and there is already a way to make one of those.
+        nosplit: this line was offered a break-up in the Dump and refused it,
+                so the offer is not raised again.
         energy: "low" | "mid" | "deep" — brain fuel, never importance.
         mins:   the estimate. guess: the estimate as it stood when the task was
                 finished, so a later edit cannot rewrite history.
@@ -46097,6 +46165,140 @@ const AD = (() => {
     if(scope==="dump"){ const i=$("#adDumpIn"); if(i&&matchMedia("(pointer:fine)").matches) i.focus(); }
   }
 
+  /* ============================ STEPS ============================
+     A task's steps are the checklist inside it. They are NOT sub-tasks in the
+     project-manager sense — they never get their own estimate, energy or day,
+     because the moment a step needs those it is a task, and there is already
+     a way to make one of those. A step is just a line you can tick off.
+
+     Two problems this section exists to solve. The first is that a thought
+     rarely arrives as one job — "clean the kitchen and the bathroom as well
+     as send an email" is three, and it sits in the Dump precisely because it
+     is unstartable as one thing. The second is that once you are working, the
+     question stops being "what do I do first" and becomes "how much is left",
+     and a single next-step line cannot answer that.  */
+
+  function prog(task){
+    const all=(task && task.steps || []).length;
+    if(!all) return null;
+    const done=task.steps.filter(s=>s.done).length;
+    return {done, all, pct:Math.round(done/all*100), finished:done===all};
+  }
+  /* Carried by the task wherever it is drawn, and tagged with the task id so
+     it can be repainted in place without a re-render. */
+  function progHTML(task){
+    const p=prog(task); if(!p) return "";
+    return `<div class="ad-prog${p.finished?" is-all":""}" data-adprog="${esc(task.id)}">
+      <div class="ad-prog-bar"><i style="width:${p.pct}%"></i></div>
+      <span class="ad-prog-n">${esc(p.done)}/${esc(p.all)}</span></div>`;
+  }
+  function paintProg(task){
+    const p=prog(task); if(!p) return;
+    document.querySelectorAll(`[data-adprog="${task.id}"]`).forEach(el=>{
+      el.classList.toggle("is-all", p.finished);
+      const bar=el.querySelector("i"); if(bar) bar.style.width=p.pct+"%";
+      const n=el.querySelector(".ad-prog-n"); if(n) n.textContent=p.done+"/"+p.all;
+    });
+  }
+
+  /* ---- adding ----
+     Enter files the line and leaves the cursor where it was. The new row is
+     injected into the open editor rather than re-rendered, because a
+     re-render on a phone closes the on-screen keyboard, and being able to
+     keep typing is the whole point of the field. Multi-line text — pasted,
+     usually — becomes one step per line in a single go. */
+  function addSteps(task, text, inp){
+    if(!task) return 0;
+    const lines=String(text||"").split(/\r?\n/)
+      .map(s=>s.trim().replace(/^[-*••]\s*/,"").trim()).filter(Boolean);
+    if(!lines.length) return 0;
+    task.steps=task.steps||[];
+    const base=task.steps.length;
+    lines.forEach(txt=>task.steps.push({id:uid(), text:txt, done:false}));
+    touch();
+    const box=document.querySelector(`[data-adedit="${task.id}"] .ad-steps`);
+    const add=box && box.querySelector(".ad-stepadd");
+    if(box && add){
+      lines.forEach((_,i)=>{
+        const d=document.createElement("div");
+        d.innerHTML=stepRowHTML(task.steps[base+i], base+i);
+        box.insertBefore(d.firstElementChild, add);
+      });
+      paintProg(task);
+    } else render();
+    if(inp){ inp.value=""; inp.focus(); }
+    return lines.length;
+  }
+  function stepRowHTML(s,i){
+    return `<div class="ad-step${s.done?" is-done":""}">
+      <button type="button" class="ad-tick" data-adstep="${i}" data-adact="steptick"
+        aria-pressed="${!!s.done}" aria-label="${T("Step done")}">✓</button>
+      <input type="text" data-adstepf="${i}" value="${esc(s.text)}">
+      <button type="button" class="chip" data-adstep="${i}" data-adact="stepdel"
+        aria-label="${T("Remove step")}">×</button>
+    </div>`;
+  }
+
+  /* ---- splitting a dumped lump ----
+     Deliberately conservative, and only ever an OFFER: a wrong split is more
+     irritating than none at all. It needs a real separator, and every piece
+     it produces has to look like a job rather than a fragment, so "call mum
+     and dad" is left alone while "clean the kitchen and send an email" is
+     not. Longest separators are tried first so "as well as" is not eaten by
+     the "as" inside it. */
+  /* Punctuation means you were already writing a list. A conjunction does not:
+     "and" joins two jobs ("clean the kitchen and send an email") exactly as
+     readily as it joins two words inside one ("black and white", "mum and
+     dad"). So the two are treated differently — a comma list is taken at its
+     word, while an "and" is only honoured when every piece it produces still
+     reads as a phrase rather than a bare noun. */
+  const SPLIT_LIST=/\r?\n|\s*[;•]\s*|\s+\+\s+|,\s+/;
+  const SPLIT_JOIN=/\s+as well as\s+|\s+and also\s+|\s+and then\s+|\s+then\s+|\s+plus\s+|\s+and\s+/i;
+  /* One "and" is never a separator: the one holding a name together. "read
+     the Hendry and Wilson paper" is one job, and so is anything shaped like
+     "Marks and Spencer". A capital either side is the whole test — cheap,
+     and it works the same in Czech. The match is hidden behind a sentinel so
+     the splitter never sees it, and the sentinel becomes a space again on the
+     way out. */
+  const NAME_AND=/([A-ZÀ-ɏ][\w'À-ɏ-]*)\s+(and|a|&)\s+(?=[A-ZÀ-ɏ])/g;
+  const KEEP="\u0000";
+  function splitGuess(text){
+    const raw=String(text||"").trim().replace(NAME_AND,(m,a,c)=>a+KEEP+c+KEEP);
+    if(raw.length<12) return null;
+    /* The sentinel stays in place through every split and only becomes a
+       space again on the way out. Restoring it any earlier hands the
+       protected "and" straight back to the next splitter — which is exactly
+       what the first attempt did. */
+    const clean=a=>a.map(s=>s.trim()
+                            .replace(/^[-*••\d.)\s]+/,"").replace(/[.,;]+$/,"").trim())
+                     .filter(Boolean);
+    const words=p=>p.split(/\s+/).length;
+
+    let parts=clean(raw.split(SPLIT_LIST));
+    const punctuated=parts.length>1;
+
+    parts=parts.reduce((out,p)=>{
+      const sub=clean(p.split(SPLIT_JOIN));
+      return out.concat(sub.length>1 && sub.every(s=>words(s)>=2) ? sub : [p]);
+    },[]);
+
+    if(parts.length<2 || parts.length>8) return null;
+    if(!parts.every(p=>p.length>=3 && (punctuated || words(p)>=2))) return null;
+    return parts.map(p=>p.replace(/\u0000/g," "));
+  }
+  /* The lump becomes the task and the pieces become its steps. Two things it
+     deliberately does not do. It does not rewrite the title, so the thing you
+     dumped stays findable by the words you dumped it in. And it does not
+     promote the task out of the Dump: breaking something up is part of
+     sorting it, not a decision to keep it, so it stays on the Dump screen
+     with Today / Later / bin still sitting above it. The editor is unfolded
+     so the pieces are there to correct while the split is still fresh. */
+  function applySplit(task){
+    const parts=splitGuess(task.title); if(!parts) return;
+    task.steps=(task.steps||[]).concat(parts.map(text=>({id:uid(), text, done:false})));
+    touch(); openId=task.id; render();
+  }
+
   /* ============================ NOW ============================ */
   function nextStep(task){
     const s=(task.steps||[]).find(x=>!x.done);
@@ -46116,12 +46318,40 @@ const AD = (() => {
     return head + (cur ? focusHTML(cur) : pickHTML());
   }
 
+  /* The checklist, on the screen where the work actually happens. Every line
+     is tickable, not just the next one, because work does not come off a list
+     in order and a checklist you cannot tick out of order is a checklist you
+     stop trusting. The next undone line keeps an outline so starting is still
+     a matter of looking rather than reading. */
+  function checkHTML(task){
+    const steps=task.steps||[];
+    if(!steps.length) return "";
+    const p=prog(task), nextI=steps.findIndex(s=>!s.done);
+    return `<div class="ad-todo">
+      <div class="ad-todo-h">
+        <span class="eyebrow">${T(p.finished?"All of it":"What is left")}</span>
+        <span class="ad-prog-n">${esc(p.done)}/${esc(p.all)}</span>
+      </div>
+      ${steps.map((s,i)=>`<button type="button" class="ad-ci${i===nextI?" is-next":""}"
+        data-adact="steptick" data-adstep="${i}" aria-pressed="${!!s.done}">
+        <span class="ad-ci-box" aria-hidden="true">✓</span>
+        <span class="ad-ci-t">${esc(s.text)}</span></button>`).join("")}
+      ${p.finished?`<p class="ad-todo-all">${T("Every step is ticked. Call it done?")}</p>`:""}
+    </div>`;
+  }
+
   function focusHTML(task){
     let T0=timer();
     if(!T0 || T0.id!==task.id){ armTimer(task, task.mins); T0=timer(); }
     const el=elapsed(T0), left=T0.planned-el, over=left<0;
     const step=nextStep(task);
     const stepsLeft=(task.steps||[]).filter(x=>!x.done).length;
+    const hasSteps=(task.steps||[]).length>0;
+    /* Ticking the last box no longer finishes the task on its own. It used to,
+       back when the only way to tick one was a deliberate "Step done" button;
+       with a checklist you can tap anywhere on, a mis-tap would have ended the
+       sitting. So the last tick lights up Done instead of pressing it. */
+    const allTicked=hasSteps && !stepsLeft;
     const running=!!T0.from;
     return `<div class="card ad-now">
       <span class="eyebrow">${T("Right now")}</span>
@@ -46145,11 +46375,12 @@ const AD = (() => {
         <button type="button" class="btn" data-adact="plus5">${T("+5 min")}</button>
       </div>
 
+      ${checkHTML(task)}
+
       <div class="ad-out">
-        <button type="button" class="btn" data-adact="done">${T("Done")}</button>
-        ${stepsLeft?`<button type="button" class="btn" data-adact="stepdone">${T("Step done")}</button>`:""}
+        <button type="button" class="btn${allTicked?" primary":""}" data-adact="done">${T("Done")}</button>
         <button type="button" class="btn" data-adact="park">${T("Park it")}</button>
-        <button type="button" class="btn" data-adact="toobig">${T("Too big")}</button>
+        <button type="button" class="btn" data-adact="${hasSteps?"addsteps":"toobig"}">${T(hasSteps?"Edit steps":"Too big")}</button>
       </div>
 
       <form class="ad-catch" id="adCatchForm">
@@ -46219,10 +46450,14 @@ const AD = (() => {
     </div>`;
   }
   function dumpRow(x){
+    /* Offered only while the line is still an untouched lump: once it has
+       steps, or once the offer has been refused, it is not raised again. */
+    const parts=((x.steps||[]).length || x.nosplit || openId===x.id) ? null : splitGuess(x.title);
     return `<div class="ad-row" data-adid="${esc(x.id)}">
       <div class="ad-row-b">
         <div class="ad-row-t" data-adact="edit">${esc(x.title)}</div>
         <div class="ad-row-s">${T("dumped")} ${esc(ago(x.createdAt))}</div>
+        ${progHTML(x)}
       </div>
       <div class="ad-row-acts">
         <button type="button" class="chip" data-adact="two">${T("2 min")}</button>
@@ -46230,7 +46465,15 @@ const AD = (() => {
         <button type="button" class="chip" data-adact="keep">${T("Later")}</button>
         <button type="button" class="chip" data-adact="bin" aria-label="${T("Bin it")}">×</button>
       </div>
-    </div>${openId===x.id?editHTML(x):""}`;
+    </div>
+    ${parts?`<div class="ad-split" data-adid="${esc(x.id)}">
+      <p>${T("That reads like more than one job. Turn the pieces into steps?")}</p>
+      <ol>${parts.map(p=>`<li>${esc(p)}</li>`).join("")}</ol>
+      <div class="btn-row">
+        <button type="button" class="btn mini primary" data-adact="split">${T("Break it up")}</button>
+        <button type="button" class="btn mini" data-adact="nosplit">${T("Leave it as one")}</button>
+      </div>
+    </div>`:""}${openId===x.id?editHTML(x):""}`;
   }
   function ago(ts){
     const m=Math.max(0,Math.round((Date.now()-ts)/60000));
@@ -46316,7 +46559,6 @@ const AD = (() => {
 
   function taskRow(x){
     const step=nextStep(x);
-    const stepsDone=(x.steps||[]).filter(s=>s.done).length, stepsAll=(x.steps||[]).length;
     const done=x.state==="done";
     return `<div class="ad-row${done?" is-done":""}" data-adid="${esc(x.id)}">
       <button type="button" class="ad-tick" data-adact="tick" aria-pressed="${done}"
@@ -46327,11 +46569,11 @@ const AD = (() => {
           ${done?`<span>${T("done")} ${esc(ago(x.doneAt))}</span>`
                 :`<span class="ad-en" data-e="${esc(x.energy)}">${T(ENERGY_LBL[x.energy]||"Medium")}</span>`}
           <span>${esc(fmtMins(x.mins||15))}</span>
-          ${stepsAll?`<span>${esc(stepsDone)}/${esc(stepsAll)} ${T("steps")}</span>`:""}
           ${x.spent?`<span>${T("spent")} ${esc(fmtMins(x.spent/60))}</span>`:""}
           ${(!done&&x.moves>=3)?`<span class="ad-moved">${esc(t("moved {n}×").replace("{n}",x.moves))}</span>`:""}
           ${(!done&&step)?`<span>· ${esc(step)}</span>`:""}
         </div>
+        ${progHTML(x)}
       </div>
       <div class="ad-row-acts">
         ${done?`<button type="button" class="chip" data-adact="reopen">${T("Undo")}</button>`
@@ -46353,13 +46595,15 @@ const AD = (() => {
         <p class="hint">${T("Something you could do while still holding a cup of tea. Not “do the tax return” — “open the folder”.")}</p></div>
       <div class="field"><label>${T("Break it into steps")}</label>
         <div class="ad-steps">
-          ${steps.map((s,i)=>`<div class="ad-step${s.done?" is-done":""}">
-            <button type="button" class="ad-tick" data-adstep="${i}" data-adact="steptick" aria-pressed="${!!s.done}" aria-label="${T("Step done")}">✓</button>
-            <input type="text" data-adstepf="${i}" value="${esc(s.text)}">
-            <button type="button" class="chip" data-adstep="${i}" data-adact="stepdel" aria-label="${T("Remove step")}">×</button>
-          </div>`).join("")}
-          <button type="button" class="btn mini" data-adact="stepadd">${T("+ another step")}</button>
-        </div></div>
+          ${steps.map(stepRowHTML).join("")}
+          <div class="ad-stepadd">
+            <input type="text" data-adstepnew="${esc(x.id)}" autocomplete="off"
+              placeholder="${T("Add a step, press enter")}">
+            <button type="button" class="btn mini" data-adact="stepadd">${T("Add")}</button>
+          </div>
+        </div>
+        ${progHTML(x)}
+        <p class="hint">${T("Enter files it and leaves the cursor here for the next one. Paste a list and every line becomes its own step.")}</p></div>
       <div class="field"><label>${T("How much brain")}</label>
         <div class="chips fill">${ENERGY.map(([k,l])=>
           `<button type="button" class="chip" data-aden="${k}" aria-pressed="${x.energy===k}">${T(l)}</button>`).join("")}</div></div>
@@ -46637,11 +46881,6 @@ const AD = (() => {
         case "plus5":  { const T0=timer(); if(T0){ T0.planned+=300; T0.rang=0; saveLocal(); paintClock(); } break; }
         case "done":     finish(curTask()); break;
         case "park":     park(curTask()); break;
-        case "stepdone":{ const c=curTask(); if(!c) break;
-                          const s=(c.steps||[]).find(x=>!x.done);
-                          if(s){ s.done=true; touch(); }
-                          if(!(c.steps||[]).some(x=>!x.done)) finish(c); else render();
-                          break; }
         case "toobig":
         case "setstep": { const c=curTask(); if(!c) break;
                           scope="all"; openId=c.id; render();
@@ -46673,13 +46912,22 @@ const AD = (() => {
         case "bin":      bin(task); break;
         case "edit":     openId = (openId===id) ? null : id; render(); break;
         case "closeedit":openId=null; render(); break;
-        case "stepadd":  if(task){ (task.steps=task.steps||[]).push({id:uid(),text:"",done:false}); touch(); render();
-                           const ins=document.querySelectorAll(`[data-adedit="${task.id}"] [data-adstepf]`);
-                           if(ins.length) ins[ins.length-1].focus();
-                         } break;
+        case "stepadd": { const box=btn.closest("[data-adedit]");
+                          const inp=box&&box.querySelector("[data-adstepnew]");
+                          addSteps(task, inp?inp.value:"", inp); break; }
         case "steptick": if(task){ const s=(task.steps||[])[+btn.dataset.adstep];
                            if(s){ s.done=!s.done; touch(); render(); } } break;
         case "stepdel":  if(task){ (task.steps||[]).splice(+btn.dataset.adstep,1); touch(); render(); } break;
+        case "split":    if(task) applySplit(task); break;
+        /* Refused once, never offered again for that line. A suggestion that
+           comes back after you have said no is a nag. */
+        case "nosplit":  if(task){ task.nosplit=true; touch(); render(); } break;
+        /* From the focus screen into the step list of the task you are on. */
+        case "addsteps":{ const c=curTask(); if(!c) break;
+                          scope="all"; openId=c.id; render();
+                          const el2=document.querySelector(`[data-adedit="${c.id}"] [data-adstepnew]`);
+                          if(el2){ el2.scrollIntoView({block:"center"}); el2.focus(); }
+                          break; }
       }
     });
 
@@ -46706,6 +46954,29 @@ const AD = (() => {
         const s=(task.steps||[])[+el.dataset.adstepf];
         if(s){ s.text=el.value; touch(); }
       }
+    });
+
+    /* Enter in the add-a-step field files the line. It does not submit a form
+       and does not re-render, so the on-screen keyboard stays up and the next
+       step can go straight in behind it. */
+    view.addEventListener("keydown",e=>{
+      const el=e.target;
+      if(!el.dataset || el.dataset.adstepnew===undefined || e.key!=="Enter") return;
+      e.preventDefault();
+      addSteps(byId(el.dataset.adstepnew), el.value, el);
+    });
+
+    /* A pasted list arrives as one blob in one event, so it is split here
+       rather than landing as a single step with newlines inside it. Only
+       multi-line pastes are intercepted; pasting one line behaves normally. */
+    view.addEventListener("paste",e=>{
+      const el=e.target;
+      if(!el.dataset || el.dataset.adstepnew===undefined) return;
+      const cb=e.clipboardData||window.clipboardData;
+      const raw=cb?cb.getData("text"):"";
+      if(!/\r?\n/.test(raw)) return;
+      e.preventDefault();
+      addSteps(byId(el.dataset.adstepnew), raw, el);
     });
   }
 
@@ -46788,7 +47059,7 @@ Object.assign(CS, {
   "Buzz the phone when the time is up":"Zabzučet telefonem, až vyprší čas",
   "Default length of a sitting":"Výchozí délka sezení",
   "Mark it done":"Odškrtnout", "Put it back":"Vrátit zpět",
-  "steps":"kroků", "spent":"stráveno",
+  "spent":"stráveno",
   "moved {n}×":"přesunuto {n}×",
   "Do it now":"Udělat teď", "Off today":"Pryč z dneška",
   "This has moved {n} times.":"Tohle se přesunulo už {n}×.",
@@ -46801,6 +47072,16 @@ Object.assign(CS, {
     "Něco, co zvládneš s hrnkem čaje v ruce. Ne „udělat daňové přiznání“ — „otevřít složku“.",
   "Break it into steps":"Rozlož to na kroky",
   "+ another step":"+ další krok", "Remove step":"Odebrat krok",
+  /* the subtask checklist */
+  "Add a step, press enter":"Přidej krok, stiskni enter", "Add":"Přidat",
+  "Enter files it and leaves the cursor here for the next one. Paste a list and every line becomes its own step.":
+    "Enter ho uloží a kurzor nechá tady pro další. Vlož seznam a každý řádek se stane vlastním krokem.",
+  "What is left":"Co zbývá", "All of it":"Všechno",
+  "Every step is ticked. Call it done?":"Všechny kroky jsou odškrtnuté. Hotovo?",
+  "Edit steps":"Upravit kroky",
+  "That reads like more than one job. Turn the pieces into steps?":
+    "Vypadá to na víc než jednu věc. Udělat z kousků kroky?",
+  "Break it up":"Rozlož to", "Leave it as one":"Nech to jako jedno",
   "How much brain":"Kolik mozku", "How long, honestly":"Jak dlouho, popravdě",
   "Anything else":"Cokoli dalšího", "Throw it away":"Vyhodit",
   "thing finished":"věc hotová", "things finished":"věcí hotových",
