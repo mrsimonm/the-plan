@@ -46209,8 +46209,16 @@ const AD = (() => {
      usually — becomes one step per line in a single go. */
   function addSteps(task, text, inp){
     if(!task) return 0;
+    /* Control characters are stripped on the way in, not on the way out. A
+       step's text is rendered back into a value="" attribute to be edited, and
+       the HTML parser silently rewrites U+0000 there as U+FFFD — so a NUL
+       arriving in a paste would be saved, reloaded as a replacement character,
+       and written back over the original on the next edit. Everything else
+       survives that round trip intact; this is the one character that does
+       not, so it never gets stored in the first place. */
     const lines=String(text||"").split(/\r?\n/)
-      .map(s=>s.trim().replace(/^[-*••]\s*/,"").trim()).filter(Boolean);
+      .map(s=>s.replace(/[\u0000-\u001F\u007F]/g,"").trim()
+              .replace(/^[-*••]\s*/,"").trim()).filter(Boolean);
     if(!lines.length) return 0;
     task.steps=task.steps||[];
     const base=task.steps.length;
