@@ -8467,6 +8467,58 @@ html[data-layout="phone"] .ad-now-what{font-size:20px}
   -webkit-tap-highlight-color:transparent}
 .crop-slot[aria-pressed="true"]{border-color:var(--accent); border-width:2.5px; color:var(--accent)}
 .crop-slot.lost{opacity:.45}
+
+/* ================= phone: targets you can actually hit =================
+   Measured across every view at 375x812 with data-layout="phone", counting a
+   control's real target — a checkbox inside a label is the label's size, not
+   the box's. WCAG 2.2 AA asks 24x24 CSS px; Apple asks 44. Listed here are
+   only the controls that came in under it and are NOT wrapped in something
+   bigger, and they are ordered by what a mis-tap costs you: the ones that
+   destroy a record matter more than the ones that just annoy.
+
+   Everything is scoped to data-layout="phone" so the desktop density, which
+   is fine with a mouse, is left exactly as it was. */
+
+/* A cutting marker cycles in → rooted → potted → lost on tap, so a fat finger
+   costs you a record rather than a beat. 26px, eight of them in a row. */
+html[data-layout="phone"] .slot{width:34px; height:34px; font-size:15px}
+html[data-layout="phone"] .slot-lg{width:42px; height:42px; font-size:17px}
+html[data-layout="phone"] .slots{gap:8px}
+
+/* Deletes a log entry outright, and 27x30 already counts its padding. The
+   negative margin keeps the bigger hit area from pushing the row apart. */
+html[data-layout="phone"] .ev-del{padding:11px 13px; margin:-11px -10px -11px 0; font-size:18px}
+
+/* 17px tall, and it decides whether a photograph is kept at full quality —
+   the one photo decision you cannot make again afterwards. */
+html[data-layout="phone"] .photo-best{min-height:34px; font-size:12.5px; padding:0 3px}
+html[data-layout="phone"] .photo-best input{width:18px; height:18px}
+
+/* 22px. The .done and .pstep variants are deliberately smaller and are more
+   specific than this, so ticking one still shrinks it — that feedback stays. */
+html[data-layout="phone"] .tbox{width:28px; height:28px; font-size:15px}
+
+/* One digit wide. The slider underneath is the usual way in, but this is the
+   only way to type an exact volume, and 20px is not a target. */
+html[data-layout="phone"] .vol-row input{min-width:52px}
+
+/* The species trait buttons on a plant page missed by a single pixel, and
+   there are five of them in a row. */
+html[data-layout="phone"] .tag2{padding-top:7px; padding-bottom:7px}
+
+/* The planner's week arrows, 25px wide either side of the date. */
+html[data-layout="phone"] #pBoardPrev, html[data-layout="phone"] #pBoardNext{
+  min-width:36px; padding-left:9px; padding-right:9px}
+
+/* The Notes header ran 3px past the screen — the only horizontal page
+   overflow left in the app — because its action row could not wrap. */
+.n-head-acts{flex-wrap:wrap; justify-content:flex-end}
+
+/* The version pill and the quick-capture button both live in the bottom-right
+   corner and overlapped on a phone, so the version sat half behind a purple
+   circle. It is a faint watermark; the button is a control. The watermark
+   moves. */
+html[data-layout="phone"] #verBadge{right:auto; left:9px}
 </style>
 
 <dialog id="adSwapDlg">
@@ -12201,32 +12253,6 @@ function pEnsureView(){
    the honest behaviour for a count of what is actually done.
    Plant care counts too: watering something IS getting something done, and
    the garden already logs every one of those with a timestamp. */
-function pRewardCount(iso){
-  const tasks=(S.planner.tasks||[]).filter(tk=>tk.done&&(
-    (tk.doneAt&&ymd(new Date(tk.doneAt))===iso)||(!tk.doneAt&&tk.due===iso))).length;
-  /* leaves excluded: a new leaf is something the plant did, not something you
-     did, so it must not earn a flower here */
-  const care=((S.events)||[]).filter(e=>e&&e.at&&!isLeafEv(e)&&ymd(new Date(e.at))===iso).length;
-  return tasks+care;
-}
-function pRewards(){
-  const host=$("#pRewards"); if(!host) return;
-  const n=pRewardCount(pSelISO);
-  if(!n){ host.hidden=true; host.innerHTML=""; return; }
-  const pigs=Math.floor(n/10), flowers=n-pigs*10;
-  host.hidden=false;
-  /* the row shows what the tally MEANS, not n icons — thirty flowers on a
-     phone would wrap into a wall; ten collapse into a piglet instead */
-  /* plural(): the app's own counter, so Czech's 1/2-4/5+ forms come out right
-     too rather than being pluralised the English way */
-  const parts=[];
-  if(pigs>0) parts.push(plural(pigs,"piglet"));
-  if(flowers>0) parts.push(plural(flowers,"flower"));
-  host.innerHTML=`<span class="prew-icons" aria-hidden="true">${
-    "🐷".repeat(Math.min(pigs,8))}${"🌸".repeat(flowers)}</span>
-    <span class="prew-txt">${esc(
-      t("{n} done today").replace("{n}",n)+(parts.length?" · "+parts.join(" + "):""))}</span>`;
-}
 /* ---- what you got done ----
    He asked for something to collect ("nasbíral jsem dneska 30 kytek a mám dvě
    prasátka"). Deliberately derived, never stored: a flower is one thing
@@ -16655,7 +16681,11 @@ const photoButtons=(cls)=>(TOUCH
   ? photoPick(cls,true,t("Take a photo"))+photoPick(cls,false,t("Choose one"))
   : photoPick(cls,false,t("+ Photo")))
   +(photoQualityKey()==="best" ? "" :
-    `<label class="photo-best"><input type="checkbox" id="photoBestOnce"${
+    /* a class, not an id: photoButtons() is mounted more than once on a page
+       that has two photo rows (the plant view has one on the plant and one on
+       its log), and a repeated id is invalid — $("#photoBestOnce") then finds
+       only the first of them however many are on screen */
+    `<label class="photo-best"><input type="checkbox" class="photo-best-once"${
       photoOnceBest?" checked":""}> ${esc(t("full quality"))}</label>`);
 function since(p){
   if(!p.since) return "";
@@ -17062,7 +17092,13 @@ async function takePhoto(e){
   }catch(err){ say("Couldn't use that image: "+err.message); }
 }
 document.addEventListener("change",e=>{
-  if(e.target&&e.target.id==="photoBestOnce"){ photoOnceBest=!!e.target.checked; return; }
+  if(e.target&&e.target.classList&&e.target.classList.contains("photo-best-once")){
+    photoOnceBest=!!e.target.checked;
+    /* every copy of the tick on the page means the same thing, so they move
+       together — two photo rows showing different states would be a lie about
+       what the next shutter will do */
+    document.querySelectorAll(".photo-best-once").forEach(b=>{ b.checked=photoOnceBest; });
+    return; }
   const el=e.target;
   if(!el||!el.classList||!el.classList.contains("photo-input")) return;
   /* the one in the plant dialog has no subject to attach to yet, and pvId may
