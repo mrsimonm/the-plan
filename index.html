@@ -10399,7 +10399,7 @@ const autoWater=()=>S.autoWater===true;
    carries a KEY instead: "n" for the unplaced group, and a "z" prefix on a
    real place, which cannot collide with anything however it was typed. */
 const ZONE_NONE="\u0000none";
-const zoneOf=p=>{ const s=String((p&&p.spot)||"").trim(); return s||ZONE_NONE; };
+const zoneOf=p=>{ const s=cleanText((p&&p.spot)||""); return s||ZONE_NONE; };
 const zoneName=z=>z===ZONE_NONE?(L.lang==="cs"?"Bez místa":"No place set"):z;
 const zoneKey=z=>z===ZONE_NONE?"n":"z"+z;
 /* "" is not a zone, it is the absence of one — "everywhere" */
@@ -10467,6 +10467,18 @@ const safeImg=d=>/^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/.tes
 /* Record ids become DOM/attribute data, so anything imported is squeezed to
    id-safe characters at the trust boundary, not at 118 render sites. */
 const cleanId=v=>String(v??"").replace(/[^\w:-]/g,"");
+/* The same idea one field further out, for text that becomes a KEY rather than
+   an id. A plant's spot is grouped on, and it travels out to a DOM attribute
+   and back again — and a control character does not survive that trip: the
+   HTML parser rewrites U+0000 as U+FFFD inside an attribute value, so what
+   comes back is not what went out and the group stops matching itself.
+
+   Nobody can type one, but a paste can carry one, which is exactly how the
+   ADHD Planner session found the same trap in its own pasted step text. So it
+   is stripped where the text ENTERS: read it back first and the original is
+   already gone. C0 and DEL only — every printable character somebody might
+   reasonably put in a place name is left alone. */
+const cleanText=v=>String(v??"").replace(/[\u0000-\u001F\u007F]/g,"").trim();
 /* Pinned weekdays, normalised hard at every trust boundary. A stray string or
    a 9 in here would put a job on a day that never arrives, and the plant would
    silently stop coming due — a scheduling app failing by going quiet. Function
@@ -25694,7 +25706,7 @@ $("#plantForm").addEventListener("submit",async e=>{
     light:$("#plLight").value===""?null:+$("#plLight").value,
     hum:$("#plHum").value===""?null:+$("#plHum").value,
     since:$("#plSince").value||"",
-    spot:$("#plSpot").value.trim(),detail:$("#plMedium").value.trim(),
+    spot:cleanText($("#plSpot").value),detail:$("#plMedium").value.trim(),
     pot:+$("#plPot").value||null,sub:$("#plSub").value||null,noDrain:$("#plNoDrain").checked,
     schedId:$("#plSched").value||null,week:Math.max(1,+$("#plWeek").value||1)};
   Object.assign(d,buyFields());
