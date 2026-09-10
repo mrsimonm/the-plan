@@ -6737,8 +6737,6 @@ html[data-shell="rail"] body{
       </div>
     </div>
 
-    <p class="ad-exp"><b>Experimental</b><span>A separate bench, still being built. Nothing here touches the Daily Planner or anything else in the app.</span></p>
-
     <div class="stack" id="adBody"></div>
   </section>
 
@@ -8296,13 +8294,6 @@ html[data-layout="phone"] .rb-sp-photo{height:104px}
   color:var(--on-accent); font-size:11px; font-weight:700; font-variant-numeric:tabular-nums;
   display:inline-flex; align-items:center; justify-content:center}
 
-/* the "this is a laboratory" strip — one line, said once, never repeated on
-   every card underneath it */
-.ad-exp{display:flex; align-items:center; gap:9px; padding:9px 13px; margin-bottom:12px;
-  border:1px dashed var(--line-strong); border-radius:var(--r-sm);
-  background:var(--accent-soft); color:var(--ink); font-size:12.5px; line-height:1.4}
-.ad-exp b{color:var(--accent); text-transform:uppercase; letter-spacing:.08em; font-size:11px; flex:0 0 auto}
-
 /* ============================ NOW ============================
    The focus screen. Wide margins, few objects, nothing that scrolls under
    the fold on a phone before the clock is reached. */
@@ -8416,9 +8407,6 @@ html[data-layout="phone"] .rb-sp-photo{height:104px}
 .ad-step{display:flex; align-items:center; gap:9px}
 .ad-step input[type=text]{flex:1 1 auto; min-width:0}
 .ad-step.is-done input[type=text]{color:var(--ink-3); text-decoration:line-through}
-.ad-nudge{padding:10px 12px; border-radius:var(--r-xs); background:var(--amber-soft);
-  color:var(--amber); font-size:12.5px; line-height:1.45}
-.ad-nudge b{font-weight:700}
 .ad-grouphead{font-family:var(--font); font-weight:700; text-transform:uppercase;
   letter-spacing:.09em; font-size:11px; color:var(--ink-3); margin:14px 0 2px}
 .ad-grouphead:first-child{margin-top:0}
@@ -26867,14 +26855,11 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 /* ---- species ---- */
 
 
-
 "Syngonium":"Syngonium",
 "Colocasia":"Kolokázie",
-
 "Maranta (prayer plant)":"Maranta",
 "Stromanthe":"Stromanthe","Fittonia (nerve plant)":"Fitonie","Tradescantia":"Podeňka",
 "Ivy (Hedera)":"Břečťan","Croton":"Kroton",
-
 "String of hearts":"Ceropegie (srdíčka na niti)","Spider plant":"Zelenec",
 "Fiddle Leaf Fig":"Fíkus lyrovitý","Rubber plant (Ficus elastica)":"Fíkus pryžodárný",
 "Ficus benjamina":"Fíkus benjamín",
@@ -32066,7 +32051,6 @@ Object.assign(CS,{
 "Sections":"Sekce","Bench":"Pěstírna","Plan":"Plán","Write":"Psaní","Teach":"Výuka",
 "Daily Planner":"Denní plánovač","Student Bench":"Studentský stůl","Jump anywhere…":"Skočit kamkoli…",
 "Open":"Otevřít","No care due, nothing scheduled.":"Nic k péči, nic v plánu.","Everything else":"Všechno ostatní",
-
 "List":"Seznam","Canvas":"Plátno","Arrange as graph":"Uspořádat jako graf","Auto-cluster":"Shlukovat","Fit":"Přizpůsobit",
 "Drag cards. Drag the background to pan, pinch or scroll to zoom, double-tap a card to open it.":"Přetahujte karty. Tahem pozadí posouváte, štipnutím nebo kolečkem zoomujete, dvojklepnutím kartu otevřete.",
 });
@@ -39021,22 +39005,18 @@ Object.assign(CS,{
   "Give the collection a name.":"Pojmenuj sbírku.",
   "What sort of thing":"Co to je za věci",
   "Call the maker":"Autorovi říkat",
-  
   "Adds fields for":"Přidá kolonky pro",
   "No extra fields — you name your own on each item.":"Žádné kolonky navíc — u každé položky si je pojmenuješ sám.",
   "Your own fields":"Vlastní kolonky", "+ Add a field":"+ Přidat kolonku",
   "Field":"Kolonka",
-
   "Art & paintings":"Umění a obrazy", "Scale models":"Modely",
   "Coins, stamps & notes":"Mince, známky a bankovky", "Books":"Knihy",
   "Records & music":"Desky a hudba", 
-
 
   "New item":"Nová položka", "Edit item":"Upravit položku", "+ Add item":"+ Přidat položku",
   "Item":"Položka", "item":"položka", "items":"položek",
   "That item is gone.":"Ta položka už neexistuje.",
   "It needs a title — even “Untitled, blue” is better than nothing.":"Musí mít název — i „Bez názvu, modrý“ je lepší než nic.",
-
   "Artist":"Autor", "Manufacturer":"Výrobce", "Issuer":"Emitent", "Author":"Autor", "Maker":"Autor",
   "No maker recorded":"Bez autora",
   "Year made":"Rok vzniku", "Undated":"Bez datace",
@@ -39049,12 +39029,10 @@ Object.assign(CS,{
   "Dealer, auction, gift…":"Obchodník, aukce, dar…",
   "oil, framed, favourite — separated by commas":"olej, zarámované, oblíbené — čárkami",
   "Where it came from, what happened to it, why you wanted it.":"Odkud to je, co se s tím dělo, proč jsi to chtěl.",
-
   "Owned":"Vlastním", "Wanted":"Chci", "On order":"Objednáno",
   "Lent out":"Půjčeno", "Sold":"Prodáno", "Given away":"Darováno",
   "wanted":"chci", "gone":"pryč", "worth":"hodnota", "paid":"zaplaceno", "added":"přidáno",
 
-  
   "No grouping":"Bez seskupení", "By maker":"Podle autora", "By year":"Podle roku",
   "By status":"Podle stavu", "By location":"Podle umístění", "By tag":"Podle štítku",
   "Newest added":"Naposledy přidané",
@@ -39063,7 +39041,6 @@ Object.assign(CS,{
   "Nothing here matches that.":"Tomu tady nic neodpovídá.",
   "This collection is empty. Add the first thing in it.":"Sbírka je prázdná. Přidej první věc.",
   "Nothing on the shelves yet.":"Zatím nic na policích.",
-
   "Photos":"Fotky", "Picture":"Fotka", "Cover":"Hlavní",
   "Add a picture":"Přidat fotku", "Delete this picture?":"Smazat tuhle fotku?",
   "No picture yet.":"Zatím bez fotky.", "No picture yet. Add one below.":"Zatím bez fotky. Přidej ji níž.",
@@ -39074,7 +39051,6 @@ Object.assign(CS,{
   "That image could not be saved.":"Ten obrázek se nepodařilo uložit.",
   "This device won't let the app store pictures. Everything else still works.":"Tohle zařízení aplikaci nedovolí ukládat fotky. Všechno ostatní funguje dál.",
   "Caption":"Popisek",
-
   "Valuation report…":"Zpráva o ocenění…", "Spreadsheet (CSV)":"Tabulka (CSV)",
   "Backup with pictures":"Záloha i s fotkami", "Valuation record":"Záznam o ocenění",
   "There is nothing here to export yet.":"Zatím tu není co vyvézt.",
@@ -39088,7 +39064,6 @@ Object.assign(CS,{
   "Values are the owner's own record and are not a professional appraisal.":"Ceny jsou vlastní evidence majitele, nejde o znalecký posudek.",
   "items have no value recorded.":"položek nemá zapsanou cenu.",
   "mixed currencies — see each collection":"různé měny — koukni do jednotlivých sbírek",
-
   "Technique":"Technika", "Frame":"Rám", "Signed":"Signováno",
   "Edition":"Edice", "Provenance":"Původ",
   "Scale":"Měřítko", "Kit number":"Číslo stavebnice", "Subject":"Předloha",
@@ -39098,7 +39073,6 @@ Object.assign(CS,{
   "Metal":"Kov", "Certification":"Certifikace", "Catalogue no.":"Katalogové č.",
   "Publisher":"Nakladatel", "Binding":"Vazba", "Pages":"Stran", "Inscribed":"Věnování",
   "Label":"Vydavatelství", "Speed":"Otáčky", "Pressing":"Lis", "Sleeve":"Obal",
-
   "Excellent":"Výborný", "Fair":"Ucházející",
   "Restored":"Restaurováno", "Damaged":"Poškozeno",
   "Sealed":"Nerozbalené", "Complete":"Kompletní", "Started":"Načaté", "Missing parts":"Chybí díly",
@@ -39152,7 +39126,6 @@ Object.assign(CS,{
   "Everything, side by side":"Všechno vedle sebe",
   "Make one, choose what you want to record about each piece, then start adding them.":
     "Založ jednu, vyber si, co chceš u každého kusu zapisovat, a pak je přidávej.",
-
   "What you track":"Co si zapisuješ",
   "Every collection measures different things. These become the fields on each item, and the columns in the export.":
     "Každá sbírka měří něco jiného. Tyhle údaje pak najdeš u každé položky a ve sloupcích exportu.",
@@ -39164,7 +39137,6 @@ Object.assign(CS,{
   "+ Add a parameter":"+ Přidat údaj",
   "Nothing extra yet — just the title, maker, dates and value every collection keeps.":
     "Zatím nic navíc — jen název, autor, data a cena, co si vede každá sbírka.",
-
   "What it is called":"Jak se to jmenuje", "An example answer":"Příklad odpovědi",
   "Kind":"Druh", "Text":"Text", "One of a list":"Jedna z možností",
   "A measurement":"Měřený údaj",
@@ -40678,7 +40650,6 @@ Object.assign(CS,{
     "Horký, suchý, stojatý vzduch. Klasický zimní škůdce od radiátoru — a rostlina, která je už tak suchá u kořene, jde dolů nejrychleji.",
   "Shower the whole plant, undersides especially, and raise the humidity around it. Then treat on a five-day cycle for at least three rounds — eggs hatch after the first spray, so a single treatment always looks like a cure and never is. Phytoseiulus persimilis works well indoors if you would rather not spray.":
     "Osprchuj celou rostlinu, hlavně spodní strany listů, a zvedni kolem ní vlhkost. Pak ošetřuj po pěti dnech aspoň třikrát — vajíčka se líhnou až po prvním postřiku, takže jedno ošetření vždycky vypadá jako vyléčení a nikdy jím není. Když nechceš stříkat, uvnitř dobře funguje Phytoseiulus persimilis.",
-
   "Mealybug":"Červec",
   "White cottony blobs wedged into leaf axils, along stems and under the pot rim. Sticky honeydew below, often with black sooty mould growing on it.":
     "Bílé vatovité chomáčky zaklíněné v paždí listů, podél stonků a pod okrajem květináče. Pod nimi lepkavá medovice, na které často roste černá saze.",
@@ -40686,7 +40657,6 @@ Object.assign(CS,{
     "Skoro vždycky přijde na nové rostlině. Vyhovuje mu měkký, dobře živený přírůstek, takže přehnojená rostlina je pro něj lákavější než hubená.",
   "Dab each one with 70% isopropyl on a cotton bud — it kills on contact and shows you which you have already done. Then repeat weekly for a month: crawlers hide in the compost and under the rim, and re-emerge long after the visible ones are gone.":
     "Každého potři vatovou tyčinkou se 70% isopropylalkoholem — zabíjí na dotek a zároveň je vidět, kterého už jsi měl. Pak opakuj týden co týden celý měsíc: larvy se schovávají v substrátu a pod okrajem květináče a vylezou dlouho potom, co ti viditelní zmizeli.",
-
   "Root mealybug":"Kořenový červec",
   "Nothing on the leaves at all. The plant sulks, wilts between waterings and will not grow. Knock it out of the pot and you find white waxy deposits on the rootball and a bluish-white bloom on the inside of the pot.":
     "Na listech vůbec nic. Rostlina se trucuje, mezi zálivkami vadne a neroste. Vyklop ji z květináče a najdeš bílé voskové povlaky na kořenovém balu a modrobílý nádech na vnitřní stěně květináče.",
@@ -40694,7 +40664,6 @@ Object.assign(CS,{
     "Šíří se z květináče do květináče ve společných miskách a stojaté vodě, takže celá police to chytne najednou.",
   "Bare-root it, wash the roots clean, and repot in fresh compost in a different pot — the old one carries them. Treat the neighbours that shared the tray at the same time or it comes straight back.":
     "Vyklep kořeny do čista, omyj je a přesaď do čerstvého substrátu v jiném květináči — ten starý je přenáší. Zároveň ošetři sousedy ze stejné misky, jinak se to hned vrátí.",
-
   "Scale":"Štítenka",
   "Immobile brown or tan limpets along stems and the midribs of leaves. They do not look like an animal, which is why they are usually found late. Sticky leaves below them are the giveaway.":
     "Nehybné hnědé nebo béžové štítky podél stonků a středních žeber listů. Nevypadají jako zvíře, proto se obvykle najdou pozdě. Prozradí je lepkavé listy pod nimi.",
@@ -40702,7 +40671,6 @@ Object.assign(CS,{
     "Další, co přijede na nové rostlině. Dospělci mají štít a skoro se nehýbou, takže to narůstá pomalu a neviditelně.",
   "Scrape the adults off with a thumbnail — the armour makes sprays nearly useless against them. The mobile crawler stage is the vulnerable one, so follow with oil or soap every ten days for six weeks. Expect a long campaign.":
     "Dospělce seškrábej nehtem — proti štítu jsou postřiky skoro k ničemu. Zranitelné jsou pohyblivé larvy, takže po deseti dnech opakuj olejem nebo mýdlem, a to šest týdnů. Počítej s dlouhým tažením.",
-
   "Thrips":"Třásněnka",
   "Silvery scarring in patches, with tiny black specks of frass in it. New leaves come out distorted and never straighten. The adults are slim dark slivers that run rather than fly.":
     "Stříbřité odřeniny v plochách a v nich drobné černé tečky trusu. Nové listy vyrážejí zdeformované a už se nenarovnají. Dospělci jsou tenké tmavé třísky, které spíš běhají než létají.",
@@ -40710,7 +40678,6 @@ Object.assign(CS,{
     "Přijede na řezaných květinách a nových rostlinách a sbírkou se pohybuje rychle.",
   "The hardest of the common ones. Take off the worst leaves, use blue sticky traps, and treat repeatedly — part of the life cycle happens in the compost, so surface sprays alone never finish it. Amblyseius cucumeris is worth the money on a bad one.":
     "Nejtěžší z těch běžných. Otrhej nejhorší listy, dej modré lepové desky a ošetřuj opakovaně — část vývoje probíhá v substrátu, takže povrchový postřik to sám nikdy nedodělá. Při silném napadení stojí Amblyseius cucumeris za ty peníze.",
-
   "Fungus gnat":"Smutnice",
   "Small dark flies running across the compost surface and drifting up when you water. The larvae are in the top few centimetres, translucent with a black head.":
     "Malé tmavé mušky pobíhající po povrchu substrátu, které se při zálivce zvednou. Larvy jsou v horních pár centimetrech, průsvitné s černou hlavou.",
@@ -40718,7 +40685,6 @@ Object.assign(CS,{
     "Trvale vlhký substrát, obzvlášť rašelinové směsi. Larvy žerou houbové vlákno a jemné kořenové vlásky.",
   "Let the top two or three centimetres dry properly between waterings — that alone breaks the cycle. Yellow sticky traps for the adults, and Bacillus thuringiensis israelensis or Steinernema feltiae nematodes for the larvae. A nuisance on an established plant; genuinely dangerous to seedlings and cuttings.":
     "Nech horní dva tři centimetry mezi zálivkami pořádně proschnout — samo to přeruší cyklus. Na dospělce žluté lepové desky, na larvy Bacillus thuringiensis israelensis nebo hlístice Steinernema feltiae. Na zavedené rostlině je to otrava; na semenáčcích a řízcích doopravdy nebezpečné.",
-
   "Aphid":"Mšice",
   "Clusters of soft green, black or pink insects on the newest growth and flower buds. Sticky leaves underneath, and shed white skins that look like a second infestation.":
     "Shluky měkkého zeleného, černého nebo růžového hmyzu na nejmladším přírůstku a poupatech. Pod nimi lepkavé listy a svlečené bílé kůžičky, které vypadají jako druhé napadení.",
@@ -40726,7 +40692,6 @@ Object.assign(CS,{
     "Měkký, dusíkem nabitý nový přírůstek, obvykle na jaře. Často přileze otevřeným oknem.",
   "The easiest of them. Rinse them off under the tap or squash them between finger and thumb, and check again in three days. Soap spray if it is on a plant you cannot get to the sink.":
     "Nejsnazší z nich. Spláchni je pod kohoutkem nebo je rozmáčkni mezi prsty a za tři dny zkontroluj znovu. Mýdlový postřik, pokud jde o rostlinu, se kterou se k dřezu nedostaneš.",
-
   "Whitefly":"Molice",
   "Tiny white moth-like insects that fly up in a cloud when the plant is disturbed, then settle again. Scale-like nymphs fixed to the undersides.":
     "Drobní bílí motýlkovití tvorové, kteří při zavadění o rostlinu vzlétnou v obláčku a zase se usadí. Na spodní straně listů přisedlé nymfy podobné štítenkám.",
@@ -40734,7 +40699,6 @@ Object.assign(CS,{
     "Teplé místnosti a hustý porost. Běžná na všem, co strávilo léto ve skleníku.",
   "Yellow sticky traps catch the adults; the nymphs need repeated spraying since nothing touches the egg stage. Encarsia formosa is the usual biological answer under glass.":
     "Žluté lepové desky chytí dospělce; na nymfy je potřeba opakovaný postřik, protože na stadium vajíčka nezabírá nic. Ve skleníku je obvyklou biologickou odpovědí Encarsia formosa.",
-
   "Springtails":"Chvostoskoci",
   "Tiny white specks in wet compost that jump when disturbed.":
     "Drobné bílé tečky ve vlhkém substrátu, které při vyrušení odskočí.",
@@ -40751,7 +40715,6 @@ Object.assign(CS,{
     "Zamokřený substrát bez vzduchu. Patogeny tam skoro vždycky už jsou a uchytí se, teprve až se kořeny utopí a přestanou se bránit. Květináč bez odtoku, plná miska, nebo rostlina v mnohem větším květináči, než potřebuje.",
   "Unpot immediately. Cut back to white, firm root, repot into fresh open mix in a pot barely bigger than what is left, and water sparingly until it is growing again. Sterilise the blade — it will carry to the next plant you cut.":
     "Okamžitě vyndej z květináče. Ořež až na bílý pevný kořen, přesaď do čerstvé propustné směsi v květináči sotva větším, než co zbylo, a zalévej střídmě, dokud zase neroste. Vydezinfikuj nůž — jinak to přenese na další rostlinu, kterou ostříháš.",
-
   "Powdery mildew":"Padlí",
   "White floury patches on the UPPER leaf surface, wiping off with a finger and returning. Later the leaf yellows and distorts underneath it.":
     "Bílé moučnaté skvrny na HORNÍ straně listu, prstem se setřou a vrátí se. Později list pod nimi žloutne a deformuje se.",
@@ -40759,7 +40722,6 @@ Object.assign(CS,{
     "Stojatý vzduch a velké výkyvy vlhkosti mezi dnem a nocí. Na rozdíl od většiny hub nepotřebuje mokrý list, proto se objeví i na rostlinách, které nikdo nerosil.",
   "Move air across the plant — that does more than any spray. Remove the worst leaves, and treat with potassium bicarbonate or sulphur if it keeps coming. Thin dense growth so the middle of the plant dries.":
     "Rozproudi kolem rostliny vzduch — udělá to víc než jakýkoli postřik. Odstraň nejhorší listy a když se to vrací, ošetři hydrogenuhličitanem draselným nebo sírou. Prořeď hustý porost, ať střed rostliny prosychá.",
-
   "Grey mould":"Plíseň šedá",
   "Fuzzy grey-brown mould on dying tissue, spent flowers and cutting stumps, spreading from there into healthy tissue.":
     "Chlupatá šedohnědá plíseň na odumírajícím pletivu, odkvetlých květech a pahýlech po řezu, odkud se šíří do zdravého pletiva.",
@@ -40767,7 +40729,6 @@ Object.assign(CS,{
     "Chladný, vlhký, stojatý vzduch a něco už odumřelého, na čem může začít. Objevuje se na zimních parapetech a v množárnách.",
   "Take off every dead flower and leaf as it goes over, cut well into clean tissue, and get air moving. It is a poor competitor on healthy tissue and only ever starts on something already dying.":
     "Odstraňuj každý odkvetlý květ a odumřelý list hned, jak dojde, řež hluboko do čistého pletiva a rozproudi vzduch. Ve zdravém pletivu je slabý konkurent a vždycky začíná na něčem, co už umírá.",
-
   "Fungal leaf spot":"Houbová skvrnitost listů",
   "Brown or black spots with a defined edge, often with faint concentric rings, sometimes a yellow halo. Spots stay roughly circular and keep their margin.":
     "Hnědé nebo černé skvrny s ostrým okrajem, často se slabými soustřednými kruhy, někdy se žlutým lemem. Skvrny zůstávají zhruba kulaté a drží si hranici.",
@@ -40775,7 +40736,6 @@ Object.assign(CS,{
     "Voda stojící na listech, natěsnané rostliny a špatné proudění vzduchu.",
   "Take off the marked leaves and bin them rather than compost them. Water at the compost, never over the foliage, and give the plant room. Most houseplant leaf spots stop there without any spray.":
     "Poškozené listy otrhej a vyhoď je do koše, ne na kompost. Zalévej na substrát, nikdy přes listy, a dej rostlině prostor. Většina pokojových skvrnitostí se tím zastaví i bez postřiku.",
-
   "Bacterial leaf spot":"Bakteriální skvrnitost listů",
   "Water-soaked spots that look translucent held up to the light, with a yellow halo and an irregular edge, often running along veins. Moves much faster than the fungal kind and can smell.":
     "Vodnaté skvrny, které jsou proti světlu průsvitné, se žlutým lemem a nepravidelným okrajem, často se táhnou podél žilek. Postupuje mnohem rychleji než houbová a může být cítit.",
@@ -40783,7 +40743,6 @@ Object.assign(CS,{
     "Teplé mokré listy. Vstupuje ranami a průduchy, takže zálivka přes listy a manipulace ji přenášejí přímo.",
   "Isolate the plant now — this is the one that genuinely runs through a shelf. Remove affected leaves, stop wetting the foliage entirely, and wash your hands between plants. Copper is only marginally useful; separation and dry leaves do the work.":
     "Rostlinu hned izoluj — tahle policí opravdu proletí. Odstraň napadené listy, úplně přestaň smáčet listy a mezi rostlinami si umyj ruce. Měď pomůže jen okrajově; práci odvede oddělení a suché listy.",
-
   "Sooty mould":"Černě (saze)",
   "A black soot-like film over the upper leaf surfaces, wiping off to leave the leaf unmarked.":
     "Černý sazovitý povlak na horní straně listů, který se setře a pod ním je list bez poškození.",
@@ -40800,7 +40759,6 @@ Object.assign(CS,{
     "Zálivka podle rozvrhu místo podle květináče, moc velký květináč, nebo plná miska pod ním.",
   "Let it dry properly, check the roots are still white, and water by weight rather than by day. If the pot has no drainage hole, that is the actual problem.":
     "Nech to pořádně proschnout, zkontroluj, že kořeny jsou ještě bílé, a zalévej podle váhy, ne podle data. Jestli květináč nemá odtokový otvor, je to on, ten skutečný problém.",
-
   "Underwatering":"Nedostatek vody",
   "Wilting that recovers within hours of watering, crisp brown leaf edges, and compost shrunk away from the side of the pot so water runs straight down the gap.":
     "Vadnutí, které se do pár hodin po zálivce srovná, křupavě hnědé okraje listů a substrát smrštěný od stěny květináče, takže voda proteče rovnou tou škvírou.",
@@ -40808,7 +40766,6 @@ Object.assign(CS,{
     "Prokořeněný květináč, nebo rašelinový substrát vyschlý za hranici, kdy je ještě schopný přijmout vodu.",
   "Stand the pot in water for half an hour so the compost rewets all through — pouring from the top only wets the gap. Repot if the roots are circling.":
     "Postav květináč na půl hodiny do vody, aby se substrát provlhčil skrz naskrz — zálivka shora namočí jen tu škvíru. Když kořeny krouží dokola, přesaď.",
-
   "Sun scorch":"Spálení sluncem",
   "Bleached or brown patches on the leaves facing the light, sharply bounded, on the exposed side only. Older leaves that were already there take it worst.":
     "Vybělené nebo hnědé plochy na listech obrácených ke světlu, ostře ohraničené, jen na osluněné straně. Nejhůř to schytají starší listy, které tam už byly.",
@@ -40816,7 +40773,6 @@ Object.assign(CS,{
     "Náhlé přestěhování na přímé slunce, nebo jarní světlo přes sklo na listy vyrostlé přes zimu. Jakmile list vyzraje, už se nepřizpůsobí.",
   "Move it back and let new growth come in adapted. The damaged tissue will not recover — it is dead — so judge the move by what grows next, not by what is marked.":
     "Vrať ji zpátky a nech nový přírůstek narůst přizpůsobený. Poškozené pletivo se neuzdraví — je mrtvé — takže posuzuj to podle toho, co naroste, ne podle toho, co je poznamenané.",
-
   "Cold damage":"Poškození chladem",
   "Translucent, water-soaked patches that go brown and papery in a day or two, often on the side that was touching a window. Sudden leaf drop after a cold night.":
     "Průsvitné vodnaté plochy, které během dne dvou zhnědnou a zpapírovatí, často na straně, která se dotýkala okna. Náhlý opad listů po studené noci.",
@@ -40824,7 +40780,6 @@ Object.assign(CS,{
     "List přitisknutý na zimní sklo, průvan ode dveří, nebo cesta z obchodu domů v mrazu.",
   "Move it off the glass. Do not cut the damage away until the plant is growing again in spring — the marked leaf is still feeding it.":
     "Odsuň ji od skla. Poškození neořezávej, dokud rostlina na jaře zase neroste — ten poznamenaný list ji pořád živí.",
-
   "Fertiliser burn":"Spálení hnojivem",
   "Crisp brown leaf margins on an otherwise well-watered plant, and a white or yellow crust on the compost surface and around the pot rim.":
     "Křupavě hnědé okraje listů na jinak dobře zalité rostlině a bílá nebo žlutá krusta na povrchu substrátu a kolem okraje květináče.",
@@ -40832,7 +40787,6 @@ Object.assign(CS,{
     "Moc silné hnojení, hnojení do suchého balu, nebo tvrdá voda z kohoutku, která roky ukládá soli, aniž by se květináč propláchl.",
   "Flush the pot: water it through with four or five pot volumes of clean water and let it all drain. Then feed at half strength and only onto damp compost.":
     "Propláchni květináč: prolij ho čtyřmi až pěti objemy čisté vody a nech všechno odtéct. Pak hnoj na poloviční dávku a jen do vlhkého substrátu.",
-
   "Dry air":"Suchý vzduch",
   "Crisp brown tips with a narrow yellow band behind them, on new and old leaves alike. Leaf edges rolling inward.":
     "Křupavě hnědé špičky s úzkým žlutým proužkem za nimi, na nových i starých listech stejně. Okraje listů se stáčejí dovnitř.",
@@ -40840,7 +40794,6 @@ Object.assign(CS,{
     "Topení. Nejdřív to ukážou kalatey, kapradiny a maranty; nakonec cokoli s tenkým listem.",
   "Group plants, use a pebble tray or a humidifier. Misting raises humidity for about ten minutes and mostly spreads leaf spot, so it is not the answer.":
     "Dej rostliny k sobě, použij misku s kamínky nebo zvlhčovač. Rosení zvedne vlhkost tak na deset minut a hlavně roznáší skvrnitost listů, takže řešení to není.",
-
   "Nutrient deficiency":"Nedostatek živin",
   "Which leaves go first tells you which nutrient: uniform pale yellowing of the OLDEST leaves is nitrogen, and yellowing between green veins on the oldest leaves is magnesium — both are mobile, so the plant strips old growth to feed new. The same interveinal pattern on the NEWEST leaves is iron, which is not mobile and so shows where it cannot be moved to.":
     "Které listy jdou první, ti řekne, o kterou živinu jde: rovnoměrné světlé žloutnutí NEJSTARŠÍCH listů je dusík, žloutnutí mezi zelenými žilkami na nejstarších listech je hořčík — oba jsou pohyblivé, takže rostlina obírá starý přírůstek, aby uživila nový. Stejný obrazec mezi žilkami na NEJMLADŠÍCH listech je železo, které pohyblivé není, a tak se ukáže tam, kam se nedá přesunout.",
@@ -40848,7 +40801,6 @@ Object.assign(CS,{
     "Nehnojená rostlina ve vyčerpaném substrátu — a u železa substrát příliš zásaditý na to, aby ho rostlina přijala, i když tam je.",
   "Nitrogen and magnesium: feed, and repot into fresh compost. Iron: correct the pH rather than adding more iron — chelated iron is a patch, not a fix.":
     "Dusík a hořčík: pohnojit a přesadit do čerstvého substrátu. Železo: uprav pH místo přidávání dalšího železa — chelát je náplast, ne řešení.",
-
   "Oedema":"Edém (korkovatění)",
   "Corky raised blisters on leaf undersides and stems, often in lines. Not a fungus and it does not spread.":
     "Korkovité vystouplé puchýřky na spodní straně listů a na stoncích, často v řadách. Není to houba a nešíří se.",
@@ -46010,11 +45962,6 @@ const AD = (() => {
   const SCOPE_LABEL = {now:"Now", dump:"Dump", today:"Today", all:"Everything", wins:"Wins"};
   const ENERGY = [["low","Light"],["mid","Medium"],["deep","Deep"]];
   const ENERGY_LBL = {low:"Light", mid:"Medium", deep:"Deep"};
-  const ENERGY_HINT = {
-    low:"Almost no brain needed — these are for when you are running on empty.",
-    mid:"An ordinary amount of thinking.",
-    deep:"Needs a quiet head and an uninterrupted run at it."
-  };
   const DEFAULTS = {cap:3, ritual:true, buzz:true, mins:15};
 
   let scope = "now";
@@ -46356,7 +46303,7 @@ const AD = (() => {
         data-adact="steptick" data-adstep="${i}" aria-pressed="${!!s.done}">
         <span class="ad-ci-box" aria-hidden="true">✓</span>
         <span class="ad-ci-t">${esc(s.text)}</span></button>`).join("")}
-      ${p.finished?`<p class="ad-todo-all">${T("Every step is ticked. Call it done?")}</p>`:""}
+      ${p.finished?`<p class="ad-todo-all">${T("Every step is ticked.")}</p>`:""}
     </div>`;
   }
 
@@ -46404,7 +46351,7 @@ const AD = (() => {
       </div>
 
       <form class="ad-catch" id="adCatchForm">
-        <input type="text" id="adCatchIn" autocomplete="off" placeholder="${T("Caught a thought? Put it here and carry on")}">
+        <input type="text" id="adCatchIn" autocomplete="off" placeholder="${T("Caught a thought?")}">
         <button type="submit" class="btn mini">${T("Keep")}</button>
       </form>
       <div class="ad-caught" id="adCaught" role="status"></div>
@@ -46423,16 +46370,14 @@ const AD = (() => {
     const dumped=inbox().length;
     if(!openTasks().length){
       return `<div class="card pad">
-        <p class="empty">${T(dumped
-          ? "Everything is still sitting in the Dump. Sort a couple of them and they will show up here."
-          : "Nothing on the list yet. Put something in the Dump — you do not have to decide anything about it.")}</p>
+        <p class="empty">${T(dumped ? "Everything is still in the Dump." : "Nothing on the list.")}</p>
         <div class="btn-row" style="justify-content:center">
           <button type="button" class="btn primary" data-adgo="dump">${T("Open the Dump")}</button>
         </div></div>`;
     }
     return `<div class="card ad-now">
       <span class="eyebrow">${T("Pick one thing")}</span>
-      <div class="ad-now-what">${T(todays.length?"What are you doing next?":"Nothing is chosen for today — start with the smallest one.")}</div>
+      <div class="ad-now-what">${T(todays.length?"What are you doing next?":"Nothing chosen for today.")}</div>
       <div class="ad-pick">
         ${cands.map(c=>`<button type="button" class="ad-cand" data-adpick="${esc(c.id)}">
             <span class="ad-cand-t">${esc(c.title)}${nextStep(c)?`<small>${T("first move:")} ${esc(nextStep(c))}</small>`:""}</span>
@@ -46444,7 +46389,6 @@ const AD = (() => {
         <button type="button" class="btn" data-adact="tiny">${T("I have nothing left in me")}</button>
         <button type="button" class="btn" data-adgo="today">${T("Choose today's three")}</button>
       </div>
-      <p class="hint" style="max-width:28em">${T("Whichever you press, it starts a clock. You are allowed to stop it.")}</p>
     </div>`;
   }
 
@@ -46454,10 +46398,9 @@ const AD = (() => {
     return `<div class="card pad">
       <span class="eyebrow">${T("Get it out of your head")}</span>
       <form class="ad-dumpform" id="adDumpForm" style="margin-top:9px">
-        <input type="text" id="adDumpIn" autocomplete="off" placeholder="${T("Anything at all. Press enter. Repeat.")}">
+        <input type="text" id="adDumpIn" autocomplete="off" placeholder="${T("Anything at all")}">
         <button type="submit" class="btn primary">${T("Dump")}</button>
       </form>
-      <p class="hint" style="margin-top:8px">${T("No date, no category, no priority. Deciding is a separate job for a separate moment — this box is only for stopping the thought from going round.")}</p>
     </div>
 
     <div class="card pad">
@@ -46466,7 +46409,7 @@ const AD = (() => {
         ${list.length?`<span class="hint">${esc(list.length)}</span>`:""}
       </div>
       ${list.length ? `<div class="ad-list">${list.map(dumpRow).join("")}</div>`
-        : `<p class="empty">${T("Nothing waiting. That is a good place to be.")}</p>`}
+        : `<p class="empty">${T("Nothing waiting.")}</p>`}
     </div>`;
   }
   function dumpRow(x){
@@ -46487,7 +46430,7 @@ const AD = (() => {
       </div>
     </div>
     ${parts?`<div class="ad-split" data-adid="${esc(x.id)}">
-      <p>${T("That reads like more than one job. Turn the pieces into steps?")}</p>
+      <p>${T("More than one job?")}</p>
       <ol>${parts.map(p=>`<li>${esc(p)}</li>`).join("")}</ol>
       <div class="btn-row">
         <button type="button" class="btn mini primary" data-adact="split">${T("Break it up")}</button>
@@ -46516,11 +46459,11 @@ const AD = (() => {
       <div class="ad-cap">
         <span class="ad-cap-slots">${slots.join("")}</span>
         <span class="ad-cap-txt">${doing.length>=cap
-          ? T("That is a full day. Anything else has to wait, or swap in.")
+          ? T("That is a full day.")
           : esc(t("Room for {n} more.").replace("{n}", cap-doing.length))}</span>
       </div>
       ${doing.length ? `<div class="ad-list">${doing.map(taskRow).join("")}</div>`
-        : `<p class="empty">${T("Nothing chosen. Pick from Everything, or take the top of the Dump.")}</p>`}
+        : `<p class="empty">${T("Nothing chosen.")}</p>`}
       <div class="btn-row" style="margin-top:12px">
         <button type="button" class="btn" data-adgo="all">${T("Choose from Everything")}</button>
         ${doing.length?`<button type="button" class="btn primary" data-adact="startfirst">${T("Start the first one")}</button>`:""}
@@ -46536,7 +46479,6 @@ const AD = (() => {
       <div class="field">
         <label for="adCapIn">${T("How many things is a day")}</label>
         <input type="number" id="adCapIn" class="mono-input" min="1" max="6" step="1" value="${esc(cap)}" style="max-width:110px">
-        <p class="hint">${T("Three is the usual answer. The cap exists so that the list stays something you could actually finish — a list you never finish stops meaning anything.")}</p>
       </div>
     </div>`;
   }
@@ -46550,12 +46492,10 @@ const AD = (() => {
         <input type="text" id="adNewIn" autocomplete="off" placeholder="${T("Add something straight to the list")}">
         <button type="submit" class="btn primary">${T("Add")}</button>
       </form>
-      <p class="hint" style="margin-top:8px">${T("Grouped by how much brain it needs, not by how important it is. On a flat day you work down from Light and still get somewhere.")}</p>
     </div>
 
     ${all.length ? groups.map(([k,lbl,rows])=>rows.length?`<div class="card pad">
         <div class="ad-grouphead">${T(lbl)} · ${esc(rows.length)}</div>
-        <p class="hint" style="margin:2px 0 8px">${T(ENERGY_HINT[k])}</p>
         <div class="ad-list">${rows.map(taskRow).join("")}</div>
       </div>`:"").join("")
       : `<div class="card pad"><p class="empty">${T("Nothing on the list.")}</p></div>`}
@@ -46606,24 +46546,21 @@ const AD = (() => {
   function editHTML(x){
     const steps=(x.steps||[]);
     return `<div class="ad-edit" data-adedit="${esc(x.id)}">
-      ${(x.moves>=3&&x.state!=="done")?`<p class="ad-nudge"><b>${esc(t("This has moved {n} times.").replace("{n}",x.moves))}</b>
-        ${T("That usually means it is too big to picture, not that you are lazy. Write down only the first physical thing you would touch, and make that the task.")}</p>`:""}
       <div class="field"><label>${T("What it is")}</label>
         <input type="text" data-adf="title" value="${esc(x.title)}"></div>
       <div class="field"><label>${T("The very first move")}</label>
-        <input type="text" data-adf="step" value="${esc(x.step||"")}" placeholder="${T("e.g. open the folder called Tax")}">
-        <p class="hint">${T("Something you could do while still holding a cup of tea. Not “do the tax return” — “open the folder”.")}</p></div>
+        <input type="text" data-adf="step" value="${esc(x.step||"")}">
+</div>
       <div class="field"><label>${T("Break it into steps")}</label>
         <div class="ad-steps">
           ${steps.map(stepRowHTML).join("")}
           <div class="ad-stepadd">
             <input type="text" data-adstepnew="${esc(x.id)}" autocomplete="off"
-              placeholder="${T("Add a step, press enter")}">
+              placeholder="${T("Add a step")}">
             <button type="button" class="btn mini" data-adact="stepadd">${T("Add")}</button>
           </div>
         </div>
-        ${progHTML(x)}
-        <p class="hint">${T("Enter files it and leaves the cursor here for the next one. Paste a list and every line becomes its own step.")}</p></div>
+        ${progHTML(x)}</div>
       <div class="field"><label>${T("How much brain")}</label>
         <div class="chips fill">${ENERGY.map(([k,l])=>
           `<button type="button" class="chip" data-aden="${k}" aria-pressed="${x.energy===k}">${T(l)}</button>`).join("")}</div></div>
@@ -46693,7 +46630,7 @@ const AD = (() => {
         <div class="stat"><b>${esc(sr||"—")}</b><span>${T(sr===1?"day in a row":"days in a row")}</span></div>
       </div>
       ${dl.length?`<div class="ad-list" style="margin-top:12px">${dl.map(taskRow).join("")}</div>`
-        :`<p class="empty">${T("Nothing yet today. One small thing counts — that is not a consolation prize, it is how the day starts.")}</p>`}
+        :`<p class="empty">${T("Nothing yet today.")}</p>`}
     </div>
 
     <div class="card pad">
@@ -46703,15 +46640,14 @@ const AD = (() => {
           <span class="ad-spark-b" style="height:${Math.round(d.count/max*100)}%"></span>
           <span class="ad-spark-l">${T(d.label)}</span></div>`).join("")}
       </div>
-      <p class="hint">${T("Bars are things finished. An empty day is a day, not a verdict.")}</p>
     </div>
 
     ${cal?`<div class="card pad">
       <span class="eyebrow">${T("Your sense of time")}</span>
       <p class="ad-calib" style="margin-top:9px">${
-        cal.ratio>=1.15 ? esc(t("Over your last {n} timed tasks you took about {x}× as long as you guessed. Not a flaw — multiply the next guess by {x} and the day will fit.").replace("{n}",cal.n).replace(/\{x\}/g,cal.ratio.toFixed(1)))
-        : cal.ratio<=0.85 ? esc(t("Over your last {n} timed tasks you finished in about {x}× your guess — you are giving yourself more room than you need.").replace("{n}",cal.n).replace("{x}",cal.ratio.toFixed(1)))
-        : esc(t("Over your last {n} timed tasks your guesses were about right. That is rarer than it sounds.").replace("{n}",cal.n))
+        cal.ratio>=1.15 ? esc(t("Over your last {n} timed tasks you took about {x}× as long as you guessed.").replace("{n}",cal.n).replace(/\{x\}/g,cal.ratio.toFixed(1)))
+        : cal.ratio<=0.85 ? esc(t("Over your last {n} timed tasks you finished in about {x}× your guess.").replace("{n}",cal.n).replace("{x}",cal.ratio.toFixed(1)))
+        : esc(t("Over your last {n} timed tasks your guesses were about right.").replace("{n}",cal.n))
       }</p>
     </div>`:""}`;
   }
@@ -46777,7 +46713,7 @@ const AD = (() => {
     touch();
     flash = secs>=60
       ? t("Done — {a} of actual work on it.").replace("{a}", fmtMins((task.spent||0)/60))
-      : t("Done. That is one fewer thing going round your head.");
+      : t("Done.");
     scope="now"; openId=null; render();
   }
 
@@ -46790,7 +46726,7 @@ const AD = (() => {
     task.moves=(task.moves||0)+1;
     if(st().current===task.id) st().current=null;
     touch();
-    flash=t("Parked. It is still on the list — nothing was lost.");
+    flash=t("Parked.");
     render();
   }
 
@@ -46811,7 +46747,7 @@ const AD = (() => {
     const dlg=$("#adSwapDlg"); if(!dlg) return;
     $("#adSwapHead").textContent=t("Today is full");
     $("#adSwapBody").innerHTML=`<p class="hint" style="margin-bottom:11px">${
-      esc(t("To put “{new}” on today, one of these comes off. Nothing is deleted — it goes back on the list.").replace("{new}",task.title))}</p>
+      esc(t("To put “{new}” on today, one of these comes off.").replace("{new}",task.title))}</p>
       <div class="ad-list">${cur.map(x=>`<div class="ad-row"><div class="ad-row-b">
         <div class="ad-row-t">${esc(x.title)}</div></div>
         <div class="ad-row-acts"><button type="button" class="chip" data-adswap="${esc(x.id)}">${T("Take this off")}</button></div>
@@ -47018,9 +46954,6 @@ window.AD = AD;
 
 Object.assign(CS, {
   "ADHD Planner":"ADHD plánovač",
-  "A separate bench, still being built. Nothing here touches the Daily Planner or anything else in the app.":
-    "Samostatný ponk, pořád se staví. Nic tady se nedotýká Denního plánovače ani ničeho jiného v appce.",
-  "Experimental":"Experimentální",
   "Now":"Teď", "Dump":"Vysyp", "Everything":"Všechno", "Wins":"Výhry",
   "Right now":"Právě teď",
   "First move":"První pohyb", "Next step":"Další krok",
@@ -47030,50 +46963,26 @@ Object.assign(CS, {
   "left":"zbývá", "over":"přes", "paused":"pauza",
   "Start":"Začít", "Carry on":"Pokračovat", "Pause":"Pauza",
   "Step done":"Krok hotový", "Park it":"Odložit", "Too big":"Moc velké",
-  "Caught a thought? Put it here and carry on":"Napadlo tě něco? Napiš to sem a pokračuj",
   "Keep":"Uložit", "Kept. Back to it.":"Uloženo. Zpátky k tomu.",
   "Spent on this so far:":"Zatím na tom:", "you thought":"tipoval(a) jsi",
   "Pick one thing":"Vyber jednu věc",
   "What are you doing next?":"Co budeš dělat teď?",
-  "Nothing is chosen for today — start with the smallest one.":"Na dnešek nic vybraného — začni tím nejmenším.",
   "Pick one for me":"Vyber za mě",
   "I have nothing left in me":"Už ve mně nic není",
   "Choose today's three":"Vyber tři na dnešek",
-  "Whichever you press, it starts a clock. You are allowed to stop it.":
-    "Ať zmáčkneš cokoli, spustí se hodiny. Smíš je zastavit.",
-  "Everything is still sitting in the Dump. Sort a couple of them and they will show up here.":
-    "Všechno pořád leží ve Vysypu. Pár jich zatřiď a objeví se tady.",
-  "Nothing on the list yet. Put something in the Dump — you do not have to decide anything about it.":
-    "Na seznamu zatím nic. Hoď něco do Vysypu — nemusíš o tom nic rozhodovat.",
   "Open the Dump":"Otevřít Vysyp",
   "Get it out of your head":"Dostaň to z hlavy",
-  "Anything at all. Press enter. Repeat.":"Cokoli. Zmáčkni enter. Znovu.",
-  "No date, no category, no priority. Deciding is a separate job for a separate moment — this box is only for stopping the thought from going round.":
-    "Žádné datum, žádná kategorie, žádná priorita. Rozhodování je jiná práce na jindy — tohle políčko je jen na to, aby ti ta myšlenka přestala kroužit.",
   "Waiting to be sorted":"Čeká na zatřídění",
-  "Nothing waiting. That is a good place to be.":"Nic nečeká. To je dobrý stav.",
   "dumped":"vysypáno", "just now":"právě teď", "min ago":"min zpět", "h ago":"h zpět",
   "day ago":"den zpět", "days ago":"dní zpět",
   "Later":"Později", "Bin it":"Vyhodit",
-  "That is a full day. Anything else has to wait, or swap in.":
-    "To je plný den. Cokoli dalšího musí počkat, nebo něco vyměnit.",
   "Room for {n} more.":"Místo ještě pro {n}.",
-  "Nothing chosen. Pick from Everything, or take the top of the Dump.":
-    "Nic vybraného. Vyber ve Všechno, nebo vezmi vršek Vysypu.",
   "Choose from Everything":"Vybrat ve Všechno",
   "Start the first one":"Začít tím prvním",
   "Already done today":"Dnes už hotovo",
   "How many things is a day":"Kolik věcí je den",
-  "Three is the usual answer. The cap exists so that the list stays something you could actually finish — a list you never finish stops meaning anything.":
-    "Obvyklá odpověď jsou tři. Strop existuje proto, aby seznam zůstal něčím, co jde doopravdy dodělat — seznam, který nikdy nedoděláš, přestane cokoli znamenat.",
   "Add something straight to the list":"Přidat rovnou na seznam",
-  "Grouped by how much brain it needs, not by how important it is. On a flat day you work down from Light and still get somewhere.":
-    "Seřazeno podle toho, kolik to chce mozku, ne podle důležitosti. V mrtvém dni jedeš odshora od Lehkých a stejně někam dojdeš.",
   "Light":"Lehké", "Medium":"Střední", "Deep":"Náročné",
-  "Almost no brain needed — these are for when you are running on empty.":
-    "Skoro žádný mozek — tohle je na to, když už jedeš na výpary.",
-  "An ordinary amount of thinking.":"Běžné množství přemýšlení.",
-  "Needs a quiet head and an uninterrupted run at it.":"Chce klidnou hlavu a nepřerušený nájezd.",
   "Nothing on the list.":"Na seznamu nic.",
   "Count me down from three before a timer starts":"Odpočítat mi od tří, než se spustí čas",
   "Buzz the phone when the time is up":"Zabzučet telefonem, až vyprší čas",
@@ -47082,52 +46991,42 @@ Object.assign(CS, {
   "spent":"stráveno",
   "moved {n}×":"přesunuto {n}×",
   "Do it now":"Udělat teď", "Off today":"Pryč z dneška",
-  "This has moved {n} times.":"Tohle se přesunulo už {n}×.",
-  "That usually means it is too big to picture, not that you are lazy. Write down only the first physical thing you would touch, and make that the task.":
-    "To obvykle znamená, že je to moc velké na to, aby sis to představil(a), ne že jsi líný(á). Napiš jen první fyzickou věc, které by ses dotkl(a), a udělej z ní ten úkol.",
   "What it is":"Co to je",
   "The very first move":"Úplně první pohyb",
-  "e.g. open the folder called Tax":"např. otevřít složku Daně",
-  "Something you could do while still holding a cup of tea. Not “do the tax return” — “open the folder”.":
-    "Něco, co zvládneš s hrnkem čaje v ruce. Ne „udělat daňové přiznání“ — „otevřít složku“.",
   "Break it into steps":"Rozlož to na kroky",
-  "+ another step":"+ další krok", "Remove step":"Odebrat krok",
+  "Anything at all":"Cokoli", "Add a step":"Přidej krok",
+  "Nothing waiting.":"Nic nečeká.", "Nothing chosen.":"Nic vybraného.",
+  "Nothing yet today.":"Dnes zatím nic.", "Nothing chosen for today.":"Na dnešek nic vybraného.",
+  "Everything is still in the Dump.":"Všechno je pořád ve Vysypu.",
+  "That is a full day.":"To je plný den.",
+  "Every step is ticked.":"Všechny kroky jsou odškrtnuté.",
+  "More than one job?":"Víc než jedna věc?",
+  "To put “{new}” on today, one of these comes off.":"Aby se „{new}“ vešlo na dnešek, jedna z těchhle jde pryč.",
+  "Done.":"Hotovo.", "Parked.":"Odloženo.", "Caught a thought?":"Napadlo tě něco?",
+  "Over your last {n} timed tasks you took about {x}× as long as you guessed.":
+    "Za posledních {n} měřených úkolů ti to trvalo asi {x}× déle, než jsi odhadl.",
+  "Over your last {n} timed tasks you finished in about {x}× your guess.":
+    "Za posledních {n} měřených úkolů jsi to zvládl asi za {x}× svého odhadu.",
+  "Over your last {n} timed tasks your guesses were about right.":
+    "Za posledních {n} měřených úkolů byly tvoje odhady zhruba správné.",
+  "Remove step":"Odebrat krok",
   /* the subtask checklist */
-  "Add a step, press enter":"Přidej krok, stiskni enter", "Add":"Přidat",
-  "Enter files it and leaves the cursor here for the next one. Paste a list and every line becomes its own step.":
-    "Enter ho uloží a kurzor nechá tady pro další. Vlož seznam a každý řádek se stane vlastním krokem.",
+  "Add":"Přidat",
   "What is left":"Co zbývá", "All of it":"Všechno",
-  "Every step is ticked. Call it done?":"Všechny kroky jsou odškrtnuté. Hotovo?",
   "Edit steps":"Upravit kroky",
-  "That reads like more than one job. Turn the pieces into steps?":
-    "Vypadá to na víc než jednu věc. Udělat z kousků kroky?",
   "Break it up":"Rozlož to", "Leave it as one":"Nech to jako jedno",
   "How much brain":"Kolik mozku", "How long, honestly":"Jak dlouho, popravdě",
   "Anything else":"Cokoli dalšího", "Throw it away":"Vyhodit",
   "thing finished":"věc hotová", "things finished":"věcí hotových",
   "actually focused":"skutečně soustředěno",
   "day in a row":"den v řadě", "days in a row":"dní v řadě",
-  "Nothing yet today. One small thing counts — that is not a consolation prize, it is how the day starts.":
-    "Dnes zatím nic. Jedna malá věc se počítá — to není cena útěchy, tak den začíná.",
   "The last seven days":"Posledních sedm dní",
-  "Bars are things finished. An empty day is a day, not a verdict.":
-    "Sloupce jsou hotové věci. Prázdný den je den, ne rozsudek.",
   "Your sense of time":"Tvůj cit pro čas",
-  "Over your last {n} timed tasks you took about {x}× as long as you guessed. Not a flaw — multiply the next guess by {x} and the day will fit.":
-    "Na posledních {n} měřených úkolech ti to trvalo asi {x}× déle, než jsi tipoval(a). Není to vada — příští tip vynásob {x} a den bude sedět.",
-  "Over your last {n} timed tasks you finished in about {x}× your guess — you are giving yourself more room than you need.":
-    "Na posledních {n} měřených úkolech jsi skončil(a) asi za {x}× svého tipu — dáváš si víc prostoru, než potřebuješ.",
-  "Over your last {n} timed tasks your guesses were about right. That is rarer than it sounds.":
-    "Na posledních {n} měřených úkolech byly tvoje tipy zhruba správně. To je vzácnější, než to zní.",
   "Today is full":"Dnešek je plný",
-  "To put “{new}” on today, one of these comes off. Nothing is deleted — it goes back on the list.":
-    "Aby šlo „{new}“ na dnešek, jedna z těchhle musí pryč. Nic se nemaže — vrátí se na seznam.",
   "Take this off":"Tuhle sundat", "Leave it as it is":"Nechat, jak to je",
   "{n} waiting in the Dump":"{n} čeká ve Vysypu",
   "Put everything else down. You only have to start.":"Všechno ostatní polož. Stačí jen začít.",
   "Done — {a} of actual work on it.":"Hotovo — {a} skutečné práce na tom.",
-  "Done. That is one fewer thing going round your head.":"Hotovo. O jednu věc v hlavě míň.",
-  "Parked. It is still on the list — nothing was lost.":"Odloženo. Pořád je to na seznamu — nic se neztratilo.",
   "Mon":"Po","Tue":"Út","Wed":"St","Thu":"Čt","Fri":"Pá","Sat":"So","Sun":"Ne"
 });
 
