@@ -8408,12 +8408,100 @@ html[data-layout="phone"] .ad-disc{width:180px; height:180px}
 html[data-layout="phone"] .ad-disc-time{font-size:33px}
 html[data-layout="phone"] .ad-now-what{font-size:20px}
 @media (prefers-reduced-motion: reduce){ .ad-disc{transition:none} .ad-spark-b{transition:none} }
+
+/* ---------------- cuttings: the tray photograph ----------------
+   A propagation tray is one photograph, not eight. The group shot is the
+   record you actually take; an individual cutting earns a picture of its own
+   only when you can tell it apart, and then it is CUT OUT of the group shot
+   rather than photographed again — by the time one has rooted, the thing you
+   wanted a picture of is already somewhere else, and photographing a jar of
+   identical stems a second time tells you nothing the first shot didn't. */
+.cutrow-top{flex-direction:row; align-items:center; gap:11px}
+/* the chevron was pinned near the top for a stack of text; against a 54px
+   thumbnail it has to sit on the row's middle instead */
+.cutrow-top .chev{top:50%; transform:translateY(-50%)}
+.cutrow-txt{display:flex; flex-direction:column; align-items:flex-start; gap:2px;
+  flex:1; min-width:0}
+.cutrow-thumb{width:54px; height:54px; border-radius:var(--r-xs); object-fit:cover;
+  flex:0 0 auto; background:var(--sunk)}
+.cutrow-thumb.none{display:flex; align-items:center; justify-content:center;
+  font-size:20px; color:var(--ink-3); border:1px dashed var(--line)}
+.cutdone-thumb{width:34px; height:34px; border-radius:var(--r-xs); object-fit:cover;
+  flex:0 0 auto; background:var(--sunk)}
+.cutdone-thumb.none{display:flex; align-items:center; justify-content:center;
+  font-size:15px; color:var(--ink-3); border:1px dashed var(--line)}
+
+/* A slot that has been cut out of the tray shot wears its own crop. The state
+   ring stays on as an inset shadow, because the picture must not cost you the
+   one thing the marker was for — knowing at a glance what happened to it. */
+.slot.hasshot{background-size:cover; background-position:center; color:transparent;
+  border-style:solid; border-color:var(--line)}
+.slot.hasshot.rooted{box-shadow:inset 0 0 0 2.5px var(--accent)}
+.slot.hasshot.potted{box-shadow:inset 0 0 0 2.5px var(--ok)}
+.slot.hasshot.lost{opacity:.4}
+.slot-lg{width:38px; height:38px; font-size:14px}
+
+/* A phone shows "Take a photo" AND "Choose one", so the tray card's row runs to
+   four controls where the plant page had three. It has never wrapped, which on
+   a 375px screen squeezed the two file pickers to nothing rather than dropping
+   the last one onto its own line. */
+.photo-row{flex-wrap:wrap}
+.photo-row > .btn{flex:0 0 auto}
+
+/* ---- cutting one out of the group shot ----
+   The dimmed surround is one enormous spread on the box rather than four
+   panels, so it follows the box for free and can never leave a seam. */
+.crop-stage{position:relative; touch-action:none; -webkit-user-select:none; user-select:none;
+  line-height:0; background:var(--sunk); border-radius:var(--r-sm); overflow:hidden;
+  display:flex; align-items:center; justify-content:center; min-height:140px}
+.crop-stage img{max-width:100%; max-height:44vh; display:block; pointer-events:none}
+.crop-box{position:absolute; border:2px solid #fff; border-radius:6px;
+  box-shadow:0 0 0 9999px rgba(0,0,0,.5); cursor:grab; touch-action:none}
+.crop-box:active{cursor:grabbing}
+.crop-row{display:flex; align-items:center; gap:11px}
+.crop-row input[type=range]{flex:1; min-width:0; margin:0}
+.crop-slots{display:flex; flex-wrap:wrap; gap:7px}
+.crop-slot{width:36px; height:36px; border-radius:50%; border:1.5px solid var(--line);
+  background:var(--surface-2); color:var(--ink-3); font-size:12px; cursor:pointer;
+  padding:0; line-height:1; background-size:cover; background-position:center;
+  -webkit-tap-highlight-color:transparent}
+.crop-slot[aria-pressed="true"]{border-color:var(--accent); border-width:2.5px; color:var(--accent)}
+.crop-slot.lost{opacity:.45}
 </style>
 
 <dialog id="adSwapDlg">
   <h3 class="dlg-head" id="adSwapHead">Today is full</h3>
   <div class="dlg-body" id="adSwapBody"></div>
   <div class="dlg-foot"><button type="button" class="btn" id="adSwapCancel">Leave it as it is</button></div>
+</dialog>
+
+<!-- cut one cutting out of the tray photograph.
+     Used twice for the same gesture: giving a cutting in the tray its own
+     picture, and giving the plant it becomes its first one. -->
+<dialog id="cropDlg">
+  <h3 class="dlg-head" id="cropHead">Pick one out</h3>
+  <div class="dlg-body">
+    <p class="hint" id="cropHint" style="margin:0"></p>
+    <div class="crop-stage" id="cropStage">
+      <img id="cropImg" alt="">
+      <div class="crop-box" id="cropBox"></div>
+    </div>
+    <div class="crop-row">
+      <span class="field-label">Size</span>
+      <input type="range" id="cropSize" min="8" max="100" value="34"
+             aria-label="How much of the photo to cut out">
+    </div>
+    <div class="field" id="cropWhichWrap">
+      <label>Which one is it?</label>
+      <div class="crop-slots" id="cropSlots"></div>
+      <p class="hint" style="margin:6px 0 0">Tap the one you have just cut out.
+        A cutting that already has a picture has it replaced.</p>
+    </div>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn" type="button" data-close>Cancel</button>
+    <button class="btn primary" type="button" id="cropSave">Use this one</button>
+  </div>
 </dialog>
 
 <script>
@@ -10499,7 +10587,10 @@ async function push(){
        Sent inside the state rather than as the separate photo file, because
        that file is dropped on purpose by the Firestore backend. */
     rest.photoThumbs=(photos||[]).filter(x=>x&&x.thumb)
-      .map(x=>({id:x.id,subjectId:x.subjectId,at:x.at,h:x.h==null?null:x.h,by:x.by,thumb:x.thumb}));
+      /* slot and batchId travel too, or a cutting cropped out of a tray shot
+         arrives on the other phone as an unattached picture of nothing */
+      .map(x=>({id:x.id,subjectId:x.subjectId,at:x.at,h:x.h==null?null:x.h,by:x.by,thumb:x.thumb,
+                slot:x.slot==null?null:x.slot, batchId:x.batchId||null}));
     const files={"data/state.json":JSON.stringify(rest)};
     /* Only ever write the photo file if this session actually read it. Without
        this, one failed fetch on open plus any edit published [] over the whole
@@ -11325,11 +11416,15 @@ function answerCut(id,ans){
   if(ans==="rooted"){ const i=take("in"); if(i!==false) sl[i]="rooted"; }
   if(ans==="lost"){ const i=sl.indexOf("in"); const j=i>=0?i:sl.indexOf("rooted");
     if(j>=0) sl[j]="lost"; }
+  let pottedSlot=-1;
   if(ans==="potted"){ const i=sl.indexOf("rooted"); const j=i>=0?i:sl.indexOf("in");
-    if(j>=0){ sl[j]="potted"; c.pottedAt=c.pottedAt||new Date().toISOString(); } }
+    if(j>=0){ sl[j]="potted"; pottedSlot=j; c.pottedAt=c.pottedAt||new Date().toISOString(); } }
   /* only "nothing yet" silences the question — you may well be ticking off several at once */
   touch();
-  return ans==="potted"?c:null;
+  /* WHICH one was potted matters as much as that one was: the index is the
+     only thing that can say which cutting in the tray photograph has just
+     become a plant, and therefore which crop is its portrait. */
+  return pottedSlot>=0?{c,slot:pottedSlot}:null;
 }
 /* tapping a marker walks it round: still in → rooted → potted → lost → still in */
 function cycleSlot(id,i){
@@ -11339,7 +11434,7 @@ function cycleSlot(id,i){
   if(sl[i]==="potted") c.pottedAt=c.pottedAt||new Date().toISOString();
   touch();
 }
-async function promoteCutting(c){
+async function promoteCutting(c,slot){
   const sp=cutSpecies(c);
   if(!await ask(`Potted on. Add it to your plants so it gets watered and fed like the rest?`,"Add it")) return;
   const sid=uid();
@@ -11360,6 +11455,10 @@ async function promoteCutting(c){
     S.routines.push({id:uid(),subjectId:sid,kind:"feed",name:"Feed",every:sp.f});
   }
   touch(); renderSubjects(); renderAgenda();
+  /* before the confirmation, not after: this is the last moment anybody can
+     still say which of the eight it was, and once the toast has gone the
+     answer has gone with it */
+  await carryCutPhoto(c,slot,sid);
   say(L.lang==="cs"
     ? `Přidáno jako „${cutName(c)} cutting“. Je na záložce Rostliny ${sp?"se zálivkou a hnojením podle druhu":"zatím bez rytmu"}.`
     : `Added as "${cutName(c)} cutting". It's on the Plants tab with ${sp?"its species' watering and feeding":"no routines yet"}.`,"Done");
@@ -11413,20 +11512,24 @@ function renderCuttings(){
         :`taken ${new Date(fromYmd(c.at)).toLocaleDateString(locale(),{day:"numeric",month:"short"})}`,
       due
     ].filter(Boolean);
+    /* the tray, at a glance — the same courtesy the plants list has always
+       had. A batch of eight identical stems is unrecognisable by name alone,
+       and the photograph is the only thing that says which jar this is. */
+    const gph=latestGroupPhoto(c.id);
     return `<div class="cutrow${asked?" asked":""}">
       <button type="button" class="cutrow-top" data-open-batch="${c.id}">
-        <span class="cutrow-name">${esc(cutName(c))}</span>
-        <span class="cutrow-sub">${esc(t(m.l).toLowerCase())} · ${L.lang==="cs"?"den":"day"} ${days} · ${
-          esc(bits.join(" · "))}</span>
-        <span class="cutrow-sub" style="opacity:.75">${esc(facts.join(" · "))}${
-          c.note?` · ${esc(c.note)}`:""}</span>
+        ${gph?`<img class="cutrow-thumb" src="${safeImg(photoSrc(gph))}"${photoUp(gph)} alt="">`
+             :`<span class="cutrow-thumb none" aria-hidden="true">🌱</span>`}
+        <span class="cutrow-txt">
+          <span class="cutrow-name">${esc(cutName(c))}</span>
+          <span class="cutrow-sub">${esc(t(m.l).toLowerCase())} · ${L.lang==="cs"?"den":"day"} ${days} · ${
+            esc(bits.join(" · "))}</span>
+          <span class="cutrow-sub" style="opacity:.75">${esc(facts.join(" · "))}${
+            c.note?` · ${esc(c.note)}`:""}</span>
+        </span>
         <span class="chev" aria-hidden="true">›</span>
       </button>
-      <div class="slots">${cutSlots(c).map((st,i)=>
-        `<button type="button" class="slot ${st}" data-slot="${c.id}:${i}"
-           aria-label="${esc(cutUnit(c))} ${i+1}: ${st==="in"?"still going":st}"
-           title="${st==="in"?"still going":st}">${
-             st==="potted"?"✓":st==="lost"?"✕":st==="rooted"?"◍":""}</button>`).join("")}
+      <div class="slots">${cutSlots(c).map((st,i)=>slotBtnHtml(c,i)).join("")}
         <span class="slotkey">tap one to change it</span></div>
       ${asked
         ? `<div class="cutasked">Checked today · ask again tomorrow
@@ -11441,8 +11544,11 @@ function renderCuttings(){
   const doneRow=c=>{
     const m=METHODS[c.method]||METHODS.soil;
     const good=cutCount(c,"potted"), bad=cutCount(c,"lost");
+    const dph=latestGroupPhoto(c.id);
     return `<button type="button" class="cutdone" data-open-batch="${c.id}">
       <span class="cutdone-n ${good?"good":"bad"}">${good}/${cutTaken(c)}</span>
+      ${dph?`<img class="cutdone-thumb" src="${safeImg(photoSrc(dph))}"${photoUp(dph)} alt="">`
+           :`<span class="cutdone-thumb none" aria-hidden="true">🌱</span>`}
       <span class="cutdone-main">${esc(cutName(c))}<small>${esc(m.l.toLowerCase())}${
         bad?` · ${bad} lost`:""}</small></span>
       <span class="chev" aria-hidden="true">›</span>
@@ -11598,13 +11704,16 @@ $("#cutBody").addEventListener("click",async e=>{
     const [id,ans]=an.dataset.ans.split(":");
     const potted=answerCut(id,ans);
     renderCuttings(); renderAgenda();
-    if(potted) await promoteCutting(potted);
+    if(potted) await promoteCutting(potted.c,potted.slot);
     renderCuttings();
   }
 });
+/* hands the answer straight back, so "Potted +1" on the batch page offers to
+   add the plant exactly as answering the daily question does — it always
+   changed the slot and then quietly dropped the one thing worth acting on */
 function bumpCut(key){
   const [id,what]=key.split(":");
-  answerCut(id,what);
+  return answerCut(id,what);
 }
 $("#cutForm").addEventListener("submit",e=>{
   e.preventDefault();
@@ -11627,13 +11736,15 @@ let bhId=null;
 function renderBatch(){
   const c=cuttingsAll().find(x=>x.id===bhId);
   if(!c){ show("cuttings"); return; }
-  bcId=c.id;
+  bcId=c.id; pvId=null;                        // see openPlantPage — one or the other, never both
   const m=METHODS[c.method]||METHODS.soil, sp=cutSpecies(c);
   const days=Math.max(0,Math.floor((Date.now()-fromYmd(c.at))/DAY));
   const left=cutCount(c,"in")+cutCount(c,"rooted");
   const mine=cuttingsAll().filter(x=>cutSpecies(x)&&sp&&cutSpecies(x).n===sp.n);
   const hist=successRate(mine);
-  const shots=photosFor(c.id);
+  /* only the tray shots: a cutting's own portrait belongs on its marker, not
+     loose in the strip where it would read as another picture of the batch */
+  const shots=groupPhotos(c.id);
   $("#bhName").textContent=cutName(c);
   $("#bhBody").innerHTML=`
     <div class="card pad">
@@ -11645,10 +11756,8 @@ function renderBatch(){
       </div>
       <p class="hint" style="margin:12px 0 0">${esc(m.l)} · taken ${
         days===0?"today":days+" days ago"}${c.note?" · "+esc(c.note):""}</p>
-      <div class="slots" style="border:0; padding:12px 0 0">${cutSlots(c).map((st,i)=>
-        `<button type="button" class="slot ${st}" data-slot="${c.id}:${i}"
-           aria-label="${esc(cutUnit(c))} ${i+1}">${
-             st==="potted"?"✓":st==="lost"?"✕":st==="rooted"?"◍":""}</button>`).join("")}
+      <div class="slots" style="border:0; padding:12px 0 0">${
+        cutSlots(c).map((st,i)=>slotBtnHtml(c,i,"slot-lg")).join("")}
         <span class="slotkey">tap to change</span></div>
       ${left>0?`<div class="cutcounts" style="margin-top:12px">
         <button class="btn mini" data-cut="${c.id}:rooted">Rooted +1</button>
@@ -11659,8 +11768,12 @@ function renderBatch(){
 
     <div class="card">
       <div class="pad" style="padding-bottom:0">
-        <span class="eyebrow">Progress</span>
-        <div class="photo-row">${photoButtons("btn mini")}</div>
+        <span class="eyebrow">The tray</span>
+        <p class="hint" style="margin:5px 0 10px">${shots.length
+          ? `One picture of the whole lot. Take another whenever it changes — the newest is the one the list shows. Cut a cutting out of it to give that one its own portrait.`
+          : `Photograph the whole tray, not each cutting — eight stems in a jar are one picture. When one takes, you cut it out of this photograph and it becomes the new plant's own.`}</p>
+        <div class="photo-row">${photoButtons("btn mini")}${
+          shots.length?`<button class="btn mini" type="button" data-pickout="${c.id}">Cut one out</button>`:""}</div>
       </div>
       ${shots.length?`<div class="strip">${shots.slice().reverse().map(x=>`
         <button type="button" class="shot" data-shot="${x.id}">
@@ -11704,7 +11817,22 @@ $("#bhBody").addEventListener("click",async e=>{
   if(sp){ const [id,i]=sp.dataset.slot.split(":"); cycleSlot(id,+i);
     renderBatch(); renderCuttings(); renderAgenda(); return; }
   const cb=e.target.closest("[data-cut]");
-  if(cb){ bumpCut(cb.dataset.cut); renderBatch(); renderCuttings(); return; }
+  if(cb){ const got=bumpCut(cb.dataset.cut);
+    renderBatch(); renderCuttings(); renderAgenda();
+    if(got) await promoteCutting(got.c,got.slot);
+    renderBatch(); renderCuttings(); return; }
+  const po=e.target.closest("[data-pickout]");
+  if(po){
+    const c=cuttingsAll().find(x=>x.id===po.dataset.pickout); if(!c) return;
+    openCrop({photo:latestGroupPhoto(c.id), batchId:c.id, slot:null, pickSlot:true,
+      title:"Cut one out",
+      hint:"Drag the square over one cutting in the tray, then tap which of them it is. It keeps that picture as its own.",
+      onSave:async(data,slot)=>{
+        await attachCrop(data,{subjectId:c.id,batchId:c.id,slot,fromPhoto:latestGroupPhoto(c.id).id});
+        renderBatch(); renderCuttings();
+      }});
+    return;
+  }
   const sh=e.target.closest("[data-shot]");
   if(sh){ openShot(sh.dataset.shot); return; }
   const db=e.target.closest("[data-del-batch]");
@@ -16825,7 +16953,13 @@ function renderPlant(){
      replaced by the photograph itself once its link comes back */
   upgradePhotos($("#pvBody"));
 }
-function openPlantPage(id){ pvId=id; renderPlant(); show("plant"); }
+/* bcId goes out as pvId comes in, and the reverse in renderBatch(). takePhoto()
+   attaches to `pvId||bcId`, and neither was ever cleared on leaving — so once
+   you had opened any plant, every photograph you took on a batch page silently
+   landed on that plant instead. The batch strip stayed empty, the height
+   dialog opened for the wrong subject, and propagation looked as though it
+   simply could not hold pictures. It could; they were going elsewhere. */
+function openPlantPage(id){ pvId=id; bcId=null; renderPlant(); show("plant"); }
 
 $("#pvBack").addEventListener("click",()=>show("plants"));
 $("#pvBody").addEventListener("click",async e=>{
@@ -17221,6 +17355,24 @@ async function backfillThumbs(){
 const photosFor=sid=>(S.photos||[]).filter(p=>p.subjectId===sid)
   .sort((a,b)=>a.at.localeCompare(b.at));
 const latestPhoto=sid=>{ const l=photosFor(sid); return l.length?l[l.length-1]:null; };
+/* A batch holds two kinds of picture. A GROUP shot is of the whole tray and
+   carries no slot — it is the one you actually take, because eight cuttings in
+   a propagator are one photograph. A SLOT shot is a single cutting cut out of
+   a group shot, and carries the index of the cutting it shows.
+
+   Once a cutting is potted on, its crop is re-pointed at the plant it became
+   rather than copied to it: subjectId moves to the plant, batchId and slot
+   stay behind as the record of where it came from. So the picture follows the
+   plant into the collection, the batch page can still show which one it was,
+   and deleting the batch afterwards cannot take the plant's photograph with
+   it — deletePlant/delete-batch both filter on subjectId. */
+const groupPhotos=sid=>photosFor(sid).filter(p=>p.slot==null);
+const latestGroupPhoto=sid=>{ const l=groupPhotos(sid); return l.length?l[l.length-1]:null; };
+const slotPhoto=(bid,i)=>{
+  const l=(S.photos||[]).filter(p=>p&&p.slot===i
+      &&(p.batchId===bid||(p.batchId==null&&p.subjectId===bid)))
+    .sort((a,b)=>a.at.localeCompare(b.at));
+  return l.length?l[l.length-1]:null; };
 /* Only what is still held as base64 in the state, because that is what the
    5 MB localStorage ceiling actually applies to. Photographs moved to the
    device store are bounded by free disk instead and must not count towards a
@@ -40849,7 +41001,8 @@ function photoUsage(){
      thumbnails are by far the largest part of it */
   let docBytes=0;
   try{ const {photos,...rest}=S; rest.photoThumbs=all.filter(x=>x&&x.thumb)
-        .map(x=>({id:x.id,subjectId:x.subjectId,at:x.at,h:x.h,by:x.by,thumb:x.thumb}));
+        .map(x=>({id:x.id,subjectId:x.subjectId,at:x.at,h:x.h,by:x.by,thumb:x.thumb,
+                  slot:x.slot==null?null:x.slot, batchId:x.batchId||null}));
        docBytes=JSON.stringify(rest).length; }catch(e){}
   return {count:all.length, withData, thumbOnly, originals, thumbs,
           shared, waiting, refused, days, docBytes};
@@ -46402,4 +46555,267 @@ Object.assign(CS, {
   "Mon":"Po","Tue":"Út","Wed":"St","Thu":"Čt","Fri":"Pá","Sat":"So","Sun":"Ne"
 });
 
+/* ================= cutting one out of the tray photograph =================
+   You photograph a propagator, not a cutting. Eight stems in a jar are one
+   picture, and taking eight is both tedious and useless — you cannot tell them
+   apart in the viewfinder any better than you can in the tray.
+
+   So the group shot is the record, and an individual cutting gets its own
+   picture by being CUT OUT of that shot: drag a square over it, say which one
+   it is, and the crop becomes that cutting's portrait. When it roots and is
+   potted on, the same gesture gives the new plant its first photograph — and
+   the crop is re-pointed at the plant rather than copied, so there is one
+   picture, and it follows the plant into the collection.
+
+   Everything here works on the ORIGINAL image, not on what is displayed: the
+   box is held in natural-image pixels and only converted to screen pixels to
+   draw. A crop is therefore as sharp as the photograph allows, whatever size
+   the dialog happened to be on the day. */
+let cropSt=null;
+
+function cropLoadImg(src,cors){
+  return new Promise((res,rej)=>{
+    const im=new Image();
+    if(cors) im.crossOrigin="anonymous";
+    im.onload=()=>res(im);
+    im.onerror=()=>rej(new Error("could not load that image"));
+    im.src=src;
+  });
+}
+/* Best source that a canvas is still allowed to READ, cheapest first. This is
+   the whole reason cropping is not simply openShot() with a box on top: an
+   image fetched from the account's bucket taints the canvas, and toDataURL()
+   then throws instead of returning a crop. The device's own copy — a blob URL
+   out of IndexedDB, or the base64 still in state — is same-origin and clean,
+   and is what the phone that took the photograph will always have. Only a
+   second device that never held the original has to go to the bucket, and
+   there we try CORS first and record honestly whether we got it. */
+async function cropSource(ph){
+  const held=(ph.id?pbLocalSrc(ph.id):"")||ph.data||"";
+  if(held) return {src:held,clean:true};
+  if(ph.id){ try{ const b=await pbLoad(ph.id); if(b) return {src:b,clean:true}; }catch(e){} }
+  if(ph.id&&window.PSYNC&&PSYNC.canPhotos&&PSYNC.canPhotos()){
+    try{
+      const url=await PSYNC.pullPhoto(ph.id);
+      if(url){
+        try{ await cropLoadImg(url,true); return {src:url,clean:true}; }
+        catch(e){ return {src:url,clean:false}; }
+      }
+    }catch(e){}
+  }
+  return {src:ph.thumb||"",clean:true};
+}
+function cropClamp(){
+  if(!cropSt) return;
+  const {nw,nh}=cropSt;
+  cropSt.s=Math.max(24,Math.min(cropSt.s,Math.min(nw,nh)));
+  const h=cropSt.s/2;
+  cropSt.cx=Math.max(h,Math.min(cropSt.cx,nw-h));
+  cropSt.cy=Math.max(h,Math.min(cropSt.cy,nh-h));
+}
+function cropLayout(){
+  if(!cropSt) return;
+  const img=$("#cropImg"), box=$("#cropBox"), stage=$("#cropStage");
+  if(!img||!box||!stage) return;
+  const r=img.getBoundingClientRect(), sr=stage.getBoundingClientRect();
+  if(!r.width||!cropSt.nw) return;
+  const k=r.width/cropSt.nw;                    // displayed pixels per natural pixel
+  cropSt.k=k;
+  const h=cropSt.s/2;
+  box.style.width=box.style.height=(cropSt.s*k)+"px";
+  box.style.left=((r.left-sr.left)+(cropSt.cx-h)*k)+"px";
+  box.style.top =((r.top -sr.top )+(cropSt.cy-h)*k)+"px";
+}
+function cropSlotsHtml(){
+  if(!cropSt||!cropSt.batchId) return "";
+  const c=cuttingsAll().find(x=>x.id===cropSt.batchId);
+  if(!c) return "";
+  return cutSlots(c).map((st,i)=>{
+    const ph=slotPhoto(c.id,i), src=ph?safeImg(photoSrc(ph)):"";
+    const lab=st==="in"?"still going":st;
+    return `<button type="button" class="crop-slot ${st}" data-cropslot="${i}"
+      aria-pressed="${cropSt.slot===i}"
+      aria-label="${esc(cutUnit(c))} ${i+1}, ${lab}" title="${esc(cutUnit(c))} ${i+1} — ${lab}"
+      ${src?`style="background-image:url('${src}')"`:""}>${src?"":(i+1)}</button>`;
+  }).join("");
+}
+/* opts: {photo, batchId, slot, pickSlot, title, hint, onSave(dataUrl,slot)} */
+async function openCrop(opts){
+  /* Returns whether the dialog actually opened. Callers that WAIT for it —
+     the potting-on flow does — would otherwise hang forever on a close event
+     that can never arrive, with the app apparently frozen mid-promotion. */
+  const ph=opts.photo;
+  if(!ph){ say("Photograph the tray first — then you have something to cut a cutting out of."); return false; }
+  const {src,clean}=await cropSource(ph);
+  if(!src){ say("That photograph isn't on this device."); return false; }
+  let im;
+  try{ im=await cropLoadImg(src,false); }
+  catch(e){ say("Couldn't open that photograph."); return false; }
+  cropSt={photoId:ph.id, batchId:opts.batchId||null,
+    slot:opts.slot==null?null:opts.slot, pickSlot:!!opts.pickSlot,
+    onSave:opts.onSave, onClose:opts.onClose, clean,
+    nw:im.naturalWidth, nh:im.naturalHeight, k:1,
+    s:Math.min(im.naturalWidth,im.naturalHeight)*0.34,
+    cx:im.naturalWidth/2, cy:im.naturalHeight/2};
+  $("#cropHead").textContent=opts.title||"Pick one out";
+  $("#cropHint").textContent=opts.hint
+    ||"Drag the square over one cutting, then say which one it is.";
+  $("#cropSize").value=34;
+  $("#cropWhichWrap").hidden=!opts.pickSlot;
+  $("#cropSlots").innerHTML=opts.pickSlot?cropSlotsHtml():"";
+  const img=$("#cropImg");
+  /* a dialog that has only just opened has not laid its image out yet, so the
+     box would be positioned against a zero-width rect and land in the corner */
+  img.onload=()=>{ cropClamp(); cropLayout(); };
+  img.src=src;
+  $("#cropDlg").showModal();
+  requestAnimationFrame(()=>{ cropClamp(); cropLayout(); });
+  return true;
+}
+function cropExport(){
+  const img=$("#cropImg");
+  const out=Math.max(64,Math.min(720,Math.round(cropSt.s)));
+  const cv=document.createElement("canvas");
+  cv.width=cv.height=out;
+  const ctx=cv.getContext("2d");
+  ctx.imageSmoothingQuality="high";
+  const h=cropSt.s/2;
+  ctx.drawImage(img,cropSt.cx-h,cropSt.cy-h,cropSt.s,cropSt.s,0,0,out,out);
+  return cv.toDataURL("image/jpeg",0.86);
+}
+/* Saved exactly the way takePhoto() saves: to IndexedDB when the device will
+   take it, with the base64 dropped only once the write is confirmed. */
+async function attachCrop(dataUrl,meta){
+  let thumb=null; try{ thumb=await makeThumb(dataUrl); }catch(e){}
+  S.photos=S.photos||[];
+  /* one portrait per cutting — a replacement retires the old one rather than
+     stacking, or a tray of eight quietly becomes a library of forty */
+  if(meta.batchId!=null&&meta.slot!=null){
+    const prev=slotPhoto(meta.batchId,meta.slot);
+    if(prev&&prev.subjectId===meta.batchId) S.photos=S.photos.filter(x=>x.id!==prev.id);
+  }
+  const shot={id:uid(),subjectId:meta.subjectId,at:new Date().toISOString(),
+    data:dataUrl,thumb,h:null,by:L.me,
+    slot:meta.slot==null?null:meta.slot,
+    batchId:meta.batchId||null, fromPhoto:meta.fromPhoto||null};
+  if(await pbSave(shot.id,dataUrl)){ delete shot.data; shot.local=true; }
+  S.photos.push(shot); photosTouched(); touch();
+  return shot;
+}
+$("#cropStage").addEventListener("pointerdown",e=>{
+  if(!cropSt) return;
+  /* tapping the photo re-centres the box there; dragging the box moves it.
+     On a phone the tap is much the faster of the two. */
+  if(!e.target.closest("#cropBox")){
+    const r=$("#cropImg").getBoundingClientRect(), k=cropSt.k||1;
+    cropSt.cx=(e.clientX-r.left)/k; cropSt.cy=(e.clientY-r.top)/k;
+    cropClamp(); cropLayout();
+  }
+});
+$("#cropBox").addEventListener("pointerdown",e=>{
+  if(!cropSt) return;
+  e.preventDefault();
+  const box=e.currentTarget;
+  try{ box.setPointerCapture(e.pointerId); }catch(err){}
+  const sx=e.clientX, sy=e.clientY, ox=cropSt.cx, oy=cropSt.cy;
+  const move=ev=>{
+    const k=cropSt.k||1;
+    cropSt.cx=ox+(ev.clientX-sx)/k;
+    cropSt.cy=oy+(ev.clientY-sy)/k;
+    cropClamp(); cropLayout();
+  };
+  const up=()=>{
+    box.removeEventListener("pointermove",move);
+    box.removeEventListener("pointerup",up);
+    box.removeEventListener("pointercancel",up);
+  };
+  box.addEventListener("pointermove",move);
+  box.addEventListener("pointerup",up);
+  box.addEventListener("pointercancel",up);
+});
+$("#cropSize").addEventListener("input",e=>{
+  if(!cropSt) return;
+  const pct=Math.max(8,Math.min(100,+e.target.value||34));
+  cropSt.s=Math.min(cropSt.nw,cropSt.nh)*(pct/100);
+  cropClamp(); cropLayout();
+});
+$("#cropSlots").addEventListener("click",e=>{
+  const b=e.target.closest("[data-cropslot]");
+  if(!b||!cropSt) return;
+  cropSt.slot=+b.dataset.cropslot;
+  $("#cropSlots").innerHTML=cropSlotsHtml();
+});
+$("#cropSave").addEventListener("click",async ()=>{
+  if(!cropSt) return;
+  if(cropSt.pickSlot&&cropSt.slot==null){ say("Tap which one it is first."); return; }
+  let data;
+  try{ data=cropExport(); }
+  catch(err){
+    /* the honest version of this failure: the picture is readable but not
+       READABLE-FROM, and no amount of retrying here will change that */
+    say(cropSt.clean
+      ? "Couldn't cut that out: "+err.message
+      : "This photograph is still only on the device that took it. Cut the cutting out there and it will come across.");
+    return;
+  }
+  const fn=cropSt.onSave, slot=cropSt.slot;
+  $("#cropDlg").close();
+  if(fn) await fn(data,slot);
+});
+$("#cropDlg").addEventListener("close",()=>{
+  const done=cropSt&&cropSt.onClose;
+  cropSt=null;
+  $("#cropImg").removeAttribute("src");
+  if(done) done();
+});
+window.addEventListener("resize",()=>{ if(cropSt&&$("#cropDlg").open) cropLayout(); });
+
+/* One marker, wearing its own crop when it has one. Shared by the propagation
+   list and the batch page so the two can never disagree about what a given
+   cutting looks like. The state ring survives as an inset shadow: the picture
+   must not cost you the thing the marker was for. */
+function slotBtnHtml(c,i,cls){
+  const st=cutSlots(c)[i]||"in";
+  const ph=slotPhoto(c.id,i), src=ph?safeImg(photoSrc(ph)):"";
+  const lab=st==="in"?"still going":st;
+  return `<button type="button" class="slot ${st}${src?" hasshot":""}${cls?" "+cls:""}"
+    data-slot="${c.id}:${i}"${src?` style="background-image:url('${src}')"`:""}
+    aria-label="${esc(cutUnit(c))} ${i+1}: ${lab}" title="${lab}">${
+      st==="potted"?"✓":st==="lost"?"✕":st==="rooted"?"◍":""}</button>`;
+}
+
+/* The picture follows the plant. A cutting that already had its portrait cut
+   out of the tray shot hands it over — subjectId moves to the plant while
+   batchId and slot stay behind, so the batch page still knows which one it
+   was and deleting the batch later cannot take the plant's photograph with
+   it. A cutting with no portrait yet gets one now, because this is the last
+   moment anybody can still say which of the eight it was. */
+async function carryCutPhoto(c,slot,sid){
+  if(slot==null||slot<0) return;
+  const own=slotPhoto(c.id,slot);
+  if(own){
+    if(own.subjectId===c.id){
+      own.subjectId=sid; own.batchId=c.id;
+      photosTouched(); touch(); renderSubjects();
+    }
+    return;                                   // already a plant's picture
+  }
+  const grp=latestGroupPhoto(c.id);
+  if(!grp) return;
+  if(!await ask("Cut it out of the tray photograph, and that becomes this plant's picture?","Pick it out")) return;
+  await new Promise(done=>{
+    let settled=false;
+    const fin=()=>{ if(!settled){ settled=true; done(); } };
+    openCrop({photo:grp, batchId:c.id, slot, pickSlot:false,
+      title:"Which one was it?",
+      hint:"Drag the square over the cutting you have just potted on. What you cut out becomes this plant's first photograph.",
+      onSave:async data=>{
+        await attachCrop(data,{subjectId:sid,batchId:c.id,slot,fromPhoto:grp.id});
+        renderSubjects(); renderCuttings();
+      },
+      onClose:fin})
+      .then(opened=>{ if(!opened) fin(); })
+      .catch(fin);
+  });
+}
 </script>
