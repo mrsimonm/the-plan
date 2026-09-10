@@ -10325,9 +10325,24 @@ const autoWater=()=>S.autoWater===true;
 /* The zone is the `spot` you have always been able to type on a plant,
    promoted to something the app can group by. Nothing new to fill in: a
    collection that already says "West shelf" is already zoned. */
-const ZONE_NONE=" none";
+/* A place is whatever somebody typed into `spot`, so the marker for "no place
+   set" has to be something nobody can type. A NUL does that — and it is written
+   as an ESCAPE here, because a raw U+0000 in the source makes git treat the
+   whole blob as binary and stop rendering diffs, which in a one-file app costs
+   everyone working on it their diff.
+
+   It must never reach the DOM either. The HTML parser is entitled to rewrite
+   U+0000 as U+FFFD inside an attribute value, so a sentinel sent out on a
+   button would not be the same string coming back off it, and the "no place
+   set" group's own Log care button would quietly select nothing. Markup
+   carries a KEY instead: "n" for the unplaced group, and a "z" prefix on a
+   real place, which cannot collide with anything however it was typed. */
+const ZONE_NONE="\u0000none";
 const zoneOf=p=>{ const s=String((p&&p.spot)||"").trim(); return s||ZONE_NONE; };
 const zoneName=z=>z===ZONE_NONE?(L.lang==="cs"?"Bez místa":"No place set"):z;
+const zoneKey=z=>z===ZONE_NONE?"n":"z"+z;
+/* "" is not a zone, it is the absence of one — "everywhere" */
+const zoneFromKey=k=>k==="n"?ZONE_NONE:(k&&k[0]==="z"?k.slice(1):"");
 /* every zone in the collection, each with its plants, biggest first — a walk
    through the flat usually starts where the most of them are */
 function zonesOf(list){
@@ -11579,7 +11594,7 @@ function renderSubjects(){
       <div class="zone-head">
         <span class="zone-name">${esc(z.name)}<small>${plural(z.plants.length,"plant")}${
           needs?` · ${needs} ${L.lang==="cs"?"něco chce":"want something"}`:""}</small></span>
-        <button class="btn mini" data-zonecare="${esc(z.zone)}">${esc(t("Log care"))}</button>
+        <button class="btn mini" data-zonecare="${esc(zoneKey(z.zone))}">${esc(t("Log care"))}</button>
       </div>
       <div class="zone-rows">${z.plants.map(row).join("")}</div>
     </section>`;
@@ -25710,7 +25725,7 @@ $("#subjectList").addEventListener("click",async e=>{
   /* before open-plant: the zone button sits inside the zone header, not inside
      a row, but a stray closest() order would still be a trap worth avoiding */
   const zc=q("zonecare");
-  if(zc){ openBatchCareDlg(zc.dataset.zonecare); return; }
+  if(zc){ openBatchCareDlg(zoneFromKey(zc.dataset.zonecare)); return; }
   if(op){ openPlantPage(op.dataset.openPlant); return; }
   if(did){
     const r=S.routines.find(x=>x.id===did.dataset.did); if(!r) return;
@@ -25839,7 +25854,7 @@ function openBatchCareDlg(zone){
   /* the filter only earns its place once there is more than one place */
   const wrap=$("#batchZone");
   wrap.innerHTML=`<option value="">${esc(L.lang==="cs"?"Všechna místa":"Everywhere")}</option>`
-    +zones.map(z=>`<option value="${esc(z.zone)}"${z.zone===bcZone?" selected":""}>${
+    +zones.map(z=>`<option value="${esc(zoneKey(z.zone))}"${z.zone===bcZone?" selected":""}>${
       esc(z.name)} (${z.plants.length})</option>`).join("");
   wrap.hidden=zones.length<2;
   $("#batchSearch").value="";
@@ -25852,7 +25867,7 @@ $("#plantsBatchCare").addEventListener("click",()=>openBatchCareDlg());
 $("#batchCareCancel").addEventListener("click",()=>$("#batchCareDlg").close());
 $("#batchSearch").addEventListener("input",e=>{
   bcQuery=e.target.value.trim().toLowerCase(); bcPaint(); });
-$("#batchZone").addEventListener("change",e=>{ bcZone=e.target.value; bcPaint(); });
+$("#batchZone").addEventListener("change",e=>{ bcZone=zoneFromKey(e.target.value); bcPaint(); });
 $("#batchPlantList").addEventListener("change",e=>{
   const b=e.target.closest("input[data-lp]"); if(!b) return;
   if(b.checked) bcSel.add(b.dataset.lp); else bcSel.delete(b.dataset.lp);
