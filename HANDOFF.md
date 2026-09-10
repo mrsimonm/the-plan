@@ -217,6 +217,32 @@ Workers are briefed never to touch `index.html`. Keep it that way.
   unrelated message.
 - Never a whole-file write, never `sed -i` with line numbers. String-anchored
   edits only; append at the end of `<style>` / `<script>`.
+- **The real rule is broader than "no whole-file writes": any read-modify-write
+  is unsafe across a gap, and a patch is one.** Two sessions proved this the
+  hard way on 10 Sep, losing work through four separate doorways:
+  1. `open(p,"w")` in a Python one-liner — the obvious one, already above.
+  2. A `cat >` that did not check whether the file existed (this handoff, once).
+  3. **`git apply --reverse` of a patch generated minutes earlier.** This is the
+     nasty one: it is hunk-granular and looks surgical, so it passes the rule
+     above, but it silently reverts anything written inside those hunks between
+     the `git diff` and the `git apply`. It cost ~90 lines of another session's
+     work. Editing a raw byte is *not* an exemption from this.
+  4. **`git apply --cached` of a stale patch** — the same failure one level up,
+     against the index rather than the tree. A patch built against a HEAD that
+     had moved reverted a peer's version bump in `index.html` and `sw.js`.
+
+  So: anchored edits by default, for the loud staleness failure. If a patch is
+  unavoidable, regenerate it immediately before applying, or hash the file
+  before and after and abort on mismatch. Prefer `git apply --3way`, so a moved
+  file conflicts loudly instead of reverting quietly.
+- **Verify what the commit contains, not what you think you staged.** Both
+  near-misses that day survived careful hunk-splitting and were caught only by
+  reading the finished commit back: `git show <sha> -- index.html`, then grep it
+  for the other session's markers, before pushing.
+- **Do not run `tools/bump.py` while another session is live** — it rewrites
+  `index.html` and `sw.js` wholesale. Bump by hand, or inside a private index
+  (`GIT_INDEX_FILE=/tmp/x.index git read-tree HEAD; … git commit-tree`), which
+  also lets you build a commit without touching the shared `.git/index`.
 - The build stamp in `BUILD` and `CACHE` in `sw.js` move **together**, and you
   pull before bumping.
 - `requestAnimationFrame` does not run in a hidden tab — use timers for
