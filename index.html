@@ -4437,6 +4437,27 @@ html[data-shell="rail"] body{
               <p class="hint" style="margin:0">Both are per device — you can have them on and the other phone off.</p>
             </div>
           </div>
+
+          <!-- Named for the collection, not the person. Somebody with eight
+               plants should never feel they are on the beginner setting, and
+               somebody with a hundred is not doing a harder version of the
+               same job — they are doing a different one. -->
+          <div class="sec-head"><h2 style="font-size:18px">Large collection</h2></div>
+          <div class="card pad" style="margin-bottom:14px">
+            <div class="stack">
+              <label class="lu" style="border:0; padding:0">
+                <span class="sw"><input id="bigModeToggle" type="checkbox"><i></i></span>
+                <span class="lu-name">Group plants by place<small>One line per plant, gathered under the place you keep it, with a Log care button per group</small></span>
+              </label>
+              <label class="lu" style="border:0; padding:0">
+                <span class="sw"><input id="autoWaterToggle" type="checkbox"><i></i></span>
+                <span class="lu-name">Watering is handled by a system<small>Stops the app asking you to water. Feeding, repotting and everything else carry on — including the feeds that ride on the watering cycle</small></span>
+              </label>
+              <p class="hint" style="margin:0">These two describe the collection rather than
+                this device, so they follow it to your other phone. Nothing is deleted either
+                way: turn watering back on and every date is exactly where it was.</p>
+            </div>
+          </div>
           <!-- Money. The rate lives here rather than being fetched, because a
                collection is valued a handful of times a year and a wrong number
                you can see and correct beats a right one you cannot. -->
@@ -7240,6 +7261,16 @@ html[data-shell="rail"] body{
         <label style="margin:0">Which plants</label>
         <button type="button" class="btn mini" id="batchSelectAll">Select all</button>
       </div>
+      <!-- With ten plants a flat list is the whole picker. With a hundred it
+           is a wall you scroll past, and "Select all" is the only tool in it —
+           so narrowing comes first and Select all then means "all of these",
+           which is what you actually want standing in front of one shelf. -->
+      <div class="bc-tools">
+        <input type="search" id="batchSearch" placeholder="Search…" autocomplete="off"
+               enterkeyhint="done" aria-label="Search plants">
+        <select id="batchZone" class="bc-zone" aria-label="Filter by place"></select>
+      </div>
+      <p class="bc-count" id="batchCount"></p>
       <div id="batchPlantList" class="stack" style="gap:0"></div>
     </div>
     <div class="field">
@@ -8519,6 +8550,43 @@ html[data-layout="phone"] #pBoardPrev, html[data-layout="phone"] #pBoardNext{
    circle. It is a faint watermark; the button is a control. The watermark
    moves. */
 html[data-layout="phone"] #verBadge{right:auto; left:9px}
+
+/* ================= large collection: zones and dense rows =================
+   A hundred plants is not ten plants ten times over. It is a place you walk
+   through, and the unit of work is a shelf rather than a specimen. */
+.zone{margin-bottom:14px}
+.zone-head{display:flex; align-items:center; gap:10px; padding:0 2px 7px}
+.zone-name{flex:1; min-width:0; font-size:15px; font-weight:600}
+.zone-name small{display:block; font-size:11.5px; font-weight:400; color:var(--ink-3);
+  font-family:var(--font); font-variant-numeric:tabular-nums; margin-top:1px}
+.zone-rows{background:var(--surface); border:1px solid var(--line); border-radius:var(--r);
+  overflow:hidden}
+/* One line per plant: a face to recognise it by, a name, and whether anything
+   is asking for it. Nothing else earns a row at this density. */
+.prow{display:flex; align-items:center; gap:11px; width:100%; text-align:left;
+  padding:9px 12px; border:0; border-bottom:1px solid var(--line-soft); background:none;
+  cursor:pointer; color:inherit; font:inherit; -webkit-tap-highlight-color:transparent}
+.prow:last-child{border-bottom:0}
+.prow:hover{background:var(--surface-2)}
+.prow-thumb{width:34px; height:34px; border-radius:var(--r-xs); object-fit:cover;
+  flex:0 0 auto; background:var(--sunk)}
+.prow-thumb.none{display:flex; align-items:center; justify-content:center;
+  font-size:15px; color:var(--ink-3)}
+.prow-name{flex:1; min-width:0; font-size:14.5px; overflow:hidden; text-overflow:ellipsis;
+  white-space:nowrap}
+.prow-name small{display:block; font-size:11.5px; color:var(--ink-3); font-weight:400;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.prow .chev{font-size:18px; color:var(--ink-3); flex:0 0 auto}
+.prow .pill{flex:0 0 auto}
+html[data-layout="phone"] .prow{padding:11px 12px}
+
+/* the batch-care picker, once it has to hold a hundred names */
+.bc-tools{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:4px}
+.bc-tools input[type=search]{flex:1 1 130px; min-width:0}
+.bc-zone{flex:0 1 auto; max-width:100%; font-size:13px}
+.bc-count{font-size:12px; color:var(--ink-3); font-family:var(--font);
+  font-variant-numeric:tabular-nums}
+#batchPlantList{max-height:42vh; overflow-y:auto; margin:0 -4px; padding:0 4px}
 </style>
 
 <dialog id="adSwapDlg">
@@ -9849,6 +9917,13 @@ function seed(){return{
   /* the cycle: one fertiliser day a week, and the defaults a plant joins on */
   feedDayOn:true, feedDay:0,                    // Sunday
   photoQuality:"standard",                      // how hard photographs are squeezed
+  /* A big collection is a different job, not a harder one. Ten plants are ten
+     things you look after; a hundred are a place you walk through, zone by
+     zone, doing one job at a time. These two say which of those this is.
+     They live in the state rather than on the device because they describe the
+     COLLECTION — the same hundred plants are a hundred plants on both phones. */
+  bigMode:false,                                // group by zone, one line per plant
+  autoWater:false,                              // watering is plumbed, not a job
   cycleDefault:{water:1, dose:100, when:"feedday"},   // every beat, full dose on fertiliser day
   cuttings:[], photos:[], products:[], formulas:[], schedules:[], subjects:[], routines:[], events:[], tasks:[],
   issues:[],
@@ -10240,6 +10315,30 @@ let L={me:"u1",vol:5,scope:"day",app:"bench",benchView:"garden",mode:"formula",f
        strength:100,done:{},adv:false,expert:false,chart:"col",ppmScale:700,lang:null,dayStartHour:4,theme:null,palette:"amethyst",design:"off"};  // per-device
 const adv=()=>L.adv===true;
 const expert=()=>L.expert===true;
+/* These two are in S, not L. adv() and expert() are preferences about how much
+   detail you personally want on a screen, so they belong to the device. These
+   describe the collection itself — how many plants there are and whether the
+   water arrives through a pipe — and those facts do not change when you pick
+   up the other phone. */
+const bigMode=()=>S.bigMode===true;
+const autoWater=()=>S.autoWater===true;
+/* The zone is the `spot` you have always been able to type on a plant,
+   promoted to something the app can group by. Nothing new to fill in: a
+   collection that already says "West shelf" is already zoned. */
+const ZONE_NONE=" none";
+const zoneOf=p=>{ const s=String((p&&p.spot)||"").trim(); return s||ZONE_NONE; };
+const zoneName=z=>z===ZONE_NONE?(L.lang==="cs"?"Bez místa":"No place set"):z;
+/* every zone in the collection, each with its plants, biggest first — a walk
+   through the flat usually starts where the most of them are */
+function zonesOf(list){
+  const m=new Map();
+  list.forEach(p=>{ const z=zoneOf(p); if(!m.has(z)) m.set(z,[]); m.get(z).push(p); });
+  return [...m.entries()]
+    .map(([z,plants])=>({zone:z, name:zoneName(z), plants}))
+    .sort((a,b)=>(a.zone===ZONE_NONE)-(b.zone===ZONE_NONE)   // the unplaced sink to the bottom
+              || b.plants.length-a.plants.length
+              || a.name.localeCompare(b.name));
+}
 
 /* The gem palettes, plus the two whole-app looks that used to sit in a
    separate "Design" menu. Both belong here: each replaces the palette's
@@ -11402,22 +11501,34 @@ function renderSubjects(){
       : `No plants match "${esc(gPlantsQuery)}".`}</p>`;
     return;
   }
-  $("#subjectList").innerHTML=list.map(p=>{
+  /* Water is still on the plant; it just isn't a job any more. Saying so on
+     the line matters more than hiding it would — "never done" under something
+     a hose waters every morning is a false record, and a due pill on it is a
+     false instruction. The line stays, and tells the truth instead. */
+  const plumbed=r=>autoWater()&&r.kind==="water";
+  /* a job on days you picked yourself says so on the card: the interval it
+     would otherwise be running on is no longer the truth about it */
+  const line=(r,ev,st,pin)=>plumbed(r)
+    ? `<div class="pline">
+        <span class="pill mute">${esc(t("plumbed"))}</span>
+        <span class="pline-k">${esc(r.name)}</span>
+        <span class="pline-v">${esc(t("handled by your system"))}</span>
+      </div>`
+    : `<div class="pline">
+        <span class="pill ${st.cls}">${st.text}</span>
+        <span class="pline-k">${esc(r.name)}</span>
+        <span class="pline-v">${ev?"last "+esc(ago(ev.at))+" · "+esc(userName(ev.by)):"never done"}${
+          pin?`<span class="pin-days">${esc(pin)}</span>`:""}</span>
+      </div>`;
+
+  const card=p=>{
     const rs=careRoutines(p.id);
     const pf=plantFormula(p), ph=latestPhoto(p.id);
     /* the header carries identity only — everything else lives on the plant's own page */
     const sub=[p.species&&p.species!==p.name?p.species:null,p.spot||null].filter(Boolean).join(" · ");
-    /* a job on days you picked yourself says so on the card: the interval it
-       would otherwise be running on is no longer the truth about it */
-    const line=(k,ev,st,pin)=>`<div class="pline">
-      <span class="pill ${st.cls}">${st.text}</span>
-      <span class="pline-k">${esc(k)}</span>
-      <span class="pline-v">${ev?"last "+esc(ago(ev.at))+" · "+esc(userName(ev.by)):"never done"}${
-        pin?`<span class="pin-days">${esc(pin)}</span>`:""}</span>
-    </div>`;
     return `<div class="pcard">
       <button type="button" class="pcard-top" data-open-plant="${p.id}">
-        ${ph?`<img class="pcard-thumb" src="${safeImg(photoSrc(ph))}" alt="">`
+        ${ph?`<img class="pcard-thumb" src="${safeImg(photoSrc(ph))}"${photoUp(ph)} alt="">`
             :'<span class="pcard-thumb none">🌿</span>'}
         <span class="pcard-head" style="flex:1">
           <span class="pcard-name">${esc(p.name)}</span>
@@ -11426,12 +11537,52 @@ function renderSubjects(){
         <span class="chev" aria-hidden="true">›</span>
       </button>
       <div class="pcard-body">
-        ${rs.map(r=>{const ev=lastEvent(r.id); return line(r.name,ev,dueState(ev,r,p),pinnedShort(r));}).join("")}
+        ${rs.map(r=>{const ev=lastEvent(r.id); return line(r,ev,dueState(ev,r,p),pinnedShort(r));}).join("")}
         <div class="btn-row">
-          ${rs.map(r=>`<button class="btn mini" data-did="${r.id}">${esc(DID[r.kind]||r.name)}</button>`).join("")}
+          ${rs.filter(r=>!plumbed(r)).map(r=>
+            `<button class="btn mini" data-did="${r.id}">${esc(DID[r.kind]||r.name)}</button>`).join("")}
           ${pf?`<button class="btn mini" data-mix="${p.id}">Mix</button>`:""}
         </div>
       </div></div>`;
+  };
+
+  /* ---- the dense row ----
+     A card each is right for ten plants. At a hundred it is several screens of
+     scrolling before you reach the shelf you are standing at, so the row keeps
+     only what tells one plant from another at arm's length — its face, its
+     name, and whether anything is asking for it. Everything the card used to
+     show is still on the plant's own page, one tap away, exactly as before. */
+  const row=p=>{
+    const w=worstState(p.id), ph=latestPhoto(p.id);
+    return `<button type="button" class="prow" data-open-plant="${p.id}">
+      ${ph?`<img class="prow-thumb" src="${safeImg(photoSrc(ph))}"${photoUp(ph)} alt="">`
+          :'<span class="prow-thumb none">🌿</span>'}
+      <span class="prow-name">${esc(p.name)}${
+        p.species&&p.species!==p.name?`<small>${esc(p.species)}</small>`:""}</span>
+      ${w?`<span class="pill ${w.st.cls}">${w.st.text}</span>`:""}
+      <span class="chev" aria-hidden="true">›</span>
+    </button>`;
+  };
+
+  if(!bigMode()){ $("#subjectList").innerHTML=list.map(card).join(""); return; }
+
+  /* ---- zoned: the walk, not the list ----
+     You do not tend a hundred plants, you tend a shelf and then another shelf.
+     The zone is the `spot` already typed on each plant, so a collection that
+     says "West shelf" is already sorted; the header is where the batch lives,
+     because by the time you are standing in front of fourteen plants the
+     question is not which one, it is which job. */
+  $("#subjectList").innerHTML=zonesOf(list).map(z=>{
+    const needs=z.plants.filter(p=>{
+      const w=worstState(p.id); return w&&(w.st.cls==="over"||w.st.cls==="due"); }).length;
+    return `<section class="zone">
+      <div class="zone-head">
+        <span class="zone-name">${esc(z.name)}<small>${plural(z.plants.length,"plant")}${
+          needs?` · ${needs} ${L.lang==="cs"?"něco chce":"want something"}`:""}</small></span>
+        <button class="btn mini" data-zonecare="${esc(z.zone)}">${esc(t("Log care"))}</button>
+      </div>
+      <div class="zone-rows">${z.plants.map(row).join("")}</div>
+    </section>`;
   }).join("");
 }
 
@@ -16352,7 +16503,9 @@ function greeting(){
 function worstState(sid){
   let worst=null;
   const sub=subject(sid);
-  careRoutines(sid).forEach(r=>{
+  /* A tile going red because a plant is "late" for water it received on
+     schedule through a hose is the app being wrong out loud, every day. */
+  careRoutines(sid).filter(r=>!(autoWater()&&r.kind==="water")).forEach(r=>{
     const st=dueState(lastEvent(r.id),r,sub);
     const rank={over:3,due:2,ok:1}[st.cls]||0;
     if(!worst||rank>worst.rank) worst={rank,st,r};
@@ -24110,7 +24263,19 @@ function buildAgenda(until){
       items.push(item(d));
     }
   });
-  return items.sort((a,b)=>a.at-b.at);
+  /* A plumbed collection still has jobs — it just doesn't have watering.
+     This is deliberately the LAST thing that happens, and it filters on the
+     item rather than on the routine, because those are different questions.
+     A plant on the cycle emits one series of beats, some of which carry
+     fertiliser; dropping its water ROUTINE would drop the feeds riding on it
+     and quietly stop the app ever asking you to fertilise again. Dropping the
+     plain-water ITEMS leaves every one of those feeds exactly where it was,
+     and it works the same for a plant with an ordinary water routine, whose
+     items are all type "water" and all go. Nothing is deleted and no history
+     changes: turn it off and every date is back, because none of them ever
+     left the data. */
+  return items.filter(x=>!(autoWater()&&x.type==="water"))
+              .sort((a,b)=>a.at-b.at);
 }
 /* dates are stored as local Y-M-D, not timestamps — a shared day shouldn't
    shift because the two of you are in different time zones */
@@ -25542,6 +25707,10 @@ function logEvent(subjectId,kind,extra){
 $("#subjectList").addEventListener("click",async e=>{
   const q=k=>e.target.closest("[data-"+k+"]");
   const did=q("did"),ed=q("edit-plant"),mx=q("mix"),wm=q("wkdown"),wp=q("wkup"),op=q("open-plant");
+  /* before open-plant: the zone button sits inside the zone header, not inside
+     a row, but a stray closest() order would still be a trap worth avoiding */
+  const zc=q("zonecare");
+  if(zc){ openBatchCareDlg(zc.dataset.zonecare); return; }
   if(op){ openPlantPage(op.dataset.openPlant); return; }
   if(did){
     const r=S.routines.find(x=>x.id===did.dataset.did); if(!r) return;
@@ -25639,24 +25808,64 @@ $("#logForm").addEventListener("submit",async e=>{
    that watering/feeding/spraying (any combination) happened, against
    whichever plants are checked. Nothing is pre-checked — Select all is a
    deliberate action, not a default, so a stray tap can't log every plant. */
-function openBatchCareDlg(){
+/* The picked set is held here rather than read off the checkboxes, because the
+   list is now filtered. Reading the DOM would mean that narrowing to a zone
+   silently threw away everything you had already picked in another one —
+   filtering would quietly destroy your work. So the set survives the filter,
+   and the count under the tools says how many are in it, including the ones
+   currently scrolled out of sight. */
+let bcSel=new Set(), bcZone="", bcQuery="";
+const bcAll=()=>subjectsIn("plants");
+const bcVisible=()=>bcAll().filter(p=>
+  (!bcZone||zoneOf(p)===bcZone) && (!bcQuery||plantMatchesQuery(p,bcQuery)));
+function bcPaint(){
+  const vis=bcVisible(), total=bcAll().length, cs=L.lang==="cs";
+  $("#batchPlantList").innerHTML=vis.length
+    ? vis.map(p=>pickerPlantRowHtml(p,bcSel.has(p.id))).join("")
+    : `<p class="hint" style="margin:10px 2px">${cs?"Nic neodpovídá.":"Nothing matches."}</p>`;
+  /* "Select all" means all of what you can SEE — standing at one shelf, that
+     is the whole point of having narrowed to it */
+  const allVis=vis.length>0&&vis.every(p=>bcSel.has(p.id));
+  $("#batchSelectAll").textContent=allVis?(cs?"Zrušit výběr":"Deselect all"):(cs?"Vybrat vše":"Select all");
+  const shown=vis.length<total?` · ${vis.length} ${cs?"zobrazeno":"shown"}`:"";
+  $("#batchCount").textContent=bcSel.size
+    ? `${plural(bcSel.size,"plant")} ${cs?"vybráno":"selected"}${shown}`
+    : `${vis.length} ${cs?"zobrazeno":"shown"}`;
+}
+function openBatchCareDlg(zone){
   if(!S.subjects.length){ say("Add a plant first — then you can log care against it."); return; }
-  $("#batchPlantList").innerHTML=subjectsIn("plants").map(p=>pickerPlantRowHtml(p,false)).join("");
+  bcSel=new Set(); bcQuery=""; bcZone=zone||"";
+  const zones=zonesOf(bcAll());
+  /* the filter only earns its place once there is more than one place */
+  const wrap=$("#batchZone");
+  wrap.innerHTML=`<option value="">${esc(L.lang==="cs"?"Všechna místa":"Everywhere")}</option>`
+    +zones.map(z=>`<option value="${esc(z.zone)}"${z.zone===bcZone?" selected":""}>${
+      esc(z.name)} (${z.plants.length})</option>`).join("");
+  wrap.hidden=zones.length<2;
+  $("#batchSearch").value="";
   $("#batchWater").checked=false; $("#batchFeed").checked=false; $("#batchSpray").checked=false;
-  $("#batchSelectAll").textContent="Select all";
+  bcPaint();
   $("#batchCareDlg").showModal();
 }
-$("#gardenBatchCare").addEventListener("click",openBatchCareDlg);
-$("#plantsBatchCare").addEventListener("click",openBatchCareDlg);
+$("#gardenBatchCare").addEventListener("click",()=>openBatchCareDlg());
+$("#plantsBatchCare").addEventListener("click",()=>openBatchCareDlg());
 $("#batchCareCancel").addEventListener("click",()=>$("#batchCareDlg").close());
+$("#batchSearch").addEventListener("input",e=>{
+  bcQuery=e.target.value.trim().toLowerCase(); bcPaint(); });
+$("#batchZone").addEventListener("change",e=>{ bcZone=e.target.value; bcPaint(); });
+$("#batchPlantList").addEventListener("change",e=>{
+  const b=e.target.closest("input[data-lp]"); if(!b) return;
+  if(b.checked) bcSel.add(b.dataset.lp); else bcSel.delete(b.dataset.lp);
+  bcPaint();
+});
 $("#batchSelectAll").addEventListener("click",()=>{
-  const boxes=[...$("#batchPlantList").querySelectorAll("input[type=checkbox]")];
-  const allChecked=boxes.length>0&&boxes.every(b=>b.checked);
-  boxes.forEach(b=>b.checked=!allChecked);
-  $("#batchSelectAll").textContent=allChecked?"Select all":"Deselect all";
+  const vis=bcVisible();
+  const allVis=vis.length>0&&vis.every(p=>bcSel.has(p.id));
+  vis.forEach(p=>{ if(allVis) bcSel.delete(p.id); else bcSel.add(p.id); });
+  bcPaint();
 });
 $("#batchCareApply").addEventListener("click",()=>{
-  const ids=[...$("#batchPlantList").querySelectorAll("input:checked")].map(c=>c.dataset.lp);
+  const ids=[...bcSel];
   const kindBoxes={water:$("#batchWater"), feed:$("#batchFeed"), spray:$("#batchSpray")};
   const kinds=Object.keys(kindBoxes).filter(k=>kindBoxes[k].checked);
   if(!ids.length){ say("Pick at least one plant first."); return; }
@@ -25678,6 +25887,8 @@ function applyAdvanced(){
   const on=adv();
   $("#advToggle").checked=on;
   $("#expertToggle").checked=expert();
+  $("#bigModeToggle").checked=bigMode();
+  $("#autoWaterToggle").checked=autoWater();
   $("#scaleField").style.display=on?"":"none";
   $("#ppmScale").value=String(L.ppmScale||700);
   /* `||4` treats a chosen midnight (0) as "unset" — read and write both need
@@ -25690,6 +25901,17 @@ function applyAdvanced(){
 }
 $("#expertToggle").addEventListener("change",e=>{
   L.expert=e.target.checked; saveLocal(); renderStats();
+});
+/* touch(), not saveLocal(): these live in the shared state, so they have to be
+   pushed like any other edit rather than kept on this device */
+$("#bigModeToggle").addEventListener("change",e=>{
+  S.bigMode=e.target.checked; touch(); renderSubjects(); renderGarden();
+});
+$("#autoWaterToggle").addEventListener("change",e=>{
+  S.autoWater=e.target.checked; touch();
+  /* every surface that counts a due date has to be told at once, or the Garden
+     keeps yesterday's red pills until something else happens to redraw it */
+  renderSubjects(); renderGarden(); renderAgenda(); renderDue();
 });
 $("#advToggle").addEventListener("change",async e=>{
   L.adv=e.target.checked; saveLocal(); applyAdvanced(); renderMix(); renderShelf();
@@ -27198,6 +27420,8 @@ Object.assign(CS,{"Today":"Dnes","done":"hotovo",
 "Ochre":"Okrová","Blue":"Modrá","Wine":"Vínová","Olive":"Olivová",
 /* ---- chrome and shared labels ---- */
 "Batch care":"Hromadná péče","Smart Search":"Chytré hledání","Product":"Produkt",
+/* large collection: zones, and watering that arrives through a pipe */
+"Log care":"Zapsat péči","plumbed":"z rozvodu","handled by your system":"zajišťuje tvůj systém",
 "Select a brand":"Vyber značku","← Back":"← Zpět","(ml/L)":"(ml/l)","Plants":"Rostliny","Home":"Domů",
 "Heads up":"Pozor","Subtasks":"Podúkoly","Add a subtask":"Přidat podúkol","Add event":"Přidat událost",
 "This day":"Tenhle den","Whole series…":"Celá série…","Remove this day":"Odebrat tenhle den",
