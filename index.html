@@ -3358,6 +3358,19 @@ dialog:has(> form > .dlg-foot) > form > .dlg-foot{flex:0 0 auto}
   .cd-job .daypick{flex:1 0 100%; order:3}
   .cd-job .cd-when{margin-left:auto}
 }
+
+/* ---------- All plants: read it as lines, or as faces ----------
+   The garden already draws a plant as a photograph on a tile; the list is the
+   same collection read as rows. Which one is right depends on what you came
+   for — recognising a plant by sight, or scanning what is due on it — and that
+   changes several times in a morning. So it is a toggle on the screen you are
+   already looking at, not a setting you have to go and find. */
+.pview-bar{display:flex; justify-content:flex-end; margin:-2px 0 0}
+.seg.seg-inline{display:inline-flex; flex:0 0 auto; width:auto}
+.seg.seg-inline button{flex:0 0 auto; padding:0 15px; min-height:30px; font-size:12.5px}
+/* in grid mode a place keeps its heading and gets tiles underneath, so the
+   walk from shelf to shelf survives the change of shape */
+.zone > .grid{margin-bottom:2px}
 </style>
 <style id="redesign-2">
 /* ---- Redesign 2: "Frosted Glass" ----
@@ -4381,6 +4394,7 @@ html[data-shell="rail"] body{
   <section class="view" id="view-garden" hidden>
     <div class="sec-head"><h2 id="gardenHi">Garden</h2>
       <div style="display:flex; gap:8px">
+        <button class="btn xm-btn" id="gardenFullManual" hidden>Full manual</button>
         <button class="btn" id="gardenBatchCare">Batch care</button>
         <button class="btn primary" id="addSubject">+ Plant</button>
       </div></div>
@@ -4456,6 +4470,24 @@ html[data-shell="rail"] body{
               <p class="hint" style="margin:0">These two describe the collection rather than
                 this device, so they follow it to your other phone. Nothing is deleted either
                 way: turn watering back on and every date is exactly where it was.</p>
+            </div>
+          </div>
+
+          <!-- The app's whole argument is that it works out the dates so you
+               do not have to. This is the setting for the days you know better
+               than it does, so it is off until asked for: a Full manual button
+               on the garden would undercut that argument for everybody who
+               does not want it. -->
+          <div class="sec-head"><h2 style="font-size:18px">Expert manual</h2></div>
+          <div class="card pad" style="margin-bottom:14px">
+            <div class="stack">
+              <label class="lu" style="border:0; padding:0">
+                <span class="sw"><input id="expertManualToggle" type="checkbox"><i></i></span>
+                <span class="lu-name">Full manual scheduling<small>Adds a Full manual button beside Batch care, for drawing watering and feeding straight onto a fortnight</small></span>
+              </label>
+              <p class="hint" style="margin:0">Per device, like the other expert settings. What you
+                draw is stored with the collection, so the schedule itself reaches your other phone
+                even where this button is hidden.</p>
             </div>
           </div>
           <!-- Money. The rate lives here rather than being fetched, because a
@@ -4574,10 +4606,17 @@ html[data-shell="rail"] body{
   <section class="view" id="view-plants" hidden>
     <div class="sec-head"><h2>All plants</h2>
       <div style="display:flex; gap:8px">
+        <button class="btn xm-btn" id="plantsFullManual" hidden>Full manual</button>
         <button class="btn" id="plantsBatchCare">Batch care</button>
         <button class="btn" id="gardenBack">← Garden</button>
       </div></div>
     <input type="text" id="plantsSearch" class="plant-search" placeholder="Search plants…" autocomplete="off">
+    <div class="pview-bar">
+      <div class="seg seg-inline" id="plantsViewSeg" role="group" aria-label="How to show the plants">
+        <button type="button" data-pview="list" aria-pressed="true">List</button>
+        <button type="button" data-pview="grid" aria-pressed="false">Grid</button>
+      </div>
+    </div>
     <div class="stack" id="subjectList"></div>
   </section>
 
@@ -7292,6 +7331,80 @@ html[data-shell="rail"] body{
   </div>
 </dialog>
 
+<!-- Full manual: the days you know better than the app does.
+     Batch care logs what you have already done; this says what is going to
+     happen. Fourteen days because that is the longest any of these plants goes
+     between waterings, so the window always holds the whole pattern — and the
+     pattern is what repeats, which is how "water twice this week, once the
+     next" becomes expressible at all. -->
+<dialog id="fullManualDlg">
+  <h3 class="dlg-head">Full manual</h3>
+  <div class="dlg-body">
+    <div class="field">
+      <label>What you are setting</label>
+      <!-- One action today, and a list because there will be more: repotting
+           and spraying are the same gesture against the same calendar. Inline
+           rather than stretched, so a single choice reads as the one option
+           there is rather than as a button that failed to fit. -->
+      <div class="seg seg-inline" id="xmActionSeg">
+        <button type="button" data-xmact="wf" aria-pressed="true">Watering &amp; feeding</button>
+      </div>
+      <p class="hint" style="margin:7px 0 0">Watering and feeding share one calendar, because on
+        the day itself they are one trip with one can.</p>
+    </div>
+
+    <div class="field">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:8px">
+        <label style="margin:0">Which plants</label>
+        <button type="button" class="btn mini" id="xmSelectAll">Select all</button>
+      </div>
+      <div class="bc-tools" style="margin:8px 0 0">
+        <input type="search" id="xmSearch" placeholder="Search…" autocomplete="off"
+          enterkeyhint="done" aria-label="Search plants">
+        <select id="xmZone" class="bc-zone" aria-label="Filter by place"></select>
+      </div>
+      <p class="bc-count" id="xmCount"></p>
+      <div id="xmPlantList" class="stack" style="gap:0"></div>
+    </div>
+
+    <div class="field">
+      <label>Which days</label>
+      <div class="xm-cal" id="xmCal"></div>
+      <!-- the key draws exactly what a cell draws, two dots and all: a single
+           half-and-half swatch was unreadable at seven pixels, and a key that
+           does not match the thing it explains is worse than no key -->
+      <div class="xm-key">
+        <span><b class="xm-swatch"><i class="w"></i></b>water</span>
+        <span><b class="xm-swatch"><i class="w"></i><i class="f"></i></b>water &amp; feed</span>
+        <span><b class="xm-swatch"><i class="f"></i></b>feed only</span>
+      </div>
+      <p class="hint" style="margin:7px 0 0">Tap a day to step it round: water, then water and
+        feed, then feed on its own, then clear.</p>
+    </div>
+
+    <div class="field">
+      <label>How long it lasts</label>
+      <div class="seg" id="xmLenSeg">
+        <button type="button" data-xmlen="0" aria-pressed="true">For ever</button>
+        <button type="button" data-xmlen="7">1 week</button>
+        <button type="button" data-xmlen="14">2 weeks</button>
+        <button type="button" data-xmlen="28">4 weeks</button>
+      </div>
+      <p class="hint" style="margin:7px 0 0" id="xmLenHint"></p>
+    </div>
+
+    <div class="field">
+      <label>What this changes</label>
+      <div class="xm-effect" id="xmEffect"></div>
+    </div>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn" type="button" id="xmCancel">Cancel</button>
+    <button class="btn danger" type="button" id="xmClear">Hand back to the app</button>
+    <button class="btn primary" type="button" id="xmApply">Set these days</button>
+  </div>
+</dialog>
+
 <!-- manual care: the bulk form of the Care days picker. Pick a job, tick any
      number of plants, tap the weekdays — every plant ticked is pinned to
      exactly those days, whatever its own interval or cycle said before. The
@@ -8575,6 +8688,57 @@ html[data-layout="phone"] .prow{padding:11px 12px}
 .bc-count{font-size:12px; color:var(--ink-3); font-family:var(--font);
   font-variant-numeric:tabular-nums}
 #batchPlantList{max-height:42vh; overflow-y:auto; margin:0 -4px; padding:0 4px}
+
+/* ---------- Full manual: the fortnight ----------
+   Seven columns and two rows, starting today rather than on a Monday. The
+   window is "the next fourteen days", and aligning it to the week would put a
+   stub row at each end and make the first cell somewhere other than the day
+   you are standing in. Each cell says its own weekday, so nothing is lost. */
+#xmPlantList{max-height:30vh; overflow-y:auto; margin:0 -4px; padding:0 4px}
+.xm-cal{display:grid; grid-template-columns:repeat(7,1fr); gap:5px; margin-top:8px}
+.xm-day{display:flex; flex-direction:column; align-items:center; gap:3px;
+  padding:7px 2px 6px; min-width:0; border:1px solid var(--line); border-radius:var(--r-xs);
+  background:var(--sunk); color:var(--ink-2); font:inherit; cursor:pointer;
+  -webkit-tap-highlight-color:transparent; transition:border-color .14s, background .14s}
+.xm-day:hover{border-color:var(--accent)}
+.xm-day:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+.xm-dow{font-size:9.5px; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-3)}
+.xm-num{font-family:var(--font); font-variant-numeric:tabular-nums;
+  font-size:14px; font-weight:700; color:var(--ink); line-height:1}
+/* the marks row keeps its height whether or not it holds anything, so lighting
+   a day never nudges the rest of the grid down by three pixels */
+.xm-marks{display:flex; gap:3px; height:6px; align-items:center}
+.xm-marks i{width:6px; height:6px; border-radius:50%; display:block}
+.xm-marks i.w{background:var(--accent)}
+.xm-marks i.f{background:var(--ok)}
+.xm-day.on{background:var(--accent-soft); border-color:var(--accent)}
+.xm-day.on .xm-num{color:var(--ink-strong)}
+/* today is where the pattern is anchored, so it is worth being able to find */
+.xm-day.is-today{box-shadow:inset 0 0 0 1px var(--accent)}
+.xm-key{display:flex; flex-wrap:wrap; gap:4px 14px; margin-top:9px;
+  font-size:11.5px; color:var(--ink-3)}
+.xm-key span{display:inline-flex; align-items:center; gap:5px}
+/* the swatch keeps one width whether it holds one dot or two, so the three
+   labels start in the same place and the key reads as a column */
+.xm-key .xm-swatch{display:inline-flex; gap:3px; align-items:center;
+  justify-content:center; min-width:17px}
+.xm-key i{width:6px; height:6px; border-radius:50%; display:block}
+.xm-key i.w{background:var(--accent)}
+.xm-key i.f{background:var(--ok)}
+/* the readout: what tapping Set is actually going to do, in sentences, before
+   you tap it rather than in a confirmation after */
+.xm-effect{border:1px solid var(--line); border-radius:var(--r-xs);
+  background:var(--sunk); padding:11px 13px; font-size:12.5px; line-height:1.5;
+  color:var(--ink-2)}
+.xm-effect b{color:var(--ink); font-weight:600}
+.xm-effect p{margin:0 0 6px}
+.xm-effect p:last-child{margin-bottom:0}
+.xm-effect .xm-warn{color:var(--warn,var(--ink))}
+@media (max-width:420px){
+  .xm-cal{gap:3px}
+  .xm-day{padding:6px 1px 5px}
+  .xm-num{font-size:13px}
+}
 
 /* ============================ SUBTASKS ============================
    Steps were in the data model from the start but only reachable by opening
@@ -10361,9 +10525,16 @@ const STR_STOPS=[25,50,75,100];
 
 let S=seed();                     // shared, synced
 let L={me:"u1",vol:5,scope:"day",app:"bench",benchView:"garden",mode:"formula",formulaId:null,productId:null,
-       strength:100,done:{},adv:false,expert:false,chart:"col",ppmScale:700,lang:null,dayStartHour:4,theme:null,palette:"amethyst",design:"off"};  // per-device
+       strength:100,done:{},adv:false,expert:false,chart:"col",ppmScale:700,lang:null,dayStartHour:4,theme:null,palette:"amethyst",design:"off",
+       plantsView:"list",expertManual:false};  // per-device
 const adv=()=>L.adv===true;
 const expert=()=>L.expert===true;
+/* Both of these are about how much of the machinery you personally want put in
+   front of you, which is exactly what makes them device preferences rather than
+   facts about the collection: the phone in the greenhouse can be in grid and
+   showing the manual scheduler while the one on the desk is not. */
+const plantsView=()=>L.plantsView==="grid"?"grid":"list";
+const expertManual=()=>L.expertManual===true;
 /* These two are in S, not L. adv() and expert() are preferences about how much
    detail you personally want on a screen, so they belong to the device. These
    describe the collection itself — how many plants there are and whether the
@@ -10431,7 +10602,7 @@ const $=s=>document.querySelector(s);
 /* Build stamp. `n` is incremented by bump.py at publish time so two phones can
    be compared at a glance — an installed PWA serving a stale service-worker
    cache is otherwise indistinguishable from an up-to-date one. */
-const BUILD={ver:"1.0",n:112,at:"2026-09-10"};
+const BUILD={ver:"1.0",n:113,at:"2026-09-19"};
 const uid=()=>Math.random().toString(36).slice(2,9);
 /* Single quote and backtick matter the moment anything is written into a
    single-quoted attribute or a nested template — cheap now, unfindable later. */
@@ -11318,18 +11489,24 @@ function dueState(ev,every,anchor,refTs){
       return {cls:"ok",text:L.lang==="cs"?`za ${left} d`:`in ${left}d`};
     }
   }
-  const days=fixedDays(r);
+  const days=fixedDays(r), planned=hasPlan(r);
   /* interval 0 = paused. It used to mean "weekly" here and "invisible" in the
      diary — the same routine due on one screen and absent from the other. A
      species marked never-feed (f:0) now genuinely never comes due. Pinned days
-     override that: days you picked yourself are never a pause. */
-  if(!days&&!(+r.every>0)) return {cls:"ok",text:"—"};
+     override that: days you picked yourself are never a pause. So is a plan —
+     a fortnight drawn by hand on a plant whose interval is 0 is the whole
+     point of setting one. */
+  if(!days&&!planned&&!(+r.every>0)) return {cls:"ok",text:"—"};
   const ref=sod(refTs!=null?refTs:Date.now());
-  /* never done, no pinned days, nothing anchoring it: it wants doing now. With
-     action days on, a plant just added waits for its own day rather than
-     shouting the moment it lands in the garden. */
-  if(!ev&&!days&&(!actionOn()||p.anchor==null)) return {cls:"due",text:t("now")};
-  const left=Math.round((routineDue(r,p,ev,ref)-ref)/DAY);
+  /* never done, no pinned days, no plan, nothing anchoring it: it wants doing
+     now. With action days on, a plant just added waits for its own day rather
+     than shouting the moment it lands in the garden. */
+  if(!ev&&!days&&!planned&&(!actionOn()||p.anchor==null)) return {cls:"due",text:t("now")};
+  /* a plan can run out on a routine that has no interval to hand back to, and
+     then there genuinely is no next date — which is a dash, not 1970 */
+  const at=routineDue(r,p,ev,ref);
+  if(at==null) return {cls:"ok",text:"—"};
+  const left=Math.round((at-ref)/DAY);
   if(left<0) return {cls:"over",text:L.lang==="cs"?`${-left} dní po`:`${-left}d late`};
   if(left===0) return {cls:"due",text:t("today")};
   return {cls:"ok",text:L.lang==="cs"?`za ${left} d`:`in ${left}d`};
@@ -11564,7 +11741,36 @@ function pruneRate(evs){
 
 const careRoutines=sid=>routinesFor(sid)
   .slice().sort((a,b)=>CARE_ORDER.indexOf(a.kind)-CARE_ORDER.indexOf(b.kind));
+
+/* ---- one plant as a tile ----
+   The garden drew this and All plants now draws it too, so it lives in one
+   place: two copies of a tile is two chances for the pest warning to appear on
+   one screen and not the other, and that badge is the whole reason the tile
+   beats a row for a plant you are worried about. */
+function plantTileHtml(p){
+  const ph=latestPhoto(p.id), w=worstState(p.id);
+  const sub=[p.species&&p.species!==p.name?p.species:null,p.spot||null].filter(Boolean).join(" · ");
+  return `<button type="button" class="tile" data-open-plant="${p.id}">
+    ${ph?`<img class="tile-img" src="${safeImg(photoSrc(ph))}"${photoUp(ph)} alt="">`
+      :`<span class="tile-ph">${p.species&&speciesFind(p.species)?picto(p.species):"🌿"}</span>`}
+    <span class="tile-b">
+      <b>${esc(p.name)}</b>
+      ${sub?`<small>${esc(sub)}</small>`:""}
+      ${w?`<span class="pill ${w.st.cls}">${esc(t(rName(w.r)).toLowerCase())} ${w.st.text}</span>`:""}
+    </span>
+    ${(()=>{const io=openIssuesFor(p.id);
+      /* a plant with something wrong with it has to say so on the tile
+         itself — the garden is the screen you actually look at, and an
+         open pest that only shows two taps in is one nobody revisits */
+      if(!io.length) return "";
+      const worst=io.reduce((a,b)=>(+b.severity>+a.severity?b:a));
+      return `<span class="tile-ill ${+worst.severity>=3?"bad":""}" title="${
+        esc(io.map(issueName).join(" · "))}">${io.length>1?io.length+" ":""}⚠</span>`;
+    })()}</button>`;
+}
+
 function renderSubjects(){
+  paintPlantsView();
   const all=subjectsIn("plants");
   const list=all.filter(p=>plantMatchesQuery(p,gPlantsQuery));
   if(!all.length){
@@ -11639,6 +11845,30 @@ function renderSubjects(){
       <span class="chev" aria-hidden="true">›</span>
     </button>`;
   };
+
+  /* ---- the grid ----
+     The same plants as faces rather than lines. It answers a different
+     question: not "what is due" but "which one is that" — so it borrows the
+     garden's tile whole, badge and all, and keeps the zone headings underneath
+     bigMode so a hundred plants are still a walk from shelf to shelf. */
+  if(plantsView()==="grid"){
+    $("#subjectList").innerHTML = bigMode()
+      ? zonesOf(list).map(z=>{
+          const needs=z.plants.filter(p=>{
+            const w=worstState(p.id); return w&&(w.st.cls==="over"||w.st.cls==="due"); }).length;
+          return `<section class="zone">
+            <div class="zone-head">
+              <span class="zone-name">${esc(z.name)}<small>${plural(z.plants.length,"plant")}${
+                needs?` · ${needs} ${L.lang==="cs"?"něco chce":"want something"}`:""}</small></span>
+              <button class="btn mini" data-zonecare="${esc(zoneKey(z.zone))}">${esc(t("Log care"))}</button>
+            </div>
+            <div class="grid">${z.plants.map(plantTileHtml).join("")}</div>
+          </section>`;
+        }).join("")
+      : `<div class="grid">${list.map(plantTileHtml).join("")}</div>`;
+    upgradePhotos($("#subjectList"));
+    return;
+  }
 
   if(!bigMode()){ $("#subjectList").innerHTML=list.map(card).join(""); return; }
 
@@ -16730,27 +16960,7 @@ function renderGarden(){
   const all=subjectsIn("plants");
   const list=all.filter(p=>plantMatchesQuery(p,gGardenQuery));
   $("#gardenGrid").innerHTML = list.length
-    ? list.map(p=>{
-        const ph=latestPhoto(p.id), w=worstState(p.id);
-        const sub=[p.species&&p.species!==p.name?p.species:null,p.spot||null].filter(Boolean).join(" · ");
-        return `<button type="button" class="tile" data-open-plant="${p.id}">
-          ${ph?`<img class="tile-img" src="${safeImg(photoSrc(ph))}"${photoUp(ph)} alt="">`
-            :`<span class="tile-ph">${p.species&&speciesFind(p.species)?picto(p.species):"🌿"}</span>`}
-          <span class="tile-b">
-            <b>${esc(p.name)}</b>
-            ${sub?`<small>${esc(sub)}</small>`:""}
-            ${w?`<span class="pill ${w.st.cls}">${esc(t(rName(w.r)).toLowerCase())} ${w.st.text}</span>`:""}
-          </span>
-          ${(()=>{const io=openIssuesFor(p.id);
-            /* a plant with something wrong with it has to say so on the tile
-               itself — the garden is the screen you actually look at, and an
-               open pest that only shows two taps in is one nobody revisits */
-            if(!io.length) return "";
-            const worst=io.reduce((a,b)=>(+b.severity>+a.severity?b:a));
-            return `<span class="tile-ill ${+worst.severity>=3?"bad":""}" title="${
-              esc(io.map(issueName).join(" · "))}">${io.length>1?io.length+" ":""}⚠</span>`;
-          })()}</button>`;
-      }).join("")
+    ? list.map(plantTileHtml).join("")
     : all.length
       ? `<div class="card pad" style="grid-column:1/-1"><p class="hint" style="margin:0">
           ${L.lang==="cs"?`Žádná rostlina neodpovídá „${esc(gGardenQuery)}“.`
@@ -16863,6 +17073,20 @@ $("#gardenSearch").addEventListener("input",e=>{
 });
 $("#plantsSearch").addEventListener("input",e=>{
   gPlantsQuery=e.target.value.trim().toLowerCase(); renderSubjects();
+});
+/* Painted from L rather than from the button that was tapped: the screen can be
+   entered cold from the Library with the preference already set, and a toggle
+   that only updates itself on a tap would show the wrong half lit. */
+function paintPlantsView(){
+  const seg=$("#plantsViewSeg"); if(!seg) return;
+  const v=plantsView();
+  seg.querySelectorAll("button[data-pview]").forEach(b=>
+    b.setAttribute("aria-pressed", b.dataset.pview===v?"true":"false"));
+}
+$("#plantsViewSeg").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-pview]"); if(!b) return;
+  L.plantsView=b.dataset.pview==="grid"?"grid":"list";
+  saveLocal(); renderSubjects();
 });
 
 /* ---------------- library ---------------- */
@@ -24307,10 +24531,12 @@ function buildAgenda(until){
         return;
       }
     }
-    /* a routine with days you picked yourself is never paused by a 0 interval */
-    if(!fixedDays(r)&&!(+r.every>0)) return;
+    /* a routine with days you picked yourself is never paused by a 0 interval,
+       and neither is one carrying a plan */
+    if(!fixedDays(r)&&!hasPlan(r)&&!(+r.every>0)) return;
     const last=lastEvent(r.id);
     let due=routineDue(r,p,last,now);
+    if(due==null) return;
     if(due<today){
       items.push({at:due,p,r,type:r.kind,overdue:true});
       /* forecast as if it gets done today; bounded past today, so the
@@ -24318,9 +24544,10 @@ function buildAgenda(until){
          overdue row it sits next to */
       due=routineStep(r,p,today);
     }
-    for(let n=0; due<=until && n<200; n++){
+    for(let n=0; due!=null && due<=until && n<200; n++){
       items.push({at:due,p,r,type:r.kind});
-      /* the bound guarantees forward motion, so no spin guard is needed */
+      /* the bound guarantees forward motion, so no spin guard is needed —
+         but a step can now legitimately answer "there is no next one" */
       due=routineStep(r,p,due);
     }
   });
@@ -24444,6 +24671,66 @@ function nextDow(dow,from){
   return start;
 }
 
+/* ---------------- the fortnight plan ----------------
+   Pinned days are WEEKDAYS, and a weekday list cannot hold "twice this week,
+   once the next" — the comment on mcFeedDays already admits as much. A plan is
+   the same idea one size up: a pattern of a fixed number of days anchored to a
+   real date, so an alternating fortnight is finally expressible. It also knows
+   when to stop, which is what lets a schedule be set for a fortnight and no
+   longer.
+
+   Precedence is cycle → plan → pinned days → interval. Falling through is the
+   plan's own job: once `until` is behind us, or the window closes before the
+   pattern comes round again, the routine is back on whatever it had before,
+   untouched. A plan shadows; it never destroys. That is what makes "just for
+   two weeks while I am away" a safe thing to tap.
+
+   Every screen reaches this through planDue(), for the reason the whole file
+   reaches "when next" through routineDue(): four copies of one precedence is
+   four chances for two screens to disagree about the same plant. */
+const PLAN_LEN=14;                      // the two-week window the picker draws
+function planOf(r){
+  const pl=r&&r.plan;
+  if(!pl||!pl.start||!Array.isArray(pl.on)||!pl.on.length) return null;
+  const len=+pl.len>0?+pl.len:PLAN_LEN;
+  return {start:fromYmd(pl.start), len, on:pl.on.slice().sort((a,b)=>a-b),
+          until:pl.until?fromYmd(pl.until):null};
+}
+/* how far into the pattern a date falls. Rounded rather than floored: both
+   timestamps are midnights, but an hour of daylight saving between them turns
+   day 7 into 6.96, and flooring that lands the whole pattern one day out for
+   half the year. */
+const planOffset=(pl,ts)=>Math.round((sod(ts)-pl.start)/DAY);
+const planSpent=(pl,ref)=>pl.until!=null&&sod(ref)>pl.until;
+/* the next day this plan asks for, or null if its window closes first */
+function nextPlanDay(pl,from,strict){
+  let base=sod(from);
+  if(strict) base=addDays(base,1);
+  if(base<pl.start) base=pl.start;       // set to begin later; nothing before then
+  for(let i=0;i<pl.len;i++){
+    const c=addDays(base,i);
+    if(pl.until!=null&&c>pl.until) return null;
+    const off=planOffset(pl,c);
+    if(pl.on.indexOf(((off%pl.len)+pl.len)%pl.len)>=0) return c;
+  }
+  return null;
+}
+/* THE plan branch, in one place. Returns null both for "no plan" and for "the
+   plan is spent", and callers treat the two identically — which is the whole
+   trick: a finished plan is indistinguishable from never having had one. */
+function planDue(r,from,strict){
+  const pl=planOf(r); if(!pl||planSpent(pl,from)) return null;
+  return nextPlanDay(pl,from,strict);
+}
+const hasPlan=r=>{ const pl=planOf(r); return !!(pl&&!planSpent(pl,Date.now())); };
+/* "manual · 3× a fortnight" for the care rows */
+function planShort(r){
+  const pl=planOf(r); if(!pl||planSpent(pl,Date.now())) return "";
+  const cs=L.lang==="cs";
+  const wk=pl.len===7?(cs?"týdně":"a week"):(cs?"za 14 dní":"a fortnight");
+  return `${cs?"ručně":"manual"} · ${pl.on.length}× ${wk}`;
+}
+
 /* ---------------- pinned days ----------------
    The interval is the horticultural truth and the action-day snap is the
    household's convenience, but sometimes you simply know: this one gets
@@ -24477,6 +24764,11 @@ function routineDue(r,p,ev,refTs){
       return nx?nx.at:null;
     }
   }
+  /* A plan outranks pinned days. It is the more specific instruction — real
+     dates rather than weekdays — and the picker that writes one clears the
+     other, so in practice only ever one of them is set. */
+  const pd=ev?planDue(r,+new Date(ev.at),true):planDue(r,ref,false);
+  if(pd!=null) return pd;
   const days=fixedDays(r);
   if(days) return ev?nextFixedDay(days,+new Date(ev.at),true):nextFixedDay(days,ref,false);
   const every=+r.every;
@@ -24488,15 +24780,27 @@ function routineDue(r,p,ev,refTs){
 /* the same step forward used by every forecast: one pinned day, or one interval */
 const routineStep=(r,p,from)=>{
   if(cycleOn(p)&&r.kind==="water"){ const nx=cycleNext(p,sod(from)+DAY); return nx?nx.at:sod(from)+DAY; }
+  /* same precedence as routineDue, and the same fall-through: the beat after
+     the last one a plan asks for is whatever the interval would have said */
+  const pd=planDue(r,from,true);
+  if(pd!=null) return pd;
   const days=fixedDays(r);
-  return days?nextFixedDay(days,from,true)
-             :snapToActionDay(sod(from)+(+r.every)*DAY,p?p.anchor:null,sod(from)); };
-/* "Mon & Thu" for a pinned routine, "" for one still on its interval */
-const pinnedLine=r=>{ const d=fixedDays(r); return d?dowList(d):""; };
+  if(days) return nextFixedDay(days,from,true);
+  /* A plan can run out on a routine that never had an interval to hand back
+     to — a species marked never-feed, given a fortnight of fertiliser by hand.
+     Stepping by a 0 interval means snapping from today to today, which the
+     snap resolves as "the next action day", every action day, for ever. The
+     honest answer is that there is no next one. */
+  if(!(+r.every>0)) return null;
+  return snapToActionDay(sod(from)+(+r.every)*DAY,p?p.anchor:null,sod(from)); };
+/* "Mon & Thu" for a pinned routine, "" for one still on its interval. A plan
+   has no weekdays to name, so it says what it is instead — a care row that
+   stayed silent about one would be a row claiming an interval it is not on. */
+const pinnedLine=r=>{ const d=fixedDays(r); return d?dowList(d):planShort(r); };
 /* the same thing for a row that has to stay on one line — the care rows clip,
    so three full weekday names would simply disappear off the right-hand edge */
 const pinnedShort=r=>{ const d=fixedDays(r);
-  return d?d.slice().sort(dowOrder).map(x=>dowName(x).slice(0,2)).join(", "):""; };
+  return d?d.slice().sort(dowOrder).map(x=>dowName(x).slice(0,2)).join(", "):planShort(r); };
 /* a new plant joins whichever action day is carrying the least, so the load
    spreads instead of everything piling onto the day that happens to be next */
 function leastLoadedActionDay(){
@@ -25708,7 +26012,11 @@ $("#plantForm").addEventListener("submit",async e=>{
   const set=(kind,label,every)=>{
     const days=(plPins[kind]||[]).slice();
     const ex=routineOf(sid,kind);
-    if(ex){ ex.every=every; ex.days=days; }
+    /* A hand-drawn plan outranks both of these, so editing the interval or the
+       pins here while one is live would change nothing you could see. Saving
+       this form is an explicit instruction about this plant's rhythm; the plan
+       gives way to it rather than silently swallowing it. */
+    if(ex){ ex.every=every; ex.days=days; ex.plan=null; }
     else S.routines.push({id:uid(),subjectId:sid,kind,name:label,every,days});
   };
   /* 0 is a real answer — "never" — not a typo to round up to weekly. The
@@ -25973,6 +26281,7 @@ function applyAdvanced(){
   $("#themeToggle").value=String(L.theme||"null");
   const ps=$("#paletteSelect"); if(ps) ps.value=PALETTES.includes(L.palette)?L.palette:"obsidian";
   const ac=$("#analysisCard"); if(ac) ac.style.display=on?"":"none";
+  paintExpertManual();
   $("#pdForm").dispatchEvent(new Event("change"));
 }
 $("#expertToggle").addEventListener("change",e=>{
@@ -39315,6 +39624,7 @@ $("#cdList").addEventListener("click",e=>{
   const pick=b.parentElement;
   const r=S.routines.find(x=>x.id===pick.dataset.cdr); if(!r) return;
   r.days=toggleDay(r.days,+b.dataset.day);
+  r.plan=null;                 // picking a weekday here replaces a hand-drawn plan
   touch();
   /* the touched row is repainted in place rather than through renderCareDays:
      rebuilding the whole list would swap out the very button under the finger,
@@ -39507,12 +39817,312 @@ $("#mcApply").addEventListener("click",async()=>{
        that has never been sprayed — from a button whose own confirmation says
        it is taking a schedule away. */
     const r=days.length?mcRoutine(p,mcJob):routineOf(p.id,mcJob);
-    if(r) r.days=days.slice();
-    if(ride) mcRoutine(p,"feed").days=mcFeedDays(days);
+    /* Manual care and Full manual write the same routine from two different
+       shapes of picker, so whichever was used last has to be the one in force.
+       Setting weekdays here therefore retires any plan on the same job. */
+    if(r){ r.days=days.slice(); r.plan=null; }
+    if(ride){ const fr=mcRoutine(p,"feed"); fr.days=mcFeedDays(days); fr.plan=null; }
   });
   touch();
   $("#manualCareDlg").close();
   renderCareDays(); renderAgenda(); renderSubjects(); renderGarden(); renderDue(); renderCycle();
+});
+
+
+/* ============================================================================
+   FULL MANUAL — the days you know better than the app does
+
+   Manual care already pins a group of plants to weekdays. This is the same
+   gesture against real dates, which buys three things a weekday list cannot
+   express: a fortnight that alternates, watering and fertiliser drawn on one
+   calendar in one pass, and a schedule that stops by itself.
+
+   It writes `r.plan` (see the fortnight-plan section) on the water and feed
+   routines of every plant ticked. Nothing else is touched — the interval each
+   plant already had is left exactly where it is, so when a plan runs out or is
+   handed back, what returns is the plant's own rhythm rather than a default.
+   ========================================================================== */
+
+/* one tap steps a day round the four states, so the whole calendar is drawable
+   with one finger and no mode to be in */
+const XM_NEXT={"":"w", w:"b", b:"f", f:""};
+let xmSel=new Set(), xmZoneSel="", xmQuery="";
+let xmMark={};                      // offset 0..13 → "w" | "b" | "f"
+let xmLen=0;                        // 0 = for ever, else how many days it runs
+let xmStart=sod(Date.now());        // day 0 of the window, always today
+
+const xmAll=()=>subjectsIn("plants");
+const xmVisible=()=>xmAll().filter(p=>
+  (!xmZoneSel||zoneOf(p)===xmZoneSel) && (!xmQuery||plantMatchesQuery(p,xmQuery)));
+const xmOffsets=hit=>Object.keys(xmMark).filter(k=>hit.indexOf(xmMark[k])>=0)
+  .map(Number).sort((a,b)=>a-b);
+const xmWater=()=>xmOffsets(["w","b"]);
+const xmFeed =()=>xmOffsets(["f","b"]);
+/* the last day the plan applies; null when it is meant to run on for ever */
+const xmUntil=()=>xmLen>0?ymd(addDays(xmStart,xmLen-1)):null;
+
+/* The widest gap the pattern leaves, measured round the loop rather than along
+   the list: four days at the end of the fortnight and one at the start is a
+   five-day gap, and reading only the interior would report it as three. This
+   is the number that says whether a hand-drawn pattern is actually survivable,
+   which is the one thing the app knows that the hand does not. */
+function xmWorstGap(offs,len){
+  if(!offs.length) return null;
+  if(offs.length===1) return len;
+  let worst=0;
+  for(let i=0;i<offs.length;i++){
+    const next=i+1<offs.length?offs[i+1]:offs[0]+len;
+    worst=Math.max(worst,next-offs[i]);
+  }
+  return worst;
+}
+
+function xmPaintPlants(){
+  const vis=xmVisible(), total=xmAll().length, cs=L.lang==="cs";
+  $("#xmPlantList").innerHTML=vis.length
+    ? vis.map(p=>pickerPlantRowHtml(p,xmSel.has(p.id))).join("")
+    : `<p class="hint" style="margin:10px 2px">${cs?"Nic neodpovídá.":"Nothing matches."}</p>`;
+  const allVis=vis.length>0&&vis.every(p=>xmSel.has(p.id));
+  $("#xmSelectAll").textContent=allVis?(cs?"Zrušit výběr":"Deselect all"):(cs?"Vybrat vše":"Select all");
+  const shown=vis.length<total?` · ${vis.length} ${cs?"zobrazeno":"shown"}`:"";
+  $("#xmCount").textContent=xmSel.size
+    ? `${plural(xmSel.size,"plant")} ${cs?"vybráno":"selected"}${shown}`
+    : `${vis.length} ${cs?"zobrazeno":"shown"}`;
+}
+
+function xmRenderCal(){
+  const today=sod(Date.now());
+  $("#xmCal").innerHTML=Array.from({length:PLAN_LEN},(_,i)=>{
+    const ts=addDays(xmStart,i), d=new Date(ts), m=xmMark[i]||"";
+    return `<button type="button" class="xm-day${m?" on":""}${ts===today?" is-today":""}"
+      data-xmday="${i}" aria-pressed="${m?"true":"false"}"
+      aria-label="${esc(dowName(d.getDay()))} ${d.getDate()}"
+      ><span class="xm-dow">${esc(dowName(d.getDay()).slice(0,2))}</span
+      ><span class="xm-num">${d.getDate()}</span
+      ><span class="xm-marks">${m==="w"||m==="b"?'<i class="w"></i>':""}${
+        m==="f"||m==="b"?'<i class="f"></i>':""}</span></button>`;
+  }).join("");
+}
+
+/* The "what modifier will it make" panel. Everything a confirmation would have
+   told you afterwards, said before you tap: how often, whether the gaps are
+   survivable, what it overrides, and when it stops. */
+function xmRenderEffect(){
+  const cs=L.lang==="cs", ids=[...xmSel], w=xmWater(), f=xmFeed(), out=[];
+  if(!ids.length){
+    out.push(`<p>${cs?"Zaškrtni rostliny — pak se tu ukáže, co se s nimi stane."
+      :"Tick some plants and this will say what happens to them."}</p>`);
+  }else if(!w.length&&!f.length){
+    out.push(`<p>${cs?"Zatím není označený žádný den."
+      :"No days marked yet. Tap the calendar above."}</p>`);
+    out.push(`<p>${cs?"Uložením beze změny se nic nestane."
+      :"Applying with nothing marked leaves these plants exactly as they are."}</p>`);
+  }else{
+    const per=n=>cs?`${n}× za 14 dní`:`${n}× a fortnight`;
+    const bits=[];
+    if(w.length) bits.push(`${cs?"zálivka":"water"} ${per(w.length)}`);
+    if(f.length) bits.push(`${cs?"hnojivo":"fertiliser"} ${per(f.length)}`);
+    out.push(`<p><b>${plural(ids.length,"plant")}</b>: ${bits.join(cs?", ":", ")}.</p>`);
+
+    const gap=xmWorstGap(w,PLAN_LEN);
+    if(gap!=null){
+      const long=gap>PLAN_LEN-1;
+      out.push(`<p${long?' class="xm-warn"':""}>${cs
+        ? `Nejdelší mezera mezi zálivkami: ${gap} ${pl3(gap,"den","dny","dní")}.`
+        : `Longest gap between waterings: ${gap} day${gap===1?"":"s"}.`}${
+        long?(cs?" To je celé okno — zkontroluj, že to tak chceš."
+                :" That is the whole window — worth checking that is what you meant."):""}</p>`);
+    }
+    /* Only say what is actually going to be overridden. A warning about the
+       cycle on a selection where nobody is on one is a warning you learn to
+       ignore, and then the true one goes unread too. */
+    const onCycle=ids.filter(id=>cycleOn(subject(id))).length;
+    const pinned=ids.filter(id=>["water","feed"].some(k=>{
+      const r=routineOf(id,k); return r&&fixedDays(r); })).length;
+    const over=[cs?"jejich vlastní intervaly":"their own intervals"];
+    if(pinned) over.push(cs?`pevné dny u ${pinned} z nich`
+      :`the pinned weekdays on ${pinned} of them`);
+    if(onCycle) over.push(cs?`cyklus u ${onCycle} z nich`:`the cycle on ${onCycle} of them`);
+    out.push(`<p>${cs?"Nahradí to ":"This replaces "}${
+      over.join(cs?", ":", ")}${cs?".":"."}</p>`);
+
+    out.push(`<p>${xmLen>0
+      ? (cs?`Platí do <b>${esc(prettyDate(addDays(xmStart,xmLen-1)))}</b>, pak se vrátí k tomu, co měly.`
+          :`Runs until <b>${esc(prettyDate(addDays(xmStart,xmLen-1)))}</b>, then they go back to what they had.`)
+      : (cs?"Opakuje se to dokola, dokud to nezměníš."
+          :"The fortnight repeats until you change it.")}</p>`);
+  }
+  $("#xmEffect").innerHTML=out.join("");
+}
+
+/* "3 Oct" — short, and never ambiguous between the two date orders. Czech takes
+   the genitive the rest of the app already uses for a date read aloud. */
+function prettyDate(ts){
+  const d=new Date(ts), m=d.getMonth();
+  return L.lang==="cs" ? `${d.getDate()}. ${MONTH_CS_GEN[m]}`
+                       : `${d.getDate()} ${MONTH_EN[m].slice(0,3)}`;
+}
+
+function xmPaintLen(){
+  $("#xmLenSeg").querySelectorAll("button[data-xmlen]").forEach(b=>
+    b.setAttribute("aria-pressed", +b.dataset.xmlen===xmLen?"true":"false"));
+  const cs=L.lang==="cs";
+  $("#xmLenHint").textContent = xmLen>0
+    ? (cs?`Po ${esc(prettyDate(addDays(xmStart,xmLen-1)))} si rostliny vezmou zpátky svůj vlastní rytmus.`
+        :`After ${prettyDate(addDays(xmStart,xmLen-1))} each plant picks its own rhythm back up, untouched.`)
+    : (cs?"Vzor se opakuje po čtrnácti dnech. Kdykoliv ho můžeš vrátit appce."
+        :"The pattern repeats every fourteen days. You can hand it back to the app at any time.");
+  xmRenderEffect();
+}
+
+/* If everything ticked is already carrying the same plan, draw it — you came
+   here to adjust it, not to remember it. Never when something is already drawn:
+   loading over your own work would be the one unforgivable thing this dialog
+   could do. */
+function xmLoadFromSelection(){
+  if(Object.keys(xmMark).length) return;
+  const ids=[...xmSel]; if(!ids.length) return;
+  const asks=(id,kind,ts)=>{
+    const r=routineOf(id,kind), pl=r&&planOf(r);
+    if(!pl||planSpent(pl,ts)||ts<pl.start) return false;
+    if(pl.until!=null&&ts>pl.until) return false;
+    const off=planOffset(pl,ts);
+    return pl.on.indexOf(((off%pl.len)+pl.len)%pl.len)>=0;
+  };
+  const mark={}; let any=false;
+  for(let i=0;i<PLAN_LEN;i++){
+    const ts=addDays(xmStart,i);
+    const w=ids.map(id=>asks(id,"water",ts)), f=ids.map(id=>asks(id,"feed",ts));
+    if(!w.every(v=>v===w[0])||!f.every(v=>v===f[0])) return;   // they disagree; draw fresh
+    const m=w[0]&&f[0]?"b":w[0]?"w":f[0]?"f":"";
+    if(m){ mark[i]=m; any=true; }
+  }
+  if(!any) return;
+  xmMark=mark; xmRenderCal();
+}
+
+function openFullManual(zone){
+  if(!xmAll().length){ say("Add a plant first — then you can draw a schedule for it."); return; }
+  xmSel=new Set(); xmQuery=""; xmZoneSel=zone||"";
+  xmStart=sod(Date.now()); xmMark={}; xmLen=0;
+  const zones=zonesOf(xmAll()), wrap=$("#xmZone");
+  wrap.innerHTML=`<option value="">${esc(L.lang==="cs"?"Všechna místa":"Everywhere")}</option>`
+    +zones.map(z=>`<option value="${esc(zoneKey(z.zone))}"${z.zone===xmZoneSel?" selected":""}>${
+      esc(z.name)} (${z.plants.length})</option>`).join("");
+  wrap.hidden=zones.length<2;
+  $("#xmSearch").value="";
+  xmRenderCal(); xmPaintPlants(); xmPaintLen();
+  applyLang($("#fullManualDlg"));
+  $("#fullManualDlg").showModal();
+}
+$("#gardenFullManual").addEventListener("click",()=>openFullManual());
+$("#plantsFullManual").addEventListener("click",()=>openFullManual());
+$("#xmCancel").addEventListener("click",()=>$("#fullManualDlg").close());
+$("#xmSearch").addEventListener("input",e=>{
+  xmQuery=e.target.value.trim().toLowerCase(); xmPaintPlants(); });
+$("#xmZone").addEventListener("change",e=>{
+  xmZoneSel=zoneFromKey(e.target.value); xmPaintPlants(); });
+$("#xmPlantList").addEventListener("change",e=>{
+  const b=e.target.closest("input[data-lp]"); if(!b) return;
+  if(b.checked) xmSel.add(b.dataset.lp); else xmSel.delete(b.dataset.lp);
+  xmPaintPlants(); xmLoadFromSelection(); xmRenderEffect();
+});
+$("#xmSelectAll").addEventListener("click",()=>{
+  const vis=xmVisible(), allVis=vis.length>0&&vis.every(p=>xmSel.has(p.id));
+  vis.forEach(p=>{ if(allVis) xmSel.delete(p.id); else xmSel.add(p.id); });
+  xmPaintPlants(); xmLoadFromSelection(); xmRenderEffect();
+});
+$("#xmCal").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-xmday]"); if(!b) return;
+  e.preventDefault();
+  const i=+b.dataset.xmday, next=XM_NEXT[xmMark[i]||""];
+  if(next) xmMark[i]=next; else delete xmMark[i];
+  xmRenderCal(); xmRenderEffect();
+});
+$("#xmLenSeg").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-xmlen]"); if(!b) return;
+  xmLen=+b.dataset.xmlen||0; xmPaintLen();
+});
+
+/* every screen that can be showing a due date has to hear about this at once —
+   a plan that only reaches the Garden when something else happens to redraw it
+   is a plan the Diary disagrees with for the rest of the afternoon */
+function xmRepaintAll(){
+  renderSubjects(); renderGarden(); renderAgenda(); renderDue();
+  try{ renderCareDays(); }catch(e){}
+  try{ renderCycle(); }catch(e){}
+}
+
+$("#xmApply").addEventListener("click",async()=>{
+  const ids=[...xmSel];
+  if(!ids.length){ say("Tick at least one plant first."); return; }
+  const w=xmWater(), f=xmFeed();
+  if(!w.length&&!f.length){ say("Mark at least one day on the calendar first."); return; }
+  const cs=L.lang==="cs";
+  const until=xmUntil();
+  const msg=(cs?`Nastavit ${ids.length} rostlinám vlastní čtrnáctidenní plán?`
+               :`Give ${plural(ids.length,"plant")} a hand-drawn fortnight?`)
+    +"\n\n"+(cs?`Zálivka ${w.length}×, hnojivo ${f.length}× za 14 dní.`
+               :`Water ${w.length}× and fertiliser ${f.length}× per fortnight.`)
+    +"\n\n"+(until
+      ? (cs?`Platí do ${prettyDate(fromYmd(until))}, pak se vrátí ke svým intervalům.`
+          :`It runs until ${prettyDate(fromYmd(until))}, then they go back to their own intervals.`)
+      : (cs?"Přepíše to jejich intervaly a sundá je z cyklu."
+          :"This overrides their intervals and takes them off the cycle."));
+  if(!await ask(msg,cs?"Nastavit":"Set")) return;
+  ids.forEach(id=>{
+    const p=subject(id); if(!p) return;
+    /* The cycle short-circuits everything below it inside routineDue, so a
+       plan left under a live cycle would be a schedule you drew and then could
+       not see anywhere. Manual care switches it off for the same reason. */
+    if(cycleOn(p)) p.cycle=Object.assign({},cycleOf(p),{on:false});
+    const set=(kind,offs)=>{
+      /* A job with no days marked is not mentioned by this plan at all, and
+         must therefore be left alone. Reading "no fertiliser days" as "stop
+         feeding these" would turn a watering plan into a silent starvation. */
+      if(!offs.length) return;
+      const r=mcRoutine(p,kind);
+      r.days=[];                       // real dates replace pinned weekdays
+      r.plan={start:ymd(xmStart), len:PLAN_LEN, on:offs.slice(), until};
+    };
+    set("water",w); set("feed",f);
+  });
+  touch();
+  $("#fullManualDlg").close();
+  xmRepaintAll();
+});
+
+$("#xmClear").addEventListener("click",async()=>{
+  const ids=[...xmSel];
+  if(!ids.length){ say("Tick the plants you want handed back first."); return; }
+  const cs=L.lang==="cs";
+  const has=ids.filter(id=>["water","feed"].some(k=>{
+    const r=routineOf(id,k); return r&&planOf(r); })).length;
+  if(!has){ say(cs?"Žádná z nich nemá ruční plán."
+    :"None of those has a hand-drawn plan on it."); return; }
+  if(!await ask((cs?`Vrátit ${has} rostlin appce?`:`Hand ${plural(has,"plant")} back to the app?`)
+    +"\n\n"+(cs?"Vezmou si zpátky svoje vlastní intervaly. V deníku se nic nemaže."
+              :"Each one picks its own watering and feeding intervals back up. Nothing in the log changes."),
+    cs?"Vrátit":"Hand back")) return;
+  ids.forEach(id=>["water","feed"].forEach(k=>{
+    const r=routineOf(id,k); if(r) r.plan=null; }));
+  touch();
+  $("#fullManualDlg").close();
+  xmRepaintAll();
+});
+
+/* The button is the whole of the feature's presence on the main screens, so it
+   appears and disappears with the setting rather than being disabled: a Full
+   manual button that does nothing is worse than no button at all. */
+function paintExpertManual(){
+  const on=expertManual();
+  ["#gardenFullManual","#plantsFullManual"].forEach(sel=>{
+    const b=$(sel); if(b) b.hidden=!on;
+  });
+  const t=$("#expertManualToggle"); if(t) t.checked=on;
+}
+$("#expertManualToggle").addEventListener("change",e=>{
+  L.expertManual=e.target.checked; saveLocal(); paintExpertManual();
 });
 
 
