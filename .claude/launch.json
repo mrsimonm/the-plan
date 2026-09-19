@@ -1,0 +1,20 @@
+{
+  "_comment": [
+    "Serves the repo root so index.html runs as a real page rather than a file:// URL,",
+    "which it needs: the service worker, the manifest and the photo blobs all require",
+    "an origin. Static only — there is no build step, the app is the one file.",
+    "",
+    "Entries naming a per-session scratchpad path are deliberately absent. Those paths",
+    "die with the session that made them, and a launch.json full of configurations that",
+    "no longer start is worse than a short one that does."
+  ],
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "theapp-projects-8955",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8955", "--bind", "127.0.0.1", "--directory", "/Users/simonmusel/Projects/theapp"],
+      "port": 8955
+    }
+  ]
+}

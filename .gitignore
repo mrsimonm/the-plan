@@ -12,3 +12,8 @@ potting-bench-netlify.zip
 # local review material, not part of the app.
 /redesign-screens/
 /.playwright-cli/
+
+# Per-machine Claude Code permission grants. The launch config beside it IS
+# tracked — everyone wants the same dev server — but these are one person's
+# answers to one machine's prompts and mean nothing on anybody else's.
+.claude/settings.local.json
