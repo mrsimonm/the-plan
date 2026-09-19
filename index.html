@@ -4522,6 +4522,28 @@ html[data-shell="rail"] body{
                 even where this button is hidden.</p>
             </div>
           </div>
+
+          <!-- Where the app stops guessing. The toggle governs what it writes
+               from here on; the button deals with what it has already written.
+               They are two different questions and both have to be askable —
+               turning the suggestions off does nothing about the hundred
+               intervals already sitting on the collection. -->
+          <div class="sec-head"><h2 style="font-size:18px">Recommendations</h2></div>
+          <div class="card pad" style="margin-bottom:14px">
+            <div class="stack">
+              <label class="lu" style="border:0; padding:0">
+                <span class="sw"><input id="speciesFillToggle" type="checkbox"><i></i></span>
+                <span class="lu-name">Suggest care from the species<small>Fills in how often a new plant wants watering and feeding, its light and humidity, and which day of the week it lands on</small></span>
+              </label>
+              <p class="hint" style="margin:0">Turn this off and a new plant arrives with nothing set:
+                no interval, no day, waiting for you. The species care sheet stays on the plant's page
+                and in the Academy either way — this withholds the guess, not the information.</p>
+              <div class="btn-row" style="margin-top:4px">
+                <button class="btn danger" type="button" id="clearCareBtn">Clear all watering recommendations</button>
+              </div>
+              <p class="hint" id="clearCareHint" style="margin:0"></p>
+            </div>
+          </div>
           <!-- Money. The rate lives here rather than being fetched, because a
                collection is valued a handful of times a year and a wrong number
                you can see and correct beats a right one you cannot. -->
@@ -10169,6 +10191,7 @@ function seed(){return{
      COLLECTION — the same hundred plants are a hundred plants on both phones. */
   bigMode:false,                                // group by zone, one line per plant
   autoWater:false,                              // watering is plumbed, not a job
+  speciesFill:true,                             // prefill care from the species table
   cycleDefault:{water:1, dose:100, when:"feedday"},   // every beat, full dose on fertiliser day
   cuttings:[], photos:[], products:[], formulas:[], schedules:[], subjects:[], routines:[], events:[], tasks:[],
   issues:[],
@@ -10578,6 +10601,16 @@ const expertManual=()=>L.expertManual===true;
    up the other phone. */
 const bigMode=()=>S.bigMode===true;
 const autoWater=()=>S.autoWater===true;
+/* Shared, not per-device, and for the same reason as those two: this is not a
+   view preference, it is a statement about who decides this collection's care.
+   Somebody who has turned the species table off has turned it off — adding a
+   plant on the other phone must not quietly hand it a 3-day rhythm again.
+
+   It governs what the app WRITES, never what it SHOWS. The species care sheet,
+   the Academy and the light and humidity notes all stay exactly where they
+   are: refusing to prefill a number is not a reason to withhold the reference
+   you would check before choosing one yourself. */
+const speciesFill=()=>S.speciesFill!==false;
 /* The zone is the `spot` you have always been able to type on a plant,
    promoted to something the app can group by. Nothing new to fill in: a
    collection that already says "West shelf" is already zoned. */
@@ -10638,7 +10671,7 @@ const $=s=>document.querySelector(s);
 /* Build stamp. `n` is incremented by bump.py at publish time so two phones can
    be compared at a glance — an installed PWA serving a stale service-worker
    cache is otherwise indistinguishable from an up-to-date one. */
-const BUILD={ver:"1.0",n:114,at:"2026-09-19"};
+const BUILD={ver:"1.0",n:115,at:"2026-09-19"};
 const uid=()=>Math.random().toString(36).slice(2,9);
 /* Single quote and backtick matter the moment anything is written into a
    single-quoted attribute or a nested template — cheap now, unfindable later. */
@@ -11991,22 +12024,36 @@ async function promoteCutting(c,slot){
      currency too, so a value typed in later is read in the right money. */
   const parent=c.subjectId?subject(c.subjectId):null;
   S.subjects.push({id:sid,module:"plants",name:cutName(c)+" cutting",species:sp?sp.n:(c.species||""),
-    light:sp?sp.l:null,hum:sp?sp.h:null,spot:"",detail:"",since:ymd(Date.now()),schedId:null,week:1,
-    anchor:leastLoadedActionDay(),
+    light:sp&&speciesFill()?sp.l:null,hum:sp&&speciesFill()?sp.h:null,
+    spot:"",detail:"",since:ymd(Date.now()),schedId:null,week:1,
+    anchor:speciesFill()?leastLoadedActionDay():null,
     acq:"grown", price:0, from:parent?parent.name:"", bought:ymd(Date.now()),
     cur:parent?plantCur(parent):"CZK", parentId:parent?parent.id:null});
+  /* A rooted cutting inherited its species' rhythm the moment it was potted.
+     With the suggestions off it gets the routines but no intervals, so it is
+     on the Plants tab waiting to be told rather than silently on a schedule
+     nobody chose. The routines themselves are still made: a plant with no
+     water routine at all cannot be given one from Manual care or Full manual
+     without going through its own dialog first. */
   if(sp){
-    S.routines.push({id:uid(),subjectId:sid,kind:"water",name:"Water",every:sp.w});
-    S.routines.push({id:uid(),subjectId:sid,kind:"feed",name:"Feed",every:sp.f});
+    const iv=speciesFill();
+    S.routines.push({id:uid(),subjectId:sid,kind:"water",name:"Water",every:iv?sp.w:0,days:[]});
+    S.routines.push({id:uid(),subjectId:sid,kind:"feed",name:"Feed",every:iv?sp.f:0,days:[]});
   }
   touch(); renderSubjects(); renderAgenda();
   /* before the confirmation, not after: this is the last moment anybody can
      still say which of the eight it was, and once the toast has gone the
      answer has gone with it */
   await carryCutPhoto(c,slot,sid);
+  /* the toast has to describe what actually happened: with the suggestions off
+     it did NOT get its species' rhythm, and saying so is the difference
+     between a plant you know to go and set up and one you forget about */
+  const gotIv=sp&&speciesFill();
   say(L.lang==="cs"
-    ? `Přidáno jako „${cutName(c)} cutting“. Je na záložce Rostliny ${sp?"se zálivkou a hnojením podle druhu":"zatím bez rytmu"}.`
-    : `Added as "${cutName(c)} cutting". It's on the Plants tab with ${sp?"its species' watering and feeding":"no routines yet"}.`,"Done");
+    ? `Přidáno jako „${cutName(c)} cutting“. Je na záložce Rostliny ${
+        gotIv?"se zálivkou a hnojením podle druhu":"zatím bez rytmu"}.`
+    : `Added as "${cutName(c)} cutting". It's on the Plants tab with ${
+        gotIv?"its species' watering and feeding":"no rhythm yet"}.`,"Done");
 }
 
 function renderCuttings(){
@@ -17151,6 +17198,10 @@ $("#libViewSeg").addEventListener("click",e=>{
 });
 function renderLibrary(){
   paintLibraryView();
+  /* the Bench settings live on this screen, and the clear button's hint counts
+     live plants — so it has to be recounted whenever the Library is drawn,
+     not only when the settings happen to be opened */
+  try{ paintRecommendations(); }catch(e){}
   const grid=libraryView()==="grid", host=$("#libMenu");
   /* the same data, the same data-go, two shapes. Swapping the container's own
      class rather than swapping containers is what keeps the click handler
@@ -26007,8 +26058,13 @@ function openPlant(p){
   $("#plNoDrain").checked=!!(p&&p.noDrain);
   const wr=p?routineOf(p.id,"water"):null, fr=p?routineOf(p.id,"feed"):null;
   const spr=p?routineOf(p.id,"spray"):null;
-  $("#plWater").value=wr?wr.every:3;
-  $("#plFeed").value=fr?fr.every:7;
+  /* An existing plant shows what it actually has, always. A NEW one is shown
+     the app's opening bid of 3 and 7 — and with the suggestions off there is
+     no bid, so the boxes start empty. Leaving 3 and 7 sitting in them would
+     have made the setting a lie: you would have turned the guessing off and
+     still been handed a three-day rhythm by a prefilled box. */
+  $("#plWater").value=wr?wr.every:(speciesFill()?3:"");
+  $("#plFeed").value=fr?fr.every:(speciesFill()?7:"");
   $("#plSpray").value=spr?spr.every:"";
   plPins={water:(wr&&wr.days||[]).slice(), feed:(fr&&fr.days||[]).slice(),
           spray:(spr&&spr.days||[]).slice()};
@@ -26042,6 +26098,12 @@ $("#plSpecies").addEventListener("change",async e=>{
   showTip(v);
   if(!sp) return;
   if(!$("#plName").value.trim()) $("#plName").value=sp.n;
+  /* The name is identity, not advice, so it is filled either way. Everything
+     below it is the species table's opinion about how to keep the plant, and
+     with the suggestions off the boxes are left empty for you to answer. The
+     care sheet further down the plant's own page still says what the species
+     wants — this withholds the guess, not the information. */
+  if(!speciesFill()){ plCareSummary(); return; }
   $("#plLight").value=String(sp.l);
   $("#plHum").value=String(sp.h);
   $("#plWater").value=sp.w;
@@ -26063,7 +26125,10 @@ $("#plantForm").addEventListener("submit",async e=>{
   Object.assign(d,buyFields());
   /* a new plant joins the emptiest action day, so 100 plants spread evenly
      instead of every one landing on whichever day comes round next */
-  if(!editingPlant) d.anchor=leastLoadedActionDay();
+  /* Which day of the week the plant lands on is the app's choice too — it
+     spreads new arrivals across the emptiest action day. With the suggestions
+     off it makes no choice, and the plant has no day until it is given one. */
+  if(!editingPlant) d.anchor=speciesFill()?leastLoadedActionDay():null;
   const sid=editingPlant?editingPlant.id:uid();
   /* the cycle is a property of the plant, so it saves with the rest of the form */
   d.cycle=Object.assign({},plCycle||CYCLE_DEF);
@@ -26083,8 +26148,13 @@ $("#plantForm").addEventListener("submit",async e=>{
      giving every one a weekly feed anyway. Blank still falls to the default. */
   const ivOf=(sel,dflt)=>{ const v=$(sel).value.trim();
     if(v==="") return dflt; const n=+v; return Number.isFinite(n)&&n>=0?n:dflt; };
-  set("water","Water",ivOf("#plWater",3));
-  set("feed","Feed",ivOf("#plFeed",7));
+  /* With the suggestions off, a blank box is not an invitation to guess. The
+     app's own 3-and-7 fallback is as much a recommendation as the species
+     table is, so it falls to 0 — "never" — and the plant waits quietly until
+     somebody says what it wants. */
+  const noGuess=!speciesFill();
+  set("water","Water",ivOf("#plWater",noGuess?0:3));
+  set("feed","Feed",ivOf("#plFeed",noGuess?0:7));
   /* pinned days are reason enough to have a spray routine: picking Saturdays
      for it is a clearer statement of intent than any number in the box */
   const sv=$("#plSpray").value.trim();
@@ -26341,6 +26411,7 @@ function applyAdvanced(){
   const ps=$("#paletteSelect"); if(ps) ps.value=PALETTES.includes(L.palette)?L.palette:"obsidian";
   const ac=$("#analysisCard"); if(ac) ac.style.display=on?"":"none";
   paintExpertManual();
+  paintRecommendations();
   $("#pdForm").dispatchEvent(new Event("change"));
 }
 $("#expertToggle").addEventListener("change",e=>{
@@ -40182,6 +40253,86 @@ function paintExpertManual(){
 }
 $("#expertManualToggle").addEventListener("change",e=>{
   L.expertManual=e.target.checked; saveLocal(); paintExpertManual();
+});
+
+
+/* ---------------- clearing what the app decided ----------------
+   The toggle above stops it guessing from here on. This deals with the guesses
+   already made: a collection set up over a year carries a hundred intervals
+   nobody chose, spread across weekdays nobody picked, and turning the
+   suggestions off does not touch a single one of them.
+
+   What it clears and what it spares is the whole design. It zeroes the
+   scheduling and leaves the record: every logged watering points at its
+   routine by id, so deleting routines rather than emptying them would orphan
+   the history that proves the plant was ever watered. Spray is left alone too
+   — the button says watering, and a button that quietly takes more than it
+   names is one nobody can trust the second time. */
+function careStateCount(){
+  const plants=subjectsIn("plants");
+  let sched=0, dayed=0;
+  plants.forEach(p=>{
+    const scheduled=["water","feed"].some(k=>{
+      const r=routineOf(p.id,k);
+      return r&&(+r.every>0||fixedDays(r)||planOf(r));
+    });
+    if(scheduled||cycleOn(p)) sched++;
+    if(p.anchor!=null) dayed++;
+  });
+  return {total:plants.length, sched, dayed};
+}
+
+function paintRecommendations(){
+  const t=$("#speciesFillToggle"); if(t) t.checked=speciesFill();
+  const h=$("#clearCareHint"); if(!h) return;
+  const c=careStateCount(), cs=L.lang==="cs";
+  h.textContent = !c.total
+    ? (cs?"Zatím žádné rostliny.":"No plants yet.")
+    : (cs?`Teď: ${c.sched} z ${c.total} má rozvrh, ${c.dayed} má přiřazený den v týdnu.`
+        :`Right now ${c.sched} of ${plural(c.total,"plant")} ${
+            c.sched===1?"has":"have"} a schedule, and ${c.dayed} ${
+            c.dayed===1?"is":"are"} pinned to a day of the week.`);
+}
+$("#speciesFillToggle").addEventListener("change",e=>{
+  /* touch(), not saveLocal(): who decides this collection's care is a fact
+     about the collection and follows it to the other phone */
+  S.speciesFill=e.target.checked; touch(); paintRecommendations();
+});
+
+$("#clearCareBtn").addEventListener("click",async()=>{
+  const c=careStateCount(), cs=L.lang==="cs";
+  if(!c.total){ say(cs?"Zatím nejsou žádné rostliny."
+    :"There are no plants to clear."); return; }
+  /* nothing to do is said out loud rather than confirmed and then not done —
+     a destructive dialog that turns out to have been a no-op teaches you to
+     stop reading them */
+  if(!c.sched&&!c.dayed){ say(cs?"Není co mazat — žádná rostlina nemá rozvrh zálivky ani hnojení."
+    :"Nothing to clear — no plant has a watering or feeding schedule."); return; }
+  const msg=(cs
+    ? `Smazat zálivku a hnojení u všech ${c.total} rostlin?`
+    : `Clear the watering and feeding schedule on all ${plural(c.total,"plant")}?`)
+    +"\n\n"+(cs
+    ? "Zmizí každý interval, každý pevný den, každý ručně nakreslený plán, cyklus i den v týdnu, na kterém rostlina sedí. Nic nebude mít termín, dokud to nenastavíš znovu."
+    : "This removes every interval, every pinned weekday, every hand-drawn plan, the cycle, and the day of the week each plant sits on. Nothing will come due until you set it again.")
+    +"\n\n"+(cs
+    ? "Zápisy v deníku, postřik a samotné rostliny zůstávají."
+    : "Your logged history, your spray schedules and the plants themselves are untouched.");
+  if(!await ask(msg)) return;
+  subjectsIn("plants").forEach(p=>{
+    ["water","feed"].forEach(k=>{
+      const r=routineOf(p.id,k); if(!r) return;
+      r.every=0; r.days=[]; r.plan=null;
+    });
+    if(p.cycle&&p.cycle.on) p.cycle=Object.assign({},cycleOf(p),{on:false});
+    p.anchor=null;
+  });
+  touch();
+  renderAll();
+  paintRecommendations();
+  say(cs
+    ? `Hotovo. ${c.total} rostlin je bez rozvrhu — nastav je ručně, jak chceš.`
+    : `Done. ${plural(c.total,"plant")} now have no schedule at all — set them however you want.`,
+    cs?"Hotovo":"Done");
 });
 
 
