@@ -3371,6 +3371,31 @@ dialog:has(> form > .dlg-foot) > form > .dlg-foot{flex:0 0 auto}
 /* in grid mode a place keeps its heading and gets tiles underneath, so the
    walk from shelf to shelf survives the change of shape */
 .zone > .grid{margin-bottom:2px}
+
+/* ---------- the Library as tiles ----------
+   Borrows the garden tile's glass and its lift on hover, but leads with the
+   icon rather than a photograph: these are six destinations, not six plants,
+   and there is nothing to recognise by sight. The description stays — it is
+   the only thing telling Shelf from Academy for somebody who has not been in
+   either yet, and dropping it to save a line would make the grid prettier and
+   less useful, which is the wrong trade. */
+.ltile{display:flex; flex-direction:column; align-items:flex-start; gap:11px;
+  padding:15px; cursor:pointer; text-align:left; color:inherit; font:inherit; border:0;
+  background:var(--glass-sheen); backdrop-filter:var(--glass-blur);
+  -webkit-backdrop-filter:var(--glass-blur);
+  border-radius:var(--r); box-shadow:var(--glass-shadow);
+  transition:transform .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s cubic-bezier(.2,.8,.2,1);
+  -webkit-tap-highlight-color:transparent}
+.ltile:hover{transform:translateY(-2px)}
+.ltile:active{transform:translateY(0) scale(.99)}
+.ltile:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.ltile-ic{width:40px; height:40px; flex:none; display:grid; place-items:center;
+  font-size:21px; line-height:1; border-radius:50%; background:var(--accent-soft)}
+.ltile-t{min-width:0}
+.ltile-t b{display:block; font-size:14.5px; font-weight:700; letter-spacing:-.01em;
+  line-height:1.3; color:var(--ink)}
+.ltile-t small{display:block; margin-top:4px; font-size:11.5px; color:var(--ink-3);
+  line-height:1.45}
 </style>
 <style id="redesign-2">
 /* ---- Redesign 2: "Frosted Glass" ----
@@ -4417,8 +4442,15 @@ html[data-shell="rail"] body{
 
   <!-- ============ LIBRARY ============ -->
   <section class="view" id="view-library" hidden>
-    <div class="sec-head"><h2>Library</h2></div>
+    <div class="sec-head"><h2>Library</h2>
+      <div class="seg seg-inline" id="libViewSeg" role="group" aria-label="How to show the library">
+        <button type="button" data-lview="list" aria-pressed="true">List</button>
+        <button type="button" data-lview="grid" aria-pressed="false">Grid</button>
+      </div></div>
     <div class="stack">
+      <!-- the container carries the shape: `card menu` for rows, `grid` for
+           tiles. One element either way, so the click handler below it never
+           has to know which of the two is on screen. -->
       <div class="card menu" id="libMenu"></div>
       <p class="hint" style="margin:2px 2px 0" id="libFoot"></p>
       <!-- Settings is the whole app's now, so the two that are only about the
@@ -10526,7 +10558,7 @@ const STR_STOPS=[25,50,75,100];
 let S=seed();                     // shared, synced
 let L={me:"u1",vol:5,scope:"day",app:"bench",benchView:"garden",mode:"formula",formulaId:null,productId:null,
        strength:100,done:{},adv:false,expert:false,chart:"col",ppmScale:700,lang:null,dayStartHour:4,theme:null,palette:"amethyst",design:"off",
-       plantsView:"list",expertManual:false};  // per-device
+       plantsView:"list",libraryView:"list",expertManual:false};  // per-device
 const adv=()=>L.adv===true;
 const expert=()=>L.expert===true;
 /* Both of these are about how much of the machinery you personally want put in
@@ -10534,6 +10566,10 @@ const expert=()=>L.expert===true;
    facts about the collection: the phone in the greenhouse can be in grid and
    showing the manual scheduler while the one on the desk is not. */
 const plantsView=()=>L.plantsView==="grid"?"grid":"list";
+/* kept apart from plantsView deliberately. The two screens hold different
+   things — faces you recognise, against six destinations you read — so wanting
+   tiles for one says nothing about wanting them for the other. */
+const libraryView=()=>L.libraryView==="grid"?"grid":"list";
 const expertManual=()=>L.expertManual===true;
 /* These two are in S, not L. adv() and expert() are preferences about how much
    detail you personally want on a screen, so they belong to the device. These
@@ -10602,7 +10638,7 @@ const $=s=>document.querySelector(s);
 /* Build stamp. `n` is incremented by bump.py at publish time so two phones can
    be compared at a glance — an installed PWA serving a stale service-worker
    cache is otherwise indistinguishable from an up-to-date one. */
-const BUILD={ver:"1.0",n:113,at:"2026-09-19"};
+const BUILD={ver:"1.0",n:114,at:"2026-09-19"};
 const uid=()=>Math.random().toString(36).slice(2,9);
 /* Single quote and backtick matter the moment anything is written into a
    single-quoted attribute or a nested template — cheap now, unfindable later. */
@@ -17100,11 +17136,34 @@ const LIB_ITEMS=[
   {v:"__plantbook", ic:"📗", t:"My plant collection", d:"The book of your plants — what they cost, where they came from", app:true},
   {v:"log",    ic:"📋", t:"History",     d:"Everything either of you has done"}
 ];
+/* Painted from L, not from the tapped button: the Library is the app's home
+   screen for half the modules, so it is entered cold constantly. */
+function paintLibraryView(){
+  const seg=$("#libViewSeg"); if(!seg) return;
+  const v=libraryView();
+  seg.querySelectorAll("button[data-lview]").forEach(b=>
+    b.setAttribute("aria-pressed", b.dataset.lview===v?"true":"false"));
+}
+$("#libViewSeg").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-lview]"); if(!b) return;
+  L.libraryView=b.dataset.lview==="grid"?"grid":"list";
+  saveLocal(); renderLibrary();
+});
 function renderLibrary(){
-  $("#libMenu").innerHTML=LIB_ITEMS.map(m=>`<button type="button" class="mrow" data-go="${m.v}">
-    <span class="mrow-ic">${m.ic}</span>
-    <span class="mrow-t"><b>${esc(m.t)}</b><small>${esc(m.d)}</small></span>
-    <span class="chev" aria-hidden="true">›</span></button>`).join("");
+  paintLibraryView();
+  const grid=libraryView()==="grid", host=$("#libMenu");
+  /* the same data, the same data-go, two shapes. Swapping the container's own
+     class rather than swapping containers is what keeps the click handler
+     below indifferent to which one is showing. */
+  host.className=grid?"grid":"card menu";
+  host.innerHTML=LIB_ITEMS.map(m=>grid
+    ? `<button type="button" class="ltile" data-go="${m.v}">
+        <span class="ltile-ic">${m.ic}</span>
+        <span class="ltile-t"><b>${esc(m.t)}</b><small>${esc(m.d)}</small></span></button>`
+    : `<button type="button" class="mrow" data-go="${m.v}">
+        <span class="mrow-ic">${m.ic}</span>
+        <span class="mrow-t"><b>${esc(m.t)}</b><small>${esc(m.d)}</small></span>
+        <span class="chev" aria-hidden="true">›</span></button>`).join("");
   const n=subjectsIn("plants").length;
   const ho=(S.issues||[]).filter(i=>i.status!=="resolved").length;
   $("#libFoot").textContent=`${plural(n,"plant")} · ${plural(S.formulas.length,"formula")} · ${
