@@ -1,7 +1,7 @@
 {
-  "name": "Potting Bench",
-  "short_name": "Potting Bench",
-  "description": "Plant care, feeding and propagation, kept honest.",
+  "name": "Beta",
+  "short_name": "Beta",
+  "description": "Potting Bench, Daily Planner and Hours.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

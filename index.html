@@ -1,11 +1,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<title>Potting Bench V3</title>
+<title>Beta</title>
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#1C1522">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Beta">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <link rel="icon" type="image/png" href="./icon-192.png">
@@ -24294,7 +24295,7 @@ document.addEventListener("click",e=>{
 });
 
 function renderAppMenu(){
-  $("#appMenu").innerHTML=APPS.map(a=>
+  $("#appMenu").innerHTML=APPS.filter(a=>appOn(a.id)).map(a=>
     `<button type="button" role="menuitem" data-app="${a.id}"
        aria-current="${a.id===(L.app||"bench")}">${esc(a.label)}</button>`).join("");
 }
@@ -24302,8 +24303,11 @@ function appMenuOpen(on){
   $("#appMenu").hidden=!on;
   $("#appBtn").setAttribute("aria-expanded",String(on));
 }
-function setApp(id){
-  const a=APPS.find(x=>x.id===id)||APPS[0];
+/* `force` is for a deliberate hand-off into a module that is switched off in
+   Settings → Modules (a page shared to the app lands in Notes regardless);
+   everything else — a remembered L.app included — falls back to the bench. */
+function setApp(id,force){
+  const a=((force||appOn(id))&&APPS.find(x=>x.id===id))||APPS[0];
   L.app=a.id; saveLocal();
   $("#appName").innerHTML = a.id==="bench" ? "Potting<span>·</span>Bench" : esc(a.label);
   document.querySelector(".navwrap").hidden = a.id!=="bench";
@@ -33534,6 +33538,7 @@ function nOpenTplMenu(anchorEl){
 
 /* ---------------- the Notes card on a plant page ---------------- */
 function nPlantCardHtml(p){
+  if(!appOn("notes")) return "";
   const notes=(S.notes||[]).filter(n=>n.plantId===p.id&&!n.trashedAt)
     .sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||(b.updatedAt||0)-(a.updatedAt||0));
   return `<div class="card">
@@ -34606,7 +34611,7 @@ function nOpenClip(prefill){
     if(!text&&!url) return;
     history.replaceState(null,"",location.pathname);
     const body=(url&&!text?url:text+(url&&text.indexOf(url)<0?"\n\n"+url:""));
-    setTimeout(()=>{ setApp("notes"); nOpenClip((title?title+"\n\n":"")+body); },300);
+    setTimeout(()=>{ setApp("notes",true); nOpenClip((title?title+"\n\n":"")+body); },300);
   }catch(e){}
 })();
 
@@ -35382,8 +35387,9 @@ function dzRailOn(){
   const r=document.createElement("nav");
   r.id="dzRail"; r.className="dz-rail"; r.setAttribute("aria-label",t("Sections"));
   r.innerHTML=
-    '<div class="dz-brand">'+dzSvg("garden")+'<b data-no-i18n>Potting·Bench</b></div>'
-    +DZ_ITEMS.map(grp=>'<div class="dz-grp">'+esc(t(grp.g))+'</div>'
+    '<div class="dz-brand">'+dzSvg("garden")+'<b data-no-i18n>Beta</b></div>'
+    +DZ_ITEMS.map(grp=>({g:grp.g, items:grp.items.filter(it=>appOn(it.app))}))
+      .filter(grp=>grp.items.length).map(grp=>'<div class="dz-grp">'+esc(t(grp.g))+'</div>'
       +grp.items.map(it=>'<button type="button" class="dz-i" data-dz="'+esc(it.k)+'">'
         +dzSvg(it.k)+'<span>'+esc(t(it.en))+'</span></button>').join("")).join("")
     +'<div class="dz-rail-foot" data-no-i18n></div>';
@@ -48113,4 +48119,63 @@ async function carryCutPhoto(c,slot,sid){
       .catch(fin);
   });
 }
+
+/* ============================================================================
+   MODULES — which apps show up at all. The whole thing is called Beta now;
+   Potting Bench is one module in it, next to the Daily Planner and Hours.
+   The rest are switched off by default, not removed: their code, views and
+   data stay exactly as they were, and Settings → Modules brings any of them
+   back. Off means out of the app menu, the rail and their entry points
+   elsewhere (the Notes card on a plant page, the quick-note pen).
+
+   L.appsOn holds only what someone has changed, so a default can move later
+   without overwriting a choice. Per device, like the rest of L.
+   ============================================================================ */
+function appOn(id){
+  if(id==="bench") return true;
+  const o=(L&&L.appsOn)||{};
+  if(id in o) return !!o[id];
+  /* a literal, not a top-level const: appOn runs during boot, long before
+     this point in the script, and a const here would still be in its TDZ */
+  return !["adhd","notes","teachbench","teachbench-student","cabinet","rooms"].includes(id);
+}
+Object.assign(CS,{"Modules":"Moduly"});
+function appsApply(){
+  const root=document.documentElement;
+  APPS.forEach(a=>root.classList.toggle("app-off-"+a.id, !appOn(a.id)));
+  document.querySelectorAll("#setModules [data-mod]").forEach(c=>{ c.checked=appOn(c.dataset.mod); });
+  renderAppMenu();
+  /* the rail is built once; rebuild it so a module switched on or off shows */
+  const r=$("#dzRail");
+  if(r){ r.remove(); dzApplyNow(); }
+}
+(function modulesWire(){
+  const st=document.createElement("style");
+  st.textContent="html.app-off-notes #nQuick{display:none!important}";
+  document.head.appendChild(st);
+
+  const body=document.querySelector("#setCatApp .setcat-body");
+  if(body){
+    const wrap=document.createElement("div");
+    wrap.className="stack";
+    wrap.innerHTML=`<div class="sec-head"><h2 style="font-size:18px">${esc(t("Modules"))}</h2></div>
+      <div class="card pad"><div class="stack" id="setModules">${
+        APPS.filter(a=>a.id!=="bench").map(a=>
+          `<label class="chk"><input type="checkbox" data-mod="${esc(a.id)}"> ${esc(t(a.label))}</label>`).join("")
+      }</div></div>`;
+    body.appendChild(wrap);
+    wrap.addEventListener("change",e=>{
+      const c=e.target.closest("[data-mod]"); if(!c) return;
+      L.appsOn=Object.assign({},L.appsOn,{[c.dataset.mod]:c.checked});
+      saveLocal(); appsApply();
+    });
+  }
+  /* ticks are read fresh each time Settings opens, so they match another tab */
+  $("#settingsBtn").addEventListener("click",()=>{
+    document.querySelectorAll("#setModules [data-mod]").forEach(c=>{ c.checked=appOn(c.dataset.mod); });
+  });
+  appsApply();
+  /* booted into a module that is now off: land on the bench instead */
+  if(!appOn(L.app||"bench")) setApp("bench");
+})();
 </script>
