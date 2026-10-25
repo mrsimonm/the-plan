@@ -6834,6 +6834,171 @@ html[data-shell="rail"] body{
     <div class="stack" id="adBody"></div>
   </section>
 
+  <!-- STUDY BENCH — course work for one degree. Code and reasoning at the
+       tail of the script (search STUDY BENCH); styles in <style id="stb-css">. -->
+  <section class="view" id="view-study" hidden>
+    <div class="sec-head">
+      <h2>Study Bench</h2>
+      <div class="stb-search"><input type="search" id="stbQ" placeholder="Search topics" aria-label="Search all topics"></div>
+    </div>
+    <nav class="stb-tabs" id="stbTabs" role="tablist" aria-label="Courses"></nav>
+    <div class="stack" id="stbBody" data-no-i18n></div>
+    <input type="file" id="stbPicker" accept="application/json,.json" hidden>
+  </section>
+
+  <dialog id="stbSessDlg"><form id="stbSessForm">
+    <h3 class="dlg-head" id="stbSessTitle">Session</h3>
+    <div class="dlg-body">
+      <div class="field"><label for="stbSessCourse">Course</label><select id="stbSessCourse" data-no-i18n></select></div>
+      <div class="qadd-row2">
+        <div class="field" style="flex:1"><label for="stbSessDate">Date</label><input type="date" id="stbSessDate" required></div>
+        <div class="field" style="flex:1"><label for="stbSessKind">Kind</label>
+          <select id="stbSessKind">
+            <option value="Lecture">Lecture</option><option value="Lab">Lab</option>
+            <option value="Seminar">Seminar</option><option value="Project">Project</option>
+          </select></div>
+      </div>
+      <div class="field"><label for="stbSessName">Title</label><input type="text" id="stbSessName" required></div>
+      <div class="field"><label for="stbSessTopics">Topics<small>Comma or one per line</small></label>
+        <textarea id="stbSessTopics" rows="4"></textarea></div>
+      <div class="field"><label for="stbSessLink">Notes link</label><input type="url" id="stbSessLink" placeholder="https://notes.wisprflow.ai/…"></div>
+      <label class="chk"><input type="checkbox" id="stbSessRev"> Reviewed</label>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn mini" type="button" id="stbSessDel">Delete…</button>
+      <button class="btn mini" type="button" data-stbclose>Cancel</button>
+      <button class="btn primary mini" type="submit">Save</button>
+    </div>
+  </form></dialog>
+
+  <dialog id="stbDlDlg"><form id="stbDlForm">
+    <h3 class="dlg-head" id="stbDlTitle">Deadline</h3>
+    <div class="dlg-body">
+      <div class="field"><label for="stbDlCourse">Course</label><select id="stbDlCourse" data-no-i18n></select></div>
+      <div class="field"><label for="stbDlName">What</label><input type="text" id="stbDlName" required></div>
+      <div class="qadd-row2">
+        <div class="field" style="flex:1"><label for="stbDlDate">Date</label><input type="date" id="stbDlDate"></div>
+        <div class="field" style="flex:1"><label for="stbDlLabel">Or roughly<small>When there is no date yet</small></label><input type="text" id="stbDlLabel" placeholder="January"></div>
+      </div>
+      <div class="field"><label for="stbDlDetail">Detail</label><input type="text" id="stbDlDetail"></div>
+      <label class="chk"><input type="checkbox" id="stbDlDone"> Done</label>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn mini" type="button" id="stbDlDel">Delete…</button>
+      <button class="btn mini" type="button" data-stbclose>Cancel</button>
+      <button class="btn primary mini" type="submit">Save</button>
+    </div>
+  </form></dialog>
+
+  <dialog id="stbCourseDlg"><form id="stbCourseForm">
+    <h3 class="dlg-head" id="stbCourseTitle">Course</h3>
+    <div class="dlg-body">
+      <div class="field"><label for="stbCName">Name</label><input type="text" id="stbCName" required></div>
+      <div class="qadd-row2">
+        <div class="field" style="flex:1"><label for="stbCColor">Colour</label>
+          <select id="stbCColor">
+            <option value="zoo">Amber</option><option value="bio">Accent</option>
+            <option value="geo">Clay</option><option value="eco">Green</option><option value="gen">Grey</option>
+          </select></div>
+        <div class="field" style="flex:1"><label for="stbCStatus">Status</label>
+          <select id="stbCStatus"><option value="active">Active</option><option value="done">Completed</option></select></div>
+      </div>
+      <div class="field"><label for="stbCShort">Assessment in one line</label><input type="text" id="stbCShort"></div>
+      <div class="field"><label for="stbCSummary">Summary</label><input type="text" id="stbCSummary"></div>
+      <div class="field"><label for="stbCAssess">How it's assessed<small>One per line</small></label><textarea id="stbCAssess" rows="3"></textarea></div>
+      <div class="field"><label for="stbCTips">Tips<small>One per line</small></label><textarea id="stbCTips" rows="3"></textarea></div>
+      <div class="field"><label for="stbCInfo">Course info<small>One per line</small></label><textarea id="stbCInfo" rows="3"></textarea></div>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn mini" type="button" id="stbCDel">Delete…</button>
+      <button class="btn mini" type="button" data-stbclose>Cancel</button>
+      <button class="btn primary mini" type="submit">Save</button>
+    </div>
+  </form></dialog>
+
+<style id="stb-css">
+/* STUDY BENCH. Colour is only ever a small dot, a tick and a progress bar per
+   course — the cards themselves stay the app's own, so every theme and both
+   colour schemes carry it without a palette of its own. Course colour keys
+   from the prototype map onto existing tokens. */
+#view-study{--stb-mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.stb-c-zoo{--c:var(--amber)} .stb-c-bio{--c:var(--accent)} .stb-c-geo{--c:var(--orange)}
+.stb-c-eco{--c:var(--ok)} .stb-c-gen{--c:var(--ink-3)}
+.stb-search{flex:1 1 160px; max-width:280px}
+.stb-search input{width:100%}
+.stb-tabs{display:flex; gap:2px; overflow-x:auto; scrollbar-width:none; margin:0 0 14px; border-bottom:1px solid var(--line)}
+.stb-tabs button{font:inherit; font-weight:600; font-size:.88rem; background:none; border:0; color:var(--ink-3);
+  padding:9px 11px 10px; border-bottom:3px solid transparent; white-space:nowrap; cursor:pointer;
+  display:flex; align-items:center; gap:7px; min-height:40px; flex:none}
+.stb-tabs button[aria-selected="true"]{color:var(--ink-strong); border-bottom-color:var(--c,var(--accent))}
+.stb-dot{width:9px; height:9px; border-radius:50%; background:var(--c,var(--accent)); flex:none}
+.stb-date{font-family:var(--stb-mono); font-size:.8rem; font-variant-numeric:tabular-nums; color:var(--ink)}
+.stb-h{font-size:.74rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); margin:4px 0 8px}
+.stb-next{display:grid; grid-template-columns:auto 1fr; gap:18px; align-items:center}
+.stb-count{font-family:var(--stb-mono); min-width:84px; text-align:center}
+.stb-count b{display:block; font-size:2.4rem; line-height:1; font-weight:600; color:var(--c,var(--accent))}
+.stb-count span{font-size:.72rem; color:var(--ink-3); text-transform:uppercase; letter-spacing:.08em}
+.stb-next h3{margin:2px 0 4px; font-size:1.1rem; color:var(--ink-strong)}
+.stb-next p{margin:0; color:var(--ink)}
+.stb-list{padding:0; overflow:hidden}
+.stb-row{display:grid; grid-template-columns:auto 96px minmax(0,1fr) auto auto; gap:12px; align-items:center; padding:11px 14px; border-top:1px solid var(--line-soft)}
+.stb-row:first-child{border-top:0}
+.stb-row.done{opacity:.55} .stb-row.done .stb-t{text-decoration:line-through}
+.stb-t{font-weight:600; color:var(--ink-strong); overflow-wrap:anywhere}
+.stb-meta{font-size:.84rem; color:var(--ink); overflow-wrap:anywhere}
+.stb-tag{display:inline-flex; align-items:center; gap:6px; font-weight:600}
+.stb-pill{font-family:var(--stb-mono); font-size:.72rem; font-weight:700; padding:3px 9px; border-radius:var(--r-pill); white-space:nowrap; background:var(--sunk); color:var(--ink)}
+.stb-pill.soon{background:var(--crit-soft); color:var(--crit)}
+.stb-pill.tbc{background:none; border:1px dashed var(--line-strong); color:var(--ink-3)}
+.stb-tick{appearance:none; -webkit-appearance:none; width:22px; height:22px; margin:0; border:2px solid var(--line-strong); border-radius:6px;
+  display:grid; place-content:center; cursor:pointer; background:var(--surface); flex:none}
+.stb-tick:checked{background:var(--c,var(--accent)); border-color:var(--c,var(--accent))}
+.stb-tick:checked::after{content:""; width:10px; height:5px; border:2.5px solid var(--surface); border-top:0; border-right:0; transform:rotate(-45deg) translate(1px,-1px)}
+.stb-tick:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.stb-ed{background:none; border:0; color:var(--ink-3); font-size:1rem; min-width:40px; min-height:40px; cursor:pointer; border-radius:var(--r-sm)}
+.stb-ed:hover{color:var(--ink-strong); background:var(--sunk)}
+.stb-courses{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px}
+.stb-course{all:unset; box-sizing:border-box; cursor:pointer; display:grid; gap:9px}
+.stb-course:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.stb-course h3{margin:0; font-size:1.02rem; display:flex; align-items:center; gap:8px; color:var(--ink-strong)}
+.stb-stat{display:flex; justify-content:space-between; font-size:.82rem; color:var(--ink-3); font-variant-numeric:tabular-nums}
+.stb-bar{height:6px; background:var(--sunk); border-radius:99px; overflow:hidden}
+.stb-bar i{display:block; height:100%; background:var(--c,var(--accent)); border-radius:99px}
+.stb-badge{justify-self:start; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; padding:2px 8px; border-radius:var(--r-xs); background:var(--sunk); color:var(--ink-3)}
+.stb-badge.on{background:var(--accent-soft); color:var(--accent)}
+.stb-chead{display:grid; gap:6px}
+.stb-chead h3{margin:0; font-size:1.45rem; display:flex; align-items:center; gap:10px; color:var(--ink-strong)}
+.stb-chead h3 .stb-dot{width:12px; height:12px}
+.stb-cols{display:grid; grid-template-columns:minmax(0,2fr) minmax(0,1fr); gap:18px; align-items:start}
+.stb-sess{display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:12px; padding:13px 14px; border-top:1px solid var(--line-soft)}
+.stb-sess:first-child{border-top:0}
+.stb-shead{display:flex; flex-wrap:wrap; gap:4px 10px; align-items:baseline}
+.stb-kind{font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--c,var(--accent))}
+.stb-chips{display:flex; flex-wrap:wrap; gap:6px; margin-top:7px}
+.stb-chip{font-size:.8rem; padding:3px 9px; border-radius:var(--r-xs); background:var(--sunk); color:var(--ink)}
+.stb-chip mark,.stb-t mark{background:var(--accent-soft); color:inherit; border-radius:2px}
+.stb-notes{font-size:.82rem; font-weight:600; color:var(--accent); text-decoration:none}
+.stb-notes:hover{text-decoration:underline}
+.stb-panel ul{margin:0; padding-left:18px; display:grid; gap:5px; color:var(--ink)}
+.stb-panel h4{margin:0 0 8px; font-size:.9rem; color:var(--ink-strong)}
+.stb-acts{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
+.stb-filters{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px}
+.stb-filters .btn[aria-pressed="true"]{background:var(--ink-strong); color:var(--surface); border-color:var(--ink-strong)}
+.stb-shd{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap}
+.stb-msg{font-size:.84rem; color:var(--ink-3); margin:0}
+@media (max-width:720px){
+  .stb-cols{grid-template-columns:1fr}
+  .stb-row{grid-template-columns:auto minmax(0,1fr) auto auto; row-gap:4px}
+  .stb-row .stb-date{grid-column:2/4; grid-row:1}
+  .stb-row .stb-body{grid-column:2; grid-row:2}
+  .stb-row .stb-pill{grid-row:2}
+  .stb-row .stb-ed{grid-row:1/3}
+  .stb-row > .stb-tick{grid-row:1/3}
+  .stb-next{grid-template-columns:1fr}
+  .stb-count{text-align:left}
+}
+</style>
+
 </main>
 
 <!-- web clipper: paste text or a link, or scan an image for its text -->
@@ -10205,7 +10370,9 @@ function seed(){return{
   /* the ADHD Planner. Filled in lazily by the module too, so a state that
      arrived from a device on an older build needs no migration step. */
   adhd:{tasks:[], sessions:[], current:null,
-        settings:{cap:3, ritual:true, buzz:true, mins:15}}
+        settings:{cap:3, ritual:true, buzz:true, mins:15}},
+  /* Study Bench. Also filled lazily by the module, like adhd above. */
+  study:{courses:[], sessions:[], deadlines:[]}
 };}
 
 /* v2 lineups became schedule weeks; in v4 the doses move out into named formulas
@@ -22822,7 +22989,9 @@ function renderAll(){ renderMixSel(); renderDue(); renderHow(); renderMix(); ren
   if(typeof pSelISO!=="undefined"&&pSelISO) try{ renderPlanner(); }catch(e){}
   /* Cabinet draws its thumbnails out of IndexedDB, so an import or a remote
      apply has to go back through cbRender() rather than repaint from S alone. */
-  if(typeof cbRender==="function") try{ cbRender(); }catch(e){} }
+  if(typeof cbRender==="function") try{ cbRender(); }catch(e){}
+  /* Study Bench repaints only when on screen; it renders on show() otherwise */
+  if(window.STB&&curView==="study") try{ window.STB.render(); }catch(e){} }
 
 function renderTaskBar(){
   const {done,total,pct}=taskProgress();
@@ -22853,7 +23022,8 @@ const APPS=[{id:"bench",label:"Potting Bench",view:null},
             /* experimental, and deliberately its own app rather than a
                tab inside the Daily Planner: it is a different idea about
                what a day is, and mixing the two would muddle both */
-            {id:"adhd",label:"ADHD Planner",view:"adhd"}];
+            {id:"adhd",label:"ADHD Planner",view:"adhd"},
+            {id:"study",label:"Study Bench",view:"study"}];
 /* "settings" is deliberately NOT here any more: it is the whole app's screen,
    not one of Potting Bench's, so it must not be remembered as the bench tab
    you were last on and must not light up Library in the tab strip. It still
@@ -24364,7 +24534,7 @@ function showNow(v){
      own re-render is a no-op rather than a recursion. */
   if(v!=="planner"&&document.documentElement.classList.contains("pfocus")) pSetFocus(false);
   document.querySelectorAll(".nav button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.view===v)));
-  BENCH_VIEWS.concat(["planner","hours","hproject","teachbench","teachbench-student","notes","note","cabinet","cabitem","rooms","adhd","settings"]).forEach(x=>{ $("#view-"+x).hidden=(x!==v); });
+  BENCH_VIEWS.concat(["planner","hours","hproject","teachbench","teachbench-student","notes","note","cabinet","cabitem","rooms","adhd","study","settings"]).forEach(x=>{ $("#view-"+x).hidden=(x!==v); });
   /* editor sub-views (product/formula/plant/batch/…) are populated by their
      open* call, not by showNow — relaunching straight into one was a blank
      shell that crashed on the first tap. Remember their parent tab instead. */
@@ -24382,6 +24552,7 @@ function showNow(v){
   if(v==="cabinet") cbRender();
   if(v==="rooms"&&window.RB) try{ RB.render(); }catch(e){ console.warn("rooms",e); }
   if(v==="adhd"&&window.AD) try{ window.AD.render(); }catch(e){ console.warn("adhd",e); }
+  if(v==="study"&&window.STB) try{ window.STB.render(); }catch(e){ console.warn("study",e); }
   if(v==="cabitem") cbRenderItem();
   /* a remote state can land while a note is open — repaint, don't just regrow */
   if(v==="note"){ nRenderEditor(); nGrowAll(); }
@@ -35333,7 +35504,8 @@ const DZ_ICON={
   student:'<path d="M3 8.5 12 4l9 4.5-9 4.5Z"/><path d="M7 11v5c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5v-5"/>',
   cabinet:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M12 3v18M4 9.5h16M4 16h16"/>',
   rooms:'<path d="M3 21h18"/><path d="M5 21V6l7-3 7 3v15"/><rect x="9" y="12" width="6" height="9"/><path d="M9 8h.01M15 8h.01"/>',
-  adhd:'<circle cx="12" cy="12" r="9"/><path d="M12 12V3a9 9 0 0 1 7.8 4.5Z" fill="currentColor" stroke="none"/>'
+  adhd:'<circle cx="12" cy="12" r="9"/><path d="M12 12V3a9 9 0 0 1 7.8 4.5Z" fill="currentColor" stroke="none"/>',
+  study:'<path d="M2 9l10-5 10 5-10 5Z"/><path d="M6 11v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/><path d="M22 9v6"/>'
 };
 const dzSvg=k=>'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'+(DZ_ICON[k]||"")+'</svg>';
 
@@ -35354,6 +35526,8 @@ const DZ_ITEMS=[
     {k:"adhd",     app:"adhd",    en:"ADHD Planner"}]},
   {g:"Write", items:[
     {k:"notes",    app:"notes",   en:"Notes"}]},
+  {g:"Study", items:[
+    {k:"study",    app:"study",   en:"Study Bench"}]},
   {g:"Teach", items:[
     {k:"teachbench", app:"teachbench",         en:"Teachbench"},
     {k:"student",    app:"teachbench-student", en:"Student Bench"}]},
@@ -35377,6 +35551,7 @@ function dzCurrentKey(){
   if(v==="cabinet"||v==="cabitem") return "cabinet";
   if(v==="rooms") return "rooms";
   if(v==="adhd") return "adhd";
+  if(v==="study") return "study";
   const parent=(typeof NAV_PARENT==="object"&&NAV_PARENT[v])||v;
   return parent;
 }
@@ -48137,7 +48312,7 @@ function appOn(id){
   if(id in o) return !!o[id];
   /* a literal, not a top-level const: appOn runs during boot, long before
      this point in the script, and a const here would still be in its TDZ */
-  return !["adhd","notes","teachbench","teachbench-student","cabinet","rooms"].includes(id);
+  return !["adhd","notes","teachbench","teachbench-student","cabinet","rooms","study"].includes(id);
 }
 Object.assign(CS,{"Modules":"Moduly"});
 function appsApply(){
@@ -48178,4 +48353,399 @@ function appsApply(){
   /* booted into a module that is now off: land on the bench instead */
   if(!appOn(L.app||"bench")) setApp("bench");
 })();
+
+/* ============================================================================
+   STUDY BENCH — courses, sessions and deadlines for one degree.
+
+   Ported from the "CZU Study Hub" prototype built in claude.ai, which was
+   read-only from where Simon sat; this one is edited in place. Its own island
+   like the ADHD Planner: one <section id="view-study">, one <style
+   id="stb-css">, this IIFE, and additive entries in APPS, showNow(), seed(),
+   the rail and renderAll(). Nothing else reads S.study.
+
+   Data lives in S.study, so it syncs between devices like everything else in
+   S. It starts EMPTY and is filled by Import: the real course data (names,
+   dates, shared recording links) is personal, and index.html is public and
+   goes to every tester, so it is never baked into the page.
+
+   Off by default in Settings → Modules — the testers use this app for plants.
+
+   Shape:  courses   {id,name,color,status:"active"|"done",order,
+                      assessmentShort,summary,assessment[],tips[],info[]}
+           sessions  {id,course,date:"YYYY-MM-DD",kind,title,topics[],link,reviewed}
+           deadlines {id,course,date:"YYYY-MM-DD"|null,dateLabel,title,detail,done}
+
+   #stbBody is data-no-i18n: course names, titles and topics are the user's
+   own words and must never be machine-translated, so every app string in
+   it goes through t() here instead.
+   ============================================================================ */
+(function(){
+  const KINDS=["Lecture","Lab","Seminar","Project"];
+  const COLORS=["zoo","bio","geo","eco","gen"];
+  let q="", kind="all";
+
+  function db(){
+    let d=S.study;
+    if(!d||typeof d!=="object") d=S.study={courses:[],sessions:[],deadlines:[]};
+    ["courses","sessions","deadlines"].forEach(k=>{ if(!Array.isArray(d[k])) d[k]=[]; });
+    return d;
+  }
+  const str=v=>typeof v==="string"?v:(v==null?"":String(v));
+  const strs=v=>Array.isArray(v)?v.map(x=>str(x).trim()).filter(Boolean):[];
+  const isoOk=v=>typeof v==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(v)?v:null;
+  /* imported links end up as href — only plain web addresses get through */
+  const safeLink=v=>{ const s=str(v).trim(); return /^https?:\/\//i.test(s)?s:""; };
+  const splitList=s=>str(s).split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean);
+  const lines=s=>str(s).split(/\n+/).map(x=>x.trim()).filter(Boolean);
+
+  function normCourse(c){ c=c||{}; return {id:str(c.id)||"c"+uid(), name:str(c.name).trim()||"Course",
+    color:COLORS.includes(c.color)?c.color:"gen", status:c.status==="done"?"done":"active",
+    order:Number.isFinite(+c.order)?+c.order:0, assessmentShort:str(c.assessmentShort), summary:str(c.summary),
+    assessment:strs(c.assessment), tips:strs(c.tips), info:strs(c.info)}; }
+  function normSess(s){ s=s||{}; return {id:str(s.id)||"s"+uid(), course:str(s.course), date:isoOk(s.date)||"",
+    kind:KINDS.includes(s.kind)?s.kind:"Lecture", title:str(s.title).trim(), topics:strs(s.topics),
+    link:safeLink(s.link), reviewed:!!s.reviewed}; }
+  function normDl(x){ x=x||{}; return {id:str(x.id)||"d"+uid(), course:str(x.course), date:isoOk(x.date),
+    dateLabel:str(x.dateLabel), title:str(x.title).trim(), detail:str(x.detail), done:!!x.done}; }
+
+  /* ---- dates: always local midnight, never UTC — "YYYY-MM-DD" parsed by
+     Date() is UTC and lands on the previous day west of Greenwich ---- */
+  const parse=s=>{ if(!s) return null; const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); };
+  const today0=()=>{ const d=new Date(); d.setHours(0,0,0,0); return d; };
+  const isoToday=()=>{ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
+  const daysTo=s=>{ const d=parse(s); return d?Math.round((d-today0())/864e5):null; };
+  const fmt=s=>{ const d=parse(s); return d?d.toLocaleDateString(L.lang==="cs"?"cs-CZ":"en-GB",{day:"numeric",month:"short"}):""; };
+  const cs=()=>L.lang==="cs";
+  const daysLeft=n=>cs()?(n===1?"den":(n>=2&&n<=4?"dny":"dní")):(n===1?"day left":"days left");
+  const inDays=n=>cs()?"za "+n+" d":"in "+n+" d";
+
+  const courses=()=>db().courses.slice().sort((a,b)=>(a.order||0)-(b.order||0)||a.name.localeCompare(b.name));
+  const course=id=>db().courses.find(c=>c.id===id)||{id, name:id||"—", color:"gen", status:"active"};
+  const cc=id=>"stb-c-"+(course(id).color||"gen");
+  const sortDl=list=>list.slice().sort((a,b)=>(a.done-b.done)||((a.date||"9999")<(b.date||"9999")?-1:(a.date||"9999")>(b.date||"9999")?1:0));
+  const hl=txt=>{
+    if(!q) return esc(txt);
+    const i=txt.toLowerCase().indexOf(q.toLowerCase());
+    if(i<0) return esc(txt);
+    return esc(txt.slice(0,i))+"<mark>"+esc(txt.slice(i,i+q.length))+"</mark>"+esc(txt.slice(i+q.length));
+  };
+
+  function pill(x){
+    if(x.done) return `<span class="stb-pill">${esc(t("done"))}</span>`;
+    if(!x.date) return `<span class="stb-pill tbc">${esc(t("TBC"))}</span>`;
+    const n=daysTo(x.date);
+    if(n<0) return `<span class="stb-pill">${esc(t("passed"))}</span>`;
+    if(n===0) return `<span class="stb-pill soon">${esc(t("today"))}</span>`;
+    return `<span class="stb-pill${n<=21?" soon":""}">${esc(inDays(n))}</span>`;
+  }
+  function dlRows(list){
+    if(!list.length) return `<p class="empty" style="margin:0">${esc(t("No deadlines here yet."))}</p>`;
+    return `<div class="card stb-list">${list.map(x=>`
+      <div class="stb-row ${cc(x.course)}${x.done?" done":""}">
+        <input type="checkbox" class="stb-tick" data-stbdone="${esc(x.id)}" ${x.done?"checked":""} aria-label="${esc(t("Done"))}: ${esc(x.title)}">
+        <span class="stb-date">${x.date?esc(fmt(x.date)):esc(x.dateLabel||t("TBC"))}</span>
+        <div class="stb-body"><div class="stb-t">${esc(x.title)}</div>
+          <div class="stb-meta"><span class="stb-tag"><span class="stb-dot"></span>${esc(course(x.course).name)}</span>${x.detail?" · "+esc(x.detail):""}</div></div>
+        ${pill(x)}
+        <button type="button" class="stb-ed" data-stbdl="${esc(x.id)}" aria-label="${esc(t("Edit"))}">✎</button>
+      </div>`).join("")}</div>`;
+  }
+  function sessRows(list,showCourse){
+    if(!list.length) return `<p class="empty" style="margin:0">${esc(t("No sessions match."))}</p>`;
+    return `<div class="card stb-list">${list.map(s=>`
+      <div class="stb-sess ${cc(s.course)}">
+        <input type="checkbox" class="stb-tick" id="stbRev-${esc(s.id)}" data-stbrev="${esc(s.id)}" ${s.reviewed?"checked":""} aria-label="${esc(t("Reviewed"))}: ${esc(s.title)}">
+        <div style="min-width:0">
+          <div class="stb-shead"><span class="stb-kind">${esc(t(s.kind))}</span><span class="stb-date">${esc(fmt(s.date))}</span>
+            <label class="stb-t" for="stbRev-${esc(s.id)}">${hl(s.title)}</label>
+            ${showCourse?`<span class="stb-meta stb-tag"><span class="stb-dot"></span>${esc(course(s.course).name)}</span>`:""}
+            ${s.link?`<a class="stb-notes" href="${esc(s.link)}" target="_blank" rel="noopener">${esc(t("Notes"))} ↗</a>`:""}</div>
+          ${s.topics.length?`<div class="stb-chips">${s.topics.map(x=>`<span class="stb-chip">${hl(x)}</span>`).join("")}</div>`:""}
+        </div>
+        <button type="button" class="stb-ed" data-stbsess="${esc(s.id)}" aria-label="${esc(t("Edit"))}">✎</button>
+      </div>`).join("")}</div>`;
+  }
+
+  function overview(){
+    const d=db();
+    const up=sortDl(d.deadlines.filter(x=>!x.done&&(!x.date||daysTo(x.date)>=0)));
+    const next=up.find(x=>x.date);
+    let h="";
+    if(next){
+      const n=daysTo(next.date);
+      h+=`<div class="card pad stb-next ${cc(next.course)}">
+        <div class="stb-count"><b>${n}</b><span>${esc(daysLeft(n))}</span></div>
+        <div><div class="stb-h" style="margin:0">${esc(t("Next up"))} · ${esc(fmt(next.date))}</div>
+          <h3>${esc(next.title)}</h3><p>${esc(next.detail||course(next.course).name)}</p></div></div>`;
+    }
+    h+=`<div><div class="stb-shd"><div class="stb-h">${esc(t("Coming up"))}</div>
+        <button type="button" class="btn mini" data-stbnew="dl">+ ${esc(t("Deadline"))}</button></div>${dlRows(up)}</div>`;
+    h+=`<div><div class="stb-shd"><div class="stb-h">${esc(t("Courses"))}</div>
+        <button type="button" class="btn mini" data-stbnew="course">+ ${esc(t("Course"))}</button></div>
+      <div class="stb-courses">${courses().map(c=>{
+        const ss=d.sessions.filter(s=>s.course===c.id), r=ss.filter(s=>s.reviewed).length;
+        const pct=ss.length?Math.round(r/ss.length*100):0;
+        return `<button type="button" class="card pad stb-course stb-c-${esc(c.color)}" data-stbv="${esc(c.id)}">
+          <span class="stb-badge${c.status==="active"?" on":""}">${esc(t(c.status==="active"?"Active":"Completed"))}</span>
+          <h3><span class="stb-dot"></span>${esc(c.name)}</h3>
+          ${c.assessmentShort?`<div class="stb-meta">${esc(c.assessmentShort)}</div>`:""}
+          <div class="stb-stat"><span>${ss.length} ${esc(t("sessions"))}</span><span>${r}/${ss.length} ${esc(t("reviewed"))}</span></div>
+          <div class="stb-bar"><i style="width:${pct}%"></i></div></button>`; }).join("")}</div></div>`;
+    h+=dataBar();
+    return h;
+  }
+  function dataBar(){
+    return `<div class="stb-acts">
+      <button type="button" class="btn mini" data-stbio="import">${esc(t("Import from file"))}</button>
+      <button type="button" class="btn mini" data-stbio="export">${esc(t("Export to file"))}</button>
+      <p class="stb-msg" id="stbMsg" role="status" aria-live="polite"></p></div>`;
+  }
+  function courseView(id){
+    const d=db(), c=course(id);
+    const all=d.sessions.filter(s=>s.course===id).sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
+    const kinds=KINDS.filter(k=>all.some(s=>s.kind===k));
+    if(kind!=="all"&&!kinds.includes(kind)) kind="all";
+    const list=kind==="all"?all:all.filter(s=>s.kind===kind);
+    const dls=sortDl(d.deadlines.filter(x=>x.course===id));
+    const panel=(title,arr)=>arr.length?`<div class="card pad stb-panel"><h4>${esc(t(title))}</h4><ul>${arr.map(a=>`<li>${esc(a)}</li>`).join("")}</ul></div>`:"";
+    return `<div class="stb-chead stb-c-${esc(c.color)}">
+        <span class="stb-badge${c.status==="active"?" on":""}">${esc(t(c.status==="active"?"Active":"Completed"))}</span>
+        <h3><span class="stb-dot"></span>${esc(c.name)}</h3>
+        ${c.summary?`<p class="stb-meta" style="margin:0">${esc(c.summary)}</p>`:""}
+        <div class="stb-acts">
+          <button type="button" class="btn mini primary" data-stbnew="sess">+ ${esc(t("Session"))}</button>
+          <button type="button" class="btn mini" data-stbnew="dl">+ ${esc(t("Deadline"))}</button>
+          <button type="button" class="btn mini" data-stbcourse="${esc(c.id)}">${esc(t("Edit course"))}</button>
+        </div></div>
+      <div class="stb-cols">
+        <div><div class="stb-h">${esc(t("Sessions & topics"))}</div>
+          ${kinds.length>1?`<div class="stb-filters">${["all"].concat(kinds).map(k=>
+            `<button type="button" class="btn mini" data-stbk="${esc(k)}" aria-pressed="${kind===k}">${esc(t(k==="all"?"All":k))}</button>`).join("")}</div>`:""}
+          ${sessRows(list,false)}</div>
+        <div class="stack">
+          ${dls.length?`<div><div class="stb-h">${esc(t("Deadlines"))}</div>${dlRows(dls)}</div>`:""}
+          ${panel("How it's assessed",c.assessment)}${panel("Tips",c.tips)}${panel("Course info",c.info)}
+        </div></div>`;
+  }
+  function searchView(){
+    const s=q.toLowerCase();
+    const hits=db().sessions.filter(x=>[x.title].concat(x.topics).join(" ").toLowerCase().includes(s))
+      .sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0)
+      .map(x=>Object.assign({},x,{topics:x.topics.filter(tp=>tp.toLowerCase().includes(s)).concat(x.topics.filter(tp=>!tp.toLowerCase().includes(s)))}));
+    return `<div><div class="stb-h">${esc(t("Results for"))} “${esc(q)}”</div>${sessRows(hits,true)}</div>`;
+  }
+  function emptyView(){
+    return `<div class="card pad stack">
+      <p style="margin:0">${esc(t("No courses yet."))}</p>
+      <div class="stb-acts">
+        <button type="button" class="btn primary mini" data-stbio="import">${esc(t("Import from file"))}</button>
+        <button type="button" class="btn mini" data-stbnew="course">+ ${esc(t("Course"))}</button>
+        <p class="stb-msg" id="stbMsg" role="status" aria-live="polite"></p></div></div>`;
+  }
+
+  function render(){
+    const body=$("#stbBody"), tabs=$("#stbTabs"); if(!body||!tabs) return;
+    const list=courses();
+    const view=list.some(c=>c.id===L.stbView)?L.stbView:"overview";
+    tabs.hidden=!list.length;
+    tabs.innerHTML=[{id:"overview",name:t("Overview")}].concat(list).map(c=>
+      `<button type="button" role="tab" data-stbv="${esc(c.id)}" aria-selected="${!q&&view===c.id}"${c.color?` class="stb-c-${esc(c.color)}"`:""}>`
+      +(c.color?`<span class="stb-dot"></span>`:"")+`<span${c.color?" data-no-i18n":""}>${esc(c.name)}</span></button>`).join("");
+    if(!list.length) body.innerHTML=emptyView();
+    else if(q) body.innerHTML=searchView();
+    else body.innerHTML=view==="overview"?overview():courseView(view);
+  }
+  function go(id){
+    L.stbView=id; saveLocal(); kind="all"; q=""; const qi=$("#stbQ"); if(qi) qi.value="";
+    render(); window.scrollTo({top:0});
+  }
+  function say(msg){ const m=$("#stbMsg"); if(m) m.textContent=msg; }
+
+  /* ---- dialogs ---- */
+  let editId=null;
+  const fillCourses=(sel,cur)=>{
+    $(sel).innerHTML=courses().map(c=>`<option value="${esc(c.id)}"${c.id===cur?" selected":""}>${esc(c.name)}</option>`).join("");
+  };
+  const curCourse=()=>{ const v=L.stbView; return db().courses.some(c=>c.id===v)?v:(courses().find(c=>c.status==="active")||courses()[0]||{}).id; };
+  function openSess(id){
+    const s=id?db().sessions.find(x=>x.id===id):null;
+    if(!courses().length) return openCourse(null);
+    editId=s?s.id:null;
+    $("#stbSessTitle").textContent=t(s?"Edit session":"New session");
+    fillCourses("#stbSessCourse",s?s.course:curCourse());
+    $("#stbSessDate").value=s?s.date:isoToday();
+    $("#stbSessKind").value=s?s.kind:"Lecture";
+    $("#stbSessName").value=s?s.title:"";
+    $("#stbSessTopics").value=s?s.topics.join("\n"):"";
+    $("#stbSessLink").value=s?s.link:"";
+    $("#stbSessRev").checked=!!(s&&s.reviewed);
+    $("#stbSessDel").hidden=!s;
+    $("#stbSessDlg").showModal();
+  }
+  function openDl(id){
+    const x=id?db().deadlines.find(y=>y.id===id):null;
+    if(!courses().length) return openCourse(null);
+    editId=x?x.id:null;
+    $("#stbDlTitle").textContent=t(x?"Edit deadline":"New deadline");
+    fillCourses("#stbDlCourse",x?x.course:curCourse());
+    $("#stbDlName").value=x?x.title:"";
+    $("#stbDlDate").value=x&&x.date?x.date:"";
+    $("#stbDlLabel").value=x?x.dateLabel:"";
+    $("#stbDlDetail").value=x?x.detail:"";
+    $("#stbDlDone").checked=!!(x&&x.done);
+    $("#stbDlDel").hidden=!x;
+    $("#stbDlDlg").showModal();
+  }
+  function openCourse(id){
+    const c=id?db().courses.find(y=>y.id===id):null;
+    editId=c?c.id:null;
+    $("#stbCourseTitle").textContent=t(c?"Edit course":"New course");
+    $("#stbCName").value=c?c.name:"";
+    $("#stbCColor").value=c?c.color:COLORS[db().courses.length%COLORS.length];
+    $("#stbCStatus").value=c?c.status:"active";
+    $("#stbCShort").value=c?c.assessmentShort:"";
+    $("#stbCSummary").value=c?c.summary:"";
+    $("#stbCAssess").value=c?c.assessment.join("\n"):"";
+    $("#stbCTips").value=c?c.tips.join("\n"):"";
+    $("#stbCInfo").value=c?c.info.join("\n"):"";
+    $("#stbCDel").hidden=!c;
+    $("#stbCourseDlg").showModal();
+  }
+  /* replace by id, or append — the one write path for all three lists */
+  function put(list,rec){ const i=list.findIndex(x=>x.id===rec.id); if(i<0) list.push(rec); else list[i]=rec; }
+  const saved=dlg=>{ $(dlg).close(); touch(); render(); };
+
+  $("#stbSessForm").addEventListener("submit",e=>{
+    e.preventDefault();
+    const rec=normSess({id:editId||"s"+uid(), course:$("#stbSessCourse").value, date:$("#stbSessDate").value,
+      kind:$("#stbSessKind").value, title:$("#stbSessName").value, topics:splitList($("#stbSessTopics").value),
+      link:$("#stbSessLink").value, reviewed:$("#stbSessRev").checked});
+    if(!rec.title||!rec.date) return;
+    put(db().sessions,rec); saved("#stbSessDlg");
+  });
+  $("#stbDlForm").addEventListener("submit",e=>{
+    e.preventDefault();
+    const rec=normDl({id:editId||"d"+uid(), course:$("#stbDlCourse").value, title:$("#stbDlName").value,
+      date:$("#stbDlDate").value||null, dateLabel:$("#stbDlLabel").value.trim(), detail:$("#stbDlDetail").value.trim(),
+      done:$("#stbDlDone").checked});
+    if(!rec.title) return;
+    put(db().deadlines,rec); saved("#stbDlDlg");
+  });
+  $("#stbCourseForm").addEventListener("submit",e=>{
+    e.preventDefault();
+    const d=db(), old=editId&&d.courses.find(c=>c.id===editId);
+    const rec=normCourse({id:editId||"c"+uid(), name:$("#stbCName").value, color:$("#stbCColor").value,
+      status:$("#stbCStatus").value, order:old?old.order:d.courses.reduce((m,c)=>Math.max(m,c.order||0),0)+1,
+      assessmentShort:$("#stbCShort").value.trim(), summary:$("#stbCSummary").value.trim(),
+      assessment:lines($("#stbCAssess").value), tips:lines($("#stbCTips").value), info:lines($("#stbCInfo").value)});
+    put(d.courses,rec);
+    if(!old) L.stbView=rec.id;
+    saveLocal(); saved("#stbCourseDlg");
+  });
+  $("#stbSessDel").addEventListener("click",async()=>{
+    if(!editId||!await ask(t("Delete this session?"))) return;
+    const d=db(); d.sessions=d.sessions.filter(x=>x.id!==editId); saved("#stbSessDlg");
+  });
+  $("#stbDlDel").addEventListener("click",async()=>{
+    if(!editId||!await ask(t("Delete this deadline?"))) return;
+    const d=db(); d.deadlines=d.deadlines.filter(x=>x.id!==editId); saved("#stbDlDlg");
+  });
+  $("#stbCDel").addEventListener("click",async()=>{
+    if(!editId||!await ask(t("Delete this course, with its sessions and deadlines?"))) return;
+    const d=db(), id=editId;
+    d.courses=d.courses.filter(x=>x.id!==id);
+    d.sessions=d.sessions.filter(x=>x.course!==id);
+    d.deadlines=d.deadlines.filter(x=>x.course!==id);
+    if(L.stbView===id){ L.stbView="overview"; saveLocal(); }
+    saved("#stbCourseDlg");
+  });
+  document.querySelectorAll("[data-stbclose]").forEach(b=>b.addEventListener("click",()=>b.closest("dialog").close()));
+
+  /* ---- import / export ---- */
+  async function importText(text){
+    let raw;
+    try{ raw=JSON.parse(text); }catch(e){ return say(t("That file is not valid JSON.")); }
+    if(!raw||!Array.isArray(raw.courses)||!Array.isArray(raw.sessions)||!Array.isArray(raw.deadlines))
+      return say(t("That doesn't look like Study Bench data."));
+    const d=db();
+    if(d.courses.length||d.sessions.length||d.deadlines.length){
+      if(!await askOpen(t("Replace everything in Study Bench with this file?"),t("Replace"),true,true)) return;
+    }
+    S.study={courses:raw.courses.map(normCourse), sessions:raw.sessions.map(normSess), deadlines:raw.deadlines.map(normDl)};
+    touch(); render();
+    const n=S.study;
+    say(n.courses.length+" "+t("courses")+", "+n.sessions.length+" "+t("sessions")+", "+n.deadlines.length+" "+t("deadlines"));
+  }
+  $("#stbPicker").addEventListener("change",async e=>{
+    const f=e.target.files&&e.target.files[0]; e.target.value="";
+    if(!f) return;
+    if(f.size>2e6) return say(t("That file is too big to be Study Bench data."));
+    importText(await f.text());
+  });
+
+  /* ---- events ---- */
+  const view=$("#view-study");
+  view.addEventListener("click",e=>{
+    const b=e.target.closest("button"); if(!b) return;
+    if(b.dataset.stbv) return go(b.dataset.stbv);
+    if(b.dataset.stbk){ kind=b.dataset.stbk; return render(); }
+    if(b.dataset.stbsess) return openSess(b.dataset.stbsess);
+    if(b.dataset.stbdl) return openDl(b.dataset.stbdl);
+    if(b.dataset.stbcourse) return openCourse(b.dataset.stbcourse);
+    const n=b.dataset.stbnew;
+    if(n==="sess") return openSess(null);
+    if(n==="dl") return openDl(null);
+    if(n==="course") return openCourse(null);
+    if(b.dataset.stbio==="import") return $("#stbPicker").click();
+    if(b.dataset.stbio==="export"){
+      downloadFile(JSON.stringify(db(),null,2),"study-bench-"+isoToday()+".json","application/json");
+      return say(t("Saved to your downloads."));
+    }
+  });
+  view.addEventListener("change",e=>{
+    const c=e.target;
+    if(c.dataset&&c.dataset.stbrev){
+      const s=db().sessions.find(x=>x.id===c.dataset.stbrev); if(!s) return;
+      s.reviewed=c.checked; touch(); render(); return;
+    }
+    if(c.dataset&&c.dataset.stbdone){
+      const x=db().deadlines.find(y=>y.id===c.dataset.stbdone); if(!x) return;
+      x.done=c.checked; touch(); render();
+    }
+  });
+  let qt;
+  $("#stbQ").addEventListener("input",e=>{ clearTimeout(qt); qt=setTimeout(()=>{ q=e.target.value.trim(); render(); },150); });
+  $("#stbQ").addEventListener("keydown",e=>{ if(e.key==="Escape"&&e.target.value){ e.stopPropagation(); e.target.value=""; q=""; render(); } });
+
+  window.STB={render};
+  /* boot ran show() before this IIFE existed — paint now if we landed here */
+  if(typeof curView!=="undefined"&&curView==="study") render();
+})();
+/* add-only: several of these words ("Edit", "Notes", "Session", "All") are
+   already translated elsewhere, and a Study Bench entry must not change them */
+Object.entries({
+  "Study Bench":"Studijní ponk","Study":"Studium","Search topics":"Hledat témata",
+  "Overview":"Přehled","Next up":"Nejbližší","Coming up":"Co přijde","Courses":"Předměty","Course":"Předmět",
+  "Deadline":"Termín","Deadlines":"Termíny","Session":"Hodina","sessions":"hodin","reviewed":"zopakováno",
+  "Reviewed":"Zopakováno","Active":"Probíhá","Completed":"Ukončeno","TBC":"neurčeno","passed":"proběhlo",
+  "today":"dnes","done":"hotovo","Done":"Hotovo","Edit":"Upravit","Notes":"Poznámky",
+  "Lecture":"Přednáška","Lab":"Cvičení","Seminar":"Seminář","Project":"Projekt","All":"Vše",
+  "Sessions & topics":"Hodiny a témata","How it's assessed":"Jak se hodnotí","Tips":"Tipy","Course info":"O předmětu",
+  "Edit course":"Upravit předmět","New course":"Nový předmět","Edit session":"Upravit hodinu","New session":"Nová hodina",
+  "Edit deadline":"Upravit termín","New deadline":"Nový termín",
+  "No deadlines here yet.":"Zatím tu nejsou žádné termíny.","No sessions match.":"Žádná hodina neodpovídá.",
+  "No courses yet.":"Zatím žádné předměty.","Results for":"Výsledky pro",
+  "Import from file":"Nahrát ze souboru","Export to file":"Uložit do souboru","Saved to your downloads.":"Uloženo do stažených souborů.",
+  "That file is not valid JSON.":"Ten soubor není platný JSON.",
+  "That doesn't look like Study Bench data.":"Tohle nevypadá jako data ze Studijního ponku.",
+  "That file is too big to be Study Bench data.":"Ten soubor je moc velký na data ze Studijního ponku.",
+  "Replace everything in Study Bench with this file?":"Nahradit vše ve Studijním ponku tímto souborem?","Replace":"Nahradit",
+  "courses":"předmětů","deadlines":"termínů",
+  "Delete this session?":"Smazat tuto hodinu?","Delete this deadline?":"Smazat tento termín?",
+  "Delete this course, with its sessions and deadlines?":"Smazat tento předmět i s jeho hodinami a termíny?",
+  "Kind":"Druh","Title":"Název","What":"Co","Or roughly":"Nebo přibližně","When there is no date yet":"Když ještě není datum",
+  "Detail":"Podrobnosti","Notes link":"Odkaz na poznámky","Comma or one per line":"Čárkou nebo po řádcích",
+  "One per line":"Po řádcích","Assessment in one line":"Hodnocení jedním řádkem","Summary":"Shrnutí",
+  "Colour":"Barva","Status":"Stav","Name":"Název","Amber":"Jantarová","Accent":"Akcent","Clay":"Hliněná","Green":"Zelená","Grey":"Šedá"
+}).forEach(([k,v])=>{ if(!(k in CS)) CS[k]=v; });
 </script>
